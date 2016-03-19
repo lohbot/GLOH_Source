@@ -1,0 +1,12 @@
+using System;
+
+namespace GAME
+{
+	public enum eRANKREQ_TYPE
+	{
+		eRANKREQ_TYPE_TOPANDME,
+		eRANKREQ_TYPE_SEARCHFRIEND,
+		eRANKREQ_TYPE_ME,
+		eRANKREQ_TYPE_FRIEND
+	}
+}

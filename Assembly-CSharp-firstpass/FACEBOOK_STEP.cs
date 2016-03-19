@@ -1,0 +1,14 @@
+using System;
+
+public enum FACEBOOK_STEP
+{
+	NONE,
+	INIT,
+	LOGIN,
+	GETME,
+	GETFRIEND,
+	INVITE_FRIENDS,
+	RERMISSION,
+	CALL_SAVE_METHOD,
+	END
+}

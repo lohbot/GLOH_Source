@@ -1,0 +1,9 @@
+using System;
+
+public enum INVERSE_MODE
+{
+	NULL = -1,
+	LEFT_TO_RIGHT,
+	TOP_TO_BOTTOM,
+	TOPLEFT_TO_BOTTOMRIGHT
+}

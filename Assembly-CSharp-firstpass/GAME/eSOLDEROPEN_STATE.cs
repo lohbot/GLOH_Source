@@ -1,0 +1,12 @@
+using System;
+
+namespace GAME
+{
+	public enum eSOLDEROPEN_STATE
+	{
+		eSOLDEROPEN_STATE_NONE,
+		eSOLDEROPEN_STATE_OPEN,
+		eSOLDEROPEN_STATE_END,
+		eSOLDEROPEN_STATE_MAX
+	}
+}

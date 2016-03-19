@@ -1,0 +1,11 @@
+using System;
+
+namespace GAME
+{
+	public enum eCHANNEL_MOVE_TYPE
+	{
+		eCHANNEL_MOVE_DEFAULT,
+		eCHANNEL_MOVE_BABELPARTY,
+		eCHANNEL_MOVE_COLOSSEUM_MATCH
+	}
+}

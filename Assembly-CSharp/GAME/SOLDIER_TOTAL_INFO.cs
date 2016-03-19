@@ -1,0 +1,11 @@
+using System;
+
+namespace GAME
+{
+	public class SOLDIER_TOTAL_INFO
+	{
+		public SOLDIER_INFO SOLINFO = new SOLDIER_INFO();
+
+		public SOLDIER_BATTLESKILL_INFO BATTLESKILLINFO = new SOLDIER_BATTLESKILL_INFO();
+	}
+}

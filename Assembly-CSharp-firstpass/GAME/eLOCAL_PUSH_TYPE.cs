@@ -1,0 +1,11 @@
+using System;
+
+namespace GAME
+{
+	public enum eLOCAL_PUSH_TYPE
+	{
+		eLOCAL_PUSH_TYPE_INJURYTIME = 10,
+		eLOCAL_PUSH_TYPE_ACTIVITYTIME,
+		eLOCAL_PUSH_TYPE_BATTLEMATCHTIME
+	}
+}

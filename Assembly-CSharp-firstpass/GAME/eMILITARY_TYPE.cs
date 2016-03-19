@@ -1,0 +1,11 @@
+using System;
+
+namespace GAME
+{
+	public enum eMILITARY_TYPE
+	{
+		eMILITARY_TYPE_SEARCH,
+		eMILITARY_TYPE_DEFENSE,
+		eMILITARY_TYPE_ATTACK
+	}
+}

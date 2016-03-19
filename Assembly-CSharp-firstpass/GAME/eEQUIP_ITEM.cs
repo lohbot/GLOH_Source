@@ -1,0 +1,16 @@
+using System;
+
+namespace GAME
+{
+	public enum eEQUIP_ITEM
+	{
+		EQUIP_WEAPON1,
+		EQUIP_HELMET,
+		EQUIP_ARMOR,
+		EQUIP_GLOVE,
+		EQUIP_BOOTS,
+		EQUIP_RING,
+		EQUIP_ITEM_MAX,
+		EQUIP_ITEM_DURATION_MAX = 36
+	}
+}

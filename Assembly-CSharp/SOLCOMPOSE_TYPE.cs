@@ -1,0 +1,9 @@
+using System;
+
+public enum SOLCOMPOSE_TYPE
+{
+	COMPOSE,
+	SELL,
+	EXTRACT,
+	TRANSCENDENCE
+}

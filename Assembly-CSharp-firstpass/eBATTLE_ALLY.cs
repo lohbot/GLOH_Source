@@ -1,0 +1,9 @@
+using System;
+
+public enum eBATTLE_ALLY
+{
+	eBATTLE_ALLY_INVALID = -1,
+	eBATTLE_ALLY_0,
+	eBATTLE_ALLY_1,
+	eBATTLE_ALLY_MAX
+}

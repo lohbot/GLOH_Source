@@ -1,0 +1,9 @@
+using System;
+
+public enum SolGuideSlot
+{
+	SLOTYPE_NONE,
+	SLOTTYPE_NAME,
+	SLOTTYPE_GRADE_ASCENDING,
+	SLOTTYPE_GRADE_DESCENDING
+}

@@ -1,0 +1,14 @@
+using System;
+
+namespace GAME
+{
+	public enum eITEM_QUALITY_TYPE
+	{
+		ITEM_QUALITY_1 = 1,
+		ITEM_QUALITY_2,
+		ITEM_QUALITY_3,
+		ITEM_QUALITY_4,
+		ITEM_QUALITY_5,
+		MAX_ITEM_QUALITY
+	}
+}

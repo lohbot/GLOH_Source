@@ -1,0 +1,12 @@
+using System;
+
+namespace GAME
+{
+	public enum eBATTLE_SREWARD_TYPE
+	{
+		SREWARD_TYPE_EXP,
+		SREWARD_TYPE_ITEM,
+		SREWARD_TYPE_GOLD,
+		MAX_BATTLESKILL_SREWARD_TYPE
+	}
+}

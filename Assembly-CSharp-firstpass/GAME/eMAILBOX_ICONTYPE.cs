@@ -1,0 +1,13 @@
+using System;
+
+namespace GAME
+{
+	public enum eMAILBOX_ICONTYPE
+	{
+		ICONTYPE_NONE,
+		ICONTYPE_MONEY,
+		ICONTYPE_ITEM,
+		ICONTYPE_SOL,
+		ICONTYPE_MONEY_ITEM
+	}
+}

@@ -1,0 +1,486 @@
+using System;
+using TsBundle;
+using UnityEngine;
+using UnityForms;
+
+public class SolComposeDirection : Form
+{
+	private const float EVENT_ANI_ENDTIME = 6f;
+
+	private DrawTexture bgImage;
+
+	private GameObject rootGameObject;
+
+	private GameObject BasefaceGameObject;
+
+	private Animation aniGameObject;
+
+	private GameObject FinishfaceGameObject;
+
+	private string BaseSolImageKey = string.Empty;
+
+	private string strObjectKey = string.Empty;
+
+	private bool bUpdate;
+
+	private bool bSetBaseFace;
+
+	private int m_ComposeType;
+
+	private float startTime;
+
+	private Shader m_Shader;
+
+	private SOLCOMPOSE_TYPE m_SolComposeMainType;
+
+	private bool m_bGreat;
+
+	private int m_ExtractItemNum;
+
+	private GameObject ExtractResultrootGameObject;
+
+	private Label lbExtractItemCount;
+
+	private Button btnOk;
+
+	private bool bPlayExtractResult;
+
+	public Shader SHADER
+	{
+		get
+		{
+			if (this.m_Shader == null)
+			{
+				if (TsPlatform.IsWeb || TsPlatform.IsEditor)
+				{
+					this.m_Shader = Shader.Find("AT2/_Effect/Standard");
+				}
+				if (TsPlatform.IsMobile)
+				{
+					this.m_Shader = Shader.Find("AT2/Effect/Standard_mobile");
+				}
+			}
+			return this.m_Shader;
+		}
+	}
+
+	public override void InitializeComponent()
+	{
+		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
+		Form form = this;
+		form.TopMost = true;
+		instance.LoadFileAll(ref form, "Soldier/DLG_SolComposeDirection", G_ID.SOLCOMPOSE_DIRECTION_DLG, true);
+		base.InteractivePanel.draggable = false;
+	}
+
+	public override void SetComponent()
+	{
+		this.bgImage = (base.GetControl("DrawTexture_BG01") as DrawTexture);
+		Texture2D texture2D = CResources.Load(NrTSingleton<UIDataManager>.Instance.FilePath + "Texture/bg_solcompose") as Texture2D;
+		if (null != texture2D)
+		{
+			this.bgImage.SetSize(GUICamera.width, GUICamera.height);
+			this.bgImage.SetTexture(texture2D);
+		}
+		this.lbExtractItemCount = (base.GetControl("Label_Extract_Result") as Label);
+		this.lbExtractItemCount.SetLocation(this.lbExtractItemCount.GetLocationX(), this.lbExtractItemCount.GetLocationY(), -90f);
+		this.lbExtractItemCount.Visible = false;
+		this.btnOk = (base.GetControl("Button_Confirm") as Button);
+		Button expr_C6 = this.btnOk;
+		expr_C6.Click = (EZValueChangedDelegate)Delegate.Combine(expr_C6.Click, new EZValueChangedDelegate(this.BtnClickOk));
+		this.btnOk.SetLocation(this.btnOk.GetLocationX(), this.btnOk.GetLocationY(), -90f);
+		this.btnOk.Visible = false;
+		SolComposeMainDlg solComposeMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_DLG) as SolComposeMainDlg;
+		if (solComposeMainDlg != null)
+		{
+			this.m_SolComposeMainType = solComposeMainDlg.GetSolComposeType();
+			if (this.m_SolComposeMainType == SOLCOMPOSE_TYPE.EXTRACT)
+			{
+				this.bgImage.SetTextureKey("Win_T_WH");
+				string str = string.Empty;
+				str = string.Format("effect/instant/fx_direct_extraction{0}", NrTSingleton<UIDataManager>.Instance.AddFilePath);
+				WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+				wWWItem.SetItemType(ItemType.USER_ASSETB);
+				wWWItem.SetCallback(new PostProcPerItem(this.SolComposeExtract), null);
+				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+			}
+			else
+			{
+				string str2 = string.Empty;
+				str2 = string.Format("UI/Soldier/fx_direct_solcompose{0}", NrTSingleton<UIDataManager>.Instance.AddFilePath);
+				WWWItem wWWItem2 = Holder.TryGetOrCreateBundle(str2 + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+				wWWItem2.SetItemType(ItemType.USER_ASSETB);
+				wWWItem2.SetCallback(new PostProcPerItem(this.SolComposeSuccess), null);
+				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
+			}
+		}
+		UIDataManager.MuteSound(true);
+		this.SetSize();
+		base.DonotDepthChange(360f);
+		this.Hide();
+	}
+
+	public void SetExtractData(bool bGreat, int ExtractItemNum)
+	{
+		this.m_bGreat = bGreat;
+		this.m_ExtractItemNum = ExtractItemNum;
+	}
+
+	public void SetExtractResultData()
+	{
+		string empty = string.Empty;
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2837"),
+			"Count",
+			this.m_ExtractItemNum.ToString()
+		});
+		this.lbExtractItemCount.SetText(empty);
+		this.lbExtractItemCount.Visible = true;
+		this.btnOk.Visible = true;
+	}
+
+	private void BtnClickOk(IUIObject obj)
+	{
+		this.Close();
+	}
+
+	private void SolComposeExtractResult(WWWItem _item, object _param)
+	{
+		Main_UI_SystemMessage.CloseUI();
+		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.ExtractResultrootGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				if (null == this.ExtractResultrootGameObject)
+				{
+					return;
+				}
+				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+				effectUIPos.z = 300f;
+				this.ExtractResultrootGameObject.transform.position = effectUIPos;
+				NkUtil.SetAllChildLayer(this.ExtractResultrootGameObject, GUICamera.UILayer);
+				string strName = "fx_many";
+				string strName2 = "fx_small";
+				if (this.m_bGreat)
+				{
+					Transform child = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName2);
+					if (child != null && child.gameObject.activeInHierarchy)
+					{
+						child.gameObject.SetActive(false);
+					}
+					Transform child2 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName);
+					if (child2 != null && !child2.gameObject.activeInHierarchy)
+					{
+						child2.gameObject.SetActive(true);
+					}
+				}
+				else
+				{
+					Transform child3 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName);
+					if (child3 != null && child3.gameObject.activeInHierarchy)
+					{
+						child3.gameObject.SetActive(false);
+					}
+					Transform child4 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName2);
+					if (child4 != null && !child4.gameObject.activeInHierarchy)
+					{
+						child4.gameObject.SetActive(true);
+					}
+				}
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.ExtractResultrootGameObject);
+				}
+				this.Show();
+			}
+		}
+	}
+
+	private void SolComposeExtract(WWWItem _item, object _param)
+	{
+		Main_UI_SystemMessage.CloseUI();
+		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.rootGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				if (null == this.rootGameObject)
+				{
+					return;
+				}
+				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+				effectUIPos.z = 300f;
+				this.rootGameObject.transform.position = effectUIPos;
+				NkUtil.SetAllChildLayer(this.rootGameObject, GUICamera.UILayer);
+				this.aniGameObject = this.rootGameObject.GetComponentInChildren<Animation>();
+				if (null == this.aniGameObject)
+				{
+					return;
+				}
+				this.bUpdate = true;
+				this.startTime = Time.realtimeSinceStartup;
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.rootGameObject);
+				}
+				this.Show();
+			}
+		}
+	}
+
+	private void SolComposeSuccess(WWWItem _item, object _param)
+	{
+		Main_UI_SystemMessage.CloseUI();
+		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.rootGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				if (null == this.rootGameObject)
+				{
+					return;
+				}
+				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+				effectUIPos.z = 300f;
+				this.rootGameObject.transform.position = effectUIPos;
+				NkUtil.SetAllChildLayer(this.rootGameObject, GUICamera.UILayer);
+				this.aniGameObject = this.rootGameObject.GetComponentInChildren<Animation>();
+				if (null == this.aniGameObject)
+				{
+					return;
+				}
+				this.bUpdate = true;
+				this.startTime = Time.realtimeSinceStartup;
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.rootGameObject);
+				}
+				this.Show();
+			}
+		}
+	}
+
+	private void SetBundleImage(WWWItem _item, object _param)
+	{
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				string imageKey = string.Empty;
+				if (_param is string)
+				{
+					imageKey = (string)_param;
+					NrTSingleton<UIImageBundleManager>.Instance.AddTexture(imageKey, texture2D);
+				}
+			}
+		}
+	}
+
+	private void SetBackImage(WWWItem _item, object _param)
+	{
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.bgImage.SetSize(GUICamera.width, GUICamera.height);
+				this.bgImage.SetTexture(texture2D);
+				string imageKey = string.Empty;
+				if (_param is string)
+				{
+					imageKey = (string)_param;
+					NrTSingleton<UIImageBundleManager>.Instance.AddTexture(imageKey, texture2D);
+				}
+			}
+		}
+	}
+
+	public void SetImage(NkSoldierInfo kBaseSol, int Type)
+	{
+		this.SetImage(kBaseSol, null, Type);
+	}
+
+	public void SetImage(NkSoldierInfo kBaseSol, NkSoldierInfo kSubSol, int Type)
+	{
+		this.m_ComposeType = Type;
+		this.BaseSolImageKey = this.SetFaceImageKey(kBaseSol);
+	}
+
+	private string SetFaceImageKey(NkSoldierInfo kSol)
+	{
+		string text = string.Empty;
+		if (kSol == null)
+		{
+			return text;
+		}
+		NrCharKindInfo charKindInfo = kSol.GetCharKindInfo();
+		if (charKindInfo == null)
+		{
+			TsLog.LogError("SetImage SolID ={0} Not Found Kind", new object[]
+			{
+				kSol.GetCharKind()
+			});
+			return text;
+		}
+		if (UIDataManager.IsUse256Texture())
+		{
+			text = charKindInfo.GetPortraitFile1((int)kSol.GetGrade()) + "_256";
+		}
+		else
+		{
+			text = charKindInfo.GetPortraitFile1((int)kSol.GetGrade()) + "_512";
+		}
+		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(text))
+		{
+			NrTSingleton<UIImageBundleManager>.Instance.RequestCharImage(text, eCharImageType.LARGE, new PostProcPerItem(this.SetBundleImage));
+		}
+		return text;
+	}
+
+	private bool SetMaterial(ref GameObject _obj, string ImageKey)
+	{
+		Texture2D texture = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(ImageKey);
+		if (null != texture)
+		{
+			Material material = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
+			if (null != material)
+			{
+				material.mainTexture = texture;
+				if (null != this.BasefaceGameObject.renderer)
+				{
+					_obj.renderer.sharedMaterial = material;
+				}
+				return true;
+			}
+		}
+		else
+		{
+			TsLog.LogError("Not Found ImageKey = {0}", new object[]
+			{
+				ImageKey
+			});
+		}
+		return false;
+	}
+
+	private void PlayExtractResult()
+	{
+		string str = string.Empty;
+		str = string.Format("effect/instant/fx_direct_extraction_result{0}", NrTSingleton<UIDataManager>.Instance.AddFilePath);
+		WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+		wWWItem.SetItemType(ItemType.USER_ASSETB);
+		wWWItem.SetCallback(new PostProcPerItem(this.SolComposeExtractResult), null);
+		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+	}
+
+	public override void OnClose()
+	{
+		if (null != this.rootGameObject)
+		{
+			UnityEngine.Object.DestroyObject(this.rootGameObject.gameObject);
+		}
+		if (null != this.ExtractResultrootGameObject)
+		{
+			UnityEngine.Object.DestroyObject(this.ExtractResultrootGameObject.gameObject);
+		}
+		if (this.m_SolComposeMainType != SOLCOMPOSE_TYPE.EXTRACT)
+		{
+			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.SOLCOMPOSE_SUCCESS_DLG);
+			if (this.m_ComposeType == 1)
+			{
+				SolComposeSuccessDlg solComposeSuccessDlg = (SolComposeSuccessDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_SUCCESS_DLG);
+				if (solComposeSuccessDlg != null)
+				{
+					solComposeSuccessDlg.LoadSolComposeSuccessBundle();
+				}
+			}
+			else if (this.m_ComposeType == 3)
+			{
+				SolComposeSuccessDlg solComposeSuccessDlg2 = (SolComposeSuccessDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_SUCCESS_DLG);
+				if (solComposeSuccessDlg2 != null)
+				{
+					solComposeSuccessDlg2.LoadSolLevelSuccessBundle();
+				}
+			}
+			NrSound.ImmedatePlay("UI_SFX", "MERCENARY-COMPOSE", "SUCCESS");
+		}
+		UIDataManager.MuteSound(false);
+		base.OnClose();
+	}
+
+	public override void Update()
+	{
+		if (this.bUpdate)
+		{
+			if (this.m_SolComposeMainType != SOLCOMPOSE_TYPE.EXTRACT)
+			{
+				if (!this.bSetBaseFace && null != this.rootGameObject)
+				{
+					this.strObjectKey = "fx_face_base";
+					this.BasefaceGameObject = NkUtil.GetChild(this.rootGameObject.transform, this.strObjectKey).gameObject;
+					if (null != this.BasefaceGameObject)
+					{
+						this.bSetBaseFace = this.SetMaterial(ref this.BasefaceGameObject, this.BaseSolImageKey);
+					}
+					else
+					{
+						TsLog.LogError("BaseSolImageKey = {0}  BasefaceGameObject == NULL", new object[]
+						{
+							this.BaseSolImageKey
+						});
+					}
+				}
+				if (0f < this.startTime && Time.realtimeSinceStartup - this.startTime > 1.05f)
+				{
+					this.bgImage.Visible = false;
+					this.startTime = 0f;
+				}
+			}
+			if (null != this.aniGameObject && !this.aniGameObject.isPlaying)
+			{
+				if (this.m_SolComposeMainType == SOLCOMPOSE_TYPE.EXTRACT)
+				{
+					if (!this.bPlayExtractResult)
+					{
+						this.PlayExtractResult();
+						this.bPlayExtractResult = true;
+					}
+					else if (0f < this.startTime && Time.realtimeSinceStartup - this.startTime > 10.6f)
+					{
+						this.bUpdate = false;
+						this.SetExtractResultData();
+					}
+				}
+				else
+				{
+					this.Close();
+				}
+			}
+		}
+	}
+
+	public override void ChangedResolution()
+	{
+		this.SetSize();
+	}
+
+	private void SetSize()
+	{
+		base.SetSize(GUICamera.width, GUICamera.height);
+		this.bgImage.SetSize(GUICamera.width, GUICamera.height);
+	}
+
+	private void ClickSkipButton(IUIObject obj)
+	{
+		this.Close();
+	}
+}

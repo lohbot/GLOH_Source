@@ -1,0 +1,12 @@
+using System;
+
+namespace SERVICE
+{
+	public enum eSERVICE_TYPE
+	{
+		SERVICE_TYPE_NONE = -1,
+		SERVICE_TYPE_READY,
+		SERVICE_TYPE_NDOORS,
+		MAX_SERVICE_TYPE_NUM
+	}
+}

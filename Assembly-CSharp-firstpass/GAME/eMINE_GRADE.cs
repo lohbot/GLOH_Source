@@ -1,0 +1,14 @@
+using System;
+
+namespace GAME
+{
+	public enum eMINE_GRADE
+	{
+		eMINEGRADE_NONE,
+		eMINEGRADE_SMALL,
+		eMINEGRADE_MEDIUM,
+		eMINEGRADE_LARGE,
+		eMINEGRADE_LARGEST,
+		eMINEGRADE_MAX
+	}
+}

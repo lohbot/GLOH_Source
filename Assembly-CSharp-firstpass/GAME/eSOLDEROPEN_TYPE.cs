@@ -1,0 +1,12 @@
+using System;
+
+namespace GAME
+{
+	public enum eSOLDEROPEN_TYPE
+	{
+		eSOLDEROPEN_TYPE_SOLDIER = 1,
+		eSOLDEROPEN_TYPE_ITEMMALL,
+		eSOLDEROPEN_TYPE_GMHELP,
+		eSOLDEROPEN_TYPE_MAX
+	}
+}

@@ -1,0 +1,17 @@
+using System;
+
+namespace GAME
+{
+	public enum E_LISTTYPE
+	{
+		NONE,
+		BUILDUP,
+		EXTEND_TYPE,
+		DEMOLITION,
+		DISPENSATION_TYPE,
+		EXTRACTION_TYPE,
+		TEXCOLLECTION,
+		TECHDEVLOP,
+		BARRACK
+	}
+}

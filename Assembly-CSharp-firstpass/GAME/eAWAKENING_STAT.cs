@@ -1,0 +1,13 @@
+using System;
+
+namespace GAME
+{
+	public enum eAWAKENING_STAT
+	{
+		eAWAKENING_STAT_STR,
+		eAWAKENING_STAT_DEX,
+		eAWAKENING_STAT_VIT,
+		eAWAKENING_STAT_INT,
+		eAWAKENING_STAT_MAX
+	}
+}
