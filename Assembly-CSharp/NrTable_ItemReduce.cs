@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ItemReduce : NrTableBase
 {
-	public NrTable_ItemReduce() : base(CDefinePath.ITEM_REDUCE_URL, true)
+	public NrTable_ItemReduce() : base(CDefinePath.ITEM_REDUCE_URL)
 	{
 	}
 

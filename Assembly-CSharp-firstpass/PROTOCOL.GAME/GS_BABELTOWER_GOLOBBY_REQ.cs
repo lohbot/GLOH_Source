@@ -9,7 +9,8 @@ namespace PROTOCOL.GAME
 			eMode_Create,
 			eMode_JoinInvite,
 			eMode_Join,
-			eMode_QuickJoin
+			eMode_QuickJoin,
+			eMode_CreateInvite
 		}
 
 		public byte mode;

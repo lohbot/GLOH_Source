@@ -65,7 +65,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator CollectAndSwitch(TsSceneSwitcher.ESceneType eSceneType, bool bCollect, bool bCollectActivate, bool bSwitch)
 		{
-			SceneSwitch.<CollectAndSwitch>c__Iterator23 <CollectAndSwitch>c__Iterator = new SceneSwitch.<CollectAndSwitch>c__Iterator23();
+			SceneSwitch.<CollectAndSwitch>c__Iterator25 <CollectAndSwitch>c__Iterator = new SceneSwitch.<CollectAndSwitch>c__Iterator25();
 			<CollectAndSwitch>c__Iterator.eSceneType = eSceneType;
 			<CollectAndSwitch>c__Iterator.bCollect = bCollect;
 			<CollectAndSwitch>c__Iterator.bCollectActivate = bCollectActivate;

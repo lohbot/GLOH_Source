@@ -19,6 +19,7 @@ public class ReconnectDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.Scale = true;
+		base.TopMost = true;
 		instance.LoadFileAll(ref form, "Login/DLG_ReConnect", G_ID.RECONNECT_DLG, false);
 	}
 
@@ -63,6 +64,6 @@ public class ReconnectDlg : Form
 		EventTriggerMapManager.Instance.Claer();
 		NrMobileAuthSystem.Instance.RequestLogout = true;
 		NrMobileAuthSystem.Instance.Auth.DeleteAuthInfo();
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 }

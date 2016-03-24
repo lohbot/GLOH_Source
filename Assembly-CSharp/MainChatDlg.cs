@@ -272,7 +272,7 @@ public class MainChatDlg : Form
 			arg = this._ChatTabDefine.TabName[3];
 			break;
 		case CHAT_TYPE.WATCH:
-			arg = this._ChatTabDefine.TabName[5];
+			arg = this._ChatTabDefine.TabName[6];
 			break;
 		}
 		this.lbChatType.SetText(string.Format("{0}[{1}]", NrTSingleton<CTextParser>.Instance.GetTextColor(MainChatDlg.GetChatColorKey(this.m_SelectTab)), arg));
@@ -351,7 +351,7 @@ public class MainChatDlg : Form
 		{
 			this.bOldTextFieldFocus = this.IsChatFocused();
 		}
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			if (0 < this._Manager.GetChatMsgCount())
 			{

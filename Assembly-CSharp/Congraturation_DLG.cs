@@ -1,4 +1,5 @@
 using GAME;
+using Ndoors.Memory;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using System;
@@ -19,7 +20,11 @@ public class Congraturation_DLG : Form
 		eMESSAGE_TYPE_ELEMENTSOLGET,
 		eMESSAGE_TYPE_ITEMGET,
 		eMESSAGE_TYPE_GUILD,
-		eMESSAGE_TYPE_RECUIT_LUCKY
+		eMESSAGE_TYPE_RECUIT_LUCKY,
+		eMESSAGE_TYPE_GUILDWAR,
+		eMESSAGE_TYPE_MINE,
+		eMESSAGE_TYPE_MYTHRAID,
+		eMESSAGE_TYPE_GOLDENEGG
 	}
 
 	private ItemTexture m_iSolFace;
@@ -29,6 +34,8 @@ public class Congraturation_DLG : Form
 	private Label m_laTitle;
 
 	private Label m_Label_contents;
+
+	private Button m_btClose;
 
 	private CONGRATULATORY_MESSAGE m_curMessage;
 
@@ -46,7 +53,7 @@ public class Congraturation_DLG : Form
 
 	private int m_i32EndTime = Environment.TickCount;
 
-	private float m_fHeight = 100f;
+	private float m_fHeight = 310f;
 
 	public override void InitializeComponent()
 	{
@@ -66,6 +73,8 @@ public class Congraturation_DLG : Form
 		this.m_dSolFrame = (base.GetControl("DrawTexture_solframe") as DrawTexture);
 		this.m_laTitle = (base.GetControl("Label_title") as Label);
 		this.m_Label_contents = (base.GetControl("Label_contents") as Label);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 	}
 
 	public void PushMessage(GS_CONGRATULATORY_MESSAGE_NFY messageNfy)
@@ -118,6 +127,28 @@ public class Congraturation_DLG : Form
 		}
 		CONGRATULATORY_MESSAGE cONGRATULATORY_MESSAGE = new CONGRATULATORY_MESSAGE();
 		cONGRATULATORY_MESSAGE.m_nMsgType = 2;
+		cONGRATULATORY_MESSAGE.m_nPersonID = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.GetFriendPersonIDByName(TKString.NEWString(message.szCharName));
+		cONGRATULATORY_MESSAGE.i32params[0] = message.i32FaceCharKind;
+		cONGRATULATORY_MESSAGE.i32params[1] = (int)message.i16Floor;
+		cONGRATULATORY_MESSAGE.i32params[2] = (int)message.i16SubFloor;
+		cONGRATULATORY_MESSAGE.i32params[3] = message.i32UserCount;
+		cONGRATULATORY_MESSAGE.i32params[4] = (int)message.i16FloorType;
+		cONGRATULATORY_MESSAGE.char_name = message.szCharName;
+		cONGRATULATORY_MESSAGE.szparam1 = message.szCharName1;
+		cONGRATULATORY_MESSAGE.szparam2 = message.szCharName2;
+		cONGRATULATORY_MESSAGE.szparam3 = message.szCharName3;
+		this.m_MessageQue.Enqueue(cONGRATULATORY_MESSAGE);
+		NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.UpdateFriendBabelData(cONGRATULATORY_MESSAGE.m_nPersonID, (short)cONGRATULATORY_MESSAGE.i32params[1], (byte)cONGRATULATORY_MESSAGE.i32params[2], (short)cONGRATULATORY_MESSAGE.i32params[4], 0);
+	}
+
+	public void PushMythRaidStartMessage(GS_COMMUNITY_MESSAGE_BABELTOWER_START message, byte ReceibeUerType)
+	{
+		if (!NrTSingleton<NkCharManager>.Instance.CheckCongraturationTime(ReceibeUerType))
+		{
+			return;
+		}
+		CONGRATULATORY_MESSAGE cONGRATULATORY_MESSAGE = new CONGRATULATORY_MESSAGE();
+		cONGRATULATORY_MESSAGE.m_nMsgType = 11;
 		cONGRATULATORY_MESSAGE.m_nPersonID = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.GetFriendPersonIDByName(TKString.NEWString(message.szCharName));
 		cONGRATULATORY_MESSAGE.i32params[0] = message.i32FaceCharKind;
 		cONGRATULATORY_MESSAGE.i32params[1] = (int)message.i16Floor;
@@ -206,6 +237,40 @@ public class Congraturation_DLG : Form
 		this.m_MessageQue.Enqueue(cONGRATULATORY_MESSAGE);
 	}
 
+	public void PushGuildWar(char[] strName, long GuildID, int titleKey, int commentKey)
+	{
+		CONGRATULATORY_MESSAGE cONGRATULATORY_MESSAGE = new CONGRATULATORY_MESSAGE();
+		cONGRATULATORY_MESSAGE.m_nMsgType = 9;
+		cONGRATULATORY_MESSAGE.i64Param = GuildID;
+		cONGRATULATORY_MESSAGE.i32params[0] = titleKey;
+		cONGRATULATORY_MESSAGE.i32params[1] = commentKey;
+		cONGRATULATORY_MESSAGE.char_name = strName;
+		this.m_MessageQue.Enqueue(cONGRATULATORY_MESSAGE);
+	}
+
+	public void PushMine(char[] strName, long GuildID, byte bGrade, short i16MineDataID, int titleKey, int commentKey)
+	{
+		CONGRATULATORY_MESSAGE cONGRATULATORY_MESSAGE = new CONGRATULATORY_MESSAGE();
+		cONGRATULATORY_MESSAGE.m_nMsgType = 10;
+		cONGRATULATORY_MESSAGE.i64Param = GuildID;
+		cONGRATULATORY_MESSAGE.level = (short)bGrade;
+		cONGRATULATORY_MESSAGE.i32params[0] = (int)i16MineDataID;
+		cONGRATULATORY_MESSAGE.i32params[1] = titleKey;
+		cONGRATULATORY_MESSAGE.i32params[2] = commentKey;
+		cONGRATULATORY_MESSAGE.char_name = strName;
+		this.m_MessageQue.Enqueue(cONGRATULATORY_MESSAGE);
+	}
+
+	public void PushGoldenEgg(char[] strName, int nItemUnique, int nItemNum)
+	{
+		CONGRATULATORY_MESSAGE cONGRATULATORY_MESSAGE = new CONGRATULATORY_MESSAGE();
+		cONGRATULATORY_MESSAGE.m_nMsgType = 12;
+		cONGRATULATORY_MESSAGE.char_name = strName;
+		cONGRATULATORY_MESSAGE.m_nItemUnique = nItemUnique;
+		cONGRATULATORY_MESSAGE.m_nItemNum = nItemNum;
+		this.m_MessageQue.Enqueue(cONGRATULATORY_MESSAGE);
+	}
+
 	public void SetInfo(CONGRATULATORY_MESSAGE messageNfy)
 	{
 		if (NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1) == null)
@@ -213,7 +278,7 @@ public class Congraturation_DLG : Form
 			return;
 		}
 		int charkind = messageNfy.i32params[0];
-		if (messageNfy.m_nItemUnique == 0)
+		if (messageNfy.m_nItemUnique == 0 && messageNfy.m_nMsgType != 10 && messageNfy.m_nMsgType != 9)
 		{
 			if (NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(charkind) == null)
 			{
@@ -373,14 +438,62 @@ public class Congraturation_DLG : Form
 			}
 			this.m_iSolFace.SetSolImageTexure(eCharImageType.SMALL, charkind, -1);
 		}
+		else if (messageNfy.m_nMsgType == 11)
+		{
+			this.m_laTitle.Text = NrTSingleton<MythRaidManager>.Instance.GetMythRaidTypeText((eMYTHRAID_DIFFICULTY)messageNfy.i32params[4]);
+			string text7 = TKString.NEWString(messageNfy.char_name);
+			if (messageNfy.i32params[3] == 2)
+			{
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3269");
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+				{
+					text,
+					"charname1",
+					text7,
+					"charname2",
+					TKString.NEWString(messageNfy.szparam1)
+				});
+			}
+			else if (messageNfy.i32params[3] == 3)
+			{
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3270");
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+				{
+					text,
+					"charname1",
+					text7,
+					"charname2",
+					TKString.NEWString(messageNfy.szparam1),
+					"charname3",
+					TKString.NEWString(messageNfy.szparam2)
+				});
+			}
+			else if (messageNfy.i32params[3] == 4)
+			{
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3271");
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+				{
+					text,
+					"charname1",
+					text7,
+					"charname2",
+					TKString.NEWString(messageNfy.szparam1),
+					"charname3",
+					TKString.NEWString(messageNfy.szparam2),
+					"charname4",
+					TKString.NEWString(messageNfy.szparam3)
+				});
+			}
+			this.m_iSolFace.SetSolImageTexure(eCharImageType.SMALL, charkind, -1);
+		}
 		else if (messageNfy.m_nMsgType == 4)
 		{
-			string text7 = TKString.NEWString(messageNfy.char_name);
-			string text8 = NrTSingleton<NrItemSkillInfoManager>.Instance.GetPreText(messageNfy.i32params[0]) + " " + NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(messageNfy.m_nItemUnique);
+			string text8 = TKString.NEWString(messageNfy.char_name);
+			string text9 = NrTSingleton<NrItemSkillInfoManager>.Instance.GetPreText(messageNfy.i32params[0]) + " " + NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(messageNfy.m_nItemUnique);
 			TsLog.LogWarning("CharName={0} ItemName={1}, ItemUnique={2}, skilllevel={3}", new object[]
 			{
-				text7,
 				text8,
+				text9,
 				messageNfy.m_nItemUnique,
 				messageNfy.i32params[1]
 			});
@@ -388,9 +501,9 @@ public class Congraturation_DLG : Form
 			{
 				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1364"),
 				"charname",
-				text7,
-				"targetname",
 				text8,
+				"targetname",
+				text9,
 				"skilllevel",
 				messageNfy.i32params[1]
 			});
@@ -402,7 +515,7 @@ public class Congraturation_DLG : Form
 		}
 		else if (messageNfy.m_nMsgType == 6)
 		{
-			string text9 = TKString.NEWString(messageNfy.char_name);
+			string text10 = TKString.NEWString(messageNfy.char_name);
 			string itemNameByItemUnique2 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(messageNfy.m_nItemUnique);
 			if (messageNfy.i32params[0] > 0)
 			{
@@ -411,7 +524,7 @@ public class Congraturation_DLG : Form
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1932"),
 					"charname",
-					text9,
+					text10,
 					"targetname1",
 					itemNameByItemUnique3,
 					"targetname",
@@ -424,7 +537,7 @@ public class Congraturation_DLG : Form
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1383"),
 					"charname",
-					text9,
+					text10,
 					"targetname",
 					itemNameByItemUnique2
 				});
@@ -438,16 +551,16 @@ public class Congraturation_DLG : Form
 		else if (messageNfy.m_nMsgType == 5)
 		{
 			this.m_laTitle.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("61");
-			string text10 = TKString.NEWString(messageNfy.char_name);
-			string text11 = string.Empty;
-			text11 = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(messageNfy.i32params[0]);
+			string text11 = TKString.NEWString(messageNfy.char_name);
+			string text12 = string.Empty;
+			text12 = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(messageNfy.i32params[0]);
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 			{
 				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1817"),
 				"charname",
-				text10,
+				text11,
 				"targetname",
-				text11
+				text12
 			});
 			this.m_iSolFace.SetSolImageTexure(eCharImageType.SMALL, charkind, messageNfy.i32params[1]);
 		}
@@ -469,40 +582,84 @@ public class Congraturation_DLG : Form
 				}
 			}
 		}
-		if (messageNfy.m_nMsgType == 8)
+		else if (messageNfy.m_nMsgType == 8)
 		{
 			this.m_laTitle.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("61");
-			string text12 = TKString.NEWString(messageNfy.char_name);
-			string text13 = string.Empty;
-			text13 = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(messageNfy.i32params[0]);
-			string itemNameByItemUnique4 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(messageNfy.i32params[2]);
-			if (string.Empty != itemNameByItemUnique4)
+			string text13 = TKString.NEWString(messageNfy.char_name);
+			string text14 = string.Empty;
+			text14 = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(messageNfy.i32params[0]);
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 			{
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
-				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2559"),
-					"charname",
-					text12,
-					"target",
-					itemNameByItemUnique4,
-					"solname",
-					text13
-				});
-			}
-			else
-			{
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
-				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1383"),
-					"charname",
-					text12,
-					"targetname",
-					text13
-				});
-			}
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3088"),
+				"charname",
+				text13,
+				"solname",
+				text14
+			});
 			this.m_iSolFace.SetSolImageTexure(eCharImageType.SMALL, charkind, messageNfy.i32params[1]);
 		}
+		else if (messageNfy.m_nMsgType == 9)
+		{
+			this.m_laTitle.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(messageNfy.i32params[0].ToString());
+			string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox(messageNfy.i32params[1].ToString());
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+			{
+				textFromMessageBox,
+				"targetname",
+				TKString.NEWString(messageNfy.char_name)
+			});
+			string guildPortraitURL = NrTSingleton<NkCharManager>.Instance.GetGuildPortraitURL(messageNfy.i64Param);
+			WebFileCache.RequestImageWebFile(guildPortraitURL, new WebFileCache.ReqTextureCallback(this.ReqWebImageCallback), this.m_iSolFace);
+		}
+		else if (messageNfy.m_nMsgType == 10)
+		{
+			byte grade = (byte)messageNfy.level;
+			short minedata_id = (short)messageNfy.i32params[0];
+			this.m_laTitle.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(messageNfy.i32params[1].ToString());
+			string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(messageNfy.i32params[2].ToString());
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+			{
+				textFromInterface,
+				"targetname",
+				TKString.NEWString(messageNfy.char_name),
+				"targetname2",
+				BASE_MINE_DATA.GetMineName(grade, minedata_id)
+			});
+			MINE_DATA mineDataFromGrade = BASE_MINE_DATA.GetMineDataFromGrade(grade);
+			if (mineDataFromGrade != null)
+			{
+				this.m_iSolFace.SetTexture(mineDataFromGrade.Mine_UI_Icon);
+			}
+		}
+		else if (messageNfy.m_nMsgType == 12)
+		{
+			this.m_laTitle.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("61");
+			string textFromInterface2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3333");
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+			{
+				textFromInterface2,
+				"targetname",
+				TKString.NEWString(messageNfy.char_name),
+				"targetname2",
+				NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(messageNfy.m_nItemUnique),
+				"count",
+				messageNfy.m_nItemNum
+			});
+			this.m_iSolFace.SetTextureFromBundle("UI/Etc/goldegg");
+		}
 		this.m_Label_contents.Text = text2;
+	}
+
+	private void ReqWebImageCallback(Texture2D txtr, object _param)
+	{
+		if (txtr == null)
+		{
+			this.m_iSolFace.SetTexture(NrTSingleton<NewGuildManager>.Instance.GetGuildDefualtTexture());
+		}
+		else
+		{
+			this.m_iSolFace.SetTexture(txtr);
+		}
 	}
 
 	private void DequeueInfo()

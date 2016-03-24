@@ -1,6 +1,4 @@
 using GAME;
-using Ndoors.Framework.Stage;
-using PROTOCOL;
 using System;
 using UnityEngine;
 
@@ -42,49 +40,22 @@ public class NkLocalPushManager : NrTSingleton<NkLocalPushManager>
 
 	public void SetPush(eLOCAL_PUSH_TYPE Type, long Addtime = 0L)
 	{
-		if (Scene.CurScene < Scene.Type.PREPAREGAME)
-		{
-			return;
-		}
-		switch (Type)
-		{
-		case eLOCAL_PUSH_TYPE.eLOCAL_PUSH_TYPE_INJURYTIME:
-			this.SendInjuryTime();
-			break;
-		case eLOCAL_PUSH_TYPE.eLOCAL_PUSH_TYPE_ACTIVITYTIME:
-			this.SendActity();
-			break;
-		case eLOCAL_PUSH_TYPE.eLOCAL_PUSH_TYPE_BATTLEMATCHTIME:
-			this.SendBattleMatchOpen();
-			break;
-		}
 	}
 
 	public void SetPushAll()
 	{
-		this.SendActity();
-		this.SendInjuryTime();
-		this.SendBattleMatchOpen();
 	}
 
 	public void CalclePush(eLOCAL_PUSH_TYPE Type)
 	{
-		switch (Type)
-		{
-		case eLOCAL_PUSH_TYPE.eLOCAL_PUSH_TYPE_INJURYTIME:
-			TsPlatform.Operator.CancelLocalPush(10);
-			break;
-		case eLOCAL_PUSH_TYPE.eLOCAL_PUSH_TYPE_ACTIVITYTIME:
-			TsPlatform.Operator.CancelLocalPush(11);
-			break;
-		case eLOCAL_PUSH_TYPE.eLOCAL_PUSH_TYPE_BATTLEMATCHTIME:
-			TsPlatform.Operator.CancelLocalPush(12);
-			break;
-		}
 	}
 
 	private void SendActity()
 	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return;
+		}
 		int @int = PlayerPrefs.GetInt(NrPrefsKey.LOCALPUSH_ACTIVITY);
 		if (@int != 0)
 		{
@@ -133,55 +104,9 @@ public class NkLocalPushManager : NrTSingleton<NkLocalPushManager>
 
 	private void SendInjuryTime()
 	{
-		if (PlayerPrefs.GetInt(NrPrefsKey.LOCALPUSH_INJURYTIME) == 0)
-		{
-			return;
-		}
-		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-		if (charPersonInfo != null)
-		{
-			long num = 0L;
-			NrSoldierList soldierList = charPersonInfo.GetSoldierList();
-			NkSoldierInfo[] kSolInfo = soldierList.m_kSolInfo;
-			for (int i = 0; i < kSolInfo.Length; i++)
-			{
-				NkSoldierInfo nkSoldierInfo = kSolInfo[i];
-				long remainInjuryTime = nkSoldierInfo.GetRemainInjuryTime();
-				if (num < remainInjuryTime)
-				{
-					num = remainInjuryTime;
-				}
-			}
-			if (num == 0L)
-			{
-				TsPlatform.Operator.CancelLocalPush(10);
-			}
-			else
-			{
-				TsLog.LogWarning("GS_SOLDIER_SUBDATA_ACK INJURY Push", new object[0]);
-				TsPlatform.Operator.SendLocalPush(10, num, NrTSingleton<NrTextMgr>.Instance.GetTextFromPush("5"));
-			}
-		}
 	}
 
 	private void SendBattleMatchOpen()
 	{
-		if (PlayerPrefs.GetInt(NrPrefsKey.LOCALPUSH_MATCHOPEN) == 0)
-		{
-			return;
-		}
-		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
-		long charSubData = myCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_PLUNDER_DELAYTIME);
-		long curTime = PublicMethod.GetCurTime();
-		long num = charSubData - curTime;
-		if (num > 1L)
-		{
-			TsLog.LogWarning("CHAR_SUBDATA_PLUNDER_DELAYTIME  Push", new object[0]);
-			TsPlatform.Operator.SendLocalPush(12, num, NrTSingleton<NrTextMgr>.Instance.GetTextFromPush("6"));
-		}
-		else
-		{
-			TsPlatform.Operator.CancelLocalPush(12);
-		}
 	}
 }

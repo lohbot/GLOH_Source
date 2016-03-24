@@ -96,6 +96,11 @@ public class NrCharDataCodeInfo
 		this.m_kCharAniTypeForString.InsertCodeValue("ACTIONEND1", 36);
 		this.m_kCharAniTypeForString.InsertCodeValue("RESPAWN1", 37);
 		this.m_kCharAniTypeForString.InsertCodeValue("EVENT1", 38);
+		this.m_kCharAniTypeForString.InsertCodeValue("Cinema_000", 39);
+		this.m_kCharAniTypeForString.InsertCodeValue("Cinema_001", 40);
+		this.m_kCharAniTypeForString.InsertCodeValue("Cinema_002", 41);
+		this.m_kCharAniTypeForString.InsertCodeValue("Cinema_003", 42);
+		this.m_kCharAniTypeForString.InsertCodeValue("Cinema_004", 43);
 		this.m_kBuffTypeForString.InsertCodeValue("BUFF", 1);
 		this.m_kBuffTypeForString.InsertCodeValue("DEBUFF", 2);
 		this.m_kAiTypeForString.InsertCodeValue("AGGROTOP", 0);

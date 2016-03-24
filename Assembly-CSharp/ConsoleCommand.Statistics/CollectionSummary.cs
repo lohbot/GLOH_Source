@@ -54,13 +54,13 @@ namespace ConsoleCommand.Statistics
 		[DebuggerHidden]
 		public IEnumerable<LoadedUnityItem> TopRanker(int count, bool newlyItemOnly = false)
 		{
-			CollectionSummary.<TopRanker>c__Iterator62 <TopRanker>c__Iterator = new CollectionSummary.<TopRanker>c__Iterator62();
+			CollectionSummary.<TopRanker>c__Iterator66 <TopRanker>c__Iterator = new CollectionSummary.<TopRanker>c__Iterator66();
 			<TopRanker>c__Iterator.count = count;
 			<TopRanker>c__Iterator.newlyItemOnly = newlyItemOnly;
 			<TopRanker>c__Iterator.<$>count = count;
 			<TopRanker>c__Iterator.<$>newlyItemOnly = newlyItemOnly;
 			<TopRanker>c__Iterator.<>f__this = this;
-			CollectionSummary.<TopRanker>c__Iterator62 expr_2A = <TopRanker>c__Iterator;
+			CollectionSummary.<TopRanker>c__Iterator66 expr_2A = <TopRanker>c__Iterator;
 			expr_2A.$PC = -2;
 			return expr_2A;
 		}

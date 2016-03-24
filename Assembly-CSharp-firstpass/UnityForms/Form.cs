@@ -1,6 +1,7 @@
 using GameMessage;
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using TsBundle;
 using UnityEngine;
 
@@ -46,6 +47,8 @@ namespace UnityForms
 
 		private bool autoAni;
 
+		private bool closeAni = true;
+
 		private int showSceneType = FormsManager.FORM_TYPE_POPUP;
 
 		private bool bUseUpdateFrame;
@@ -53,6 +56,8 @@ namespace UnityForms
 		public Button closeButton;
 
 		public bool bDestroy;
+
+		private AnimatePosition pkAnimate;
 
 		private bool topMost;
 
@@ -84,11 +89,33 @@ namespace UnityForms
 
 		private bool setAni;
 
+		public static event EventHandler OpenCallback
+		{
+			[MethodImpl(MethodImplOptions.Synchronized)]
+			add
+			{
+				Form.OpenCallback = (EventHandler)Delegate.Combine(Form.OpenCallback, value);
+			}
+			[MethodImpl(MethodImplOptions.Synchronized)]
+			remove
+			{
+				Form.OpenCallback = (EventHandler)Delegate.Remove(Form.OpenCallback, value);
+			}
+		}
+
 		public bool AutoAni
 		{
 			set
 			{
 				this.autoAni = value;
+			}
+		}
+
+		public bool bCloseAni
+		{
+			set
+			{
+				this.closeAni = value;
 			}
 		}
 
@@ -122,6 +149,12 @@ namespace UnityForms
 			set;
 		}
 
+		public int p_nSelectIndex
+		{
+			get;
+			set;
+		}
+
 		public bool ChangeSceneDestory
 		{
 			get
@@ -131,6 +164,14 @@ namespace UnityForms
 			set
 			{
 				this.changeSceneDestory = value;
+			}
+		}
+
+		public bool IsMove
+		{
+			get
+			{
+				return this.pkAnimate != null && this.pkAnimate.running;
 			}
 		}
 
@@ -637,8 +678,27 @@ namespace UnityForms
 				localPosition.y += this.GetSize().y * 0.3f / 2f;
 				this.InteractivePanel.transform.localPosition = localPosition;
 			}
-			this.oldScale = this.InteractivePanel.transform.localScale;
-			AnimateScale.Do(this.InteractivePanel.gameObject, EZAnimation.ANIM_MODE.FromTo, this.GetSize().x, this.GetSize().y, this.InteractivePanel.transform.localScale, Vector3.zero, EZAnimation.GetInterpolator(EZAnimation.EASING_TYPE.BackIn), 0.3f, 0f, null, new EZAnimation.CompletionDelegate(this.CloseAni));
+			if (this.closeAni)
+			{
+				this.oldScale = this.InteractivePanel.transform.localScale;
+				AnimateScale.Do(this.InteractivePanel.gameObject, EZAnimation.ANIM_MODE.FromTo, this.GetSize().x, this.GetSize().y, this.InteractivePanel.transform.localScale, Vector3.zero, EZAnimation.GetInterpolator(EZAnimation.EASING_TYPE.BackIn), 0.3f, 0f, null, new EZAnimation.CompletionDelegate(this.CloseAni));
+			}
+			else
+			{
+				if (null == this.interactivePanel)
+				{
+					return;
+				}
+				this.bStartAni = false;
+				this.interactivePanel.transform.localPosition = this.oldPos;
+				this.interactivePanel.transform.localScale = this.oldScale;
+				if (this.interactivePanel.parentFormID != G_ID.NONE)
+				{
+					NrTSingleton<FormsManager>.Instance.CloseForm((G_ID)this.WindowID);
+					return;
+				}
+				NrTSingleton<FormsManager>.Instance.CloseForm(this.WindowID);
+			}
 			this.bStartAni = true;
 		}
 
@@ -815,6 +875,7 @@ namespace UnityForms
 				this.Show(this.InteractivePanel.childFormID_1);
 			}
 			this.AfterShow();
+			this.OnOpenCallback();
 		}
 
 		private void Hide(G_ID formID)
@@ -1207,20 +1268,25 @@ namespace UnityForms
 			this.BG.Setup(this.GetSize().x, this.GetSize().y, new Vector2(uIBaseInfoLoader.UVs.x, uIBaseInfoLoader.UVs.y + uIBaseInfoLoader.UVs.height), new Vector2(uIBaseInfoLoader.UVs.width, uIBaseInfoLoader.UVs.height), material);
 		}
 
-		public void SetupBalckBG(string imagekey, float x, float y, float w, float h, float value)
+		public void SetupBalckBG(string imagekey, float x, float y, float w, float h, float value, bool bMainBG, SpriteRoot.ANCHOR_METHOD anchor = SpriteRoot.ANCHOR_METHOD.UPPER_LEFT, float depth = 0.1f)
 		{
 			UIBaseInfoLoader uIBaseInfoLoader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(imagekey);
 			if (uIBaseInfoLoader == null)
 			{
 				return;
 			}
-			this.CreateBLACK_BG();
-			this.BLACK_BG.SetSpriteTile(uIBaseInfoLoader.Tile, uIBaseInfoLoader.UVs.width, uIBaseInfoLoader.UVs.height);
-			this.BLACK_BG.m_bPattern = uIBaseInfoLoader.Pattern;
+			Box box = this.CreateBLACK_BG(x, y, anchor, depth);
+			box.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
+			box.SetSpriteTile(uIBaseInfoLoader.Tile, uIBaseInfoLoader.UVs.width, uIBaseInfoLoader.UVs.height);
+			box.m_bPattern = uIBaseInfoLoader.Pattern;
 			Material material = (Material)CResources.Load(uIBaseInfoLoader.Material);
-			this.BLACK_BG.Setup(w, h, material);
-			this.BLACK_BG.SetTextureUVs(new Vector2(uIBaseInfoLoader.UVs.x, uIBaseInfoLoader.UVs.y + uIBaseInfoLoader.UVs.height), new Vector2(uIBaseInfoLoader.UVs.width, uIBaseInfoLoader.UVs.height));
-			this.BLACK_BG.SetColor(new Color(1f, 1f, 1f, value));
+			box.Setup(w, h, material);
+			box.SetTextureUVs(new Vector2(uIBaseInfoLoader.UVs.x, uIBaseInfoLoader.UVs.y + uIBaseInfoLoader.UVs.height), new Vector2(uIBaseInfoLoader.UVs.width, uIBaseInfoLoader.UVs.height));
+			box.SetColor(new Color(1f, 1f, 1f, value));
+			if (bMainBG)
+			{
+				this.BLACK_BG = box;
+			}
 		}
 
 		public void SetBGImage(Texture pkImage)
@@ -1266,40 +1332,72 @@ namespace UnityForms
 			}
 		}
 
-		private void CreateBLACK_BG()
+		private Box CreateBLACK_BG(float x, float y, SpriteRoot.ANCHOR_METHOD anchor, float depth)
 		{
-			this.BLACK_BG = Box.Create("Win_T_BK", new Vector3(0f, 0f, 0.1f));
-			this.BLACK_BG.autoResize = true;
-			this.BLACK_BG.SetAnchor(SpriteRoot.ANCHOR_METHOD.UPPER_LEFT);
-			this.BLACK_BG.gameObject.layer = GUICamera.UILayer;
-			BoxCollider boxCollider = (BoxCollider)this.BLACK_BG.gameObject.AddComponent(typeof(BoxCollider));
+			Box box = Box.Create("Win_T_BK", new Vector3(0f, 0f, 0.1f));
+			box.autoResize = true;
+			box.SetAnchor(anchor);
+			box.gameObject.layer = GUICamera.UILayer;
+			BoxCollider boxCollider = (BoxCollider)box.gameObject.AddComponent(typeof(BoxCollider));
 			if (null != boxCollider)
 			{
 				boxCollider.size = new Vector3(GUICamera.width, GUICamera.height, 0f);
 				boxCollider.center = new Vector3(GUICamera.width / 2f, -GUICamera.height / 2f, 0f);
 			}
-			this.InteractivePanel.MakeChild(this.BLACK_BG.gameObject);
+			this.InteractivePanel.MakeChild(box.gameObject);
 			if (TsPlatform.IsWeb)
 			{
-				this.BLACK_BG.transform.localPosition = new Vector3(-this.GetLocation().x * 1.43f, -this.GetLocation().y * 1.43f, 0.1f);
+				box.transform.localPosition = new Vector3(-this.GetLocation().x * 1.43f, -this.GetLocation().y * 1.43f, 0.1f);
 			}
 			else if (NrTSingleton<UIDataManager>.Instance.ScaleMode)
 			{
-				this.BLACK_BG.transform.localScale = new Vector3(1f, 1.4f, 1f);
-				this.BLACK_BG.transform.localPosition = new Vector3(-this.GetLocation().x, -this.GetLocation().y * 1.8f, 0.1f);
+				box.transform.localScale = new Vector3(1f, 1.4f, 1f);
+				box.transform.localPosition = new Vector3(-this.GetLocation().x, -this.GetLocation().y * 1.8f, 0.1f);
 			}
 			else
 			{
-				this.BLACK_BG.transform.localPosition = new Vector3(-this.GetLocation().x, -this.GetLocation().y, 0.1f);
+				box.transform.localPosition = new Vector3(-this.GetLocation().x + x, -this.GetLocation().y + y, depth);
 			}
-			this.BLACK_BG.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
+			return box;
 		}
 
 		public void ShowBlackBG(float value = 0.5f)
 		{
 			if (TsPlatform.IsMobile)
 			{
-				this.SetupBalckBG("Win_T_BK", 0f, 0f, GUICamera.width, GUICamera.height, value);
+				this.SetupBalckBG("Win_T_BK", 0f, 0f, GUICamera.width, GUICamera.height, value, true, SpriteRoot.ANCHOR_METHOD.UPPER_LEFT, 0.1f);
+			}
+		}
+
+		public void ShowUpperBG(float fDeath)
+		{
+			if (TsPlatform.IsMobile)
+			{
+				this.SetupBalckBG("Win_T_BK", 0f, 0f, this.GetSizeX(), (GUICamera.height - this.GetSizeY()) / 2f, 1f, false, SpriteRoot.ANCHOR_METHOD.BOTTOM_LEFT, fDeath);
+			}
+		}
+
+		public void ShowDownBG(float fDeath)
+		{
+			if (TsPlatform.IsMobile)
+			{
+				this.SetupBalckBG("Win_T_BK", 0f, -this.GetSizeY(), this.GetSizeX(), (GUICamera.height - this.GetSizeY()) / 2f, 1f, false, SpriteRoot.ANCHOR_METHOD.UPPER_LEFT, fDeath);
+			}
+		}
+
+		public void ShowLeftBG(float fDeath)
+		{
+			if (TsPlatform.IsMobile)
+			{
+				this.SetupBalckBG("Win_T_BK", 0f, (GUICamera.height - this.GetSizeY()) / 2f, (GUICamera.width - this.GetSizeX()) / 2f, GUICamera.height, 1f, false, SpriteRoot.ANCHOR_METHOD.UPPER_RIGHT, fDeath);
+			}
+		}
+
+		public void ShowRightBG(float fDeath)
+		{
+			if (TsPlatform.IsMobile)
+			{
+				this.SetupBalckBG("Win_T_BK", this.GetSizeX(), (GUICamera.height - this.GetSizeY()) / 2f, (GUICamera.width - this.GetSizeX()) / 2f, GUICamera.height, 1f, false, SpriteRoot.ANCHOR_METHOD.UPPER_LEFT, fDeath);
 			}
 		}
 
@@ -1309,6 +1407,12 @@ namespace UnityForms
 			switch (g_ID)
 			{
 			case G_ID.TREASUREBOX_DLG:
+			case G_ID.MYTH_EVOLUTION_MAIN_DLG:
+			case G_ID.MYTH_LEGEND_INFO_DLG:
+			case G_ID.MYTH_EVOLUTION_SKILLDETAIL_DLG:
+			case G_ID.MYTH_EVOLUTION_TIME_DLG:
+			case G_ID.MYTH_EVOLUTION_CHECK_DLG:
+			case G_ID.MYTH_EVOLUTION_SUCCESS_DLG:
 			case G_ID.INVENTORY_DLG:
 			case G_ID.TOOLTIP_DLG:
 			case G_ID.TOOLTIP_SECOND_DLG:
@@ -1326,14 +1430,19 @@ namespace UnityForms
 			case G_ID.MINIDRAMACAPTION_DLG:
 			case G_ID.UIGUIDE_DLG:
 				return true;
+			case G_ID.MYTH_EVOLUTION_MAIN_CHALLENGEQUEST_DLG:
+			case G_ID.MYTH_LEGEND_INFO_CHALLENGEQUEST_DLG:
 			case G_ID.MSGBOX_DLG:
 			case G_ID.INTROMSGBOX_DLG:
 			case G_ID.MESSAGE_DLG:
 			case G_ID.MESSAGE_NOTIFY_DLG:
 			case G_ID.MSGBOX_TWOCHECK_DLG:
+			case G_ID.MSGBOX_AUTOSELL_DLG:
+			case G_ID.BONUS_ITEM_INFO_DLG:
 			case G_ID.ITEMTOOLTIP_DLG:
 			case G_ID.ITEMTOOLTIP_SECOND_DLG:
 			case G_ID.ITEMTOOLTIP_BUTTON:
+			case G_ID.SETITEMTOOLTIP_DLG:
 			case G_ID.CHAT_MOBILE_SUB_DLG:
 			case G_ID.WHISPER_USERLIST_DLG:
 			case G_ID.WHISPER_ROOMLIST_DLG:
@@ -1341,7 +1450,7 @@ namespace UnityForms
 			case G_ID.WHISPER_INVITE_DLG:
 			case G_ID.WHISPER_WHISPERPOPUPMENU_DLG:
 			case G_ID.DLG_MONSTER_DETAILINFO:
-				IL_93:
+				IL_BF:
 				switch (g_ID)
 				{
 				case G_ID.MAINMENU_DLG:
@@ -1353,25 +1462,27 @@ namespace UnityForms
 				case G_ID.MAIN_UI_MENU_SUB_ADVANCED:
 				case G_ID.MAIN_UI_LEVELUP_ALARM_MONARCH:
 				case G_ID.MAIN_UI_LEVELUP_ALARM_SOLDIER:
-					IL_BB:
+					IL_E7:
 					switch (g_ID)
 					{
-					case G_ID.WORLD_MAP:
-					case G_ID.BATTLE_RESULT_DLG:
-					case G_ID.BATTLE_RESULT_CONTENT_DLG:
+					case G_ID.SOLGUIDE_DLG:
+					case G_ID.SOLDETAIL_DLG:
+					case G_ID.SOLELEMENTSUCCESS_DLG:
+					case G_ID.SOLDETAIL_SKILLICON_DLG:
+					case G_ID.SOLCOMBINATION_DLG:
+					case G_ID.SOLCOMBINATION_DIRECTION_DLG:
 						return true;
-					case G_ID.DAILYDUNGEON_MAIN:
-					case G_ID.DAILYDUNGEON_DIFFICULTY:
-					case G_ID.BATTLE_HP_GROUP_DLG:
-						IL_DC:
+					default:
 						switch (g_ID)
 						{
-						case G_ID.SOLGUIDE_DLG:
-						case G_ID.SOLDETAIL_DLG:
-						case G_ID.SOLELEMENTSUCCESS_DLG:
-						case G_ID.SOLDETAIL_SKILLICON_DLG:
+						case G_ID.EVENT_MAIN:
+						case G_ID.EVENT_MAIN_EXPLAIN:
+						case G_ID.EVENT_REWARD_CHANGE_DLG:
 							return true;
-						default:
+						case G_ID.EVENT_DAILY_GIFT_DLG:
+						case G_ID.EVENT_NORMAL_ATTEND:
+						case G_ID.EVENT_NEW_ATTEND:
+							IL_12F:
 							switch (g_ID)
 							{
 							case G_ID.MAIN_QUEST:
@@ -1379,31 +1490,41 @@ namespace UnityForms
 							case G_ID.QUESTLIST_DLG:
 								return true;
 							case G_ID.QUEST_GROUP_REWARD:
-								IL_114:
+								IL_14B:
 								switch (g_ID)
 								{
-								case G_ID.EXPEDITION_SEARCH_DLG:
-								case G_ID.EXPEDITION_SEARCHDETAILINFO_DLG:
-								case G_ID.MINE_MAINSELECT_DLG:
+								case G_ID.COSTUMEGUIDE_DLG:
+								case G_ID.COSTUMEROOM_DLG:
+								case G_ID.COSTUME_SKILLINFO_DLG:
+								case G_ID.COSTUME_BUY_MSG_BOX:
 									return true;
 								default:
-									if (g_ID != G_ID.CHAT_NOTICE_DLG && g_ID != G_ID.REGION_NAME_DLG && g_ID != G_ID.EVENT_MAIN && g_ID != G_ID.EVENT_MAIN_EXPLAIN && g_ID != G_ID.NPCTALK_DLG && g_ID != G_ID.NEARNPCSELECTUI_DLG && g_ID != G_ID.QUEST_CHAPTERSTART && g_ID != G_ID.DLG_RIGHTCLICK_MENU)
+									switch (g_ID)
 									{
-										return false;
+									case G_ID.EXPEDITION_SEARCH_DLG:
+									case G_ID.EXPEDITION_SEARCHDETAILINFO_DLG:
+									case G_ID.MINE_MAINSELECT_DLG:
+										return true;
+									default:
+										if (g_ID != G_ID.BATTLE_RESULT_DLG && g_ID != G_ID.BATTLE_RESULT_CONTENT_DLG && g_ID != G_ID.CHAT_NOTICE_DLG && g_ID != G_ID.REGION_NAME_DLG && g_ID != G_ID.WORLD_MAP && g_ID != G_ID.NPCTALK_DLG && g_ID != G_ID.NEARNPCSELECTUI_DLG && g_ID != G_ID.QUEST_CHAPTERSTART && g_ID != G_ID.DLG_RIGHTCLICK_MENU)
+										{
+											return false;
+										}
+										return true;
 									}
-									return true;
+									break;
 								}
 								break;
 							}
-							goto IL_114;
+							goto IL_14B;
 						}
-						break;
+						goto IL_12F;
 					}
-					goto IL_DC;
+					break;
 				}
-				goto IL_BB;
+				goto IL_E7;
 			}
-			goto IL_93;
+			goto IL_BF;
 		}
 
 		public void SetScreenCenter()
@@ -1700,7 +1821,16 @@ namespace UnityForms
 		{
 			Vector3 localPosition = this.interactivePanel.transform.localPosition;
 			localPosition.x += value;
-			AnimatePosition.Do(this.interactivePanel.gameObject, EZAnimation.ANIM_MODE.To, localPosition, new EZAnimation.Interpolator(EZAnimation.linear), 0.5f, 0f, null, null);
+			this.pkAnimate = AnimatePosition.Do(this.interactivePanel.gameObject, EZAnimation.ANIM_MODE.To, localPosition, new EZAnimation.Interpolator(EZAnimation.linear), 0.5f, 0f, null, null);
+		}
+
+		public void OnOpenCallback()
+		{
+			if (Form.OpenCallback == null)
+			{
+				return;
+			}
+			Form.OpenCallback(this, null);
 		}
 	}
 }

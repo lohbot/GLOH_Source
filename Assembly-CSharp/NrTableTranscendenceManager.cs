@@ -70,12 +70,34 @@ public class NrTableTranscendenceManager : NrTSingleton<NrTableTranscendenceMana
 				switch (BaseGrade)
 				{
 				case 6:
+				case 10:
 					num2 = (int)this.m_TranscendenceRateList[i].m_i16BassGrade_A;
 					break;
 				case 7:
+				case 11:
 					num2 = (int)this.m_TranscendenceRateList[i].m_i16BassGrade_S;
 					break;
 				case 8:
+				case 12:
+					num2 = (int)this.m_TranscendenceRateList[i].m_i16BassGrade_SS;
+					break;
+				}
+				break;
+			}
+			if (this.m_TranscendenceRateList[i].m_bGrade == MaterialGrade - 10)
+			{
+				switch (BaseGrade)
+				{
+				case 6:
+				case 10:
+					num2 = (int)this.m_TranscendenceRateList[i].m_i16BassGrade_A;
+					break;
+				case 7:
+				case 11:
+					num2 = (int)this.m_TranscendenceRateList[i].m_i16BassGrade_S;
+					break;
+				case 8:
+				case 12:
 					num2 = (int)this.m_TranscendenceRateList[i].m_i16BassGrade_SS;
 					break;
 				}
@@ -132,15 +154,19 @@ public class NrTableTranscendenceManager : NrTSingleton<NrTableTranscendenceMana
 				switch (MaterialGrade)
 				{
 				case 6:
+				case 10:
 					num = this.m_TranscendenceCostList[i].m_i64Cost[0];
 					break;
 				case 7:
+				case 11:
 					num = this.m_TranscendenceCostList[i].m_i64Cost[1];
 					break;
 				case 8:
+				case 12:
 					num = this.m_TranscendenceCostList[i].m_i64Cost[2];
 					break;
 				case 9:
+				case 13:
 					num = this.m_TranscendenceCostList[i].m_i64Cost[3];
 					break;
 				}
@@ -166,15 +192,19 @@ public class NrTableTranscendenceManager : NrTSingleton<NrTableTranscendenceMana
 				switch (MaterialGrade)
 				{
 				case 6:
+				case 10:
 					num = this.m_TranscendenceFailRewardList[i].m_i16ItemNum[0];
 					break;
 				case 7:
+				case 11:
 					num = this.m_TranscendenceFailRewardList[i].m_i16ItemNum[1];
 					break;
 				case 8:
+				case 12:
 					num = this.m_TranscendenceFailRewardList[i].m_i16ItemNum[2];
 					break;
 				case 9:
+				case 13:
 					num = this.m_TranscendenceFailRewardList[i].m_i16ItemNum[3];
 					break;
 				}

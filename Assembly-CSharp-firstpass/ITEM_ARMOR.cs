@@ -11,7 +11,7 @@ public class ITEM_ARMOR : NrTableData
 
 	public string ENG_NAME = string.Empty;
 
-	public string MOD = string.Empty;
+	public string ONLYUSE = string.Empty;
 
 	public string ATTACHPART = string.Empty;
 
@@ -61,11 +61,17 @@ public class ITEM_ARMOR : NrTableData
 
 	public string MATERIALCODE = string.Empty;
 
+	public string[] m_strOnlyUseCharCode = new string[10];
+
 	public string m_strIconFile = string.Empty;
 
 	public short m_shIconIndex;
 
 	public int nNextLevel;
+
+	public int nSetUnique;
+
+	public byte nStarGrade;
 
 	public ITEM_ARMOR() : base(NrTableData.eResourceType.eRT_ITEM_ARMOR)
 	{
@@ -78,7 +84,7 @@ public class ITEM_ARMOR : NrTableData
 		this.TYPECODE = string.Empty;
 		this.TEXTKEY = string.Empty;
 		this.ENG_NAME = string.Empty;
-		this.MOD = string.Empty;
+		this.ONLYUSE = string.Empty;
 		this.ATTACHPART = string.Empty;
 		this.ATB = string.Empty;
 		this.USE_MINLV = 0;
@@ -103,9 +109,15 @@ public class ITEM_ARMOR : NrTableData
 		this.GROUP = 0;
 		this.PRICE = 0L;
 		this.MATERIALCODE = string.Empty;
+		for (int i = 0; i < 10; i++)
+		{
+			this.m_strOnlyUseCharCode[i] = string.Empty;
+		}
 		this.m_strIconFile = string.Empty;
 		this.m_shIconIndex = 0;
 		this.nNextLevel = 0;
+		this.nSetUnique = 0;
+		this.nStarGrade = 0;
 	}
 
 	public override void SetData(TsDataReader.Row row)
@@ -116,7 +128,7 @@ public class ITEM_ARMOR : NrTableData
 		row.GetColumn(num++, out this.TYPECODE);
 		row.GetColumn(num++, out this.TEXTKEY);
 		row.GetColumn(num++, out this.ENG_NAME);
-		row.GetColumn(num++, out this.MOD);
+		row.GetColumn(num++, out this.ONLYUSE);
 		row.GetColumn(num++, out this.ATTACHPART);
 		row.GetColumn(num++, out this.ATB);
 		row.GetColumn(num++, out this.USE_MINLV);
@@ -144,5 +156,39 @@ public class ITEM_ARMOR : NrTableData
 		row.GetColumn(num++, out this.m_strIconFile);
 		row.GetColumn(num++, out this.m_shIconIndex);
 		row.GetColumn(num++, out this.nNextLevel);
+		row.GetColumn(num++, out this.nSetUnique);
+		row.GetColumn(num++, out this.nStarGrade);
+		this.ParseCharcode(this.ONLYUSE);
+	}
+
+	public void ParseCharcode(string strCharCode)
+	{
+		if (strCharCode == null)
+		{
+			return;
+		}
+		string text = string.Empty;
+		int num = 0;
+		int num2 = 0;
+		int i;
+		for (i = 0; i < strCharCode.Length; i++)
+		{
+			char c = strCharCode[i];
+			if (c != ' ')
+			{
+				if (c == '+')
+				{
+					text = strCharCode.Substring(num, i - num);
+					this.m_strOnlyUseCharCode[num2] = text;
+					num2++;
+					num = i + 1;
+				}
+			}
+		}
+		if (i > num + 1)
+		{
+			text = strCharCode.Substring(num, i - num);
+			this.m_strOnlyUseCharCode[num2] = text;
+		}
 	}
 }

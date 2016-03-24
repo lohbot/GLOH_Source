@@ -1,26 +1,35 @@
-using FiveRocksUnity;
-using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
 using System;
+using System.Collections.Generic;
+using TapjoyUnity;
 using UnityEngine;
 using UnityForms;
 
-public class FiveRocksEventListener : MonoBehaviour, FiveRocksActionRequestHandler
+public class FiveRocksEventListener : MonoBehaviour
 {
 	private const ItemMallItemManager.eItemMall_SellType m_eSellType = ItemMallItemManager.eItemMall_SellType.FIVEROCKSEVENT;
 
 	private ITEM_MALL_ITEM m_ItemMall;
 
+	private Dictionary<string, TJPlacement> _placementDic;
+
+	private void Awake()
+	{
+		this._placementDic = new Dictionary<string, TJPlacement>();
+	}
+
 	private void Start()
 	{
-		FiveRocks.OnPlacementContentNone += new FiveRocks.PlacementContentNoneHandler(this.OnPlacementContentNone);
-		FiveRocks.OnPlacementContentReady += new FiveRocks.PlacementContentReadyHandler(this.OnPlacementContentReady);
-		FiveRocks.OnPlacementContentShow += new FiveRocks.PlacementContentShowHandler(this.OnPlacementContentShow);
-		FiveRocks.OnPlacementContentClose += new FiveRocks.PlacementContentCloseHandler(this.OnPlacementContentClose);
-		FiveRocks.OnPlacementContentClick += new FiveRocks.PlacementContentClickHandler(this.OnPlacementContentClick);
-		FiveRocks.OnPlacementContentDismiss += new FiveRocks.PlacementContentDismissHandler(this.OnPlacementContentDismiss);
+		TJPlacement.OnRequestSuccess += new TJPlacement.OnRequestSuccessHandler(this.HandlePlacementRequestSuccess);
+		TJPlacement.OnRequestFailure += new TJPlacement.OnRequestFailureHandler(this.HandlePlacementRequestFailure);
+		TJPlacement.OnContentReady += new TJPlacement.OnContentReadyHandler(this.HandlePlacementContentReady);
+		TJPlacement.OnContentShow += new TJPlacement.OnContentShowHandler(this.HandlePlacementContentShow);
+		TJPlacement.OnContentDismiss += new TJPlacement.OnContentDismissHandler(this.HandlePlacementContentDismiss);
+		TJPlacement.OnPurchaseRequest += new TJPlacement.OnPurchaseRequestHandler(this.HandleOnPurchaseRequest);
+		TJPlacement.OnRewardRequest += new TJPlacement.OnRewardRequestHandler(this.HandleOnRewardRequest);
+		Tapjoy.OnConnectSuccess += new Tapjoy.OnConnectSuccessHandler(this.HandleOnConnectSuccess);
 	}
 
 	private void Update()
@@ -30,57 +39,87 @@ public class FiveRocksEventListener : MonoBehaviour, FiveRocksActionRequestHandl
 	private void OnDestroy()
 	{
 		Debug.Log("GameControl.OnDestroy()");
-		FiveRocks.OnPlacementContentNone -= new FiveRocks.PlacementContentNoneHandler(this.OnPlacementContentNone);
-		FiveRocks.OnPlacementContentReady -= new FiveRocks.PlacementContentReadyHandler(this.OnPlacementContentReady);
-		FiveRocks.OnPlacementContentShow -= new FiveRocks.PlacementContentShowHandler(this.OnPlacementContentShow);
-		FiveRocks.OnPlacementContentClose -= new FiveRocks.PlacementContentCloseHandler(this.OnPlacementContentClose);
-		FiveRocks.OnPlacementContentClick -= new FiveRocks.PlacementContentClickHandler(this.OnPlacementContentClick);
-		FiveRocks.OnPlacementContentDismiss -= new FiveRocks.PlacementContentDismissHandler(this.OnPlacementContentDismiss);
-	}
-
-	private void OnPlacementContentNone(string placement)
-	{
-		this.ShowMessage("FiveRocks.OnPlacementContentNone({0})", new object[]
+		TJPlacement.OnRequestSuccess -= new TJPlacement.OnRequestSuccessHandler(this.HandlePlacementRequestSuccess);
+		TJPlacement.OnRequestFailure -= new TJPlacement.OnRequestFailureHandler(this.HandlePlacementRequestFailure);
+		TJPlacement.OnContentReady -= new TJPlacement.OnContentReadyHandler(this.HandlePlacementContentReady);
+		TJPlacement.OnContentShow -= new TJPlacement.OnContentShowHandler(this.HandlePlacementContentShow);
+		TJPlacement.OnContentDismiss -= new TJPlacement.OnContentDismissHandler(this.HandlePlacementContentDismiss);
+		TJPlacement.OnPurchaseRequest -= new TJPlacement.OnPurchaseRequestHandler(this.HandleOnPurchaseRequest);
+		TJPlacement.OnRewardRequest -= new TJPlacement.OnRewardRequestHandler(this.HandleOnRewardRequest);
+		Tapjoy.OnConnectSuccess -= new Tapjoy.OnConnectSuccessHandler(this.HandleOnConnectSuccess);
+		if (this._placementDic != null)
 		{
-			placement
-		});
-	}
-
-	private void OnPlacementContentReady(string placement)
-	{
-		this.ShowMessage("FiveRocks.OnPlacementContentReady({0})", new object[]
-		{
-			placement
-		});
-		FiveRocks.ShowPlacementContent(placement);
-	}
-
-	private void OnPlacementContentShow(string placement)
-	{
-		this.ShowMessage("FiveRocks.OnPlacementContentShow({0})", new object[]
-		{
-			placement
-		});
-	}
-
-	private void OnPlacementContentClose(string placement)
-	{
-	}
-
-	private void OnPlacementContentClick(string placement, FiveRocksActionRequest actionRequest)
-	{
-		if (actionRequest != null)
-		{
-			actionRequest.DispatchTo(this);
+			this._placementDic.Clear();
 		}
 	}
 
-	private void OnPlacementContentDismiss(string placement, FiveRocksActionRequest actionRequest)
+	public void RequestPlacementContent(string placementName)
 	{
-		if (actionRequest != null)
+		if (this._placementDic == null)
 		{
-			actionRequest.DispatchTo(this);
+			Debug.LogError("ERROR, FiveRocksEventListener.cs, RequestPlacementContent(), _placementDic is null");
+			return;
 		}
+		if (!this._placementDic.ContainsKey(placementName))
+		{
+			TJPlacement value = TJPlacement.CreatePlacement(placementName);
+			this._placementDic.Add(placementName, value);
+		}
+		this._placementDic[placementName].RequestContent();
+	}
+
+	public void HandleOnConnectSuccess()
+	{
+		TJPlacement tJPlacement = TJPlacement.CreatePlacement("start");
+		tJPlacement.RequestContent();
+	}
+
+	public void HandlePlacementRequestSuccess(TJPlacement placement)
+	{
+		this.ShowMessage("Content for " + placement.GetName(), new object[0]);
+	}
+
+	public void HandlePlacementRequestFailure(TJPlacement placement, string error)
+	{
+		this.ShowMessage("C#: HandlePlacementRequestFailure", new object[0]);
+		this.ShowMessage("C#: Request for " + placement.GetName() + " has failed because: " + error, new object[0]);
+	}
+
+	public void HandlePlacementContentReady(TJPlacement placement)
+	{
+		this.ShowMessage("Tapjoy.OnContentReadyHandler({0})", new object[]
+		{
+			placement
+		});
+		if (!placement.IsContentAvailable())
+		{
+			this.RemovePlacement(placement);
+			return;
+		}
+		placement.ShowContent();
+	}
+
+	public void HandlePlacementContentShow(TJPlacement placement)
+	{
+		this.ShowMessage("C#: HandlePlacementContentShow", new object[0]);
+	}
+
+	public void HandlePlacementContentDismiss(TJPlacement placement)
+	{
+		this.ShowMessage("C#: HandlePlacementContentDismiss", new object[0]);
+	}
+
+	private void HandleOnPurchaseRequest(TJPlacement placement, TJActionRequest request, string productId)
+	{
+		this.ShowMessage("C#: HandleOnPurchaseRequest", new object[0]);
+		request.Completed();
+		this.OnPurchaseRequest(string.Empty, productId);
+	}
+
+	private void HandleOnRewardRequest(TJPlacement placement, TJActionRequest request, string itemId, int quantity)
+	{
+		this.ShowMessage("C#: HandleOnRewardRequest", new object[0]);
+		request.Completed();
 	}
 
 	public void OnPurchaseRequest(string campaignId, string productId)
@@ -138,27 +177,6 @@ public class FiveRocksEventListener : MonoBehaviour, FiveRocksActionRequestHandl
 
 	public void MsgBoxOKEvent(object EventObject)
 	{
-		int posType = 6;
-		switch (NrTSingleton<ItemManager>.Instance.GetItemTypeByItemUnique((int)this.m_ItemMall.m_nItemUnique))
-		{
-		case eITEM_TYPE.ITEMTYPE_BOX:
-		case eITEM_TYPE.ITEMTYPE_HEAL:
-		case eITEM_TYPE.ITEMTYPE_SUPPLY:
-			posType = 5;
-			break;
-		case eITEM_TYPE.ITEMTYPE_QUEST:
-		case eITEM_TYPE.ITEMTYPE_MATERIAL:
-			posType = 6;
-			break;
-		case eITEM_TYPE.ITEMTYPE_TICKET:
-			posType = 7;
-			break;
-		}
-		if (NkUserInventory.GetInstance().GetEmptySlot(posType) == -1)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
-			return;
-		}
 		if (!NrTSingleton<ContentsLimitManager>.Instance.IsShopProduct(this.m_ItemMall.m_Idx) || !BaseNet_Game.GetInstance().IsSocketConnected() || !NrTSingleton<ItemMallItemManager>.Instance.BuyItem(this.m_ItemMall.m_Idx))
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("658"));
@@ -186,5 +204,14 @@ public class FiveRocksEventListener : MonoBehaviour, FiveRocksActionRequestHandl
 	{
 		string message = string.Format(format, args);
 		Debug.Log(message);
+	}
+
+	private void RemovePlacement(TJPlacement placement)
+	{
+		if (!this._placementDic.ContainsKey(placement.GetName()))
+		{
+			return;
+		}
+		this._placementDic.Remove(placement.GetName());
 	}
 }

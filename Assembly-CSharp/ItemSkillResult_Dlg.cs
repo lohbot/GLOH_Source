@@ -37,6 +37,14 @@ public class ItemSkillResult_Dlg : Form
 
 	private long m_SelectItemSolID;
 
+	private Label m_lbBefore;
+
+	private Label m_lbAfter;
+
+	private Label m_lbBefore2;
+
+	private Label m_lbAfter2;
+
 	private GameObject SlotEffect;
 
 	public override void InitializeComponent()
@@ -64,10 +72,152 @@ public class ItemSkillResult_Dlg : Form
 		this.m_lbTradeCount_before = (base.GetControl("Label_stat3_before") as Label);
 		this.m_btnUndo = (base.GetControl("Button_undo") as Button);
 		this.m_btnUndo.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_Click_Undo));
+		this.m_lbBefore = (base.GetControl("Label_before") as Label);
+		this.m_lbAfter = (base.GetControl("Label_after") as Label);
+		this.m_lbBefore2 = (base.GetControl("Label_before2") as Label);
+		this.m_lbBefore2.Visible = false;
+		this.m_lbAfter2 = (base.GetControl("Label_after2") as Label);
+		this.m_lbAfter2.Visible = false;
+	}
+
+	public void SetItemSkillReinforceData(GS_ITEMSKILL_REINFORCE_ACK pPacket)
+	{
+		base.SetShowLayer(1, false);
+		this.m_lbBefore.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2960"));
+		this.m_lbAfter.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2961"));
+		this.m_SelectItem = NkUserInventory.GetInstance().GetItemFromItemID(pPacket.i64BaseItemID);
+		if (this.m_SelectItem == null)
+		{
+			ItemSkill_Dlg itemSkill_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMSKILL_DLG) as ItemSkill_Dlg;
+			if (itemSkill_Dlg == null)
+			{
+				this.CloseForm(null);
+				return;
+			}
+			NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
+			if (nrCharUser == null)
+			{
+				return;
+			}
+			NkSoldierInfo soldierInfoFromSolID = nrCharUser.GetPersonInfo().GetSoldierInfoFromSolID(itemSkill_Dlg.GetItemSelectSolID());
+			if (soldierInfoFromSolID != null)
+			{
+				this.m_SelectItemSolID = itemSkill_Dlg.GetItemSelectSolID();
+				this.m_SelectItem = soldierInfoFromSolID.GetEquipItemInfo().GetItemFromItemID(pPacket.i64BaseItemID);
+			}
+		}
+		if (this.m_SelectItem == null)
+		{
+			return;
+		}
+		string name = NrTSingleton<ItemManager>.Instance.GetName(this.m_SelectItem);
+		this.m_itxItem.SetItemTexture(this.m_SelectItem);
+		this.m_lbItemName.SetText(name);
+		ItemSkill_Dlg itemSkill_Dlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMSKILL_DLG) as ItemSkill_Dlg;
+		if (itemSkill_Dlg2 != null)
+		{
+			itemSkill_Dlg2.UpdateData(this.m_SelectItem.m_nItemPos, this.m_SelectItem.m_nPosType, 0L);
+			itemSkill_Dlg2.CheckSelectItem();
+		}
+		ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(this.m_SelectItem.m_nItemUnique);
+		bool flag = false;
+		if (itemInfo.IsItemATB(131072L) || itemInfo.IsItemATB(524288L))
+		{
+			flag = true;
+		}
+		int skillUnique = this.m_SelectItem.m_nOption[6];
+		int num = this.m_SelectItem.m_nOption[9];
+		if (!flag)
+		{
+			skillUnique = this.m_SelectItem.m_nOption[4];
+			num = this.m_SelectItem.m_nOption[5];
+		}
+		int num2 = 0;
+		this.m_bItemSkillSuccess = false;
+		string empty = string.Empty;
+		BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(skillUnique);
+		if (battleSkillBase != null)
+		{
+			if (pPacket.RessultType == 0)
+			{
+				num2 = num - 1;
+				this.m_bItemSkillSuccess = true;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2963"),
+					"targetname",
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey),
+					"skilllevel",
+					num
+				});
+			}
+			else if (pPacket.RessultType == -1)
+			{
+				num2 = num;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2964"),
+					"targetname",
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey),
+					"skilllevel",
+					num
+				});
+			}
+			else if (pPacket.RessultType == -2)
+			{
+				num2 = num + 1;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2965"),
+					"targetname",
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey),
+					"skilllevel",
+					num
+				});
+			}
+			else if (pPacket.RessultType == -3)
+			{
+				num2 = num;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2966"),
+					"targetname",
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey),
+					"skilllevel",
+					num
+				});
+			}
+			else if (pPacket.RessultType == -4)
+			{
+				num2 = num;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2986"),
+					"targetname",
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey),
+					"skilllevel",
+					num
+				});
+			}
+			this.m_lbAfter2.SetText(empty);
+			empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2670"),
+				"targetname",
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey),
+				"skilllevel",
+				num2
+			});
+			this.m_lbBefore2.SetText(empty);
+		}
+		base.SetShowLayer(2, true);
+		this.LoadSolComposeSuccessBundle();
 	}
 
 	public void SetData(GS_ENHANCEITEM_ACK pPacket)
 	{
+		base.SetShowLayer(2, false);
 		int skillUnique = pPacket.i32ITEMUPGRADE[4];
 		int num = pPacket.i32ITEMUPGRADE[5];
 		int num2 = pPacket.i32ITEMUPGRADE[2];

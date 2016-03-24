@@ -17,5 +17,7 @@ namespace PROTOCOL
 		public long nTime;
 
 		public long nPersonID;
+
+		public int nFaceCharCostumeUnique;
 	}
 }

@@ -39,16 +39,16 @@ public class Agit_NPCInviteDlg : Form
 
 	public void ClickNPCInvite(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbNPCList.GetSelectItem() as UIListItemContainer;
-		if (uIListItemContainer == null)
+		UIListItemContainer selectItem = this.m_nlbNPCList.GetSelectItem();
+		if (selectItem == null)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
-		AgitNPCData agitNPCData = (AgitNPCData)uIListItemContainer.Data;
+		AgitNPCData agitNPCData = (AgitNPCData)selectItem.Data;
 		if (agitNPCData == null)
 		{
 			return;
@@ -105,7 +105,7 @@ public class Agit_NPCInviteDlg : Form
 			"level",
 			this.m_i16NPCLevel
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.MsgOKNPCInvite), agitNPCData, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("256"), this.m_strText, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MsgOKNPCInvite), agitNPCData, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("256"), this.m_strText, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void RefreshInfo()
@@ -161,7 +161,7 @@ public class Agit_NPCInviteDlg : Form
 		nkListSolInfo.SolCharKind = charKindInfoFromCode.GetCharKind();
 		nkListSolInfo.SolGrade = -1;
 		nkListSolInfo.SolLevel = NrTSingleton<NewGuildManager>.Instance.GetAgitLevel();
-		NewListItem newListItem = new NewListItem(this.m_nlbNPCList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbNPCList.ColumnNum, true, string.Empty);
 		newListItem.SetListItemData(0, ANNUALIZED.Convert(agitData.i32NPCCost), null, null, null);
 		newListItem.SetListItemData(1, true);
 		newListItem.SetListItemData(2, nkListSolInfo, null, null, null);
@@ -229,20 +229,20 @@ public class Agit_NPCInviteDlg : Form
 		}
 		for (int i = 0; i < this.m_nlbNPCList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = this.m_nlbNPCList.GetItem(i) as UIListItemContainer;
-			if (!(uIListItemContainer == null))
+			UIListItemContainer item = this.m_nlbNPCList.GetItem(i);
+			if (!(item == null))
 			{
-				if (uIListItemContainer.Data != null)
+				if (item.Data != null)
 				{
-					AgitNPCData agitNPCData = uIListItemContainer.Data as AgitNPCData;
+					AgitNPCData agitNPCData = item.Data as AgitNPCData;
 					if (agitNPCData != null)
 					{
-						Label label = uIListItemContainer.GetElement(0) as Label;
+						Label label = item.GetElement(0) as Label;
 						if (label != null)
 						{
 							label.SetText(ANNUALIZED.Convert(agitData.i32NPCCost));
 						}
-						Label label2 = uIListItemContainer.GetElement(4) as Label;
+						Label label2 = item.GetElement(4) as Label;
 						if (label2 != null)
 						{
 							this.m_strText = string.Empty;

@@ -21,5 +21,7 @@ namespace PROTOCOL
 		public char[] strMasterName = new char[11];
 
 		public short i16AgitLevel;
+
+		public bool bGuildWar;
 	}
 }

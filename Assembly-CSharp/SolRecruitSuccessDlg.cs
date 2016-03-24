@@ -7,6 +7,17 @@ using UnityForms;
 
 public class SolRecruitSuccessDlg : Form
 {
+	public enum eBundleIndexType
+	{
+		BI_NOMAL,
+		BI_LEGEND,
+		BI_MYTHOLOGY,
+		BI_PREMIUM,
+		MAX_BI
+	}
+
+	private SolRecruitSuccessDlg.eBundleIndexType m_BundleIndex;
+
 	private DrawTexture bgImage;
 
 	private DrawTexture nameBack;
@@ -27,13 +38,11 @@ public class SolRecruitSuccessDlg : Form
 
 	private Label solMovieText;
 
-	private DrawTexture m_dReUseTicket;
-
 	private Label m_lReUseTicket;
 
 	private Button m_bReUseTicket;
 
-	private bool bShowReUseTicket;
+	private Button m_bReUseTicket2;
 
 	private bool bRcvedRemainSolPost;
 
@@ -49,11 +58,15 @@ public class SolRecruitSuccessDlg : Form
 
 	private string m_LegendType = string.Empty;
 
+	private Queue<GameObject> destroyGameObjects = new Queue<GameObject>();
+
 	private GameObject rootGameObject;
 
 	private GameObject normalGameObject;
 
 	private GameObject skipGameObject;
+
+	private string backImageKey = string.Empty;
 
 	private string rankImageKey = string.Empty;
 
@@ -61,9 +74,9 @@ public class SolRecruitSuccessDlg : Form
 
 	private string seasonImageKey = string.Empty;
 
-	private string cardImageKey = string.Empty;
-
 	private bool bUpdate;
+
+	private bool bSetCard;
 
 	private bool bSetGrade;
 
@@ -82,6 +95,8 @@ public class SolRecruitSuccessDlg : Form
 	private float PremiumTime;
 
 	private bool bSetName;
+
+	private bool bReUseTicketView;
 
 	private GameObject gradeObject;
 
@@ -136,45 +151,89 @@ public class SolRecruitSuccessDlg : Form
 		this.solMovie.Visible = false;
 		this.solMovieText = (base.GetControl("LB_Movie") as Label);
 		this.solMovieText.Visible = false;
-		this.m_dReUseTicket = (base.GetControl("DT_Reuse") as DrawTexture);
-		this.m_dReUseTicket.Visible = false;
 		this.m_lReUseTicket = (base.GetControl("LB_Reuse") as Label);
 		this.m_lReUseTicket.Visible = false;
 		this.m_bReUseTicket = (base.GetControl("BT_Reuse") as Button);
 		this.m_bReUseTicket.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickReUseTicketButton));
 		this.m_bReUseTicket.Visible = false;
+		this.m_bReUseTicket2 = (base.GetControl("BT_Reuse2") as Button);
+		this.m_bReUseTicket2.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickReUseTicketButton));
+		this.m_bReUseTicket2.Visible = false;
 		this.SetData();
 		base.DonotDepthChange(360f);
 		UIDataManager.MuteSound(true);
 		this.Hide();
 	}
 
-	public void StartSoldierGetBundle(int RecruitType)
+	public SolRecruitSuccessDlg.eBundleIndexType CheckBundleIndex(int RecruitType)
+	{
+		SolRecruitSuccessDlg.eBundleIndexType result = SolRecruitSuccessDlg.eBundleIndexType.BI_NOMAL;
+		switch (RecruitType)
+		{
+		case 10:
+		case 11:
+		case 12:
+			break;
+		case 13:
+			result = SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND;
+			goto IL_38;
+		default:
+			if (RecruitType != 21)
+			{
+				goto IL_38;
+			}
+			break;
+		}
+		result = SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM;
+		IL_38:
+		if (this.isTicketType())
+		{
+			SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
+			if (solRecruitDlg != null)
+			{
+				int nowOpenTicketCardType = solRecruitDlg.GetNowOpenTicketCardType();
+				result = (SolRecruitSuccessDlg.eBundleIndexType)nowOpenTicketCardType;
+			}
+		}
+		return result;
+	}
+
+	public void StartSoldierGetBundle(int RecruitType, int iSolCount)
 	{
 		this.m_RecruitType = RecruitType;
-		if (RecruitType == 13)
+		this.bReUseTicketView = false;
+		SolRecruitSuccessDlg.eBundleIndexType bundleIndex = this.CheckBundleIndex(RecruitType);
+		this.m_BundleIndex = bundleIndex;
+		switch (bundleIndex)
 		{
-			string str = string.Format("{0}", "UI/Soldier/fx_direct_dragonhero" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-			WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
-			wWWItem.SetItemType(ItemType.USER_ASSETB);
-			wWWItem.SetCallback(new PostProcPerItem(this.SolRecruitEssenceSuccess), null);
-			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
-		}
-		else if (RecruitType == 10 || RecruitType == 11 || RecruitType == 12)
-		{
-			string str = string.Format("{0}", "UI/Soldier/fx_direct_premium_get" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-			WWWItem wWWItem2 = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
-			wWWItem2.SetItemType(ItemType.USER_ASSETB);
-			wWWItem2.SetCallback(new PostProcPerItem(this.SolRecruitPremiumSuccess), null);
-			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
-		}
-		else
+		case SolRecruitSuccessDlg.eBundleIndexType.BI_NOMAL:
 		{
 			string str = string.Format("{0}", "UI/Soldier/fx_soldierget" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			wWWItem.SetItemType(ItemType.USER_ASSETB);
+			wWWItem.SetCallback(new PostProcPerItem(this.SolRecruitSuccess), null);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+			break;
+		}
+		case SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND:
+		case SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY:
+		{
+			string str = string.Format("{0}", "UI/Soldier/fx_direct_dragonhero" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem2 = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			wWWItem2.SetItemType(ItemType.USER_ASSETB);
+			wWWItem2.SetCallback(new PostProcPerItem(this.SolRecruitEssenceSuccess), null);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
+			break;
+		}
+		case SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM:
+		{
+			string str = string.Format("{0}", "UI/Soldier/fx_direct_premium_get" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
 			WWWItem wWWItem3 = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
 			wWWItem3.SetItemType(ItemType.USER_ASSETB);
-			wWWItem3.SetCallback(new PostProcPerItem(this.SolRecruitSuccess), null);
+			wWWItem3.SetCallback(new PostProcPerItem(this.SolRecruitPremiumSuccess), null);
 			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem3, DownGroup.RUNTIME, true);
+			break;
+		}
 		}
 	}
 
@@ -205,17 +264,17 @@ public class SolRecruitSuccessDlg : Form
 			if (NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
 				string str = string.Format("{0}SOLINTRO/", Option.GetProtocolRootPath(Protocol.HTTP));
-				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false, true);
 			}
 			else
 			{
-				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false, true);
 			}
 		}
 		else
 		{
 			string str2 = string.Format("{0}SOLINTRO/", NrTSingleton<NrGlobalReference>.Instance.basePath);
-			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false);
+			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false, true);
 		}
 		this.bRequest = true;
 	}
@@ -242,14 +301,13 @@ public class SolRecruitSuccessDlg : Form
 		SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
 		if (solRecruitDlg != null)
 		{
-			solRecruitDlg.SolTicketOpen();
 			this.Close();
 		}
 	}
 
 	private void ClickSkipButton1(IUIObject obj)
 	{
-		if (this.m_RecruitType == 13)
+		if (this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND || this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY)
 		{
 			return;
 		}
@@ -281,7 +339,7 @@ public class SolRecruitSuccessDlg : Form
 
 	private void ClickSkipButton2(IUIObject obj)
 	{
-		if (this.m_RecruitType == 13)
+		if (this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND || this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY)
 		{
 			return;
 		}
@@ -302,7 +360,7 @@ public class SolRecruitSuccessDlg : Form
 			}
 			if (null != this.skipGameObject)
 			{
-				NkUtil.SetAllChildActiveRecursive(this.skipGameObject, true);
+				NkUtil.SetAllChildActiveRecursive(this.skipGameObject, false);
 			}
 		}
 		if (0 < this.arraySolinfo.Count)
@@ -314,27 +372,38 @@ public class SolRecruitSuccessDlg : Form
 				this.nameBack.Visible = false;
 				this.solName.Visible = false;
 				SOLDIER_INFO sOLDIER_INFO = this.arraySolinfo.Dequeue();
+				this.bRequest = false;
 				this.bUpdate = true;
-				this.SetImage(sOLDIER_INFO);
+				this.SetImage(sOLDIER_INFO, null);
 				if (null != this.skipGameObject)
 				{
-					if (this.m_RecruitType == 10 || this.m_RecruitType == 11 || this.m_RecruitType == 12)
+					if (this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM)
 					{
 						short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(sOLDIER_INFO.CharKind, (int)sOLDIER_INFO.Grade);
-						if (legendType == 1 || legendType == 2)
+						if (legendType == 1)
 						{
 							this.m_LegendType = "skip_legend";
+						}
+						else if (legendType == 2)
+						{
+							this.m_LegendType = "skip_myth";
 						}
 						else
 						{
 							this.m_LegendType = "skip_nomal";
 						}
-						this.skipGameObject.animation.Stop();
-						this.skipGameObject.animation.cullingType = AnimationCullingType.AlwaysAnimate;
-						this.skipGameObject.animation.Play(this.m_LegendType);
+						this.skipGameObject = NkUtil.GetChild(this.rootGameObject.transform, this.m_LegendType).gameObject;
+						if (this.skipGameObject != null)
+						{
+							NkUtil.SetAllChildActiveRecursive(this.skipGameObject, true);
+							this.skipGameObject.animation.Stop();
+							this.skipGameObject.animation.cullingType = AnimationCullingType.AlwaysAnimate;
+							this.skipGameObject.animation.Play(this.m_LegendType);
+						}
 					}
 					else
 					{
+						NkUtil.SetAllChildActiveRecursive(this.skipGameObject, true);
 						this.skipGameObject.animation.Stop();
 						this.skipGameObject.animation.cullingType = AnimationCullingType.AlwaysAnimate;
 						this.skipGameObject.animation.Play("soldier_skip");
@@ -347,9 +416,10 @@ public class SolRecruitSuccessDlg : Form
 				this.startTime = Time.time;
 				this.nameBack.Visible = false;
 				this.solName.Visible = false;
-				SOLDIER_INFO image = this.arraySolinfo.Dequeue();
+				SOLDIER_INFO solinfo = this.arraySolinfo.Dequeue();
+				this.bRequest = false;
 				this.bUpdate = true;
-				this.SetImage(image);
+				this.SetImage(solinfo, null);
 				if (null != this.normalGameObject)
 				{
 					this.normalGameObject.animation.Stop();
@@ -384,7 +454,7 @@ public class SolRecruitSuccessDlg : Form
 		{
 			if (null != this.normalGameObject && !this.bSetGrade)
 			{
-				if (this.m_RecruitType != 10 && this.m_RecruitType != 11 && this.m_RecruitType != 12)
+				if (this.m_BundleIndex != SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM)
 				{
 					GameObject gameObject = NkUtil.GetChild(this.normalGameObject.transform, "rank").gameObject;
 					if (null != gameObject)
@@ -429,7 +499,7 @@ public class SolRecruitSuccessDlg : Form
 			}
 			if (null != this.normalGameObject && !this.bSetFace)
 			{
-				if (this.m_RecruitType != 10 && this.m_RecruitType != 11 && this.m_RecruitType != 12)
+				if (this.m_BundleIndex != SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM)
 				{
 					GameObject gameObject3 = NkUtil.GetChild(this.normalGameObject.transform, "face").gameObject;
 					if (null != gameObject3)
@@ -474,7 +544,7 @@ public class SolRecruitSuccessDlg : Form
 			}
 			if (null != this.normalGameObject && !this.bSetSeasonFont)
 			{
-				if (this.m_RecruitType != 10 && this.m_RecruitType != 11 && this.m_RecruitType != 12)
+				if (this.m_BundleIndex != SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM)
 				{
 					GameObject gameObject5 = NkUtil.GetChild(this.normalGameObject.transform, "fx_font_number").gameObject;
 					if (null != gameObject5)
@@ -517,7 +587,36 @@ public class SolRecruitSuccessDlg : Form
 					}
 				}
 			}
-			if (this.bSetGrade && this.bSetFace && this.bSetSeasonFont)
+			if ((this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND || this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY) && null != this.normalGameObject && !this.bSetCard)
+			{
+				GameObject gameObject7 = NkUtil.GetChild(this.normalGameObject.transform, "back").gameObject;
+				if (null != gameObject7)
+				{
+					Texture2D texture7 = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.backImageKey);
+					if (null != texture7)
+					{
+						Material material7 = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
+						if (null != material7)
+						{
+							material7.mainTexture = texture7;
+							if (null != gameObject7.renderer)
+							{
+								gameObject7.renderer.sharedMaterial = material7;
+							}
+							this.bSetCard = true;
+						}
+					}
+				}
+			}
+			if (this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND || this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY)
+			{
+				if (this.bSetGrade && this.bSetFace && this.bSetSeasonFont && this.bSetCard)
+				{
+					this.startTime = Time.realtimeSinceStartup;
+					this.bUpdate = false;
+				}
+			}
+			else if (this.bSetGrade && this.bSetFace && this.bSetSeasonFont)
 			{
 				this.startTime = Time.realtimeSinceStartup;
 				this.bUpdate = false;
@@ -526,7 +625,7 @@ public class SolRecruitSuccessDlg : Form
 		else
 		{
 			bool flag = false;
-			if (this.m_RecruitType == 13)
+			if (this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND || this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY)
 			{
 				if (!this.bSetName && this.skipTime > 0f && Time.realtimeSinceStartup > this.skipTime - 2f)
 				{
@@ -544,12 +643,11 @@ public class SolRecruitSuccessDlg : Form
 					this.skipButton.Visible = false;
 					this.closeUIButton.Visible = true;
 				}
-				switch (this.m_RecruitType)
+				switch (this.m_BundleIndex)
 				{
-				case 10:
-				case 11:
-				case 12:
-				case 13:
+				case SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND:
+				case SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY:
+				case SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM:
 					this.nameBack.SetLocation(this.nameBack.GetLocationX(), this.nameBack.GetLocationY(), -61f);
 					this.solName.SetLocation(this.solName.GetLocationX(), this.solName.GetLocationY(), -62f);
 					this.solMovie.SetLocation(this.solMovie.GetLocationX(), this.solMovie.GetLocationY(), -62f);
@@ -593,6 +691,22 @@ public class SolRecruitSuccessDlg : Form
 				this.skipButton.SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickSkipButton2));
 				if (this.isTicketType())
 				{
+					SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
+					if (solRecruitDlg != null)
+					{
+						if (solRecruitDlg.GetReUseTicket() && this.bReUseTicketView)
+						{
+							this.m_lReUseTicket.Visible = true;
+							this.m_bReUseTicket.Visible = true;
+							this.m_bReUseTicket2.Visible = true;
+						}
+						else
+						{
+							this.m_lReUseTicket.Visible = false;
+							this.m_bReUseTicket.Visible = false;
+							this.m_bReUseTicket2.Visible = false;
+						}
+					}
 				}
 				if (this.bShowSolMovie)
 				{
@@ -601,7 +715,7 @@ public class SolRecruitSuccessDlg : Form
 					this.solMovieText.Visible = true;
 				}
 			}
-			else if (((this.bSetName && this.PremiumTime > 0f && Time.realtimeSinceStartup > this.PremiumTime) || (this.PremiumTime > 0f && this.bSetName && this.skipMode)) && (this.m_RecruitType == 10 || this.m_RecruitType == 11 || this.m_RecruitType == 12))
+			else if (((this.bSetName && this.PremiumTime > 0f && Time.realtimeSinceStartup > this.PremiumTime) || (this.PremiumTime > 0f && this.bSetName && this.skipMode)) && this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_PREMIUM)
 			{
 				NkUtil.SetAllChildActiveRecursive(this.skipGameObject, true);
 				this.PremiumTime = 0f;
@@ -643,6 +757,7 @@ public class SolRecruitSuccessDlg : Form
 			{
 				this.rootGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
 				this.rootGameObject.tag = NrTSingleton<UIDataManager>.Instance.UIBundleTag;
+				this.destroyGameObjects.Enqueue(this.rootGameObject);
 				if (this == null)
 				{
 					UnityEngine.Object.DestroyImmediate(this.rootGameObject);
@@ -650,7 +765,7 @@ public class SolRecruitSuccessDlg : Form
 				}
 				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
 				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
-				effectUIPos.z = 300f;
+				effectUIPos.z = base.InteractivePanel.transform.position.z - 10f;
 				this.rootGameObject.transform.position = effectUIPos;
 				NkUtil.SetAllChildLayer(this.rootGameObject, GUICamera.UILayer);
 				this.bUpdate = true;
@@ -694,6 +809,7 @@ public class SolRecruitSuccessDlg : Form
 			{
 				this.rootGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
 				this.rootGameObject.tag = NrTSingleton<UIDataManager>.Instance.UIBundleTag;
+				this.destroyGameObjects.Enqueue(this.rootGameObject);
 				if (this == null)
 				{
 					UnityEngine.Object.DestroyImmediate(this.rootGameObject);
@@ -757,6 +873,7 @@ public class SolRecruitSuccessDlg : Form
 			{
 				this.rootGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
 				this.rootGameObject.tag = NrTSingleton<UIDataManager>.Instance.UIBundleTag;
+				this.destroyGameObjects.Enqueue(this.rootGameObject);
 				if (this == null)
 				{
 					UnityEngine.Object.DestroyImmediate(this.rootGameObject);
@@ -834,15 +951,24 @@ public class SolRecruitSuccessDlg : Form
 
 	private void ClickCloseButton(IUIObject obj)
 	{
+		ItemMallDlg_ChallengeQuest itemMallDlg_ChallengeQuest = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMMALL_CHALLENGEQUEST_DLG) as ItemMallDlg_ChallengeQuest;
+		if (itemMallDlg_ChallengeQuest != null)
+		{
+			itemMallDlg_ChallengeQuest.SuccessDirectionEnd();
+		}
 		if (this.bSetName)
 		{
-			if (this.m_RecruitType == 13 && (this.skipTime == 0f || Time.realtimeSinceStartup < this.skipTime))
+			if ((this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND || this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY) && (this.skipTime == 0f || Time.realtimeSinceStartup < this.skipTime))
 			{
 				return;
 			}
-			if (null != this.rootGameObject)
+			while (this.destroyGameObjects.Count > 0)
 			{
-				UnityEngine.Object.Destroy(this.rootGameObject);
+				GameObject gameObject = this.destroyGameObjects.Dequeue();
+				if (gameObject != null)
+				{
+					UnityEngine.Object.Destroy(gameObject);
+				}
 			}
 			NrTSingleton<FormsManager>.Instance.AddReserveDeleteForm(base.WindowID);
 		}
@@ -850,10 +976,12 @@ public class SolRecruitSuccessDlg : Form
 
 	public override void OnClose()
 	{
+		NrTSingleton<NkClientLogic>.Instance.SetCanOpenTicket(true);
 		SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
 		if (solRecruitDlg != null)
 		{
 			solRecruitDlg.SetTicketList();
+			solRecruitDlg.SetShowReUseTicket(true);
 		}
 		ItemMallDlg itemMallDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMMALL_DLG) as ItemMallDlg;
 		if (itemMallDlg != null)
@@ -861,9 +989,13 @@ public class SolRecruitSuccessDlg : Form
 			itemMallDlg.SetShowData();
 		}
 		UIDataManager.MuteSound(false);
-		if (null != this.rootGameObject)
+		while (this.destroyGameObjects.Count > 0)
 		{
-			UnityEngine.Object.Destroy(this.rootGameObject);
+			GameObject gameObject = this.destroyGameObjects.Dequeue();
+			if (gameObject != null)
+			{
+				UnityEngine.Object.Destroy(gameObject);
+			}
 		}
 		Resources.UnloadUnusedAssets();
 		if (this.bRcvedRemainSolPost)
@@ -877,8 +1009,8 @@ public class SolRecruitSuccessDlg : Form
 			if (itemMallDlg2 != null)
 			{
 				long charSubData = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_VIP_EXP);
-				byte levelExp = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((int)charSubData);
-				itemMallDlg2.SetVipInfoShow(levelExp);
+				byte levelExp = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((long)((int)charSubData));
+				itemMallDlg2.SetVipInfoShow(levelExp, false);
 			}
 		}
 		base.OnClose();
@@ -891,7 +1023,7 @@ public class SolRecruitSuccessDlg : Form
 
 	public void SetImage(SOLDIER_INFO[] arrsolinfo)
 	{
-		this.SetImage(arrsolinfo[0]);
+		this.SetImage(arrsolinfo[0], null);
 		this.arraySolinfo.Clear();
 		for (int i = 1; i < arrsolinfo.Length; i++)
 		{
@@ -899,7 +1031,7 @@ public class SolRecruitSuccessDlg : Form
 		}
 	}
 
-	public void SetImage(SOLDIER_INFO solinfo)
+	public void SetImage(SOLDIER_INFO solinfo, NkSoldierInfo paramSolInfo = null)
 	{
 		this.kSolinfo = null;
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(solinfo.CharKind);
@@ -908,21 +1040,34 @@ public class SolRecruitSuccessDlg : Form
 			return;
 		}
 		this.bShowSolMovie = false;
-		this.bShowReUseTicket = false;
 		this.solMovie.Visible = false;
 		this.solMovietTrans.Visible = false;
 		this.solMovieText.Visible = false;
-		if (charKindInfo.GetCHARKIND_INFO().SOLINTRO != "0")
-		{
-			this.solMovie.Data = solinfo.CharKind;
-			this.solMovietTrans.Data = solinfo.CharKind;
-			this.bShowSolMovie = true;
-		}
 		this.kSolinfo = solinfo;
+		this.bSetCard = false;
 		this.bSetFace = false;
 		this.bSetGrade = false;
 		this.bSetSeasonFont = false;
 		short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(solinfo.CharKind, (int)solinfo.Grade);
+		if (this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_LEGEND || this.m_BundleIndex == SolRecruitSuccessDlg.eBundleIndexType.BI_MYTHOLOGY)
+		{
+			if (legendType == 1)
+			{
+				this.backImageKey = "card_legend";
+			}
+			else if (legendType == 2)
+			{
+				this.backImageKey = "card_myth";
+			}
+			if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.backImageKey))
+			{
+				string str = string.Format("{0}", "UI/Soldier/" + this.backImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+				WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+				wWWItem.SetItemType(ItemType.USER_ASSETB);
+				wWWItem.SetCallback(new PostProcPerItem(this.SetBundleImage), this.backImageKey);
+				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+			}
+		}
 		if (legendType == 1)
 		{
 			this.rankImageKey = "rankl" + ((int)(solinfo.Grade + 1)).ToString();
@@ -941,19 +1086,19 @@ public class SolRecruitSuccessDlg : Form
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.rankImageKey))
 		{
-			string str = string.Format("{0}", "UI/Soldier/" + this.rankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-			WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
-			wWWItem.SetItemType(ItemType.USER_ASSETB);
-			wWWItem.SetCallback(new PostProcPerItem(this.SetBundleImage), this.rankImageKey);
-			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+			string str2 = string.Format("{0}", "UI/Soldier/" + this.rankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem2 = Holder.TryGetOrCreateBundle(str2 + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			wWWItem2.SetItemType(ItemType.USER_ASSETB);
+			wWWItem2.SetCallback(new PostProcPerItem(this.SetBundleImage), this.rankImageKey);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
 		}
 		if (UIDataManager.IsUse256Texture())
 		{
-			this.faceImageKey = charKindInfo.GetPortraitFile1((int)solinfo.Grade) + "_256";
+			this.faceImageKey = charKindInfo.GetPortraitFile1((int)solinfo.Grade, string.Empty) + "_256";
 		}
 		else
 		{
-			this.faceImageKey = charKindInfo.GetPortraitFile1((int)solinfo.Grade) + "_512";
+			this.faceImageKey = charKindInfo.GetPortraitFile1((int)solinfo.Grade, string.Empty) + "_512";
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.faceImageKey))
 		{
@@ -994,16 +1139,20 @@ public class SolRecruitSuccessDlg : Form
 				}
 			}
 		}
+		if (nkSoldierInfo == null)
+		{
+			nkSoldierInfo = paramSolInfo;
+		}
 		if (nkSoldierInfo != null)
 		{
 			this.seasonImageKey = "font_number" + (nkSoldierInfo.GetSeason() + 1).ToString();
 			if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.seasonImageKey))
 			{
-				string str2 = string.Format("{0}", "UI/Soldier/" + this.seasonImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-				WWWItem wWWItem2 = Holder.TryGetOrCreateBundle(str2 + Option.extAsset, NkBundleCallBack.UIBundleStackName);
-				wWWItem2.SetItemType(ItemType.USER_ASSETB);
-				wWWItem2.SetCallback(new PostProcPerItem(this.SetBundleImage), this.seasonImageKey);
-				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
+				string str3 = string.Format("{0}", "UI/Soldier/" + this.seasonImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+				WWWItem wWWItem3 = Holder.TryGetOrCreateBundle(str3 + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+				wWWItem3.SetItemType(ItemType.USER_ASSETB);
+				wWWItem3.SetCallback(new PostProcPerItem(this.SetBundleImage), this.seasonImageKey);
+				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem3, DownGroup.RUNTIME, true);
 			}
 		}
 	}
@@ -1038,5 +1187,8 @@ public class SolRecruitSuccessDlg : Form
 		this.solMovie.SetLocation(this.solMovie.GetLocationX(), this.closeBack.GetLocationY() - this.solMovie.GetSize().y - 10f);
 		this.solMovieText.SetLocation(this.solMovieText.GetLocationX(), this.closeBack.GetLocationY() - this.solMovie.GetSize().y - 5f);
 		this.solMovietTrans.SetLocation(this.solMovietTrans.GetLocationX(), this.closeBack.GetLocationY() - this.solMovietTrans.GetSize().y - 10f);
+		this.m_lReUseTicket.SetLocation(this.m_lReUseTicket.GetLocationX() + 63f, this.closeBack.GetLocationY() - this.m_lReUseTicket.GetSize().y - 72f);
+		this.m_bReUseTicket.SetLocation(this.m_bReUseTicket.GetLocationX() + 63f, this.closeBack.GetLocationY() - this.m_bReUseTicket.GetSize().y - 70f);
+		this.m_bReUseTicket2.SetLocation(this.m_bReUseTicket2.GetLocationX() + 63f, this.closeBack.GetLocationY() - this.m_bReUseTicket2.GetSize().y - 70f);
 	}
 }

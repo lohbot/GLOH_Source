@@ -65,12 +65,12 @@ public class StageCutScene : AStage
 	[DebuggerHidden]
 	private IEnumerator _LoadCutScene()
 	{
-		return new StageCutScene.<_LoadCutScene>c__Iterator32();
+		return new StageCutScene.<_LoadCutScene>c__Iterator35();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _WaitReadyGameDrama()
 	{
-		return new StageCutScene.<_WaitReadyGameDrama>c__Iterator33();
+		return new StageCutScene.<_WaitReadyGameDrama>c__Iterator36();
 	}
 }

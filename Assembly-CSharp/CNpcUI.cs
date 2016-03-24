@@ -86,6 +86,7 @@ public class CNpcUI
 			}
 			Form form = NrTSingleton<FormsManager>.Instance.LoadForm(this.m_nUI[nSelect]);
 			form.p_nCharKind = this.m_i32CharKind;
+			form.p_nSelectIndex = nSelect;
 			form.Show();
 		}
 	}

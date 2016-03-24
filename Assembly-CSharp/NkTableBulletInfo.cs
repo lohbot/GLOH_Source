@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableBulletInfo : NrTableBase
 {
-	public NkTableBulletInfo() : base(CDefinePath.BULLETINFO_URL, true)
+	public NkTableBulletInfo() : base(CDefinePath.BULLETINFO_URL)
 	{
 	}
 

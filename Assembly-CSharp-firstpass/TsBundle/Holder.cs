@@ -40,6 +40,8 @@ namespace TsBundle
 
 		private static int m_stackIP = -1;
 
+		public static List<string> m_ChnStreamFileList_Datas = new List<string>();
+
 		private static Dictionary<string, WWWItem> ms_UndefinedStack = new Dictionary<string, WWWItem>();
 
 		private static StringBuilder m_DebugMessage = new StringBuilder(1024);
@@ -412,7 +414,6 @@ namespace TsBundle
 			Dictionary<string, WWWItem> dictionary = Holder._FindStack(stackName);
 			if (dictionary.ContainsKey(value.assetPath))
 			{
-				UnityEngine.Debug.LogError("already added key = " + value.assetPath + ", Name = " + value.assetName);
 				TsPlatform.FileLog("already added key = " + value.assetPath + ", Name = " + value.assetName);
 				return;
 			}
@@ -473,8 +474,8 @@ namespace TsBundle
 		[DebuggerHidden]
 		private static IEnumerable<KeyValuePair<string, Dictionary<string, WWWItem>>> _EnumBundleGroupList()
 		{
-			Holder.<_EnumBundleGroupList>c__Iterator1E <_EnumBundleGroupList>c__Iterator1E = new Holder.<_EnumBundleGroupList>c__Iterator1E();
-			Holder.<_EnumBundleGroupList>c__Iterator1E expr_07 = <_EnumBundleGroupList>c__Iterator1E;
+			Holder.<_EnumBundleGroupList>c__Iterator1F <_EnumBundleGroupList>c__Iterator1F = new Holder.<_EnumBundleGroupList>c__Iterator1F();
+			Holder.<_EnumBundleGroupList>c__Iterator1F expr_07 = <_EnumBundleGroupList>c__Iterator1F;
 			expr_07.$PC = -2;
 			return expr_07;
 		}

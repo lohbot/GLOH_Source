@@ -20,7 +20,7 @@ internal class NPatchLauncherHandler_forInGame : LauncherHandler
 	public void OnProcess(string prcess, float ftotal, float fSub, int nTotal)
 	{
 		this.patchDlg.SetTotalProgress(ftotal, fSub, string.Empty);
-		this.patchDlg.UpdateTotalProgress(ftotal, fSub, nTotal, string.Empty);
+		this.patchDlg.UpdateTotalProgress(ftotal, fSub, (long)nTotal, string.Empty);
 	}
 
 	public override void SetEdgeURL(ref string url_root)
@@ -86,6 +86,15 @@ internal class NPatchLauncherHandler_forInGame : LauncherHandler
 
 	public override void OnStartDownloadPack(string fileName, int order)
 	{
+		if (PlayerPrefs.GetInt(NrPrefsKey.DOWNLOAD_MOVIE, 0) == 0)
+		{
+			PlayerPrefs.SetInt(NrPrefsKey.DOWNLOAD_MOVIE, 1);
+			Mobile_PreDownloadDlg mobile_PreDownloadDlg = (Mobile_PreDownloadDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PREDOWNLOAD_DLG);
+			if (mobile_PreDownloadDlg != null)
+			{
+				mobile_PreDownloadDlg.PlayMovie();
+			}
+		}
 		Logger.WriteLog(string.Format("Download start : {0}", fileName));
 		NPatchLauncherHandler_forInGame.FileDownloadOmniataLog(fileName);
 	}
@@ -94,6 +103,10 @@ internal class NPatchLauncherHandler_forInGame : LauncherHandler
 	{
 		Logger.WriteLog(string.Format("Install start : {0}", fileName));
 		NPatchLauncherHandler_forInGame.FileDownloadOmniataLog(fileName);
+	}
+
+	public override void OnEndPrepack()
+	{
 	}
 
 	public void OnFinish()

@@ -7,5 +7,7 @@ namespace PROTOCOL.GAME
 		public long m_nGuildID;
 
 		public char[] m_strGuildName = new char[11];
+
+		public bool isHiddenInfo;
 	}
 }

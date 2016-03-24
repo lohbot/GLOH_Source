@@ -28,6 +28,7 @@ public class Stage_SoldierBatch : AStage
 
 	public override void OnPrepareSceneChange()
 	{
+		Application.targetFrameRate = -1;
 		NrTSingleton<NkCharManager>.Instance.DeleteBattleChar();
 		NrLoadPageScreen.DecideLoadingType(Scene.CurScene, this.SceneType());
 		NrLoadPageScreen.StepUpMain(1);
@@ -36,7 +37,10 @@ public class Stage_SoldierBatch : AStage
 		this.m_SoldierBatch = new SoldierBatch();
 		this.m_SoldierBatch.Init();
 		this._bTemporalBattleUpdate = true;
-		TsSceneSwitcher.Instance.DeleteScene(TsSceneSwitcher.ESceneType.SoldierBatchScene);
+		if (TsPlatform.IsLowSystemMemory)
+		{
+			TsSceneSwitcher.Instance.DeleteScene(TsSceneSwitcher.ESceneType.SoldierBatchScene);
+		}
 		NrCharBase @char = NrTSingleton<NkCharManager>.Instance.GetChar(1);
 		if (@char != null)
 		{
@@ -101,7 +105,7 @@ public class Stage_SoldierBatch : AStage
 		{
 			base.StartTaskSerial(CommonTasks.DownloadAsset(string.Format("Effect/Instant/fx_plunderloading{0}{1}", NrTSingleton<UIDataManager>.Instance.AddFilePath, Option.extAsset), new PostProcPerItem(this._fundPlunderPrepareLoading), null, true));
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
 			string path = string.Format("Effect/Instant/fx_direct_chaostower_gate{0}{1}", NrTSingleton<UIDataManager>.Instance.AddFilePath, Option.extAsset);
 			base.StartTaskSerial(CommonTasks.DownloadAsset(path, new PostProcPerItem(this._fundPlunderPrepareLoading), null, true));
@@ -128,6 +132,33 @@ public class Stage_SoldierBatch : AStage
 		NrTSingleton<NkBattleCharManager>.Instance.Init();
 		Battle.BabelPartyCount = (int)SoldierBatch.BABELTOWER_INFO.Count;
 		SoldierBatch.BABELTOWER_INFO.Init();
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			Battle.BabelPartyCount = (int)SoldierBatch.MYTHRAID_INFO.Count;
+			for (int i = 0; i < (int)SoldierBatch.MYTHRAID_INFO.Count; i++)
+			{
+				if (i >= 4)
+				{
+					return;
+				}
+				NrTSingleton<MythRaidManager>.Instance.partyPersonID[i] = SoldierBatch.MYTHRAID_INFO.GetMythRaidPersonInfo(i).nPartyPersonID;
+				NrTSingleton<MythRaidManager>.Instance.partyPersonName[i] = SoldierBatch.MYTHRAID_INFO.GetMythRaidPersonInfo(i).strCharName;
+			}
+			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+			if (charPersonInfo == null)
+			{
+				return;
+			}
+			for (int j = 0; j < 4; j++)
+			{
+				if (charPersonInfo.GetPersonID() == SoldierBatch.MYTHRAID_INFO.GetMythRaidPersonInfo(j).nPartyPersonID)
+				{
+					NrTSingleton<MythRaidManager>.Instance.m_iGuardAngelUnique = SoldierBatch.MYTHRAID_INFO.GetMythRaidPersonInfo(j).selectedGuardianUnique;
+				}
+			}
+			SoldierBatch.MYTHRAID_INFO.Init();
+			SoldierBatch.SOLDIERBATCH.CAMERA.CloseBattle();
+		}
 		this.m_SoldierBatch.Close();
 		this.m_SoldierBatch.Dispose();
 		this.m_SoldierBatch = null;
@@ -152,33 +183,33 @@ public class Stage_SoldierBatch : AStage
 	[DebuggerHidden]
 	private IEnumerator _UpdateBattleTemporal()
 	{
-		Stage_SoldierBatch.<_UpdateBattleTemporal>c__Iterator49 <_UpdateBattleTemporal>c__Iterator = new Stage_SoldierBatch.<_UpdateBattleTemporal>c__Iterator49();
-		<_UpdateBattleTemporal>c__Iterator.<>f__this = this;
-		return <_UpdateBattleTemporal>c__Iterator;
+		Stage_SoldierBatch.<_UpdateBattleTemporal>c__Iterator4C <_UpdateBattleTemporal>c__Iterator4C = new Stage_SoldierBatch.<_UpdateBattleTemporal>c__Iterator4C();
+		<_UpdateBattleTemporal>c__Iterator4C.<>f__this = this;
+		return <_UpdateBattleTemporal>c__Iterator4C;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _StageProcess()
 	{
-		Stage_SoldierBatch.<_StageProcess>c__Iterator4A <_StageProcess>c__Iterator4A = new Stage_SoldierBatch.<_StageProcess>c__Iterator4A();
-		<_StageProcess>c__Iterator4A.<>f__this = this;
-		return <_StageProcess>c__Iterator4A;
+		Stage_SoldierBatch.<_StageProcess>c__Iterator4D <_StageProcess>c__Iterator4D = new Stage_SoldierBatch.<_StageProcess>c__Iterator4D();
+		<_StageProcess>c__Iterator4D.<>f__this = this;
+		return <_StageProcess>c__Iterator4D;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _StageAfterPlunderMapLoadProcess()
 	{
-		Stage_SoldierBatch.<_StageAfterPlunderMapLoadProcess>c__Iterator4B <_StageAfterPlunderMapLoadProcess>c__Iterator4B = new Stage_SoldierBatch.<_StageAfterPlunderMapLoadProcess>c__Iterator4B();
-		<_StageAfterPlunderMapLoadProcess>c__Iterator4B.<>f__this = this;
-		return <_StageAfterPlunderMapLoadProcess>c__Iterator4B;
+		Stage_SoldierBatch.<_StageAfterPlunderMapLoadProcess>c__Iterator4E <_StageAfterPlunderMapLoadProcess>c__Iterator4E = new Stage_SoldierBatch.<_StageAfterPlunderMapLoadProcess>c__Iterator4E();
+		<_StageAfterPlunderMapLoadProcess>c__Iterator4E.<>f__this = this;
+		return <_StageAfterPlunderMapLoadProcess>c__Iterator4E;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _StageStartPlunderPrepare()
 	{
-		Stage_SoldierBatch.<_StageStartPlunderPrepare>c__Iterator4C <_StageStartPlunderPrepare>c__Iterator4C = new Stage_SoldierBatch.<_StageStartPlunderPrepare>c__Iterator4C();
-		<_StageStartPlunderPrepare>c__Iterator4C.<>f__this = this;
-		return <_StageStartPlunderPrepare>c__Iterator4C;
+		Stage_SoldierBatch.<_StageStartPlunderPrepare>c__Iterator4F <_StageStartPlunderPrepare>c__Iterator4F = new Stage_SoldierBatch.<_StageStartPlunderPrepare>c__Iterator4F();
+		<_StageStartPlunderPrepare>c__Iterator4F.<>f__this = this;
+		return <_StageStartPlunderPrepare>c__Iterator4F;
 	}
 
 	public bool GameResult()
@@ -227,9 +258,9 @@ public class Stage_SoldierBatch : AStage
 	[DebuggerHidden]
 	private IEnumerator _StageLoadingComplete()
 	{
-		Stage_SoldierBatch.<_StageLoadingComplete>c__Iterator4D <_StageLoadingComplete>c__Iterator4D = new Stage_SoldierBatch.<_StageLoadingComplete>c__Iterator4D();
-		<_StageLoadingComplete>c__Iterator4D.<>f__this = this;
-		return <_StageLoadingComplete>c__Iterator4D;
+		Stage_SoldierBatch.<_StageLoadingComplete>c__Iterator50 <_StageLoadingComplete>c__Iterator = new Stage_SoldierBatch.<_StageLoadingComplete>c__Iterator50();
+		<_StageLoadingComplete>c__Iterator.<>f__this = this;
+		return <_StageLoadingComplete>c__Iterator;
 	}
 
 	private void _fundPlunderPrepareLoading(IDownloadedItem wItem, object obj)
@@ -247,7 +278,7 @@ public class Stage_SoldierBatch : AStage
 				{
 					this.m_SoldierBatch.PlunderLoading = (GameObject)UnityEngine.Object.Instantiate(gameObject);
 					this.m_SoldierBatch.PlunderLoading.SetActive(false);
-					if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PLUNDER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE)
+					if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PLUNDER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 					{
 						NewLoaingDlg newLoaingDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DLG_LOADINGPAGE) as NewLoaingDlg;
 						if (newLoaingDlg != null)
@@ -256,7 +287,7 @@ public class Stage_SoldierBatch : AStage
 						}
 					}
 					TsPlatform.FileLog("SoldierBatch _fundPlunderPrepareLoading Pass");
-					if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+					if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 					{
 						this.m_SoldierBatch.MakePlunderPrepareUI();
 					}
@@ -265,7 +296,14 @@ public class Stage_SoldierBatch : AStage
 		}
 		catch (Exception message)
 		{
-			UnityEngine.Debug.LogWarning(message);
+			if (TsPlatform.IsEditor)
+			{
+				UnityEngine.Debug.LogError(message);
+			}
+			else
+			{
+				UnityEngine.Debug.LogWarning(message);
+			}
 		}
 	}
 }

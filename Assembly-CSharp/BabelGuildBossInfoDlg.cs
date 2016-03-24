@@ -184,7 +184,7 @@ public class BabelGuildBossInfoDlg : Form
 		}
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(babelGuildBossinfo.m_nBossKind);
 		this.m_laGuildBossName.Text = charKindInfo.GetName();
-		this.m_dtBossImg.SetTexture(eCharImageType.LARGE, charKindInfo.GetCharKind(), -1);
+		this.m_dtBossImg.SetTexture(eCharImageType.LARGE, charKindInfo.GetCharKind(), -1, string.Empty);
 		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1808");
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 		{
@@ -213,6 +213,7 @@ public class BabelGuildBossInfoDlg : Form
 		this.SortMemberInfo();
 		int num3 = 1;
 		bool flag = false;
+		bool flag2 = false;
 		this.m_lbGuildMemberList.Clear();
 		for (int i = 0; i < this.m_listMemberInfo.Count; i++)
 		{
@@ -220,8 +221,12 @@ public class BabelGuildBossInfoDlg : Form
 			NewGuildMember memberInfoFromPersonID = NrTSingleton<NewGuildManager>.Instance.GetMemberInfoFromPersonID(nEWGUILD_BOSS_PLAYER_INFO.i64PersonID);
 			if (memberInfoFromPersonID != null)
 			{
-				bool flag2 = false;
-				NewListItem newListItem = new NewListItem(this.m_lbGuildMemberList.ColumnNum, true);
+				if (this.m_byRoomState != 3 && nEWGUILD_BOSS_PLAYER_INFO.i64PersonID == NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID)
+				{
+					flag2 = true;
+				}
+				bool flag3 = false;
+				NewListItem newListItem = new NewListItem(this.m_lbGuildMemberList.ColumnNum, true, string.Empty);
 				Texture2D portrait = memberInfoFromPersonID.GetPortrait();
 				if (this.m_byRoomState == 3)
 				{
@@ -241,18 +246,20 @@ public class BabelGuildBossInfoDlg : Form
 							NkListSolInfo nkListSolInfo = new NkListSolInfo();
 							nkListSolInfo.SolCharKind = memberInfoFromPersonID.GetFaceCharKind();
 							nkListSolInfo.SolLevel = memberInfoFromPersonID.GetLevel();
+							nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(memberInfoFromPersonID.GetCostumeUnique());
 							nkListSolInfo.SolGrade = -1;
 							this.m_itClearUserFace.SetSolImageTexure(eCharImageType.SMALL, nkListSolInfo, false);
 						}
 						this.m_lbClearUserName.SetText(memberInfoFromPersonID.GetCharName());
 						this.m_lbClearUserName.Visible = true;
-						newListItem.SetListItemData(11, true);
-						flag2 = true;
+						newListItem.SetListItemData(21, true);
+						newListItem.SetListItemData(8, false);
+						flag3 = true;
 					}
 				}
-				if (!flag2)
+				if (!flag3)
 				{
-					newListItem.SetListItemData(11, false);
+					newListItem.SetListItemData(12, false);
 				}
 				newListItem.SetListItemData(2, memberInfoFromPersonID.GetCharName(), null, null, null);
 				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1915");
@@ -280,10 +287,11 @@ public class BabelGuildBossInfoDlg : Form
 					{
 						SolCharKind = memberInfoFromPersonID.GetFaceCharKind(),
 						SolLevel = memberInfoFromPersonID.GetLevel(),
+						SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(memberInfoFromPersonID.GetCostumeUnique()),
 						SolGrade = -1
 					}, null, null, null);
 				}
-				if (!flag2)
+				if (!flag3)
 				{
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1186");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
@@ -292,38 +300,34 @@ public class BabelGuildBossInfoDlg : Form
 						"count",
 						num3
 					});
-					newListItem.SetListItemData(8, text2, null, null, null);
+					newListItem.SetListItemData(9, text2, null, null, null);
 				}
 				else
 				{
-					newListItem.SetListItemData(8, false);
+					newListItem.SetListItemData(9, false);
 				}
-				newListItem.SetListItemData(9, memberInfoFromPersonID.GetRankText(), null, null, null);
+				newListItem.SetListItemData(10, memberInfoFromPersonID.GetRankText(), null, null, null);
 				this.m_lbGuildMemberList.Add(newListItem);
 				num3++;
 			}
 		}
 		this.m_lbGuildMemberList.RepositionItems();
-		if (!flag)
+		if (flag2 && !flag)
 		{
-			text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("633");
-			this.m_btGuildBossStart.SetText(text2);
-			Button expr_4F9 = this.m_btGuildBossStart;
-			expr_4F9.Click = (EZValueChangedDelegate)Delegate.Combine(expr_4F9.Click, new EZValueChangedDelegate(this.OnClickStart));
+			this.m_btGuildBossStart.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3292"));
 		}
 		else
 		{
-			text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493");
-			this.m_btGuildBossStart.SetText(text2);
-			if (this.m_byReward == 0)
-			{
-				Button expr_54C = this.m_btGuildBossStart;
-				expr_54C.Click = (EZValueChangedDelegate)Delegate.Combine(expr_54C.Click, new EZValueChangedDelegate(this.OnClickRankReward));
-			}
-			else
-			{
-				this.m_btGuildBossStart.SetEnabled(false);
-			}
+			this.m_btGuildBossStart.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("633"));
+		}
+		if (!flag)
+		{
+			Button expr_596 = this.m_btGuildBossStart;
+			expr_596.Click = (EZValueChangedDelegate)Delegate.Combine(expr_596.Click, new EZValueChangedDelegate(this.OnClickStart));
+		}
+		else
+		{
+			this.m_btGuildBossStart.SetEnabled(false);
 		}
 		if (this.m_byRoomState == 3)
 		{
@@ -382,6 +386,22 @@ public class BabelGuildBossInfoDlg : Form
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("608"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
+		for (int i = 0; i < this.m_listMemberInfo.Count; i++)
+		{
+			if (this.m_listMemberInfo[i].i64PersonID == NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID)
+			{
+				string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3292");
+				string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("351");
+				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+				msgBoxUI.SetMsg(new YesDelegate(this.Send_GS_NEWGUILD_BOSS_ROOMCHECK_REQ), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL, 2);
+				return;
+			}
+		}
+		this.Send_GS_NEWGUILD_BOSS_ROOMCHECK_REQ(null);
+	}
+
+	private void Send_GS_NEWGUILD_BOSS_ROOMCHECK_REQ(object a_oObject)
+	{
 		GS_NEWGUILD_BOSS_ROOMCHECK_REQ gS_NEWGUILD_BOSS_ROOMCHECK_REQ = new GS_NEWGUILD_BOSS_ROOMCHECK_REQ();
 		gS_NEWGUILD_BOSS_ROOMCHECK_REQ.i16Floor = this.m_GuildBossFloor;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_NEWGUILD_BOSS_ROOMCHECK_REQ, gS_NEWGUILD_BOSS_ROOMCHECK_REQ);
@@ -389,14 +409,6 @@ public class BabelGuildBossInfoDlg : Form
 
 	public void OnClickRankReward(IUIObject obj)
 	{
-		short guildBossLastFloor = NrTSingleton<ContentsLimitManager>.Instance.GetGuildBossLastFloor();
-		if (0 < guildBossLastFloor && guildBossLastFloor < this.m_GuildBossFloor)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("608"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		GS_NEWGUILD_BOSS_GETREWARD_REQ gS_NEWGUILD_BOSS_GETREWARD_REQ = new GS_NEWGUILD_BOSS_GETREWARD_REQ();
-		gS_NEWGUILD_BOSS_GETREWARD_REQ.i16Floor = this.m_GuildBossFloor;
-		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_NEWGUILD_BOSS_GETREWARD_REQ, gS_NEWGUILD_BOSS_GETREWARD_REQ);
+		Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("608"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 	}
 }

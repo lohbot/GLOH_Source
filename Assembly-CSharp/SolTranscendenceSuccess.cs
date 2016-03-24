@@ -53,12 +53,6 @@ public class SolTranscendenceSuccess : Form
 
 	private Label solMovieText;
 
-	private DrawTexture faceBookImg;
-
-	private Label faceBookText;
-
-	private Button facebookTrans;
-
 	private bool m_bComposeTranscendence;
 
 	private int m_i32FailItemNum;
@@ -75,7 +69,9 @@ public class SolTranscendenceSuccess : Form
 
 	private bool m_bSetrankText;
 
-	public void Init()
+	private OnCloseCallback _closeCallback;
+
+	public void InitComposeData()
 	{
 		this.m_bComposeTranscendence = false;
 		this.m_i32FailItemNum = 0;
@@ -99,7 +95,7 @@ public class SolTranscendenceSuccess : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.TopMost = true;
-		instance.LoadFileAll(ref form, "Soldier/DLG_SolRecruitSuccess", G_ID.SOLCOMPOSE_TRANSCENDENCE_DLG, false);
+		instance.LoadFileAll(ref form, "Soldier/DLG_SolRecruit", G_ID.SOLCOMPOSE_TRANSCENDENCE_DLG, false);
 	}
 
 	public override void SetComponent()
@@ -125,20 +121,14 @@ public class SolTranscendenceSuccess : Form
 		this.solMovieText = (base.GetControl("LB_Movie") as Label);
 		this.solMovieText.Visible = false;
 		this.solMovieText.SetSize(800f, 64f);
-		this.faceBookImg = (base.GetControl("DT_Reuse") as DrawTexture);
-		this.faceBookImg.Visible = false;
-		this.facebookTrans = (base.GetControl("BT_Reuse") as Button);
-		this.facebookTrans.Visible = false;
-		this.faceBookText = (base.GetControl("LB_Reuse") as Label);
-		this.faceBookText.Visible = false;
 		this.closeUIButton.SetSize(GUICamera.width, GUICamera.height);
 		this.closeUIButton.SetLocation(0, 0);
 		base.DonotDepthChange(360f);
 	}
 
-	public void GetComposeTranscendence(bool bCompose, int i32BaseKind, byte i8BaseRank, byte i8UpgradeRank, int i32SubKind, byte i8SubRank, int i32ItemNum)
+	public void GetComposeTranscendence(bool bCompose, int i32BaseKind, byte i8BaseRank, byte i8UpgradeRank, int i32SubKind, byte i8SubRank, int i32ItemNum, int i32CostumeUnique)
 	{
-		this.Init();
+		this.InitComposeData();
 		this.m_bComposeTranscendence = bCompose;
 		this.m_i32FailItemNum = i32ItemNum;
 		if (bCompose)
@@ -186,27 +176,27 @@ public class SolTranscendenceSuccess : Form
 		{
 			this.m_bLegendSubType = false;
 		}
-		string text = string.Empty;
+		string str = string.Empty;
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strBaserankImageKey))
 		{
-			text = string.Format("{0}", "UI/Soldier/" + this.m_strBaserankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-			WWWItem wWWItem = Holder.TryGetOrCreateBundle(text + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			str = string.Format("{0}", "UI/Soldier/" + this.m_strBaserankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
 			wWWItem.SetItemType(ItemType.USER_ASSETB);
 			wWWItem.SetCallback(new PostProcPerItem(this.SetBundleImage), this.m_strBaserankImageKey);
 			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strUpgraderankImageKey))
 		{
-			text = string.Format("{0}", "UI/Soldier/" + this.m_strUpgraderankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-			WWWItem wWWItem2 = Holder.TryGetOrCreateBundle(text + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			str = string.Format("{0}", "UI/Soldier/" + this.m_strUpgraderankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem2 = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
 			wWWItem2.SetItemType(ItemType.USER_ASSETB);
 			wWWItem2.SetCallback(new PostProcPerItem(this.SetBundleImage), this.m_strUpgraderankImageKey);
 			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strSubrankImageKey))
 		{
-			text = string.Format("{0}", "UI/Soldier/" + this.m_strSubrankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-			WWWItem wWWItem3 = Holder.TryGetOrCreateBundle(text + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			str = string.Format("{0}", "UI/Soldier/" + this.m_strSubrankImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem3 = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
 			wWWItem3.SetItemType(ItemType.USER_ASSETB);
 			wWWItem3.SetCallback(new PostProcPerItem(this.SetBundleImage), this.m_strSubrankImageKey);
 			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem3, DownGroup.RUNTIME, true);
@@ -216,25 +206,21 @@ public class SolTranscendenceSuccess : Form
 			this.m_strUpgraderankTextImageKey = this.GetRankText((int)i8UpgradeRank);
 			if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strUpgraderankTextImageKey))
 			{
-				text = string.Format("{0}", "UI/Soldier/" + this.m_strUpgraderankTextImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-				WWWItem wWWItem4 = Holder.TryGetOrCreateBundle(text + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+				str = string.Format("{0}", "UI/Soldier/" + this.m_strUpgraderankTextImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+				WWWItem wWWItem4 = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
 				wWWItem4.SetItemType(ItemType.USER_ASSETB);
 				wWWItem4.SetCallback(new PostProcPerItem(this.SetBundleImage), this.m_strUpgraderankTextImageKey);
 				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem4, DownGroup.RUNTIME, true);
-				TsLog.LogWarning(" 1111 {0} , {1}", new object[]
-				{
-					this.m_strUpgraderankTextImageKey,
-					text
-				});
 			}
 		}
+		string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(i32CostumeUnique);
 		if (UIDataManager.IsUse256Texture())
 		{
-			this.m_strBasefaceImageKey = charKindInfo.GetPortraitFile1((int)i8BaseRank) + "_256";
+			this.m_strBasefaceImageKey = charKindInfo.GetPortraitFile1((int)i8BaseRank, costumePortraitPath) + "_256";
 		}
 		else
 		{
-			this.m_strBasefaceImageKey = charKindInfo.GetPortraitFile1((int)i8BaseRank) + "_512";
+			this.m_strBasefaceImageKey = charKindInfo.GetPortraitFile1((int)i8BaseRank, costumePortraitPath) + "_512";
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strBasefaceImageKey))
 		{
@@ -242,11 +228,11 @@ public class SolTranscendenceSuccess : Form
 		}
 		if (UIDataManager.IsUse256Texture())
 		{
-			this.m_strUpgradefaceImageKey = charKindInfo3.GetPortraitFile1((int)i8UpgradeRank) + "_256";
+			this.m_strUpgradefaceImageKey = charKindInfo3.GetPortraitFile1((int)i8UpgradeRank, string.Empty) + "_256";
 		}
 		else
 		{
-			this.m_strUpgradefaceImageKey = charKindInfo3.GetPortraitFile1((int)i8UpgradeRank) + "_512";
+			this.m_strUpgradefaceImageKey = charKindInfo3.GetPortraitFile1((int)i8UpgradeRank, string.Empty) + "_512";
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strUpgradefaceImageKey))
 		{
@@ -254,18 +240,18 @@ public class SolTranscendenceSuccess : Form
 		}
 		if (UIDataManager.IsUse256Texture())
 		{
-			this.m_strSubfaceImageKey = charKindInfo2.GetPortraitFile1((int)i8SubRank) + "_256";
+			this.m_strSubfaceImageKey = charKindInfo2.GetPortraitFile1((int)i8SubRank, string.Empty) + "_256";
 		}
 		else
 		{
-			this.m_strSubfaceImageKey = charKindInfo2.GetPortraitFile1((int)i8SubRank) + "_512";
+			this.m_strSubfaceImageKey = charKindInfo2.GetPortraitFile1((int)i8SubRank, string.Empty) + "_512";
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strSubfaceImageKey))
 		{
 			NrTSingleton<UIImageBundleManager>.Instance.RequestCharImage(this.m_strSubfaceImageKey, eCharImageType.LARGE, new PostProcPerItem(this.SetBundleImage));
 		}
-		text = string.Format("{0}", "UI/Soldier/fx_legendcard_compose" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
-		WWWItem wWWItem5 = Holder.TryGetOrCreateBundle(text + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+		str = string.Format("{0}", "UI/Soldier/fx_legendcard_compose" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+		WWWItem wWWItem5 = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
 		wWWItem5.SetItemType(ItemType.USER_ASSETB);
 		wWWItem5.SetCallback(new PostProcPerItem(this.SolComposeSuccess), null);
 		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem5, DownGroup.RUNTIME, true);
@@ -578,22 +564,26 @@ public class SolTranscendenceSuccess : Form
 	public string GetRankText(int solgrade)
 	{
 		string result = string.Empty;
-		if (solgrade < 6 || solgrade > 9)
+		if (solgrade < 6 || solgrade > 13)
 		{
 			return result;
 		}
 		switch (solgrade)
 		{
 		case 6:
+		case 10:
 			result = "extractgrade_a";
 			break;
 		case 7:
+		case 11:
 			result = "extractgrade_s";
 			break;
 		case 8:
+		case 12:
 			result = "extractgrade_ss";
 			break;
 		case 9:
+		case 13:
 			result = "extractgrade_ex";
 			break;
 		}
@@ -646,7 +636,7 @@ public class SolTranscendenceSuccess : Form
 			}
 			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMPOSE_MAIN_DLG))
 			{
-				SolComposeMainDlg.Instance.ComposeInit();
+				SolComposeMainDlg.Instance.ComposeTranscendence();
 			}
 			NrTSingleton<FormsManager>.Instance.AddReserveDeleteForm(base.WindowID);
 		}
@@ -660,6 +650,15 @@ public class SolTranscendenceSuccess : Form
 			UnityEngine.Object.Destroy(this.rootEffectGameObject);
 		}
 		Resources.UnloadUnusedAssets();
+		if (this._closeCallback != null)
+		{
+			this._closeCallback();
+		}
 		base.OnClose();
+	}
+
+	public void AddCloseCallback(OnCloseCallback callback)
+	{
+		this._closeCallback = (OnCloseCallback)Delegate.Combine(this._closeCallback, callback);
 	}
 }

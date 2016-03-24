@@ -1,4 +1,3 @@
-using FiveRocksUnity;
 using GAME;
 using GameMessage;
 using GameMessage.Private;
@@ -19,6 +18,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using TapjoyUnity;
 using Ts;
 using TsBundle;
 using UnityEngine;
@@ -31,6 +31,8 @@ namespace PROTOCOL
 		public delegate void ReceivePaketFunction(NkDeserializePacket kDeserializePacket);
 
 		public static Dictionary<int, NrReceiveGame.ReceivePaketFunction> m_kDicReceivePacketFunction;
+
+		public static long m_LastReceivePacketNum;
 
 		public static void RegisterReceivePacketFunction()
 		{
@@ -65,7 +67,11 @@ namespace PROTOCOL
 		public static int Receive_GamePacket(byte[] btBuffer, int index, PacketHeader header)
 		{
 			int result = 0;
-			if (0 < header.type && 2424 > header.type)
+			if (NrReceiveGame.IsRegistPacket(header.type))
+			{
+				NrReceiveGame.m_LastReceivePacketNum = (long)header.type;
+			}
+			if (0 < header.type && 2555 > header.type)
 			{
 				if (NrReceiveGame.m_kDicReceivePacketFunction.ContainsKey(header.type))
 				{
@@ -134,6 +140,11 @@ namespace PROTOCOL
 			return result;
 		}
 
+		public static bool IsRegistPacket(int packetNum)
+		{
+			return packetNum != 1105 && packetNum != 39 && packetNum != 84 && packetNum != 86 && packetNum != 903 && packetNum != 991 && packetNum != 50;
+		}
+
 		public static void GS_AUCTION_REGISTER_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_AUCTION_REGISTER_ACK packet = kDeserializePacket.GetPacket<GS_AUCTION_REGISTER_ACK>();
@@ -144,9 +155,9 @@ namespace PROTOCOL
 			}
 			if (packet.i32Result == 0)
 			{
-				NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
+				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 				NrTSingleton<ExplorationManager>.Instance.RemoveSolInfo(packet.i64SolID);
-				soldierReadyList.DelSol(packet.i64SolID);
+				readySolList.DelSol(packet.i64SolID);
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64Money;
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("233"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 				if (0 < packet.i32ItemUnique)
@@ -158,6 +169,10 @@ namespace PROTOCOL
 					TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "AUCTION", "HERO_SELL", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 				}
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.SetCharDetail(packet.i32CharDetailType, packet.i64CharDetailValue);
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("395"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			}
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.AUCTION_SELLCHECK_DLG);
 		}
@@ -403,6 +418,21 @@ namespace PROTOCOL
 				if (SoldierBatch.BABELTOWER_INFO.GetPartyCount() > 1)
 				{
 					SoldierBatch.SOLDIERBATCH.SolBatchLock = true;
+					NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+					if (charPersonInfo.GetPersonID() == packet.nLeaderPersonID && !SoldierBatch.BABELTOWER_INFO.IsPartyBatch())
+					{
+						SoldierBatch.SOLDIERBATCH.ResetSolPosition();
+						SoldierBatch.SOLDIERBATCH.LoadBatchSolInfo_Party(null);
+					}
+				}
+				NrPersonInfoUser charPersonInfo2 = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				if (charPersonInfo2.GetPersonID() == packet.nLeaderPersonID)
+				{
+					Battle.isLeader = true;
+				}
+				else
+				{
+					Battle.isLeader = false;
 				}
 				SoldierBatch.BABELTOWER_INFO.InitReadyState();
 				if (SoldierBatch.BABELTOWER_INFO.GetPartyCount() > 1)
@@ -554,6 +584,10 @@ namespace PROTOCOL
 				{
 					SoldierBatch.SOLDIERBATCH.SetBabelTowerSoldierBatch(array2[n]);
 				}
+			}
+			if (!SoldierBatch.BABELTOWER_INFO.IsPartyBatch())
+			{
+				SoldierBatch.SOLDIERBATCH.LoadBatchSolInfo_Party(array2);
 			}
 			BabelLobbyUserListDlg babelLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWERUSERLIST_DLG) as BabelLobbyUserListDlg;
 			if (babelLobbyUserListDlg != null)
@@ -906,9 +940,9 @@ namespace PROTOCOL
 			{
 				return;
 			}
-			if (gS_BABELTOWER_INVITE_FRIEND_ACK.floor == 0 && gS_BABELTOWER_INVITE_FRIEND_ACK.sub_floor == 0)
+			if (gS_BABELTOWER_INVITE_FRIEND_ACK.i16BountyHuntUnique > 0)
 			{
-				if (kMyCharInfo.m_nActivityPoint <= 0L)
+				if (kMyCharInfo.m_nActivityPoint <= 0L && NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 				{
 					WillChargeDlg willChargeDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.WILLCHARGE_DLG) as WillChargeDlg;
 					if (willChargeDlg != null)
@@ -1082,6 +1116,11 @@ namespace PROTOCOL
 		public static void GS_BATTLE_CLOSE_NFY(NkDeserializePacket kDeserializePacket)
 		{
 			GS_BATTLE_CLOSE_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_CLOSE_NFY>();
+			if (Battle.BATTLE == null)
+			{
+				Debug.LogError("Batte is NULL");
+				return;
+			}
 			Battle.BATTLE.GS_BATTLE_CLOSE_NFY(packet);
 		}
 
@@ -1107,6 +1146,24 @@ namespace PROTOCOL
 				b += 1;
 			}
 			Battle.BATTLE.GS_BATTLE_SOLDIER_LIST_NFY(array);
+		}
+
+		public static void GS_BATTLE_SOLDIER_LIST_SUBDATA_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_SOLDIER_LIST_SUBDATA_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_SOLDIER_LIST_SUBDATA_NFY>();
+			BATTLE_SOLDIER_SUBDATA_INFO[] array = new BATTLE_SOLDIER_SUBDATA_INFO[(int)packet.NumSoldiers];
+			sbyte b = 0;
+			while ((int)b < (int)packet.NumSoldiers)
+			{
+				array[(int)b] = kDeserializePacket.GetPacket<BATTLE_SOLDIER_SUBDATA_INFO>();
+				b += 1;
+			}
+			NrTSingleton<NkBattleCharManager>.Instance.ClearSolSubDataList();
+			if ((int)packet.NumSoldiers == 0 || array == null || array.Length == 0)
+			{
+				return;
+			}
+			NrTSingleton<NkBattleCharManager>.Instance.SetSolSubDataList(array);
 		}
 
 		public static void GS_BATTLE_CHAR_POS_NFY(NkDeserializePacket kDeserializePacket)
@@ -1172,6 +1229,18 @@ namespace PROTOCOL
 
 		public static void GS_BF_ACT_TURN_NFY(NkDeserializePacket kDeserializePacket)
 		{
+		}
+
+		public static void GS_BATTLE_BATTLECHAR_ATB_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_BATTLECHAR_ATB_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_BATTLECHAR_ATB_NFY>();
+			NkBattleChar charByBUID = NrTSingleton<NkBattleCharManager>.Instance.GetCharByBUID(packet.i16BUID);
+			if (charByBUID == null)
+			{
+				return;
+			}
+			charByBUID.SetBattleCharATB(packet.i32BATTLEATB);
+			charByBUID.CheckBattleSkillBuffeffect();
 		}
 
 		public static void GS_BATTLE_BATTLESKILL_ATB_NFY(NkDeserializePacket kDeserializePacket)
@@ -1254,10 +1323,71 @@ namespace PROTOCOL
 			}
 		}
 
+		public static void GS_BATTLE_MYTHRAID_DAMAGE_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_MYTHRAID_DAMAGE_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_MYTHRAID_DAMAGE_NFY>();
+			if (Battle.BATTLE != null && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+			{
+				return;
+			}
+			Battle_MythRaidBattleInfo_DLG battle_MythRaidBattleInfo_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_BATTLEINFO_DLG) as Battle_MythRaidBattleInfo_DLG;
+			if (battle_MythRaidBattleInfo_DLG != null)
+			{
+				battle_MythRaidBattleInfo_DLG.UpdateDamageInfo(packet.i64AddTotalDamage);
+			}
+		}
+
+		public static void GS_BATTLE_MYTHRAID_PARTY_BESTDAMAGE_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_MYTHRAID_PARTY_BESTDAMAGE_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_MYTHRAID_PARTY_BESTDAMAGE_NFY>();
+			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+			{
+				Battle_MythRaidBattleInfo_DLG battle_MythRaidBattleInfo_DLG = (Battle_MythRaidBattleInfo_DLG)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_BATTLEINFO_DLG);
+				if (battle_MythRaidBattleInfo_DLG != null)
+				{
+					battle_MythRaidBattleInfo_DLG.UpdatePartyBestDamge(new string(packet.szBestRecordUserName), packet.nAccumulateDamage);
+				}
+			}
+		}
+
+		public static void GS_BF_ANGELANGERLYPOINT_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BF_ANGELANGERLYPOINT_NFY packet = kDeserializePacket.GetPacket<GS_BF_ANGELANGERLYPOINT_NFY>();
+			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID && !Battle.Replay)
+			{
+				Battle_Control_Dlg battle_Control_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+				if (battle_Control_Dlg != null)
+				{
+					battle_Control_Dlg.SetAngelAngerlyPointForce(packet.nNowAngerAngerlyPoint);
+				}
+			}
+		}
+
+		public static void GS_BATTLE_ROOM_USER_PERSONID_INFO_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_ROOM_USER_PERSONID_INFO_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_ROOM_USER_PERSONID_INFO_NFY>();
+			for (int i = 0; i < (int)packet.bAttackPersonCount; i++)
+			{
+				GS_BATTLE_ROOM_USER_PERSONID_INFO_SUB packet2 = kDeserializePacket.GetPacket<GS_BATTLE_ROOM_USER_PERSONID_INFO_SUB>();
+				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo != null && NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID == packet2.i64PersonID)
+				{
+					Battle.BATTLE.MyAlly = eBATTLE_ALLY.eBATTLE_ALLY_0;
+				}
+			}
+			for (int j = 0; j < (int)packet.bDefencePersonCount; j++)
+			{
+				GS_BATTLE_ROOM_USER_PERSONID_INFO_SUB packet3 = kDeserializePacket.GetPacket<GS_BATTLE_ROOM_USER_PERSONID_INFO_SUB>();
+				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo != null && NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID == packet3.i64PersonID)
+				{
+					Battle.BATTLE.MyAlly = eBATTLE_ALLY.eBATTLE_ALLY_1;
+				}
+			}
+		}
+
 		public static void GS_BATTLE_ANGERLY_POINT_NFY(NkDeserializePacket kDeserializePacket)
 		{
 			GS_BATTLE_ANGERLY_POINT_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_ANGERLY_POINT_NFY>();
-			if (packet.i32AngerlyPoint >= 0 && !Battle.Replay)
+			if (Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID && packet.i32AngerlyPoint >= 0 && !Battle.Replay)
 			{
 				Battle_Control_Dlg battle_Control_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
 				if (battle_Control_Dlg != null)
@@ -1271,16 +1401,14 @@ namespace PROTOCOL
 		public static void GS_BATTLE_COLOSSEUM_INFO_NFY(NkDeserializePacket kDeserializePacket)
 		{
 			GS_BATTLE_COLOSSEUM_INFO_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_COLOSSEUM_INFO_NFY>();
-			string text = TKString.NEWString(packet.szAlly0Name);
-			string text2 = TKString.NEWString(packet.szAlly1Name);
-			Debug.LogError("###########Colosseum Dummy Name01 : " + text);
-			Debug.LogError("###########Colosseum Dummy Name02 : " + text2);
+			string szAlly0Name = TKString.NEWString(packet.szAlly0Name);
+			string szAlly1Name = TKString.NEWString(packet.szAlly1Name);
 			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM)
 			{
 				Battle_Colossum_CharinfoDlg battle_Colossum_CharinfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_COLOSSEUM_CHARINFO_DLG) as Battle_Colossum_CharinfoDlg;
 				if (battle_Colossum_CharinfoDlg != null)
 				{
-					battle_Colossum_CharinfoDlg.Set(text, text2);
+					battle_Colossum_CharinfoDlg.Set(szAlly0Name, szAlly1Name);
 					if (!packet.bObserver)
 					{
 						battle_Colossum_CharinfoDlg.SetStartCountEffect();
@@ -1396,7 +1524,8 @@ namespace PROTOCOL
 		public static void GS_BATTLE_EVENT_ACTION_CUTSCENE_CAMERA_NFY(NkDeserializePacket kDeseializePacket)
 		{
 			GS_BATTLE_EVENT_ACTION_CUTSCENE_CAMERA_NFY packet = kDeseializePacket.GetPacket<GS_BATTLE_EVENT_ACTION_CUTSCENE_CAMERA_NFY>();
-			NkCutScene_Camera_Manager.Instance.ReadCutScneData(TKString.NEWString(packet.szCurSceneCamera));
+			PacketClientOrder order = new PacketClientOrder("GS_BATTLE_EVENT_ACTION_CUTSCENE_CAMERA_NFY", packet);
+			Battle.BATTLE.InPacket(order);
 		}
 
 		public static void GS_BATTLE_OPEN_ACK(NkDeserializePacket kDeserializePacket)
@@ -1405,6 +1534,7 @@ namespace PROTOCOL
 			if (packet.Result != 0)
 			{
 				Debug.Log("GS_BATTLE_OPEN_ACK : " + ((eRESULT)packet.Result).ToString());
+				NrLoadPageScreen.ShowHideLoadingImg(false);
 			}
 			if (packet.Result != 0 && NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MAIN))
 			{
@@ -1417,89 +1547,114 @@ namespace PROTOCOL
 			int result = packet.Result;
 			switch (result)
 			{
-			case 46:
+			case 47:
 			{
 				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("200");
 				Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				break;
 			}
-			case 47:
+			case 48:
 			{
 				string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("324");
 				Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				break;
 			}
-			case 48:
+			case 49:
 			{
 				string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("279");
 				Main_UI_SystemMessage.ADDMessage(textFromNotify3, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				Debug.LogError("Scenario is not loaded");
 				break;
 			}
-			case 49:
-				break;
 			case 50:
+			{
+				string textFromNotify4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("279");
+				Main_UI_SystemMessage.ADDMessage(textFromNotify4, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				break;
+			}
+			case 51:
+			{
+				string textFromNotify5 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("279");
+				Main_UI_SystemMessage.ADDMessage(textFromNotify5, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+				break;
+			}
 			default:
-				if (result != 0)
+				switch (result)
 				{
-					if (result != 1)
-					{
-						if (result != 8)
-						{
-							if (result != 29)
-							{
-								if (result != 70)
-								{
-									string textFromNotify4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("279");
-									Main_UI_SystemMessage.ADDMessage(textFromNotify4, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-								}
-								else
-								{
-									string textFromNotify5 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("335");
-									Main_UI_SystemMessage.ADDMessage(textFromNotify5, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-								}
-							}
-							else
-							{
-								string textFromNotify6 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("288");
-								Main_UI_SystemMessage.ADDMessage(textFromNotify6, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-							}
-						}
-						else
-						{
-							string textFromNotify7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("488");
-							Main_UI_SystemMessage.ADDMessage(textFromNotify7, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-							if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
-							{
-								NrTSingleton<NkBabelMacroManager>.Instance.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_NONE, 0f);
-							}
-						}
-					}
-				}
-				else
+				case 9700:
 				{
-					if (NrTSingleton<NkBattleReplayManager>.Instance.SaveReplay && !NrTSingleton<NkBattleReplayManager>.Instance.IsReplay)
-					{
-						BaseNet_Game.GetInstance().m_bSavePacket = true;
-					}
-					if (!Scene.IsCurScene(Scene.Type.BATTLE))
-					{
-						NpcTalkUI_DLG npcTalkUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NPCTALK_DLG) as NpcTalkUI_DLG;
-						if (npcTalkUI_DLG != null)
-						{
-							npcTalkUI_DLG.AcceptExit();
-							NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NPCTALK_DLG);
-						}
-						Battle_ResultDlg battle_ResultDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_RESULT_DLG) as Battle_ResultDlg;
-						if (battle_ResultDlg != null)
-						{
-							NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_RESULT_DLG);
-						}
-						NmMotionBlurLoading.GoToNormalBattle();
-					}
+					string textFromNotify6 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("905");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify6, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+					return;
 				}
-				break;
+				case 9701:
+				case 9702:
+				{
+					IL_B4:
+					if (result == 0)
+					{
+						NrTSingleton<NkBattleReplayManager>.Instance.m_bHiddenEnemyName = ((packet.BattleStartOption & 2) != 0);
+						if (NrTSingleton<NkBattleReplayManager>.Instance.SaveReplay && !NrTSingleton<NkBattleReplayManager>.Instance.IsReplay)
+						{
+							BaseNet_Game.GetInstance().m_bSavePacket = true;
+						}
+						if (!Scene.IsCurScene(Scene.Type.BATTLE))
+						{
+							NpcTalkUI_DLG npcTalkUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NPCTALK_DLG) as NpcTalkUI_DLG;
+							if (npcTalkUI_DLG != null)
+							{
+								npcTalkUI_DLG.AcceptExit();
+								NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NPCTALK_DLG);
+							}
+							Battle_ResultDlg battle_ResultDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_RESULT_DLG) as Battle_ResultDlg;
+							if (battle_ResultDlg != null)
+							{
+								NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_RESULT_DLG);
+							}
+							NmMotionBlurLoading.GoToNormalBattle();
+						}
+						return;
+					}
+					if (result == 1)
+					{
+						string textFromNotify7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("279");
+						Main_UI_SystemMessage.ADDMessage(textFromNotify7, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+						return;
+					}
+					if (result == 8)
+					{
+						string textFromNotify8 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("488");
+						Main_UI_SystemMessage.ADDMessage(textFromNotify8, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+						if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
+						{
+							NrTSingleton<NkBabelMacroManager>.Instance.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_NONE, 0f);
+						}
+						return;
+					}
+					if (result == 29)
+					{
+						string textFromNotify9 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("288");
+						Main_UI_SystemMessage.ADDMessage(textFromNotify9, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+						return;
+					}
+					if (result != 71)
+					{
+						string textFromNotify10 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("279");
+						Main_UI_SystemMessage.ADDMessage(textFromNotify10, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+						return;
+					}
+					string textFromNotify11 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("335");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify11, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+					return;
+				}
+				case 9703:
+				{
+					string textFromNotify12 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("907");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify12, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+					return;
+				}
+				}
+				goto IL_B4;
 			}
 		}
 
@@ -1532,6 +1687,15 @@ namespace PROTOCOL
 				}
 			}
 			if (Battle.BATTLE == null)
+			{
+				return;
+			}
+			if (NrTSingleton<NkBabelMacroManager>.Instance != null && NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
+			{
+				bool bWin = (eBATTLE_ALLY)packet.i8WinAlly == Battle.BATTLE.MyAlly;
+				NrTSingleton<NkBabelMacroManager>.Instance.SaveBattleResult(bWin);
+			}
+			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
 			{
 				return;
 			}
@@ -1601,7 +1765,7 @@ namespace PROTOCOL
 			{
 				return;
 			}
-			battle_ResultPlunderDlg.SetMode(Battle_ResultPlunderDlg.eMODE.eMODE_PLUNDER);
+			battle_ResultPlunderDlg.ShowMode();
 			battle_ResultPlunderDlg.ClearSolData();
 			for (int i = 0; i < (int)packet.NumSoldiers; i++)
 			{
@@ -1610,6 +1774,53 @@ namespace PROTOCOL
 			}
 			battle_ResultPlunderDlg.SetBasicData(packet);
 			battle_ResultPlunderDlg.LinkData();
+		}
+
+		public static void GS_BATTLE_RESULT_MYTHRAID_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_RESULT_MYTHRAID_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_RESULT_MYTHRAID_NFY>();
+			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
+			{
+				return;
+			}
+			GameObject gameObject = GameObject.Find("UI Camera");
+			if (gameObject != null)
+			{
+				Camera componentInChildren = gameObject.GetComponentInChildren<Camera>();
+				if (componentInChildren != null && !componentInChildren.enabled)
+				{
+					componentInChildren.enabled = true;
+				}
+			}
+			if (Battle.BATTLE == null)
+			{
+				return;
+			}
+			MythRaid_Result_DLG mythRaid_Result_DLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTHRAID_RESULT_DLG) as MythRaid_Result_DLG;
+			if (mythRaid_Result_DLG == null)
+			{
+				Debug.LogError("Error : Cannot Find MYTHRAID_REULST_DLG");
+				return;
+			}
+			if (packet.i8isParty == 0)
+			{
+				NrTSingleton<MythRaidManager>.Instance.IsParty = false;
+			}
+			else
+			{
+				NrTSingleton<MythRaidManager>.Instance.IsParty = true;
+			}
+			for (int i = 0; i < (int)packet.i8NumSoldiers; i++)
+			{
+				GS_BATTLE_RESULT_MYTHRAID_SOLDIER packet2 = kDeserializePacket.GetPacket<GS_BATTLE_RESULT_MYTHRAID_SOLDIER>();
+				if (!NrTSingleton<MythRaidManager>.Instance.dic_SolInfo.ContainsKey(packet2.PersonID))
+				{
+					NrTSingleton<MythRaidManager>.Instance.dic_SolInfo[packet2.PersonID] = new List<GS_BATTLE_RESULT_MYTHRAID_SOLDIER>();
+				}
+				NrTSingleton<MythRaidManager>.Instance.dic_SolInfo[packet2.PersonID].Add(packet2);
+			}
+			mythRaid_Result_DLG.SetData(packet.nRaidType, packet.fBattleTime, packet.nBattleContinueCount, packet.nTotalMythRaidBossDamage, packet.i8isParty);
+			mythRaid_Result_DLG.Show();
 		}
 
 		public static void GS_BATTLE_STOP_NFY(NkDeserializePacket kDeserializePacket)
@@ -1643,6 +1854,16 @@ namespace PROTOCOL
 			Battle.BATTLE.GS_BATTLE_RESTART_NFY(packet);
 		}
 
+		public static void GS_BATTLE_ANGEL_ORDER_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_ANGEL_ORDER_ACK packet = kDeserializePacket.GetPacket<GS_BATTLE_ANGEL_ORDER_ACK>();
+			Battle_Control_Dlg battle_Control_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+			if (battle_Control_Dlg != null)
+			{
+				battle_Control_Dlg.SetAngelAngerlyPoint(packet.nGuardAngelUnique, packet.nNowAngerAngerlyPoint);
+			}
+		}
+
 		public static void GS_BATTLE_AUTO_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_BATTLE_AUTO_ACK packet = kDeserializePacket.GetPacket<GS_BATTLE_AUTO_ACK>();
@@ -1668,6 +1889,30 @@ namespace PROTOCOL
 				if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro() && kMyCharInfo.GetAutoBattle() == E_BF_AUTO_TYPE.MANUAL)
 				{
 					NrTSingleton<NkBabelMacroManager>.Instance.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_NONE, 0f);
+				}
+			}
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BABELTOWER_FUNCTION_DLG))
+			{
+				BabelTower_FunctionDlg babelTower_FunctionDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWER_FUNCTION_DLG) as BabelTower_FunctionDlg;
+				if (kMyCharInfo.GetAutoBattle() == E_BF_AUTO_TYPE.AUTO)
+				{
+					babelTower_FunctionDlg.SetAutoBattle(true);
+				}
+				else
+				{
+					babelTower_FunctionDlg.SetAutoBattle(false);
+				}
+			}
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_FUNCTION_DLG))
+			{
+				DailyDungeon_Function_Dlg dailyDungeon_Function_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DAILYDUNGEON_FUNCTION_DLG) as DailyDungeon_Function_Dlg;
+				if (kMyCharInfo.GetAutoBattle() == E_BF_AUTO_TYPE.AUTO)
+				{
+					dailyDungeon_Function_Dlg.Set_AutoBattle(true);
+				}
+				else
+				{
+					dailyDungeon_Function_Dlg.Set_AutoBattle(false);
 				}
 			}
 		}
@@ -1744,7 +1989,7 @@ namespace PROTOCOL
 			if (packet.nResult == 1)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("192"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG))
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG) && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
 				{
 					NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
 				}
@@ -1752,7 +1997,7 @@ namespace PROTOCOL
 			else if (packet.nResult == 2)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("194"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG))
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG) && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
 				{
 					NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
 				}
@@ -1764,6 +2009,10 @@ namespace PROTOCOL
 			else if (packet.nResult == 4)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			else if (packet.nResult == 5)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("194"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			}
 		}
 
@@ -1860,6 +2109,7 @@ namespace PROTOCOL
 				{
 					battle_Mine_CharinfoDlg.Set(array[i]);
 				}
+				battle_Mine_CharinfoDlg.HiddenName();
 			}
 		}
 
@@ -1916,12 +2166,25 @@ namespace PROTOCOL
 			}
 			if (packet.nBeforeRank > packet.nNewRank)
 			{
-				Battle_BossRankUp_DLG battle_BossRankUp_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_BOSS_RANKUP_DLG) as Battle_BossRankUp_DLG;
-				if (battle_BossRankUp_DLG == null)
+				if (packet.nBeforeRank != 9999)
 				{
-					battle_BossRankUp_DLG = (NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_BOSS_RANKUP_DLG) as Battle_BossRankUp_DLG);
+					Battle_BossRankUp_DLG battle_BossRankUp_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_BOSS_RANKUP_DLG) as Battle_BossRankUp_DLG;
+					if (battle_BossRankUp_DLG == null)
+					{
+						battle_BossRankUp_DLG = (NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_BOSS_RANKUP_DLG) as Battle_BossRankUp_DLG);
+					}
+					battle_BossRankUp_DLG.SetData(packet.nBeforeRank, packet.nNewRank);
 				}
-				battle_BossRankUp_DLG.SetData(packet.nBeforeRank, packet.nNewRank);
+				Battle_GuildBossBattleInfo_DLG battle_GuildBossBattleInfo_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDBOSS_BATTLEINFO_DLG) as Battle_GuildBossBattleInfo_DLG;
+				int num = packet.nNewRank;
+				if (num <= 0)
+				{
+					num = 1;
+				}
+				if (battle_GuildBossBattleInfo_DLG != null)
+				{
+					battle_GuildBossBattleInfo_DLG.UpdateUpperRankerInfo(num, (long)packet.nUpperRankerDamage, packet.nUpperRankerPersonID);
+				}
 			}
 		}
 
@@ -1949,6 +2212,10 @@ namespace PROTOCOL
 		public static void GS_BATTLE_RESULT_TUTORIAL_NFY(NkDeserializePacket kDeserializePacket)
 		{
 			GS_BATTLE_RESULT_TUTORIAL_NFY packet = kDeserializePacket.GetPacket<GS_BATTLE_RESULT_TUTORIAL_NFY>();
+			if (packet.nResult != 0)
+			{
+				return;
+			}
 			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
 			{
 				return;
@@ -1966,13 +2233,48 @@ namespace PROTOCOL
 			{
 				return;
 			}
+			Battle.BATTLE.PlayTutorialEndBGM();
 			Battle_ResultTutorialDlg battle_ResultTutorialDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_RESULT_TUTORIAL_DLG) as Battle_ResultTutorialDlg;
 			if (battle_ResultTutorialDlg == null)
 			{
 				return;
 			}
 			battle_ResultTutorialDlg.ShowResultFx();
-			NrTSingleton<NkQuestManager>.Instance.UpdateVictoryQuestMessage();
+		}
+
+		public static void GS_BATTLE_RADIO_ALARM_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_RADIO_ALARM_ACK packet = kDeserializePacket.GetPacket<GS_BATTLE_RADIO_ALARM_ACK>();
+			if (packet == null || packet.szRequestUserName == null)
+			{
+				return;
+			}
+			Battle_RadioAlarmDlg battle_RadioAlarmDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_RADIOALARM_DLG) as Battle_RadioAlarmDlg;
+			if (battle_RadioAlarmDlg == null)
+			{
+				return;
+			}
+			eBATTLE_RADIO_ALARM alarmKind = (eBATTLE_RADIO_ALARM)((int)Enum.Parse(typeof(eBATTLE_RADIO_ALARM), packet.i8RadioAlarmKind.ToString()));
+			string alarmTextKey = battle_RadioAlarmDlg.GetAlarmTextKey(alarmKind);
+			string text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify(alarmTextKey);
+			if (string.IsNullOrEmpty(text))
+			{
+				return;
+			}
+			text = text.Remove(text.IndexOf('@'));
+			text += new string(packet.szRequestUserName);
+			Main_UI_SystemMessage.ADDMessage(text, SYSTEM_MESSAGE_TYPE.BATTLE_RADIO_ALARM);
+		}
+
+		public static void GS_BATTLE_STOP_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_STOP_ACK packet = kDeserializePacket.GetPacket<GS_BATTLE_STOP_ACK>();
+			if (packet.i8Result != 0)
+			{
+				Debug.LogError("Fail Battle Stop");
+				return;
+			}
+			NrTSingleton<NrMainSystem>.Instance.GetMainCore().BattleTimeStop(packet.bStop);
 		}
 
 		public static void GS_BUY_ITEM_ACK(NkDeserializePacket kDeserializePacket)
@@ -2033,6 +2335,12 @@ namespace PROTOCOL
 						});
 						Main_UI_SystemMessage.ADDMessage(empty);
 					}
+					else if (packet.bIsInvenFull)
+					{
+						string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("874");
+						Main_UI_SystemMessage.ADDMessage(textFromNotify);
+						NoticeIconDlg.SetIcon(ICON_TYPE.POST, true);
+					}
 					else
 					{
 						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("195"));
@@ -2055,10 +2363,23 @@ namespace PROTOCOL
 								component2.ClearData();
 							}
 						}
+						else if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_NStore)
+						{
+							BillingManager_NStore component3 = BillingManager_NStore.Instance.GetComponent<BillingManager_NStore>();
+							if (component3 != null)
+							{
+								component3.Consume();
+							}
+						}
 						if (PlayerPrefs.GetString(NrPrefsKey.SHOP_PRODUCT_ID).Equals(packet.m_MallIndex.ToString()))
 						{
 							PlayerPrefs.SetString(NrPrefsKey.SHOP_RECEIPT, string.Empty);
 							PlayerPrefs.SetString(NrPrefsKey.SHOP_PRODUCT_ID, string.Empty);
+						}
+						eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
+						if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORQA)
+						{
+							NrTSingleton<AdWords>.Instance.PurchaseData(item);
 						}
 					}
 					eITEMMALL_TYPE nGroup = (eITEMMALL_TYPE)item.m_nGroup;
@@ -2067,13 +2388,14 @@ namespace PROTOCOL
 					case eITEMMALL_TYPE.BUY_HERO:
 					case eITEMMALL_TYPE.BUY_ITEMBOX:
 					case eITEMMALL_TYPE.BUY_ORI:
+					case eITEMMALL_TYPE.BUY_MYTHELXIR:
 						NrTSingleton<FiveRocksEventManager>.Instance.Placement("get_item");
 						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MARKET", "BUY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 						if (item.m_nMoneyType == 2 && item.m_nGroup == 5)
 						{
 							NrTSingleton<FiveRocksEventManager>.Instance.HeartsConsume(eHEARTS_CONSUME.BUY_ITEMBOX, item.m_nPrice);
 						}
-						goto IL_392;
+						goto IL_486;
 					case eITEMMALL_TYPE.BUY_HEARTS:
 						break;
 					case eITEMMALL_TYPE.BUY_GOLD:
@@ -2092,7 +2414,7 @@ namespace PROTOCOL
 						{
 							SolComposeMainDlg.Instance.RefreshMoney();
 						}
-						goto IL_392;
+						goto IL_486;
 					case eITEMMALL_TYPE.BUY_PROTECT:
 					case eITEMMALL_TYPE.BUY_EXPBOOSTER:
 						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "ETC", "COMMON-SUCCESS", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
@@ -2104,18 +2426,30 @@ namespace PROTOCOL
 						{
 							NrTSingleton<FiveRocksEventManager>.Instance.HeartsConsume(eHEARTS_CONSUME.BUY_PROTECT, item.m_nPrice);
 						}
-						goto IL_392;
+						goto IL_486;
 					default:
 						if (nGroup != eITEMMALL_TYPE.BUY_EVENT_ITEM)
 						{
-							goto IL_392;
+							if (nGroup != eITEMMALL_TYPE.BUY_COSTUME)
+							{
+								goto IL_486;
+							}
+							int costumeIdx = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeIdx(packet.m_MallIndex);
+							NrTSingleton<NrCharCostumeTableManager>.Instance.UpdateCostumeCount(costumeIdx, 1, 1);
+							CostumeRoom_Dlg costumeRoom_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COSTUMEROOM_DLG) as CostumeRoom_Dlg;
+							if (costumeRoom_Dlg != null)
+							{
+								costumeRoom_Dlg.Refresh(false, true);
+							}
+							Debug.LogError("BuyItem : " + costumeIdx);
+							goto IL_486;
 						}
 						break;
 					}
 					TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "ETC", "COMMON-SUCCESS", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 					NrTSingleton<FiveRocksEventManager>.Instance.HeartsInflow(eHEARTS_INFLOW.BUY_CASH, item.m_nItemNum);
 				}
-				IL_392:
+				IL_486:
 				NrTSingleton<FiveRocksEventManager>.Instance.PurchaseItem(packet.m_MallIndex);
 				if (NrTSingleton<ItemMallItemManager>.Instance.IsItemVoucherType((eVOUCHER_TYPE)packet.VoucherData.ui8VoucherType))
 				{
@@ -2126,6 +2460,10 @@ namespace PROTOCOL
 						itemMallDlg.SetShowDataVoucherItem((eVOUCHER_TYPE)packet.VoucherData.ui8VoucherType);
 					}
 				}
+				ITEMMALL_POPUPSHOP poPupShop_AfterItemBuyLimit = NrTSingleton<ItemMallPoPupShopManager>.Instance.GetPoPupShop_AfterItemBuyLimit(packet.m_MallIndex);
+				if (poPupShop_AfterItemBuyLimit != null)
+				{
+				}
 				ITEM_MALL_ITEM item2 = NrTSingleton<ItemMallItemManager>.Instance.GetItem(packet.m_MallIndex);
 				string textFromItem = NrTSingleton<NrTextMgr>.Instance.GetTextFromItem(item2.m_strTextKey);
 				GameObject gameObject = GameObject.Find("OmniataManager");
@@ -2135,13 +2473,13 @@ namespace PROTOCOL
 				}
 				if (gameObject != null)
 				{
-					OmniataComponent component3 = gameObject.GetComponent<OmniataComponent>();
-					if (component3)
+					OmniataComponent component4 = gameObject.GetComponent<OmniataComponent>();
+					if (component4)
 					{
 						DateTime dateTime = DateTime.Now.ToLocalTime();
-						DateTime arg_497_0 = dateTime;
+						DateTime arg_5A4_0 = dateTime;
 						DateTime dateTime2 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-						int num = (int)(arg_497_0 - dateTime2.ToLocalTime()).TotalSeconds;
+						int num = (int)(arg_5A4_0 - dateTime2.ToLocalTime()).TotalSeconds;
 						string value = string.Empty;
 						string eventType = string.Empty;
 						if (item.m_nMoneyType == 1)
@@ -2159,7 +2497,7 @@ namespace PROTOCOL
 							value = "gold";
 							eventType = "om_itemsale";
 						}
-						component3.Track(eventType, new Dictionary<string, string>
+						component4.Track(eventType, new Dictionary<string, string>
 						{
 							{
 								"ts",
@@ -2189,6 +2527,7 @@ namespace PROTOCOL
 						Adjust.trackRevenue(1.0, null, null);
 					}
 				}
+				NrTSingleton<MATEventManager>.Instance.Measure_Purchase(packet.m_MallIndex);
 			}
 			else
 			{
@@ -2196,27 +2535,58 @@ namespace PROTOCOL
 				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "ETC", "COMMON-FAIL", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 				if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_Google)
 				{
-					BillingManager_Google component4 = BillingManager_Google.Instance.GetComponent<BillingManager_Google>();
-					if (component4 != null && component4.m_RecoveryItem != null)
+					BillingManager_Google component5 = BillingManager_Google.Instance.GetComponent<BillingManager_Google>();
+					if (component5 != null && component5.m_RecoveryItem != null)
 					{
-						component4.ConsumeProduct();
+						component5.ConsumeProduct();
 					}
 				}
 				else if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_TStore)
 				{
-					BillingManager_TStore component5 = BillingManager_TStore.Instance.GetComponent<BillingManager_TStore>();
-					if (component5 != null)
+					BillingManager_TStore component6 = BillingManager_TStore.Instance.GetComponent<BillingManager_TStore>();
+					if (component6 != null)
 					{
-						component5.ClearData();
+						component6.ClearData();
+					}
+				}
+				else if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_NStore)
+				{
+					BillingManager_NStore component7 = BillingManager_NStore.Instance.GetComponent<BillingManager_NStore>();
+					if (component7 != null)
+					{
+						component7.Consume();
 					}
 				}
 				int nResult = packet.m_nResult;
-				if (nResult == 9200)
+				if (nResult != 31)
 				{
-					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("755"));
+					if (nResult != 76)
+					{
+						if (nResult == 9200)
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("755"));
+						}
+					}
+					else
+					{
+						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773"));
+					}
+				}
+				else
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
 				}
 			}
 			NrTSingleton<NrMainSystem>.Instance.m_bIsBilling = false;
+			if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_TStore)
+			{
+				BillingManager_TStore component8 = BillingManager_TStore.Instance.GetComponent<BillingManager_TStore>();
+				if (component8 != null)
+				{
+					component8.EnableCloseItemMallDlg();
+				}
+			}
+			NrTSingleton<ItemMallItemManager>.Instance.Trading = false;
 		}
 
 		public static void GS_ITEMMALL_INFO_ACK(NkDeserializePacket kDeserializePacket)
@@ -2272,6 +2642,151 @@ namespace PROTOCOL
 					}
 				}
 			}
+			CostumeRoom_Dlg costumeRoom_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COSTUMEROOM_DLG) as CostumeRoom_Dlg;
+			if (costumeRoom_Dlg != null && costumeRoom_Dlg._costumeViewerSetter != null && costumeRoom_Dlg._costumeViewerSetter._costumeCharSetter != null)
+			{
+				costumeRoom_Dlg._costumeViewerSetter._costumeCharSetter.VisibleChar(false);
+			}
+		}
+
+		public static void GS_ITEMMALL_FREE_TRADE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEMMALL_FREE_TRADE_ACK packet = kDeserializePacket.GetPacket<GS_ITEMMALL_FREE_TRADE_ACK>();
+			SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
+			if (solRecruitDlg != null)
+			{
+				solRecruitDlg.SetRecruitButtonEnable(true);
+			}
+			if (TsPlatform.IsEditor)
+			{
+				TsLog.LogWarning(" GS_ITEMMALL_FREE_TRADE_ACK ==== [ {0} ] [ {1} ] ", new object[]
+				{
+					packet.m_nResult,
+					packet.RecruitType
+				});
+			}
+			NrTSingleton<ItemMallItemManager>.Instance.Trading = false;
+			if (packet.m_nResult != 0)
+			{
+				NrTSingleton<NkClientLogic>.Instance.SetCanOpenTicket(true);
+				int nResult = packet.m_nResult;
+				if (nResult != -60)
+				{
+					if (nResult == -50)
+					{
+						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507"));
+					}
+				}
+				else
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("508"));
+				}
+				return;
+			}
+			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+			if (charPersonInfo == null)
+			{
+				return;
+			}
+			SOLDIER_INFO sOLDIER_INFO = new SOLDIER_INFO();
+			SOLDIER_TOTAL_INFO packet2 = kDeserializePacket.GetPacket<SOLDIER_TOTAL_INFO>();
+			if (packet2.SOLINFO.SolPosType == 1)
+			{
+				NkSoldierInfo soldierInfo = charPersonInfo.GetSoldierInfo((int)packet2.SOLINFO.SolPosIndex);
+				if (soldierInfo != null)
+				{
+					if (!soldierInfo.IsValid())
+					{
+						soldierInfo.Set(packet2.SOLINFO);
+						soldierInfo.SetBattleSkillInfo(packet2.BATTLESKILLINFO);
+					}
+					soldierInfo.SetReceivedEquipItem(true);
+					soldierInfo.UpdateSoldierStatInfo();
+				}
+			}
+			else
+			{
+				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+				readySolList.AddSolInfo(packet2.SOLINFO, packet2.BATTLESKILLINFO, true);
+			}
+			sOLDIER_INFO.Set(ref packet2.SOLINFO);
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			kMyCharInfo.SetCharSolGuide(packet2.SOLINFO.CharKind);
+			for (int i = 0; i < packet.SolSubDataCount; i++)
+			{
+				SOLDIER_SUBDATA packet3 = kDeserializePacket.GetPacket<SOLDIER_SUBDATA>();
+				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(packet3.nSolID);
+				if (soldierInfoFromSolID != null)
+				{
+					soldierInfoFromSolID.SetSolSubData(packet3.nSubDataType, packet3.nSubDataValue);
+				}
+			}
+			NrReceiveGame.SolRecruitAfter(sOLDIER_INFO, null, 1, packet.RecruitType, null, false, null);
+			kMyCharInfo.SetCharSubData(packet.SubDataType, packet.SubDataValue);
+		}
+
+		public static void GS_CHAR_CHALLENGE_EVENT_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_CHAR_CHALLENGE_EVENT_ACK packet = kDeserializePacket.GetPacket<GS_CHAR_CHALLENGE_EVENT_ACK>();
+			if (packet.i32Result == 0)
+			{
+				if (packet.i32MailType <= 0)
+				{
+					string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("157");
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						textFromNotify,
+						"itemname",
+						NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique),
+						"count",
+						packet.i32ItemNum
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					ChallengeDlg challengeDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.CHALLENGE_DLG) as ChallengeDlg;
+					if (challengeDlg != null)
+					{
+						NrTSingleton<ChallengeManager>.Instance.SetChallengeEventRewardInfo(packet.i16ChallengeUnique);
+						NrTSingleton<ChallengeManager>.Instance.CalcEvnetRewardNoticeCount();
+						challengeDlg.SetChallengeInfo(ChallengeManager.TYPE.EVENT);
+					}
+				}
+				else if (packet.i32MailType == 141)
+				{
+					string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("601");
+					string empty2 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					{
+						textFromNotify2,
+						"targetname",
+						NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique),
+						"count",
+						packet.i32ItemNum
+					});
+					Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					ChallengeDlg challengeDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.CHALLENGE_DLG) as ChallengeDlg;
+					if (challengeDlg2 != null)
+					{
+						NrTSingleton<ChallengeManager>.Instance.SetChallengeEventRewardInfo(packet.i16ChallengeUnique);
+						NrTSingleton<ChallengeManager>.Instance.CalcEvnetRewardNoticeCount();
+						challengeDlg2.SetChallengeInfo(ChallengeManager.TYPE.EVENT);
+					}
+				}
+			}
+		}
+
+		public static void GS_CHAR_CHALLENGE_EVENT_REWARD_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_CHAR_CHALLENGE_EVENT_REWARD_ACK packet = kDeserializePacket.GetPacket<GS_CHAR_CHALLENGE_EVENT_REWARD_ACK>();
+			short num = 0;
+			for (short num2 = 0; num2 < 13; num2 += 1)
+			{
+				if (packet.i16ChallengeUnique[(int)num2] != 0)
+				{
+					num += 1;
+				}
+			}
+			NrTSingleton<ChallengeManager>.Instance.SetEvnetRewardNoticeCount((int)num);
 		}
 
 		public static void GS_CHARACTER_SUBDATA_ACK(NkDeserializePacket kDeserializePacket)
@@ -2417,21 +2932,26 @@ namespace PROTOCOL
 			if (0 < packet.i32Result)
 			{
 				PlayerPrefs.SetString(NrPrefsKey.LATEST_SOLID, packet.i64BaseSolID.ToString());
-				NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(packet.i64BaseSolID);
-				if (soldierInfo == null)
+				NkSoldierInfo nkSoldierInfo = null;
+				NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				if (charPersonInfo != null)
+				{
+					nkSoldierInfo = charPersonInfo.GetSoldierInfoFromSolID(packet.i64BaseSolID);
+				}
+				if (nkSoldierInfo == null)
 				{
 					return;
 				}
-				short level = soldierInfo.GetLevel();
-				byte grade = soldierInfo.GetGrade();
+				short level = nkSoldierInfo.GetLevel();
+				byte grade = nkSoldierInfo.GetGrade();
 				int num = packet.i32Result;
 				if (level < packet.i16Level && num == 2)
 				{
 					num = 3;
-					if (soldierInfo.IsLeader())
+					short level2 = nkSoldierInfo.GetLevel();
+					if (nkSoldierInfo.IsLeader())
 					{
-						short level2 = soldierInfo.GetLevel();
-						soldierInfo.SetLevel(packet.i16Level);
+						nkSoldierInfo.SetLevel(packet.i16Level);
 						if (level2 < 7 && packet.i16Level >= 7)
 						{
 							MenuIconDlg menuIconDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MENUICON_DLG) as MenuIconDlg;
@@ -2441,20 +2961,24 @@ namespace PROTOCOL
 							}
 						}
 					}
+					if (level2 < 15 && packet.i16Level >= 15)
+					{
+						NrTSingleton<MATEventManager>.Instance.MeasureEvent("Level15");
+					}
 				}
-				soldierInfo.SetExp(packet.i64Exp);
-				soldierInfo.SetLevel(packet.i16Level);
-				soldierInfo.SetGrade(packet.ui8Grade);
-				soldierInfo.SetSolSubData(3, packet.nEvolutionExp);
-				soldierInfo.SetSolSubData(5, (long)packet.i32TradeCount);
+				nkSoldierInfo.SetExp(packet.i64Exp);
+				nkSoldierInfo.SetLevel(packet.i16Level);
+				nkSoldierInfo.SetGrade(packet.ui8Grade);
+				nkSoldierInfo.SetSolSubData(3, packet.nEvolutionExp);
+				nkSoldierInfo.SetSolSubData(5, (long)packet.i32TradeCount);
 				NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 				if (kMyCharInfo == null)
 				{
 					return;
 				}
-				if (level != soldierInfo.GetLevel())
+				if (level != nkSoldierInfo.GetLevel())
 				{
-					if (NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(soldierInfo.GetCharKindInfo()))
+					if (NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(nkSoldierInfo.GetCharKindInfo()) && NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 					{
 						kMyCharInfo.SetActivityMax();
 						if (kMyCharInfo.m_nActivityPoint < kMyCharInfo.m_nMaxActivityPoint)
@@ -2462,7 +2986,7 @@ namespace PROTOCOL
 							kMyCharInfo.SetActivityPoint(kMyCharInfo.m_nMaxActivityPoint);
 						}
 					}
-					if (soldierInfo.IsLeader())
+					if (nkSoldierInfo.IsLeader())
 					{
 						NrTSingleton<GameGuideManager>.Instance.Update(GameGuideCheck.LEVELUP);
 						BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
@@ -2471,47 +2995,54 @@ namespace PROTOCOL
 							bookmarkDlg.SetBookmarkInfo();
 						}
 					}
-					AlarmManager.GetInstance().AddSolAlarm(soldierInfo.GetSolID());
 				}
 				SolComposeDirection solComposeDirection = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMPOSE_DIRECTION_DLG) as SolComposeDirection;
 				if (solComposeDirection == null)
 				{
 					return;
 				}
+				NkSoldierInfo nkSoldierInfo2 = null;
 				if (packet.i8Cnt > 1)
 				{
-					solComposeDirection.SetImage(soldierInfo, num);
+					solComposeDirection.SetImage(nkSoldierInfo, num);
 				}
 				for (int i = 0; i < (int)packet.i8Cnt; i++)
 				{
-					NkSoldierInfo soldierInfo2 = SolComposeMainDlg.GetSoldierInfo(packet.i64SubSolID[i]);
-					if (packet.i8Cnt == 1 && soldierInfo2 != null)
+					if (charPersonInfo != null)
 					{
-						solComposeDirection.SetImage(soldierInfo, soldierInfo2, num);
+						nkSoldierInfo2 = charPersonInfo.GetSoldierInfoFromSolID(packet.i64BaseSolID);
 					}
-					NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
+					if (packet.i8Cnt == 1 && nkSoldierInfo2 != null)
+					{
+						solComposeDirection.SetImage(nkSoldierInfo, nkSoldierInfo2, num);
+					}
+					NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 					NrTSingleton<ExplorationManager>.Instance.RemoveSolInfo(packet.i64SubSolID[i]);
-					soldierReadyList.DelSol(packet.i64SubSolID[i]);
+					readySolList.DelSol(packet.i64SubSolID[i]);
 				}
 				SolComposeSuccessDlg solComposeSuccessDlg = (SolComposeSuccessDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMPOSE_SUCCESS_DLG);
 				if (solComposeSuccessDlg != null)
 				{
-					solComposeSuccessDlg.SetData(grade, (int)level, packet.i64AddExp, soldierInfo, packet.nAddEvolutionExp, packet.nMaxLevelEvolution);
+					solComposeSuccessDlg.SetData(grade, (int)level, packet.i64AddExp, nkSoldierInfo, packet.nAddEvolutionExp, packet.nMaxLevelEvolution);
 					solComposeSuccessDlg.Hide();
 				}
 				if (SolComposeMainDlg.Instance != null)
 				{
 					SolComposeMainDlg.Instance.CalcumData();
 				}
-				soldierInfo.UpdateSoldierStatInfo();
+				nkSoldierInfo.UpdateSoldierStatInfo();
 				SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 				if (solMilitaryGroupDlg != null)
 				{
-					solMilitaryGroupDlg.RefereshSelectSolInfo(soldierInfo);
+					solMilitaryGroupDlg.RefereshSelectSolInfo(nkSoldierInfo);
 					solMilitaryGroupDlg.RefreshSolList();
 				}
 				NrTSingleton<FiveRocksEventManager>.Instance.SolCompose((int)packet.i8Cnt);
 				NrTSingleton<GameGuideManager>.Instance.RemoveEquipGuide();
+				if (nkSoldierInfo.GetSolPosType() == 5)
+				{
+					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddSolWarehouseInfo(nkSoldierInfo);
+				}
 			}
 		}
 
@@ -2520,9 +3051,15 @@ namespace PROTOCOL
 			GS_SOLDIERS_EXTRACT_ACK packet = kDeserializePacket.GetPacket<GS_SOLDIERS_EXTRACT_ACK>();
 			if (packet.i32Result == 0)
 			{
-				NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
-				NrTSingleton<ExplorationManager>.Instance.RemoveSolInfo(packet.i64ExtractSolID);
-				soldierReadyList.DelSol(packet.i64ExtractSolID);
+				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+				for (int i = 0; i < 10; i++)
+				{
+					if (packet.i64ExtractSolID[i] > 0L)
+					{
+						NrTSingleton<ExplorationManager>.Instance.RemoveSolInfo(packet.i64ExtractSolID[i]);
+						readySolList.DelSol(packet.i64ExtractSolID[i]);
+					}
+				}
 				SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 				if (solMilitaryGroupDlg != null)
 				{
@@ -2539,6 +3076,18 @@ namespace PROTOCOL
 				{
 					SolComposeMainDlg.Instance.InitExtract();
 				}
+			}
+			else if (packet.i32Result == -5)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			else if (packet.i32Result == -10)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+			else if (packet.i32Result == -15)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.CAUTION_MESSAGE);
 			}
 		}
 
@@ -2737,7 +3286,34 @@ namespace PROTOCOL
 						if (soldierInfoFromSolID != null)
 						{
 							soldierInfoFromSolID.SetSolSubData(packet2.nSubDataType, packet2.nSubDataValue);
-							if (packet2.nSubDataType == 0)
+							eSOL_SUBDATA nSubDataType = (eSOL_SUBDATA)packet2.nSubDataType;
+							if (nSubDataType != eSOL_SUBDATA.SOL_SUBDATA_STATUSVALUE)
+							{
+								if (nSubDataType != eSOL_SUBDATA.SOL_SUBDATA_FIGHTINGPOWER)
+								{
+									if (nSubDataType == eSOL_SUBDATA.SOL_SUBDATA_COSTUME)
+									{
+										NrTSingleton<CostumeWearManager>.Instance.Refresh(soldierInfoFromSolID, true, true);
+										NrTSingleton<CostumeWearManager>.Instance.ShowCostumeChangeMsg(soldierInfoFromSolID);
+										if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMPOSE_MAIN_DLG))
+										{
+											if (SolComposeMainDlg.Instance.ContainSubSoldier(soldierInfoFromSolID.GetSolID()))
+											{
+												SolComposeMainDlg.Instance.MakeSubSolList();
+											}
+											if (SolComposeMainDlg.Instance.ContainExtractSoldier(soldierInfoFromSolID.GetSolID()))
+											{
+												SolComposeMainDlg.Instance.RefreshSelectExtract();
+											}
+										}
+									}
+								}
+								else
+								{
+									NrTSingleton<CostumeWearManager>.Instance.Refresh(soldierInfoFromSolID, true, false);
+								}
+							}
+							else
 							{
 								flag = true;
 								NrTSingleton<NkBabelMacroManager>.Instance.SetRequestInjury(packet2.nSolID);
@@ -2853,6 +3429,16 @@ namespace PROTOCOL
 						{
 							babelLobbyUserListDlg.CheckInjurySoldierList();
 						}
+						BabelTower_FunctionDlg babelTower_FunctionDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWER_FUNCTION_DLG) as BabelTower_FunctionDlg;
+						if (babelTower_FunctionDlg != null)
+						{
+							babelTower_FunctionDlg.CheckInjurySoldier();
+						}
+						SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+						if (solMilitaryGroupDlg != null)
+						{
+							solMilitaryGroupDlg.CheckInjurySoldierList();
+						}
 					}
 				}
 				else
@@ -2876,9 +3462,9 @@ namespace PROTOCOL
 					{
 						packet.i64SolID[i]
 					});
-					NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
+					NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 					NrTSingleton<ExplorationManager>.Instance.RemoveSolInfo(packet.i64SolID[i]);
-					soldierReadyList.DelSol(packet.i64SolID[i]);
+					readySolList.DelSol(packet.i64SolID[i]);
 				}
 				if (SolComposeMainDlg.Instance != null)
 				{
@@ -2889,9 +3475,22 @@ namespace PROTOCOL
 				{
 					solMilitaryGroupDlg.RefreshSolList();
 				}
-				NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.SOLCOMPOSE_SELL_SUCCESS);
 				NrTSingleton<FiveRocksEventManager>.Instance.SolSell((int)packet.i8Cnt);
 				NrTSingleton<GameGuideManager>.Instance.RemoveEquipGuide();
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64AffterMoney;
+				SolComposeMainDlg solComposeMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_DLG) as SolComposeMainDlg;
+				if (solComposeMainDlg != null)
+				{
+					solComposeMainDlg.CalcSellData();
+				}
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("845"),
+					"count",
+					ANNUALIZED.Convert(packet.i64SellMoney)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			}
 			else
 			{
@@ -3093,32 +3692,50 @@ namespace PROTOCOL
 		public static void GS_BOUNTYHUNT_INFO_SET_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_BOUNTYHUNT_INFO_SET_ACK packet = kDeserializePacket.GetPacket<GS_BOUNTYHUNT_INFO_SET_ACK>();
+			if (packet.i32Result == 0 && 0 < packet.i16CurBountyHuntUnique)
+			{
+				bool flag = false;
+				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique != packet.i16CurBountyHuntUnique)
+				{
+					flag = true;
+				}
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique = packet.i16CurBountyHuntUnique;
+				if (flag)
+				{
+					NrTSingleton<BountyHuntManager>.Instance.AutoMoveClientNPC(packet.i16CurBountyHuntUnique);
+				}
+			}
+		}
+
+		public static void GS_BOUNTYHUNT_REWARD_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BOUNTYHUNT_REWARD_NFY packet = kDeserializePacket.GetPacket<GS_BOUNTYHUNT_REWARD_NFY>();
 			if (packet.i32Result == 0)
 			{
-				if (0 < packet.i16CurBountyHuntUnique)
+				Battle_ResultDlg_Content battle_ResultDlg_Content = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_RESULT_CONTENT_DLG) as Battle_ResultDlg_Content;
+				if (battle_ResultDlg_Content != null)
 				{
-					bool flag = false;
-					if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique != packet.i16CurBountyHuntUnique)
-					{
-						flag = true;
-					}
-					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique = packet.i16CurBountyHuntUnique;
-					if (flag)
-					{
-						NrTSingleton<BountyHuntManager>.Instance.AutoMoveClientNPC(packet.i16CurBountyHuntUnique);
-					}
+					battle_ResultDlg_Content.SetBountyReward(packet);
 				}
-				if (0 < packet.i16ClearBountyHuntUnique)
+				for (int i = 0; i < 5; i++)
 				{
-					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddBountyHuntClearInfo(packet.i16ClearBountyHuntUnique, packet.i8ClearRank);
-					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique = 0;
-					NrTSingleton<BountyHuntManager>.Instance.ClearUpdateNPC();
+					if (0 < packet.i16ClearBountyHuntUnique[i])
+					{
+						NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddBountyHuntClearInfo(packet.i16ClearBountyHuntUnique[i], packet.i8ClearRank);
+						NrTSingleton<BountyHuntManager>.Instance.ClearUpdateNPC();
+					}
 				}
 				BountyHuntingDlg bountyHuntingDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOUNTYHUNTING_DLG) as BountyHuntingDlg;
 				if (bountyHuntingDlg != null)
 				{
 					bountyHuntingDlg.RefreshInfo();
 				}
+				NoticeIconDlg.SetIcon(ICON_TYPE.POST, true);
+			}
+			else
+			{
+				string message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270") + packet.i32Result.ToString();
+				Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			}
 		}
 
@@ -3128,7 +3745,6 @@ namespace PROTOCOL
 			NrTSingleton<BountyHuntManager>.Instance.CheckBountyHuntInfoNPCCharKind();
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ClearBountyHuntClearInfo();
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique = packet.i16CurBountyHuntUnique;
-			NrTSingleton<BountyHuntManager>.Instance.Week = packet.i16Week;
 			for (int i = 0; i < (int)packet.i16Count; i++)
 			{
 				BOUNTYHUNT_CLEARINFO packet2 = kDeserializePacket.GetPacket<BOUNTYHUNT_CLEARINFO>();
@@ -3156,7 +3772,6 @@ namespace PROTOCOL
 		public static void GS_BOUNTYHUNT_DETAILINFO_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_BOUNTYHUNT_DETAILINFO_ACK packet = kDeserializePacket.GetPacket<GS_BOUNTYHUNT_DETAILINFO_ACK>();
-			NrTSingleton<BountyHuntManager>.Instance.Week = packet.i16Week;
 			if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BOUNTYHUNTING_DLG))
 			{
 				BountyHuntingDlg bountyHuntingDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BOUNTYHUNTING_DLG) as BountyHuntingDlg;
@@ -3192,7 +3807,7 @@ namespace PROTOCOL
 						{
 							string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2577");
 							string message = text;
-							msgBoxUI.SetMsg(null, null, textFromInterface, message, eMsgType.MB_OK);
+							msgBoxUI.SetMsg(null, null, textFromInterface, message, eMsgType.MB_OK, 2);
 						}
 					}
 				}
@@ -3329,25 +3944,39 @@ namespace PROTOCOL
 				{
 					if (packet.i32ItemUnique > 0)
 					{
-						solTranscendenceSuccess.GetComposeTranscendence(false, packet.i32BaseSolKind, packet.i8BaseGrade, packet.i8UpgradeGrade, packet.i32SubSolKind, packet.i8SubGrade, packet.i32ItemNum);
+						solTranscendenceSuccess.GetComposeTranscendence(false, packet.i32BaseSolKind, packet.i8BaseGrade, packet.i8UpgradeGrade, packet.i32SubSolKind, packet.i8SubGrade, packet.i32ItemNum, packet.i32CostumeUnique);
 					}
 					else
 					{
-						solTranscendenceSuccess.GetComposeTranscendence(true, packet.i32BaseSolKind, packet.i8BaseGrade, packet.i8UpgradeGrade, packet.i32SubSolKind, packet.i8SubGrade, packet.i32ItemNum);
+						solTranscendenceSuccess.GetComposeTranscendence(true, packet.i32BaseSolKind, packet.i8BaseGrade, packet.i8UpgradeGrade, packet.i32SubSolKind, packet.i8SubGrade, packet.i32ItemNum, packet.i32CostumeUnique);
 					}
 				}
-				NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
-				soldierReadyList.DelSol(packet.i64MaterialSolID);
-				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64CurrentMoney;
-				NkSoldierInfo solInfo = soldierReadyList.GetSolInfo(packet.i64BaseSolID);
-				if (solInfo != null)
+				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+				NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				if (readySolList == null || charPersonInfo == null)
 				{
-					solInfo.SetSolStatus(packet.i8UpgradeSolStatus);
-					solInfo.SetGrade(packet.i8UpgradeGrade);
-					solInfo.SetLevel(packet.i16UpgradeLevel);
-					solInfo.SetExp(packet.i64UpgradeExp);
-					solInfo.SetSolPosType(packet.i8UpgradeSolPosType);
-					solInfo.UpdateSoldierStatInfo();
+					return;
+				}
+				readySolList.DelSol(packet.i64MaterialSolID);
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64CurrentMoney;
+				NkSoldierInfo nkSoldierInfo = null;
+				NrPersonInfoUser charPersonInfo2 = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				if (charPersonInfo2 != null)
+				{
+					nkSoldierInfo = charPersonInfo2.GetSoldierInfoFromSolID(packet.i64BaseSolID);
+				}
+				if (nkSoldierInfo != null)
+				{
+					nkSoldierInfo.SetSolStatus(packet.i8UpgradeSolStatus);
+					nkSoldierInfo.SetGrade(packet.i8UpgradeGrade);
+					nkSoldierInfo.SetLevel(packet.i16UpgradeLevel);
+					nkSoldierInfo.SetExp(packet.i64UpgradeExp);
+					nkSoldierInfo.SetSolPosType(packet.i8UpgradeSolPosType);
+					nkSoldierInfo.UpdateSoldierStatInfo();
+					if (nkSoldierInfo.GetSolPosType() == 5)
+					{
+						NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddSolWarehouseInfo(nkSoldierInfo);
+					}
 				}
 				SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 				if (solMilitaryGroupDlg != null)
@@ -3373,6 +4002,10 @@ namespace PROTOCOL
 				{
 					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("790"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				}
+				else if (packet.i32Result == -170)
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("871"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+				}
 				else
 				{
 					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
@@ -3381,6 +4014,127 @@ namespace PROTOCOL
 				{
 					packet.i32Result
 				});
+			}
+		}
+
+		public static void GS_SOLCOMBINATIONLIMIT_INFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_SOLCOMBINATIONLIMIT_INFO_ACK packet = kDeserializePacket.GetPacket<GS_SOLCOMBINATIONLIMIT_INFO_ACK>();
+			for (int i = 0; i < (int)packet.i16Count; i++)
+			{
+				SOLDIER_OPEN_INFO packet2 = kDeserializePacket.GetPacket<SOLDIER_OPEN_INFO>();
+				switch (packet2.m_i16State)
+				{
+				case 0:
+				case 2:
+					NrTSingleton<NrSolCombinationSkillInfoManager>.Instance.SetShowHide(packet2.m_SoldierOpenData.i32ItemUnique, 0);
+					break;
+				case 1:
+					NrTSingleton<NrSolCombinationSkillInfoManager>.Instance.SetShowHide(packet2.m_SoldierOpenData.i32ItemUnique, 1);
+					break;
+				}
+			}
+			SolCombination_Dlg solCombination_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMBINATION_DLG) as SolCombination_Dlg;
+			if (solCombination_Dlg != null)
+			{
+				solCombination_Dlg.Show();
+			}
+		}
+
+		public static void GS_CHARACTER_DAILYDUNGEON_SET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_CHARACTER_DAILYDUNGEON_SET_ACK packet = kDeserializePacket.GetPacket<GS_CHARACTER_DAILYDUNGEON_SET_ACK>();
+			if (packet == null)
+			{
+				return;
+			}
+			DAILYDUNGEON_INFO dAILYDUNGEON_INFO = new DAILYDUNGEON_INFO();
+			dAILYDUNGEON_INFO.m_i32DayOfWeek = packet.i32DayOfWeek;
+			dAILYDUNGEON_INFO.m_i8Diff = packet.i8Diff;
+			dAILYDUNGEON_INFO.m_i32ResetCount = packet.i32ResetCount;
+			dAILYDUNGEON_INFO.m_i32IsClear = packet.i32IsClear;
+			dAILYDUNGEON_INFO.m_i8IsReward = packet.i8IsReward;
+			NrTSingleton<DailyDungeonManager>.Instance.AddDailyDungeonInfo(dAILYDUNGEON_INFO);
+			if ((int)packet.i8IsReward == 1)
+			{
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MAIN))
+				{
+					NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.DAILYDUNGEON_MAIN);
+				}
+				string empty = string.Empty;
+				EVENT_DAILY_DUNGEON_INFO dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(packet.i8Diff, (sbyte)packet.i32DayOfWeek);
+				if (dailyDungeonInfo != null)
+				{
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("400"),
+						"itemname",
+						NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(dailyDungeonInfo.i32RewardItemUnique),
+						"count",
+						dailyDungeonInfo.i32RewardItemNum.ToString()
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				}
+			}
+			else
+			{
+				DailyDungeon_Main_Dlg dailyDungeon_Main_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DAILYDUNGEON_MAIN) as DailyDungeon_Main_Dlg;
+				if (dailyDungeon_Main_Dlg != null)
+				{
+					bool bCheck = false;
+					if ((int)packet.i8IsReward == 1)
+					{
+						bCheck = true;
+					}
+					dailyDungeon_Main_Dlg.IsRewardCheck(bCheck);
+				}
+			}
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MSGBOX))
+			{
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.DAILYDUNGEON_MSGBOX);
+			}
+			DailyDungeon_Select_Dlg dailyDungeon_Select_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DAILYDUNGEON_SELECT) as DailyDungeon_Select_Dlg;
+			if (dailyDungeon_Select_Dlg != null)
+			{
+				dailyDungeon_Select_Dlg.SetData();
+			}
+			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+			if (bookmarkDlg != null)
+			{
+				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.ADVENTURE);
+			}
+			AdventureCollect_DLG adventureCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ADVENTURECOLLECT_DLG) as AdventureCollect_DLG;
+			if (adventureCollect_DLG != null)
+			{
+				adventureCollect_DLG.Update_Notice();
+			}
+		}
+
+		public static void GS_CHARACTER_DAILYDUNGEON_GET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_CHARACTER_DAILYDUNGEON_GET_ACK packet = kDeserializePacket.GetPacket<GS_CHARACTER_DAILYDUNGEON_GET_ACK>();
+			if (packet == null || packet.i32Result != 0)
+			{
+				return;
+			}
+			NrTSingleton<DailyDungeonManager>.Instance.ClearDailyDungeon();
+			for (int i = 0; i < 5; i++)
+			{
+				if (packet.i32DayOfWeek[i] != 0)
+				{
+					DAILYDUNGEON_INFO dAILYDUNGEON_INFO = new DAILYDUNGEON_INFO();
+					dAILYDUNGEON_INFO.m_i32DayOfWeek = packet.i32DayOfWeek[i];
+					dAILYDUNGEON_INFO.m_i8Diff = packet.i8Diff[i];
+					dAILYDUNGEON_INFO.m_i32ResetCount = packet.i32ResetCount[i];
+					dAILYDUNGEON_INFO.m_i32IsClear = packet.i32IsClear[i];
+					dAILYDUNGEON_INFO.m_i8IsReward = packet.i8IsReward[i];
+					NrTSingleton<DailyDungeonManager>.Instance.AddDailyDungeonInfo(dAILYDUNGEON_INFO);
+				}
+			}
+			DailyDungeon_Select_Dlg dailyDungeon_Select_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DAILYDUNGEON_SELECT) as DailyDungeon_Select_Dlg;
+			if (dailyDungeon_Select_Dlg != null)
+			{
+				dailyDungeon_Select_Dlg.SetData();
 			}
 		}
 
@@ -3397,7 +4151,7 @@ namespace PROTOCOL
 			NrCharBase charByPersonID = NrTSingleton<NkCharManager>.Instance.GetCharByPersonID(packet.SenderPersonID);
 			string text = TKString.NEWString(packet.SenderName);
 			string text2 = TKString.NEWString(packet.Msg);
-			if (packet.ChatType != 6 && packet.ChatType != 4)
+			if (packet.ChatType != 7 && packet.ChatType != 4 && packet.ChatType != 5)
 			{
 				NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
 				if (nrCharUser != null)
@@ -3423,11 +4177,10 @@ namespace PROTOCOL
 				name = ChatManager.GetChatNameStr(text, packet.ColoseumGrade, true);
 				if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BABELTOWER_CHAT))
 				{
-					BabelLobbyUserListDlg babelLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWERUSERLIST_DLG) as BabelLobbyUserListDlg;
-					if (babelLobbyUserListDlg != null)
+					BabelTower_FunctionDlg babelTower_FunctionDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWER_FUNCTION_DLG) as BabelTower_FunctionDlg;
+					if (babelTower_FunctionDlg != null)
 					{
-						babelLobbyUserListDlg.SetShowLayer(7, true);
-						babelLobbyUserListDlg.m_bChatNew.Visible = true;
+						babelTower_FunctionDlg.m_bChatNew.Visible = true;
 					}
 				}
 				if (babelTower_ChatDlg != null)
@@ -3436,9 +4189,19 @@ namespace PROTOCOL
 				}
 				return;
 			}
+			case CHAT_TYPE.MYTHRAID:
+			{
+				Batch_Chat_DLG batch_Chat_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATCH_CAHT_DLG) as Batch_Chat_DLG;
+				if (batch_Chat_DLG != null)
+				{
+					name = ChatManager.GetChatNameStr(text, packet.ColoseumGrade, true);
+					batch_Chat_DLG.PushMsg(name, text2, (CHAT_TYPE)packet.ChatType);
+				}
+				return;
+			}
 			case CHAT_TYPE.WATCH:
 			{
-				IL_E5:
+				IL_F5:
 				if (chatType == CHAT_TYPE.NTGUILD)
 				{
 					Main_UI_SystemMessage.ADDMessage(text2, SYSTEM_MESSAGE_TYPE.ADMIN_SYSTEM_MESSAGE);
@@ -3451,6 +4214,11 @@ namespace PROTOCOL
 				}
 				string chatNameStr = ChatManager.GetChatNameStr(text, packet.ColoseumGrade, true);
 				NrTSingleton<ChatManager>.Instance.PushMsg((CHAT_TYPE)packet.ChatType, chatNameStr, text2);
+				Batch_Chat_DLG batch_Chat_DLG2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATCH_CAHT_DLG) as Batch_Chat_DLG;
+				if (batch_Chat_DLG2 != null && packet.ChatType == 1)
+				{
+					batch_Chat_DLG2.PushMsg(chatNameStr, text2, (CHAT_TYPE)packet.ChatType);
+				}
 				if (packet.SenderPersonID <= 0L || charByPersonID == null)
 				{
 					return;
@@ -3465,7 +4233,7 @@ namespace PROTOCOL
 				ChatManager.NPCTellChat(text2);
 				return;
 			}
-			goto IL_E5;
+			goto IL_F5;
 		}
 
 		public static void GS_CHAT_DELETEROOM_NFY(NkDeserializePacket kDeserializePacket)
@@ -3477,7 +4245,7 @@ namespace PROTOCOL
 		public static void GS_CHAT_ADDUSER_NFY(NkDeserializePacket kDeserializePacket)
 		{
 			GS_CHAT_ADDUSER_NFY packet = kDeserializePacket.GetPacket<GS_CHAT_ADDUSER_NFY>();
-			if (packet.Type != 6)
+			if (packet.Type != 7)
 			{
 				return;
 			}
@@ -3736,13 +4504,13 @@ namespace PROTOCOL
 					dlg_Collect.CollectStart(packet.i32CharUnique, packet.i32PosX, packet.i32PosY, success);
 				}
 			}
-			else if (packet.i8Result != 69)
+			else if (packet.i8Result != 70)
 			{
-				if (packet.i8Result == 67)
+				if (packet.i8Result == 68)
 				{
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("329");
 				}
-				else if (packet.i8Result == 68)
+				else if (packet.i8Result == 69)
 				{
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("328");
 				}
@@ -3839,7 +4607,6 @@ namespace PROTOCOL
 					if (!myCharInfo.ColosseumMatching)
 					{
 						myCharInfo.ColosseumMatching = true;
-						NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.COLOSSEUMNOTICE_DLG);
 					}
 					NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.COLOSSEUM_CHALLENGE_DLG);
 				}
@@ -3848,7 +4615,6 @@ namespace PROTOCOL
 					myCharInfo.ColosseumMatching = false;
 					myCharInfo.Tournament = false;
 					NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.COLOSSEUMNOTICE_DLG);
-					NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.COLOSSEUMMAIN_DLG);
 				}
 				else if (packet.byMode == 4)
 				{
@@ -3856,6 +4622,16 @@ namespace PROTOCOL
 					myCharInfo.Tournament = true;
 					NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.COLOSSEUMNOTICE_DLG);
 				}
+			}
+			else if (packet.byMode == 0)
+			{
+				NrLoadPageScreen.ShowHideLoadingImg(false);
+				myCharInfo.ColosseumMatching = true;
+				NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.COLOSSEUMNOTICE_DLG);
+			}
+			else
+			{
+				NrLoadPageScreen.ShowHideLoadingImg(false);
 			}
 		}
 
@@ -4083,22 +4859,22 @@ namespace PROTOCOL
 			}
 		}
 
-		public static void GS_DECLAREWAR_GET_INFOLIST_ACK(NkDeserializePacket kDeserializePacket)
+		public static void GS_DECLAREWAR_LIST_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			GS_DECLAREWAR_GET_INFOLIST_ACK packet = kDeserializePacket.GetPacket<GS_DECLAREWAR_GET_INFOLIST_ACK>();
-			DeclareWar_GuildListDlg declareWar_GuildListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DECLAREWAR_GUILDLIST_DLG) as DeclareWar_GuildListDlg;
-			if (declareWar_GuildListDlg == null)
+			GS_DECLAREWAR_LIST_ACK packet = kDeserializePacket.GetPacket<GS_DECLAREWAR_LIST_ACK>();
+			NewGuildMainDlg newGuildMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_MAIN_DLG) as NewGuildMainDlg;
+			if (newGuildMainDlg == null)
 			{
 				return;
 			}
-			declareWar_GuildListDlg.ClaerList();
-			declareWar_GuildListDlg.SetPageText((int)(packet.i16PageIndex + 1), (int)packet.i16PageMax);
+			newGuildMainDlg.ClearDeclareWarList();
+			string targetName = TKString.NEWString(packet.strTargetGuildName);
 			for (int i = 0; i < (int)packet.i16Count; i++)
 			{
-				DECLAREWAR_SATE_SUB_INFO packet2 = kDeserializePacket.GetPacket<DECLAREWAR_SATE_SUB_INFO>();
-				declareWar_GuildListDlg.AddInfo(packet2);
+				GUILD_NAME packet2 = kDeserializePacket.GetPacket<GUILD_NAME>();
+				newGuildMainDlg.SetDeclareWarInfo(TKString.NEWString(packet2.strGuildName), targetName);
 			}
-			declareWar_GuildListDlg.SetList();
+			newGuildMainDlg.SetDeclareWarInfoEnd();
 		}
 
 		public static string GetStrDayToWeek(int day)
@@ -4134,16 +4910,36 @@ namespace PROTOCOL
 		public static void GS_DECLAREWAR_SET_TARGET_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_DECLAREWAR_SET_TARGET_ACK packet = kDeserializePacket.GetPacket<GS_DECLAREWAR_SET_TARGET_ACK>();
+			string text = TKString.NEWString(packet.strEnemyGuildName);
 			if (packet.i32Result == 0)
 			{
 				string empty = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				if (packet.i64GuildID == NrTSingleton<NewGuildManager>.Instance.GetGuildID())
 				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("782"),
-					"targetname",
-					TKString.NEWString(packet.strEnemyGuildName)
-				});
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("782"),
+						"targetname",
+						text
+					});
+				}
+				else
+				{
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("821"),
+						"targetname",
+						text
+					});
+				}
 				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				NewGuildMainDlg newGuildMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWGUILD_MAIN_DLG) as NewGuildMainDlg;
+				if (newGuildMainDlg != null)
+				{
+					newGuildMainDlg.SetIsDeclareWarTarget(true);
+					newGuildMainDlg.SetButton();
+					newGuildMainDlg.Send_GS_DECLAREWAR_LIST_REQ();
+				}
 			}
 			else if (packet.i32Result == 9500)
 			{
@@ -4151,25 +4947,96 @@ namespace PROTOCOL
 			}
 			else if (packet.i32Result == 9550)
 			{
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("792"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				string empty2 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("823"),
+					"targetname",
+					text
+				});
+				Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			}
 			else if (packet.i32Result == 9551)
 			{
-				MINE_CONSTANT_Manager instance = MINE_CONSTANT_Manager.GetInstance();
-				if (instance == null)
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("791"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			else if (packet.i32Result == 9560)
+			{
+				if (MINE_CONSTANT_Manager.GetInstance() == null)
 				{
 					string message = string.Format("Warning Result {0}", packet.i32Result);
 					Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
 					return;
 				}
-				int value = instance.GetValue(eMINE_CONSTANT.eMINE_CONSTANT_DECLAREWAR_START_DAY);
-				int value2 = instance.GetValue(eMINE_CONSTANT.eMINE_CONSTANT_DECLAREWAR_START_HOUR);
-				int value3 = instance.GetValue(eMINE_CONSTANT.eMINE_CONSTANT_DECLAREWAR_START_MIMUTE);
-				int value4 = instance.GetValue(eMINE_CONSTANT.eMINE_CONSTANT_DECLAREWAR_PLAY_DAY);
-				int value5 = instance.GetValue(eMINE_CONSTANT.eMINE_CONSTANT_DECLAREWAR_PLAY_HOUR);
-				int value6 = instance.GetValue(eMINE_CONSTANT.eMINE_CONSTANT_DECLAREWAR_PLAY_MIMUTE);
-				string strDayToWeek = NrReceiveGame.GetStrDayToWeek(value);
-				string strDayToWeek2 = NrReceiveGame.GetStrDayToWeek(value4);
+				string strDayToWeek = NrReceiveGame.GetStrDayToWeek((int)packet.bDaclareDay);
+				string strDayToWeek2 = NrReceiveGame.GetStrDayToWeek((int)packet.bDeclareWarStartDay);
+				string empty3 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("794"),
+					"day1",
+					strDayToWeek,
+					"hour1",
+					string.Format("{0:D2}", packet.bDaclareHour),
+					"min1",
+					string.Format("{0:D2}", packet.bDaclareMin),
+					"day2",
+					strDayToWeek2,
+					"hour2",
+					string.Format("{0:D2}", packet.bDeclareWarStartHour),
+					"min2",
+					string.Format("{0:D2}", packet.bDeclareWarStartMin)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty3, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(string.Format("result {0}", packet.i32Result), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+		}
+
+		public static void GS_DECLAREWAR_CANCEL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_DECLAREWAR_CANCEL_ACK packet = kDeserializePacket.GetPacket<GS_DECLAREWAR_CANCEL_ACK>();
+			NewGuildMainDlg newGuildMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWGUILD_MAIN_DLG) as NewGuildMainDlg;
+			if (packet.i32Result == 0)
+			{
+				if (newGuildMainDlg != null)
+				{
+					newGuildMainDlg.SetIsDeclareWarTarget(false);
+					newGuildMainDlg.SetButton();
+					newGuildMainDlg.Send_GS_DECLAREWAR_LIST_REQ();
+				}
+				if (packet.i64GuildID == NrTSingleton<NewGuildManager>.Instance.GetGuildID())
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("820"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
+				else
+				{
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("822"),
+						"targetname",
+						TKString.NEWString(packet.strEnemyGuildName)
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
+			}
+			else if (packet.i32Result == 9500)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("791"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			else if (packet.i32Result == 9560)
+			{
+				if (MINE_CONSTANT_Manager.GetInstance() == null)
+				{
+					string message = string.Format("Warning Result {0}", packet.i32Result);
+					Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+					return;
+				}
+				string strDayToWeek = NrReceiveGame.GetStrDayToWeek((int)packet.bDaclareDay);
+				string strDayToWeek2 = NrReceiveGame.GetStrDayToWeek((int)packet.bDeclareWarStartDay);
 				string empty2 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
 				{
@@ -4177,17 +5044,26 @@ namespace PROTOCOL
 					"day1",
 					strDayToWeek,
 					"hour1",
-					string.Format("{0:D2}", value2),
+					string.Format("{0:D2}", packet.bDaclareHour),
 					"min1",
-					string.Format("{0:D2}", value3),
+					string.Format("{0:D2}", packet.bDaclareMin),
 					"day2",
 					strDayToWeek2,
 					"hour2",
-					string.Format("{0:D2}", value5),
+					string.Format("{0:D2}", packet.bDeclareWarStartHour),
 					"min2",
-					string.Format("{0:D2}", value5)
+					string.Format("{0:D2}", packet.bDeclareWarStartMin)
 				});
 				Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+			else if (packet.i32Result == 9552)
+			{
+				if (newGuildMainDlg != null)
+				{
+					newGuildMainDlg.SetIsDeclareWarTarget(false);
+					newGuildMainDlg.SetButton();
+				}
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("810"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
 			}
 			else
 			{
@@ -4337,9 +5213,9 @@ namespace PROTOCOL
 			}
 		}
 
-		public static void GS_EXPEDITION_CHAR_MILLITARY_CHECK_NFY(NkDeserializePacket kDeserializePacket)
+		public static void GS_EXPEDITION_CHAR_MILITARY_CHECK_NFY(NkDeserializePacket kDeserializePacket)
 		{
-			GS_EXPEDITION_CHAR_MILLITARY_CHECK_NFY packet = kDeserializePacket.GetPacket<GS_EXPEDITION_CHAR_MILLITARY_CHECK_NFY>();
+			GS_EXPEDITION_CHAR_MILITARY_CHECK_NFY packet = kDeserializePacket.GetPacket<GS_EXPEDITION_CHAR_MILITARY_CHECK_NFY>();
 			if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
 			{
 				return;
@@ -4427,7 +5303,7 @@ namespace PROTOCOL
 				USER_FRIEND_INFO packet2 = kDeserializePacket.GetPacket<USER_FRIEND_INFO>();
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.AddFriend(packet2);
 			}
-			FiveRocks.SetUserFriendCount((int)packet.byFriendInfoCount);
+			Tapjoy.SetUserFriendCount((int)packet.byFriendInfoCount);
 		}
 
 		public static void GS_FRIEND_APPLY_ACK(NkDeserializePacket kDeserializePacket)
@@ -4540,7 +5416,7 @@ namespace PROTOCOL
 				}
 				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "COMMUNITY", "CANCEL", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 			}
-			FiveRocks.SetUserFriendCount(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.GetFriendCount());
+			Tapjoy.SetUserFriendCount(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.GetFriendCount());
 		}
 
 		public static void GS_DEL_FRIEND_ACK(NkDeserializePacket kDeserializePacket)
@@ -4604,7 +5480,7 @@ namespace PROTOCOL
 				string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("563");
 				Main_UI_SystemMessage.ADDMessage(textFromNotify3, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			}
-			FiveRocks.SetUserFriendCount(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.GetFriendCount());
+			Tapjoy.SetUserFriendCount(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kFriendInfo.GetFriendCount());
 		}
 
 		public static void GS_FRIEND_LOGIN_NFY(NkDeserializePacket kDeserializePacket)
@@ -4614,7 +5490,7 @@ namespace PROTOCOL
 			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.COMMUNITY_DLG))
 			{
 				CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
-				communityUI_DLG.UpdateFriend(packet.FriendInfo.nPersonID);
+				communityUI_DLG.UpdateFriend(packet.FriendInfo.nPersonID, true);
 			}
 		}
 
@@ -4625,7 +5501,7 @@ namespace PROTOCOL
 			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.COMMUNITY_DLG))
 			{
 				CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
-				communityUI_DLG.UpdateFriend(packet.FriendInfo.nPersonID);
+				communityUI_DLG.UpdateFriend(packet.FriendInfo.nPersonID, true);
 			}
 		}
 
@@ -4636,7 +5512,7 @@ namespace PROTOCOL
 			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.COMMUNITY_DLG))
 			{
 				CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
-				communityUI_DLG.UpdateFriend(packet.FriendInfo.nPersonID);
+				communityUI_DLG.UpdateFriend(packet.FriendInfo.nPersonID, true);
 			}
 		}
 
@@ -4817,7 +5693,12 @@ namespace PROTOCOL
 				CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
 				if (communityUI_DLG != null)
 				{
-					communityUI_DLG.UpdateFriend(packet.i64FriendPersonID);
+					communityUI_DLG.UpdateFriend(packet.i64FriendPersonID, true);
+				}
+				SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+				if (solMilitaryGroupDlg != null)
+				{
+					solMilitaryGroupDlg.RefreshSolList();
 				}
 			}
 			else
@@ -4895,7 +5776,6 @@ namespace PROTOCOL
 						else if (byRewardType == 2 || byRewardType == 3)
 						{
 							int i32ItemUnique = packet.i32ItemUnique;
-							int i32ItemNum = packet.i32ItemNum;
 							string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(i32ItemUnique);
 							text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("737");
 							if (packet.i32VipItemUnique == 0 && packet.i32VipItemNum > 0)
@@ -4987,7 +5867,7 @@ namespace PROTOCOL
 				CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
 				if (communityUI_DLG != null)
 				{
-					communityUI_DLG.UpdateFriend(packet.i64FriendPersonID);
+					communityUI_DLG.UpdateFriend(packet.i64FriendPersonID, true);
 				}
 				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
 				if (bookmarkDlg != null)
@@ -4996,19 +5876,36 @@ namespace PROTOCOL
 				}
 				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMPOSE_MAIN_DLG))
 				{
-					SolComposeMainDlg.Instance.MakeSubSolList();
+					if (SolComposeMainDlg.Instance.ContainSubSoldier(packet.i64SolID))
+					{
+						SolComposeMainDlg.Instance.MakeSubSolList();
+					}
+					if (SolComposeMainDlg.Instance.ContainExtractSoldier(packet.i64SolID))
+					{
+						SolComposeMainDlg.Instance.RefreshSelectExtract();
+					}
 				}
 				SolDetail_Info_Dlg solDetail_Info_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLDETAIL_DLG) as SolDetail_Info_Dlg;
 				if (solDetail_Info_Dlg != null)
 				{
-					solDetail_Info_Dlg.GetSelectToolBarRefresh();
+					solDetail_Info_Dlg.GetSelectToolBarRefresh(packet.i64SolID);
+				}
+				Myth_Legend_Info_DLG myth_Legend_Info_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_LEGEND_INFO_DLG) as Myth_Legend_Info_DLG;
+				if (myth_Legend_Info_DLG != null)
+				{
+					NkSoldierInfo soldierInfoFromSolID2 = charPersonInfo.GetSoldierInfoFromSolID(packet.i64SolID);
+					if (soldierInfoFromSolID2 == null)
+					{
+						return;
+					}
+					myth_Legend_Info_DLG.InitSetCharKind(soldierInfoFromSolID2.GetCharKind());
 				}
 			}
 			else if (packet.i32Result == 31)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
 			}
-			else if (packet.i32Result == 75)
+			else if (packet.i32Result == 76)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773"));
 			}
@@ -5141,7 +6038,7 @@ namespace PROTOCOL
 				CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
 				if (communityUI_DLG != null)
 				{
-					communityUI_DLG.UpdateFriend(soldierInfoFromSolID.GetFriendPersonID());
+					communityUI_DLG.UpdateFriend(soldierInfoFromSolID.GetFriendPersonID(), true);
 				}
 				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
 				if (bookmarkDlg != null)
@@ -5159,9 +6056,141 @@ namespace PROTOCOL
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
 			}
-			else if (packet.i32Result == 75)
+			else if (packet.i32Result == 76)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773"));
+			}
+		}
+
+		public static void GS_FRIEND_HELPSOL_ALL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_FRIEND_HELPSOL_ALL_ACK packet = kDeserializePacket.GetPacket<GS_FRIEND_HELPSOL_ALL_ACK>();
+			if (packet.i32Result == 0)
+			{
+				if (packet.i32ItemNum == 0 && packet.i32VipItemNum == 0 && packet.i64GiveMoney == 0L)
+				{
+					return;
+				}
+				string text = string.Empty;
+				string empty = string.Empty;
+				NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+				if (kMyCharInfo == null)
+				{
+					return;
+				}
+				CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
+				for (int i = 0; i < 30; i++)
+				{
+					if (packet.i64SolID[i] > 0L)
+					{
+						NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(packet.i64SolID[i]);
+						if (soldierInfoFromSolID != null)
+						{
+							TsLog.LogWarning(" {0} : Solid = {1}", new object[]
+							{
+								i,
+								packet.i64SolID[i]
+							});
+							soldierInfoFromSolID.AddHelpExp = 0L;
+							kMyCharInfo.SetCharDetail(9, packet.i64CharDetailCount_HelpSolGiveItem);
+							NrTSingleton<FiveRocksEventManager>.Instance.HeartsInflow(eHEARTS_INFLOW.FRIEND_HELP_REWARD, 1L);
+						}
+					}
+				}
+				if (communityUI_DLG != null)
+				{
+					communityUI_DLG.Close();
+				}
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("869");
+				string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					text,
+					"itemname",
+					itemNameByItemUnique,
+					"itemnum",
+					packet.i32ItemNum.ToString(),
+					"gold",
+					packet.i64GiveMoney
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				TsLog.LogWarning(" item {0} : num {1} : Gold {2}", new object[]
+				{
+					packet.i32ItemUnique,
+					packet.i32ItemNum,
+					packet.i64TotalMoney
+				});
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64TotalMoney;
+				if (!NrTSingleton<ContentsLimitManager>.Instance.IsVipExp() && packet.i32VipItemNum > 0)
+				{
+					int i32VipItemUnique = packet.i32VipItemUnique;
+					int i32VipItemNum = packet.i32VipItemNum;
+					string text2 = string.Empty;
+					if (packet.i32VipItemUnique > 0)
+					{
+						text2 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(i32VipItemUnique);
+					}
+					else
+					{
+						if (packet.i32ItemUnique <= 0)
+						{
+							return;
+						}
+						text2 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique);
+					}
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("779");
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						text,
+						"itemname",
+						text2,
+						"itemnum",
+						i32VipItemNum.ToString()
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+					TsLog.LogWarning(" Vip item {0} : num {1} ", new object[]
+					{
+						packet.i32VipItemUnique,
+						i32VipItemNum
+					});
+				}
+				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+				if (bookmarkDlg != null)
+				{
+					bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.COMMUNITY);
+				}
+				SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+				if (solMilitaryGroupDlg != null)
+				{
+					solMilitaryGroupDlg.RefreshSolList();
+				}
+			}
+			else if (packet.i32Result != -10)
+			{
+				if (packet.i32Result != -20)
+				{
+					if (packet.i32Result != -30)
+					{
+						if (packet.i32Result != -40)
+						{
+							if (packet.i32Result != -50)
+							{
+								if (packet.i32Result != -60)
+								{
+									if (packet.i32Result == 31)
+									{
+										Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
+									}
+									else if (packet.i32Result == 76)
+									{
+										Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773"));
+									}
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 
@@ -5176,7 +6205,7 @@ namespace PROTOCOL
 			CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
 			if (communityUI_DLG != null)
 			{
-				communityUI_DLG.UpdateFriend(packet.i64FriendPersonID);
+				communityUI_DLG.UpdateFriend(packet.i64FriendPersonID, true);
 			}
 		}
 
@@ -5196,7 +6225,7 @@ namespace PROTOCOL
 			CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
 			if (communityUI_DLG != null)
 			{
-				communityUI_DLG.UpdateFriend(packet.i64FriendPersonID);
+				communityUI_DLG.UpdateFriend(packet.i64FriendPersonID, true);
 			}
 			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
 			if (bookmarkDlg != null)
@@ -5238,7 +6267,7 @@ namespace PROTOCOL
 			CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
 			if (communityUI_DLG != null)
 			{
-				communityUI_DLG.UpdateFriend(packet.i64FriendPersonID);
+				communityUI_DLG.UpdateFriend(packet.i64FriendPersonID, true);
 			}
 		}
 
@@ -5274,7 +6303,7 @@ namespace PROTOCOL
 			if (solMilitaryGroupDlg != null)
 			{
 				solMilitaryGroupDlg.RefreshBattleSolList();
-				solMilitaryGroupDlg.RefreshSolList();
+				solMilitaryGroupDlg.MakeSolListAndSort();
 				solMilitaryGroupDlg.CheckSkillUpSolNum();
 			}
 			SolMilitarySelectDlg solMilitarySelectDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYSELECT_DLG) as SolMilitarySelectDlg;
@@ -5285,27 +6314,24 @@ namespace PROTOCOL
 			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
 			if (bookmarkDlg != null)
 			{
-				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.SOLINFO);
+				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.HERO);
+			}
+			HeroCollect_DLG heroCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.HEROCOLLECT_DLG) as HeroCollect_DLG;
+			if (heroCollect_DLG != null)
+			{
+				heroCollect_DLG.Update_Notice();
 			}
 		}
 
-		public static void GS_SET_SOLDIER_MILLITARY_ACK(NkDeserializePacket kDeserializePacket)
+		public static void GS_SET_SOLDIER_MILITARY_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			GS_SET_SOLDIER_MILLITARY_ACK packet = kDeserializePacket.GetPacket<GS_SET_SOLDIER_MILLITARY_ACK>();
+			GS_SET_SOLDIER_MILITARY_ACK packet = kDeserializePacket.GetPacket<GS_SET_SOLDIER_MILITARY_ACK>();
 			if (packet.nResult == 0)
 			{
 				NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-				if (kMyCharInfo == null)
-				{
-					return;
-				}
 				NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-				if (charPersonInfo == null)
-				{
-					return;
-				}
 				NkMilitaryList militaryList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetMilitaryList();
-				if (militaryList == null)
+				if (charPersonInfo == null || kMyCharInfo == null || militaryList == null)
 				{
 					return;
 				}
@@ -5342,6 +6368,11 @@ namespace PROTOCOL
 				{
 					solMilitaryGroupDlg.CheckSkillUpSolNum();
 				}
+				MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
+				if (mineGuildCurrentStatusInfoDlg != null)
+				{
+					mineGuildCurrentStatusInfoDlg.RefreshList();
+				}
 				DateTime dueDate = PublicMethod.GetDueDate(PublicMethod.GetCurTime());
 				if (packet.nLeaderMilitary > 0 && packet.i32GuildPushCount < 10 && 8 <= dueDate.Hour && 21 >= dueDate.Hour && (NrTSingleton<NewGuildManager>.Instance.IsMaster(kMyCharInfo.m_PersonID) || NrTSingleton<NewGuildManager>.Instance.IsSubMaster(kMyCharInfo.m_PersonID) || NrTSingleton<NewGuildManager>.Instance.IsOfficer(kMyCharInfo.m_PersonID)))
 				{
@@ -5363,6 +6394,10 @@ namespace PROTOCOL
 			else if (packet.nResult == 9107)
 			{
 				StageWorld.MINEMSG_TYPE = eMINE_MESSAGE.eMINE_MESSAGE_GO_MILITARY_FAIL04;
+			}
+			else if (packet.nResult == 9560)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("730"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			}
 			else
 			{
@@ -5438,11 +6473,15 @@ namespace PROTOCOL
 		public static void GS_SOLDIER_RECRUIT_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_SOLDIER_RECRUIT_ACK packet = kDeserializePacket.GetPacket<GS_SOLDIER_RECRUIT_ACK>();
+			SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
+			if (solRecruitDlg != null)
+			{
+				solRecruitDlg.SetRecruitButtonEnable(true);
+			}
 			if (packet.i8bPosted == 1)
 			{
 				NkUserInventory.GetInstance().SetInfo(packet.kItem, -1);
 				NoticeIconDlg.SetIcon(ICON_TYPE.POST, true);
-				SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
 				if (solRecruitDlg != null)
 				{
 					solRecruitDlg.SetTicketList();
@@ -5454,6 +6493,7 @@ namespace PROTOCOL
 			}
 			if (packet.Result != 0)
 			{
+				NrTSingleton<NkClientLogic>.Instance.SetCanOpenTicket(true);
 				return;
 			}
 			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
@@ -5503,7 +6543,7 @@ namespace PROTOCOL
 					soldierInfoFromSolID.SetSolSubData(packet3.nSubDataType, packet3.nSubDataValue);
 				}
 			}
-			NrReceiveGame.SolRecruitAfter(sOLDIER_INFO, array, packet.SolCount, packet.RecruitType, 1 == packet.i8bPosted);
+			NrReceiveGame.SolRecruitAfter(sOLDIER_INFO, array, packet.SolCount, packet.RecruitType, packet.kItem, 1 == packet.i8bPosted, null);
 			COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
 			if (instance == null)
 			{
@@ -5699,6 +6739,14 @@ namespace PROTOCOL
 		{
 			GS_NOTICE_ICON_NFY packet = kDeserializePacket.GetPacket<GS_NOTICE_ICON_NFY>();
 			NoticeIconDlg.SetIcon((ICON_TYPE)packet.Type, true);
+			if (packet.Type == 4)
+			{
+				MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
+				if (mineGuildCurrentStatusInfoDlg != null)
+				{
+					mineGuildCurrentStatusInfoDlg.RefreshList();
+				}
+			}
 		}
 
 		public static void GS_ENHANCEITEM_ACK(NkDeserializePacket kDeserializePacket)
@@ -5766,11 +6814,73 @@ namespace PROTOCOL
 			}
 		}
 
+		public static void GS_ITEMSKILL_REINFORCE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEMSKILL_REINFORCE_ACK packet = kDeserializePacket.GetPacket<GS_ITEMSKILL_REINFORCE_ACK>();
+			if (packet.RessultType == -100)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("9"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+			else
+			{
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.LeftMoney;
+				if (packet.RepairType == 0)
+				{
+					ItemSkill_Dlg itemSkill_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMSKILL_DLG) as ItemSkill_Dlg;
+					if (itemSkill_Dlg != null)
+					{
+						itemSkill_Dlg.RefrshData();
+					}
+					ItemSkillResult_Dlg itemSkillResult_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMSKILL_RESULT_DLG) as ItemSkillResult_Dlg;
+					if (itemSkillResult_Dlg != null)
+					{
+						itemSkillResult_Dlg.SetItemSkillReinforceData(packet);
+					}
+				}
+				else
+				{
+					ReduceResultDlg reduceResultDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.REDUCERESULT_DLG) as ReduceResultDlg;
+					if (reduceResultDlg != null)
+					{
+						reduceResultDlg.SetItemrepairResult(packet);
+					}
+					ReduceMainDlg reduceMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.REDUCEMAIN_DLG) as ReduceMainDlg;
+					if (reduceMainDlg != null)
+					{
+						reduceMainDlg.InitRepairData();
+					}
+				}
+			}
+		}
+
 		public static void GS_REPAIRITEM_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_REPAIRITEM_ACK packet = kDeserializePacket.GetPacket<GS_REPAIRITEM_ACK>();
 			if (packet.Result == 0)
 			{
+			}
+		}
+
+		public static void GS_ITEMEVOLUTION_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEMEVOLUTION_ACK packet = kDeserializePacket.GetPacket<GS_ITEMEVOLUTION_ACK>();
+			ItemEvolution_Dlg itemEvolution_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMEVOLUTION_DLG) as ItemEvolution_Dlg;
+			if (itemEvolution_Dlg != null)
+			{
+				itemEvolution_Dlg.RefreshData();
+			}
+			if (packet.Result == -100)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("9"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+			else
+			{
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.LeftMoney;
+				CompleteBox_DLG completeBox_DLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.COMPLETEBOX_DLG) as CompleteBox_DLG;
+				if (completeBox_DLG != null)
+				{
+					completeBox_DLG.SetEvolutionResultData(packet);
+				}
 			}
 		}
 
@@ -5792,7 +6902,7 @@ namespace PROTOCOL
 					"targetname",
 					itemNameByItemUnique,
 					"count",
-					num
+					ANNUALIZED.Convert(num)
 				});
 				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
 			}
@@ -5800,6 +6910,23 @@ namespace PROTOCOL
 
 		public static void GS_DISASSEMBLEITEM_ACK(NkDeserializePacket kDeserializePacket)
 		{
+			GS_DISASSEMBLEITEM_ACK packet = kDeserializePacket.GetPacket<GS_DISASSEMBLEITEM_ACK>();
+			if (packet.Result == 0)
+			{
+				ReduceResultDlg reduceResultDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.REDUCERESULT_DLG) as ReduceResultDlg;
+				if (reduceResultDlg != null)
+				{
+					reduceResultDlg.SetResult(packet);
+				}
+			}
+			else if (packet.Result == 31)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("487"));
+			}
 		}
 
 		public static void GS_ITEM_COMPOSE_ACK(NkDeserializePacket kDeserializePacket)
@@ -5822,7 +6949,6 @@ namespace PROTOCOL
 			GS_CURRENT_MONEY_NFY packet = kDeserializePacket.GetPacket<GS_CURRENT_MONEY_NFY>();
 			if (packet.i32Result == 0)
 			{
-				long money = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money;
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64CurrnetMoney;
 				if (packet.i8CreateType == 14)
 				{
@@ -5837,8 +6963,6 @@ namespace PROTOCOL
 
 		public static void GS_CURRENT_CASHINFO_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			GS_CURRENT_CASHINFO_ACK packet = kDeserializePacket.GetPacket<GS_CURRENT_CASHINFO_ACK>();
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.SetCoinInfo(packet.nRealHearts, packet.nFreeHearts);
 		}
 
 		public static void GS_OTHERCHAR_INFO_PERMIT_ACK(NkDeserializePacket kDeserializePacket)
@@ -5926,6 +7050,12 @@ namespace PROTOCOL
 			GS_ACCOUNT_WORLD_MOVE_ACK packet = kDeserializePacket.GetPacket<GS_ACCOUNT_WORLD_MOVE_ACK>();
 			if (packet.Result != 0)
 			{
+				string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("94");
+				string textFromMessageBox2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("31");
+				string message = string.Empty;
+				message = textFromMessageBox2 + "  [ERRORCODE] = " + packet.Result.ToString();
+				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+				msgBoxUI.SetMsg(null, null, textFromMessageBox, message, eMsgType.MB_OK, 2);
 				return;
 			}
 			NrTSingleton<CMovingServer>.Instance.SetMovingWorldInfo(packet.m_nUID, packet.i64MovingWorld_KEY, TKString.NEWString(packet.szMoveFrontServerIP), packet.i16Port, packet.m_nCHMoveTargetPersonID, packet.m_nCHMoveType, packet.i8AgitMove);
@@ -6068,8 +7198,7 @@ namespace PROTOCOL
 		{
 			GS_SET_SOLDIER_BATTLESKILL_ACK packet = kDeserializePacket.GetPacket<GS_SET_SOLDIER_BATTLESKILL_ACK>();
 			BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(packet.nBattleSkillUnique);
-			BATTLESKILL_TRAINING battleSkillTraining = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillTraining(packet.nBattleSkillUnique, packet.nBattleSkillLevel);
-			if (battleSkillBase == null || battleSkillTraining == null)
+			if (battleSkillBase == null)
 			{
 				return;
 			}
@@ -6080,7 +7209,7 @@ namespace PROTOCOL
 				if (charPersonInfo != null)
 				{
 					string empty = string.Empty;
-					if (textFromInterface != null)
+					if (textFromInterface != null && packet.bBattleSkillMessageShow)
 					{
 						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 						{
@@ -6105,7 +7234,14 @@ namespace PROTOCOL
 						SolSkillUpdateDlg solSkillUpdateDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLSKILLUPDATE_DLG) as SolSkillUpdateDlg;
 						if (solSkillUpdateDlg != null)
 						{
-							solSkillUpdateDlg.SetData(ref soldierInfoFromSolID, packet.nBattleSkillUnique);
+							if (battleSkillBase.m_nMythSkillType == 1)
+							{
+								solSkillUpdateDlg.SetData(ref soldierInfoFromSolID, packet.nBattleSkillUnique, true);
+							}
+							else
+							{
+								solSkillUpdateDlg.SetData(ref soldierInfoFromSolID, packet.nBattleSkillUnique, false);
+							}
 						}
 					}
 					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.lLeftMoney;
@@ -6126,12 +7262,21 @@ namespace PROTOCOL
 					BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
 					if (bookmarkDlg != null)
 					{
-						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.SOLINFO);
+						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.HERO);
+					}
+					HeroCollect_DLG heroCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.HEROCOLLECT_DLG) as HeroCollect_DLG;
+					if (heroCollect_DLG != null)
+					{
+						heroCollect_DLG.Update_Notice();
 					}
 					SolMilitaryGroupDlg solMilitaryGroupDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 					if (solMilitaryGroupDlg2 != null)
 					{
 						solMilitaryGroupDlg2.CheckSkillUpSolNum();
+					}
+					if (soldierInfoFromSolID != null)
+					{
+						soldierInfoFromSolID.UpdateSoldierStatInfo();
 					}
 				}
 			}
@@ -6155,7 +7300,6 @@ namespace PROTOCOL
 							"skilllevel",
 							packet.nBattleSkillLevel
 						});
-						Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 					}
 					break;
 				case 4006:
@@ -6173,7 +7317,205 @@ namespace PROTOCOL
 					}
 					break;
 				case 4007:
+				{
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("343");
+					int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_MYTH_SKILL_ITEMUNIQUE);
+					string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(value);
+					if (itemNameByItemUnique != null)
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"itemname",
+							itemNameByItemUnique,
+							"skillname",
+							textFromInterface,
+							"skilllevel",
+							packet.nBattleSkillLevel
+						});
+					}
+					else
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"itemname",
+							"None-Itemname",
+							"skillname",
+							textFromInterface,
+							"skilllevel",
+							packet.nBattleSkillLevel
+						});
+					}
 					break;
+				}
+				case 4008:
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("345");
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					{
+						text
+					});
+					Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					break;
+				default:
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("345");
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					{
+						text
+					});
+					Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					break;
+				}
+				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PRODUCTION", "LEVELUP-CANCLE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+				Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+		}
+
+		public static void GS_SET_SOLDIER_MYTH_BATTLESKILL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_SET_SOLDIER_MYTH_BATTLESKILL_ACK packet = kDeserializePacket.GetPacket<GS_SET_SOLDIER_MYTH_BATTLESKILL_ACK>();
+			BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(packet.nBattleSkillUnique);
+			if (battleSkillBase == null)
+			{
+				return;
+			}
+			string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey);
+			if (packet.nResult == 0)
+			{
+				NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				if (charPersonInfo != null)
+				{
+					string empty = string.Empty;
+					if (textFromInterface != null && packet.bBattleSkillMessageShow)
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+						{
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("340"),
+							"skillname",
+							textFromInterface,
+							"skilllevel",
+							packet.nBattleSkillLevel
+						});
+						Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+						NrSound.ImmedatePlay("UI_SFX", "PRODUCTION", "GET_SKILL");
+					}
+					NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(packet.nSolID);
+					if (soldierInfoFromSolID != null)
+					{
+						soldierInfoFromSolID.SetBattleSkillData(packet.nBattleSkillIndex, packet.nBattleSkillUnique, packet.nBattleSkillLevel);
+						if (packet.nBattleSkillUnique_Second > 0)
+						{
+							soldierInfoFromSolID.SetBattleSkillData(packet.nBattleSkillIndex_Second, packet.nBattleSkillUnique_Second, packet.nBattleSkillLevel_Second);
+						}
+						soldierInfoFromSolID.UpdateSoldierStatInfo();
+						SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+						if (solMilitaryGroupDlg != null)
+						{
+							solMilitaryGroupDlg.RefreshSkillInfo(soldierInfoFromSolID);
+						}
+						SolSkillUpdateDlg solSkillUpdateDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLSKILLUPDATE_DLG) as SolSkillUpdateDlg;
+						if (solSkillUpdateDlg != null)
+						{
+							if (battleSkillBase.m_nMythSkillType == 1)
+							{
+								solSkillUpdateDlg.SetData(ref soldierInfoFromSolID, packet.nBattleSkillUnique, true);
+							}
+							else
+							{
+								solSkillUpdateDlg.SetData(ref soldierInfoFromSolID, packet.nBattleSkillUnique, false);
+							}
+						}
+					}
+					BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+					if (bookmarkDlg != null)
+					{
+						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.HERO);
+					}
+					HeroCollect_DLG heroCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.HEROCOLLECT_DLG) as HeroCollect_DLG;
+					if (heroCollect_DLG != null)
+					{
+						heroCollect_DLG.Update_Notice();
+					}
+					SolMilitaryGroupDlg solMilitaryGroupDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+					if (solMilitaryGroupDlg2 != null)
+					{
+						solMilitaryGroupDlg2.CheckSkillUpSolNum();
+					}
+					if (soldierInfoFromSolID != null)
+					{
+						soldierInfoFromSolID.UpdateSoldierStatInfo();
+					}
+				}
+			}
+			else
+			{
+				string text = string.Empty;
+				string empty2 = string.Empty;
+				switch (packet.nResult)
+				{
+				case 4004:
+					break;
+				case 4005:
+					if (textFromInterface != null)
+					{
+						text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("344");
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"skillname",
+							textFromInterface,
+							"skilllevel",
+							packet.nBattleSkillLevel
+						});
+					}
+					break;
+				case 4006:
+					if (textFromInterface != null)
+					{
+						text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("341");
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"skillname",
+							textFromInterface,
+							"skilllevel",
+							packet.nBattleSkillLevel
+						});
+					}
+					break;
+				case 4007:
+				{
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("343");
+					int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_MYTH_SKILL_ITEMUNIQUE);
+					string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(value);
+					if (itemNameByItemUnique != null)
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"itemname",
+							itemNameByItemUnique,
+							"skillname",
+							textFromInterface,
+							"skilllevel",
+							packet.nBattleSkillLevel
+						});
+					}
+					else
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"itemname",
+							"None-Itemname",
+							"skillname",
+							textFromInterface,
+							"skilllevel",
+							packet.nBattleSkillLevel
+						});
+					}
+					break;
+				}
 				case 4008:
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("345");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
@@ -6211,7 +7553,7 @@ namespace PROTOCOL
 					{
 						string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2577");
 						string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("326");
-						msgBoxUI.SetMsg(null, null, textFromInterface, textFromMessageBox, eMsgType.MB_OK);
+						msgBoxUI.SetMsg(null, null, textFromInterface, textFromMessageBox, eMsgType.MB_OK, 2);
 					}
 				}
 				string text = string.Empty;
@@ -6248,12 +7590,29 @@ namespace PROTOCOL
 			{
 				NrTSingleton<ContentsLimitManager>.Instance.SetReload();
 			}
+			List<KeyValuePair<long, SolCombinationInfo_Data>> combinationInfoSortedSorList = NrTSingleton<NrSolCombinationSkillInfoManager>.Instance.GetCombinationInfoSortedSorList();
+			foreach (KeyValuePair<long, SolCombinationInfo_Data> current in combinationInfoSortedSorList)
+			{
+				SolCombinationInfo_Data value = current.Value;
+				if (value != null)
+				{
+					List<string> solCombinationCharCodeList = value.GetSolCombinationCharCodeList();
+					foreach (string current2 in solCombinationCharCodeList)
+					{
+						int charKindByCode = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(current2);
+						if (NrTSingleton<ContentsLimitManager>.Instance.IsSoldierRecruit(charKindByCode))
+						{
+							current.Value.m_nCombinationIsShow = 0;
+						}
+					}
+				}
+			}
 		}
 
 		public static void GS_COMMONCONSTANT_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_COMMONCONSTANT_ACK packet = kDeserializePacket.GetPacket<GS_COMMONCONSTANT_ACK>();
-			for (int i = 1; i < 122; i++)
+			for (int i = 1; i < 164; i++)
 			{
 				COMMON_CONSTANT_Manager.GetInstance().SetData((eCOMMON_CONSTANT)i, packet.i32Constant[i]);
 			}
@@ -6285,7 +7644,7 @@ namespace PROTOCOL
 					if (soldierInfoFromSolID != null)
 					{
 						soldierInfoFromSolID.SetCharKind(packet.i32CharKind);
-						for (int i = 0; i < 3; i++)
+						for (int i = 0; i < 6; i++)
 						{
 							soldierInfoFromSolID.SetBattleSkillData(i, packet.i32SkillUnique[i], (int)packet.i16SkillLevel[i]);
 						}
@@ -6320,19 +7679,61 @@ namespace PROTOCOL
 			}
 		}
 
-		public static void SolRecruitAfter(SOLDIER_INFO solinfo, SOLDIER_INFO[] solArray, int iSolCount, int RecruitType, bool bRcvRemainSolPost = false)
+		public static void SolRecruitAfter(SOLDIER_INFO solinfo, SOLDIER_INFO[] solArray, int iSolCount, int RecruitType, ITEM _item, bool bRcvRemainSolPost = false, NkSoldierInfo paramSolinfo = null)
 		{
 			SolRecruitSuccessDlg solRecruitSuccessDlg = (SolRecruitSuccessDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLRECRUITSUCCESS_DLG);
+			SolRecruitSuccessDlg.eBundleIndexType eBundleIndexType = solRecruitSuccessDlg.CheckBundleIndex(RecruitType);
 			if (solRecruitSuccessDlg != null)
 			{
-				solRecruitSuccessDlg.StartSoldierGetBundle(RecruitType);
 				if (iSolCount == 1)
 				{
-					solRecruitSuccessDlg.SetImage(solinfo);
+					if (RecruitType == 0 || RecruitType == 1 || RecruitType == 22)
+					{
+						SolRecruitSuccess_RenewalDlg solRecruitSuccess_RenewalDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLRECRUITSUCCESS_RENEWAL_DLG) as SolRecruitSuccess_RenewalDlg;
+						if (solRecruitSuccess_RenewalDlg != null)
+						{
+							solRecruitSuccess_RenewalDlg.SetList(solinfo, RecruitType);
+						}
+					}
+					else
+					{
+						solRecruitSuccessDlg.StartSoldierGetBundle(RecruitType, iSolCount);
+						solRecruitSuccessDlg.SetImage(solinfo, paramSolinfo);
+					}
 				}
 				else if (1 < iSolCount)
 				{
-					solRecruitSuccessDlg.SetImage(solArray);
+					if (eBundleIndexType == SolRecruitSuccessDlg.eBundleIndexType.BI_NOMAL && RecruitType != 1)
+					{
+						SolRecruitSuccessGroupDlg solRecruitSuccessGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUITSUCCESS_GROUP_DLG) as SolRecruitSuccessGroupDlg;
+						if (solRecruitSuccessGroupDlg != null)
+						{
+							solRecruitSuccessGroupDlg.Close();
+						}
+						solRecruitSuccessGroupDlg = (NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLRECRUITSUCCESS_GROUP_DLG) as SolRecruitSuccessGroupDlg);
+						if (solRecruitSuccessGroupDlg != null)
+						{
+							solRecruitSuccessGroupDlg.SetList(solArray, NrTSingleton<ItemManager>.Instance.GetName(_item));
+						}
+					}
+					else if (RecruitType == 1)
+					{
+						SolRecruitSuccess_RenewalDlg solRecruitSuccess_RenewalDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLRECRUITSUCCESS_RENEWAL_DLG) as SolRecruitSuccess_RenewalDlg;
+						if (solRecruitSuccess_RenewalDlg2 != null)
+						{
+							solRecruitSuccess_RenewalDlg2.SetList(solArray);
+						}
+					}
+					else
+					{
+						solRecruitSuccessDlg.StartSoldierGetBundle(RecruitType, iSolCount);
+						solRecruitSuccessDlg.SetImage(solArray);
+					}
+				}
+				ItemBoxContinue_Dlg itemBoxContinue_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+				if (itemBoxContinue_Dlg != null)
+				{
+					itemBoxContinue_Dlg.SetItemData(_item, ItemBoxContinue_Dlg.SHOW_TYPE.ITEM_TICKET);
 				}
 				solRecruitSuccessDlg.SetNotifyByRemainSolPost(bRcvRemainSolPost);
 			}
@@ -6362,8 +7763,8 @@ namespace PROTOCOL
 			}
 			for (int i = 0; i < 5; i++)
 			{
-				NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
-				soldierReadyList.DelSol(packet.i64SolID[i]);
+				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+				readySolList.DelSol(packet.i64SolID[i]);
 			}
 			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 			if (solMilitaryGroupDlg != null)
@@ -6392,8 +7793,8 @@ namespace PROTOCOL
 				}
 				else
 				{
-					NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-					readySolList.AddSolInfo(packet2.SOLINFO, packet2.BATTLESKILLINFO, true);
+					NkReadySolList readySolList2 = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+					readySolList2.AddSolInfo(packet2.SOLINFO, packet2.BATTLESKILLINFO, true);
 				}
 				sOLDIER_INFO.Set(ref packet2.SOLINFO);
 				if (array[i] == null)
@@ -6420,23 +7821,6 @@ namespace PROTOCOL
 			}
 		}
 
-		public static void GS_ELEMENTMATERIAL_ACK(NkDeserializePacket kDeserializePacket)
-		{
-			GS_ELEMENTMATERIAL_ACK packet = kDeserializePacket.GetPacket<GS_ELEMENTMATERIAL_ACK>();
-			if (packet.i32Result == 0)
-			{
-				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLDETAIL_DLG))
-				{
-					SolDetail_Info_Dlg solDetail_Info_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLDETAIL_DLG) as SolDetail_Info_Dlg;
-					solDetail_Info_Dlg.SetElEmentMaterial(packet.i32CharKind, packet.i8Grade, packet.i32MaterialCharKind, packet.i8MaterialGrade, packet.i64Money, packet.i8LegendGrade, packet.i32LegendMaterialCharKind, packet.i8LegendMaterialGrade, packet.i64LegendMoney, packet.i32LegendItemUnique, packet.i32LegendNeedEssence);
-				}
-			}
-			else if (packet.i32Result == 702)
-			{
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("508"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-			}
-		}
-
 		public static void GS_ELEMENT_LEGENDSOL_GET_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_ELEMENT_LEGENDSOL_GET_ACK packet = kDeserializePacket.GetPacket<GS_ELEMENT_LEGENDSOL_GET_ACK>();
@@ -6456,8 +7840,8 @@ namespace PROTOCOL
 			}
 			for (int i = 0; i < 5; i++)
 			{
-				NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
-				soldierReadyList.DelSol(packet.i64SolID[i]);
+				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+				readySolList.DelSol(packet.i64SolID[i]);
 			}
 			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 			if (solMilitaryGroupDlg != null)
@@ -6486,8 +7870,8 @@ namespace PROTOCOL
 				}
 				else
 				{
-					NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-					readySolList.AddSolInfo(packet2.SOLINFO, packet2.BATTLESKILLINFO, true);
+					NkReadySolList readySolList2 = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+					readySolList2.AddSolInfo(packet2.SOLINFO, packet2.BATTLESKILLINFO, true);
 				}
 				sOLDIER_INFO.Set(ref packet2.SOLINFO);
 				if (array[i] == null)
@@ -6507,10 +7891,15 @@ namespace PROTOCOL
 					soldierInfoFromSolID.SetSolSubData(packet3.nSubDataType, packet3.nSubDataValue);
 				}
 			}
-			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLDETAIL_DLG))
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.MYTH_LEGEND_INFO_DLG))
 			{
-				SolDetail_Info_Dlg solDetail_Info_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLDETAIL_DLG) as SolDetail_Info_Dlg;
-				solDetail_Info_Dlg.ElementSolSuccess(sOLDIER_INFO, true);
+				Myth_Legend_Info_DLG myth_Legend_Info_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_LEGEND_INFO_DLG) as Myth_Legend_Info_DLG;
+				myth_Legend_Info_DLG.ElementSolSuccess(sOLDIER_INFO);
+			}
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.MYTH_EVOLUTION_MAIN_DLG))
+			{
+				Myth_Evolution_Main_DLG myth_Evolution_Main_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_EVOLUTION_MAIN_DLG) as Myth_Evolution_Main_DLG;
+				myth_Evolution_Main_DLG.SetLegend();
 			}
 		}
 
@@ -6539,174 +7928,270 @@ namespace PROTOCOL
 			}
 		}
 
-		public static void GS_GUILDWAR_APPLY_ACK(NkDeserializePacket kDeserializePacket)
+		public static void GS_TIMESHOP_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			GS_GUILDWAR_APPLY_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_APPLY_ACK>();
-			if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
+			GS_TIMESHOP_ACK packet = kDeserializePacket.GetPacket<GS_TIMESHOP_ACK>();
+			for (int i = 0; i < (int)packet.i16Count; i++)
 			{
-				return;
+				TIMESHOP_SERVERDATA packet2 = kDeserializePacket.GetPacket<TIMESHOP_SERVERDATA>();
+				NrTSingleton<NrTableTimeShopManager>.Instance.Load_ServerValue(packet2);
 			}
-			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-			if (charPersonInfo == null)
-			{
-				return;
-			}
-			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
-			if (packet.i32Result == 0)
-			{
-				for (int i = 0; i < 5; i++)
-				{
-					if (packet.i64SolID[i] > 0L)
-					{
-						NkSoldierInfo soldierUpdate = charPersonInfo.ChangeSolPosType(packet.i64SolID[i], packet.ui8SolPosType, packet.ui8SolPosIndex[i], packet.ui8MilitaryUnique, packet.i16BattlePos[i]);
-						if (solMilitaryGroupDlg != null)
-						{
-							solMilitaryGroupDlg.SetSoldierUpdate(soldierUpdate);
-						}
-					}
-				}
-				if (solMilitaryGroupDlg != null)
-				{
-					solMilitaryGroupDlg.CheckSkillUpSolNum();
-				}
-			}
-			else
-			{
-				TsLog.LogOnlyEditor("GS_GUILDWAR_APPLY_ACK Result : " + packet.i32Result);
-				NrTSingleton<GuildWarManager>.Instance.ShowNotifyFromResult(packet.i32Result);
-			}
-		}
-
-		public static void GS_GUILDWAR_APPLY_CANCEL_ACK(NkDeserializePacket kDeserializePacket)
-		{
-			GS_GUILDWAR_APPLY_CANCEL_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_APPLY_CANCEL_ACK>();
-			if (packet.i32Result == 0)
+			if (packet.i8Reload == 0)
 			{
 				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
 				{
 					return;
 				}
-				NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-				if (charPersonInfo == null)
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.Set_UserTimeShopInfo(packet.i16RefreshCount, packet.i64RefreshEndTime);
+			}
+		}
+
+		public static void GS_PUSH_BLOCK_GET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_PUSH_BLOCK_GET_ACK packet = kDeserializePacket.GetPacket<GS_PUSH_BLOCK_GET_ACK>();
+			if (packet.i32Result == 0)
+			{
+				System_Option_Dlg system_Option_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SYSTEM_OPTION) as System_Option_Dlg;
+				if (system_Option_Dlg != null)
 				{
-					return;
+					system_Option_Dlg.SetPushSetting(packet.byNotice, packet.byFriend, packet.byGuild, false);
 				}
-				SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
-				for (int i = 0; i < 5; i++)
+			}
+		}
+
+		public static void GS_PUSH_BLOCK_SET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_PUSH_BLOCK_SET_ACK packet = kDeserializePacket.GetPacket<GS_PUSH_BLOCK_SET_ACK>();
+			if (packet.i32Result == 0)
+			{
+				System_Option_Dlg system_Option_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SYSTEM_OPTION) as System_Option_Dlg;
+				if (system_Option_Dlg != null)
 				{
-					if (packet.i64SolID[i] > 0L)
+					system_Option_Dlg.SetPushSetting(packet.byNotice, packet.byFriend, packet.byGuild, true);
+				}
+			}
+		}
+
+		public static void GS_GUILDWAR_MATCH_LIST_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_GUILDWAR_MATCH_LIST_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_MATCH_LIST_ACK>();
+			GuildWarListDlg guildWarListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDWAR_LIST_DLG) as GuildWarListDlg;
+			if (guildWarListDlg == null)
+			{
+				return;
+			}
+			guildWarListDlg.ClaerList();
+			guildWarListDlg.SetPageText((int)packet.i16CurPage, (int)packet.i16MaxPage);
+			guildWarListDlg.SetTimeSate(packet.i8TimeState);
+			for (int i = 0; i < (int)packet.ui8Count; i++)
+			{
+				GUILDWAR_MATCH_INFO packet2 = kDeserializePacket.GetPacket<GUILDWAR_MATCH_INFO>();
+				guildWarListDlg.AddInfo(packet2);
+			}
+			guildWarListDlg.SetList();
+		}
+
+		public static void GS_GUILDWAR_INFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_GUILDWAR_INFO_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_INFO_ACK>();
+			NrTSingleton<MineManager>.Instance.ClearDlg();
+			NrTSingleton<GuildWarManager>.Instance.ClearDlg();
+			GuildWarMainDlg guildWarMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GUILDWAR_MAIN_DLG) as GuildWarMainDlg;
+			if (guildWarMainDlg == null)
+			{
+				return;
+			}
+			guildWarMainDlg.SetInfo(packet);
+		}
+
+		public static void GS_GUILDWAR_APPLY_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_GUILDWAR_APPLY_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_APPLY_ACK>();
+			if (packet.i32Result == 0)
+			{
+				if (packet.bIsApply && !packet.bIsCancelReservation)
+				{
+					if (!NrTSingleton<GuildWarManager>.Instance.bIsGuildWar)
 					{
-						NkSoldierInfo soldierUpdate = charPersonInfo.ChangeSolPosType(packet.i64SolID[i], 0, 0, 0, 0);
-						if (solMilitaryGroupDlg != null)
-						{
-							solMilitaryGroupDlg.SetSoldierUpdate(soldierUpdate);
-						}
+						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("828"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+					}
+					else
+					{
+						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("832"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 					}
 				}
-				if (solMilitaryGroupDlg != null)
+				else if (packet.bIsApply && packet.bIsCancelReservation)
 				{
-					solMilitaryGroupDlg.CheckSkillUpSolNum();
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("829"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 				}
-				NewGuildWarConditionDlg newGuildWarConditionDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDWAR_CONDITION_DLG) as NewGuildWarConditionDlg;
-				if (newGuildWarConditionDlg != null)
+				else if (!packet.bIsApply)
 				{
-					newGuildWarConditionDlg.ClickRefresh(null);
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("835"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				}
+				NrTSingleton<GuildWarManager>.Instance.bIsGuildWar = packet.bIsApply;
+				NrTSingleton<GuildWarManager>.Instance.bIsGuildWarCancelReservation = packet.bIsCancelReservation;
+				GuildWarMainDlg guildWarMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDWAR_MAIN_DLG) as GuildWarMainDlg;
+				if (guildWarMainDlg != null)
+				{
+					guildWarMainDlg.SetApplyButton();
+				}
+				NrCharUser nrCharUser = (NrCharUser)NrTSingleton<NkCharManager>.Instance.GetChar(1);
+				if (nrCharUser != null)
+				{
+					if (0 < NrTSingleton<NewGuildManager>.Instance.GetSetImage())
+					{
+						nrCharUser.SetUserGuildName(NrTSingleton<NewGuildManager>.Instance.GetGuildName(), NrTSingleton<NewGuildManager>.Instance.GetGuildID(), NrTSingleton<NewGuildManager>.Instance.IsGuildWar());
+					}
+					else
+					{
+						nrCharUser.SetUserGuildName(NrTSingleton<NewGuildManager>.Instance.GetGuildName(), 0L, NrTSingleton<NewGuildManager>.Instance.IsGuildWar());
+					}
 				}
 			}
 			else
 			{
-				TsLog.LogOnlyEditor("GS_GUILDWAR_APPLY_CANCEL_ACK Result : " + packet.i32Result);
-				NrTSingleton<GuildWarManager>.Instance.ShowNotifyFromResult(packet.i32Result);
-			}
-		}
-
-		public static void GS_GUILDWAR_APPLY_INFO_ACK(NkDeserializePacket kDeserializePacket)
-		{
-			GS_GUILDWAR_APPLY_INFO_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_APPLY_INFO_ACK>();
-			NewGuildWarConditionDlg newGuildWarConditionDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GUILDWAR_CONDITION_DLG) as NewGuildWarConditionDlg;
-			if (newGuildWarConditionDlg != null)
-			{
-				newGuildWarConditionDlg.ClearApplyInfo();
-			}
-			for (int i = 0; i < (int)packet.i16Count; i++)
-			{
-				GUILDWAR_APPLY_INFO packet2 = kDeserializePacket.GetPacket<GUILDWAR_APPLY_INFO>();
-				newGuildWarConditionDlg.AddApplyInfo(packet2);
-			}
-			if (newGuildWarConditionDlg != null)
-			{
-				newGuildWarConditionDlg.RefeshGuildWarInfo(packet);
-			}
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.GUILDWAR_DETAILINFO_DLG);
-			if (TsPlatform.IsEditor)
-			{
-				TsLog.LogOnlyEditor("GS_GUILDWAR_APPLY_INFO_ACK Count : " + packet.i16Count);
-			}
-		}
-
-		public static void GS_GUILDWAR_APPLY_MILITARY_INFO_ACK(NkDeserializePacket kDeserializePacket)
-		{
-			GS_GUILDWAR_APPLY_MILITARY_INFO_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_APPLY_MILITARY_INFO_ACK>();
-			bool flag = false;
-			if (packet.i16UserInfoCount == 0 && packet.i64GuildID == NrTSingleton<NewGuildManager>.Instance.GetGuildID() && NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.IsGuildWarApplyUser())
-			{
-				flag = true;
-			}
-			if (flag)
-			{
-				SoldierBatch.SOLDIER_BATCH_MODE = eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP;
-				SoldierBatch.GuildWarRaidUnique = packet.ui8RaidUnique;
-				SoldierBatch.GuildWarRaidBattlePos = 0;
-				FacadeHandler.PushStage(Scene.Type.SOLDIER_BATCH);
-			}
-			else
-			{
-				NewGuildWarDetailInfoDlg newGuildWarDetailInfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GUILDWAR_DETAILINFO_DLG) as NewGuildWarDetailInfoDlg;
-				if (newGuildWarDetailInfoDlg != null)
+				int i32Result = packet.i32Result;
+				if (i32Result != 9561)
 				{
-					newGuildWarDetailInfoDlg.RefeshDetailInfo(packet, kDeserializePacket);
+					if (i32Result != 9562)
+					{
+						if (i32Result != 9500)
+						{
+							Main_UI_SystemMessage.ADDMessage(string.Format("GuildWar Apply Error: {0}", packet.i32Result), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+						}
+						else
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("831"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+						}
+					}
+					else
+					{
+						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("833"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					}
+				}
+				else
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("833"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				}
 			}
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.GUILDWAR_CONDITION_DLG);
 		}
 
-		public static void GS_GUILDWAR_RAIDSTATE_SET_ACK(NkDeserializePacket kDeserializePacket)
+		public static void GS_GUILDWAR_IS_WAR_TIME_ACK(NkDeserializePacket kDeserializePacket)
 		{
+			GS_GUILDWAR_IS_WAR_TIME_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_IS_WAR_TIME_ACK>();
+			MineSearchDlg mineSearchDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_SEARCH_DLG) as MineSearchDlg;
+			if (mineSearchDlg != null)
+			{
+				mineSearchDlg.SetGrade(5, packet.bIsWarTime);
+			}
 		}
 
-		public static void GS_GUILDWAR_REWARDINFO_ACK(NkDeserializePacket kDeserializePacket)
+		public static void GS_GUILDWAR_RANKINFO_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			GS_GUILDWAR_REWARDINFO_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_REWARDINFO_ACK>();
-			NewGuildWarRewardInfoDlg newGuildWarRewardInfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GUILDWAR_REWARDINFO_DLG) as NewGuildWarRewardInfoDlg;
+			GS_GUILDWAR_RANKINFO_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_RANKINFO_ACK>();
+			NewGuildWarRewardInfoDlg newGuildWarRewardInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDWAR_REWARDINFO_DLG) as NewGuildWarRewardInfoDlg;
 			if (newGuildWarRewardInfoDlg != null)
 			{
 				newGuildWarRewardInfoDlg.ClearGuildData();
-				newGuildWarRewardInfoDlg.ClearRewardList();
 			}
+			newGuildWarRewardInfoDlg.SetPage(packet.i16CurPage, packet.i16MaxPage);
+			newGuildWarRewardInfoDlg.SetRewardButtonEnable(packet.bCanGetReward);
 			for (int i = 0; i < (int)packet.i16GuildDataCount; i++)
 			{
-				GUILDWAR_REWARD_GUILD_DATA packet2 = kDeserializePacket.GetPacket<GUILDWAR_REWARD_GUILD_DATA>();
+				GUILDWAR_RANK_DATA packet2 = kDeserializePacket.GetPacket<GUILDWAR_RANK_DATA>();
 				if (newGuildWarRewardInfoDlg != null)
 				{
 					newGuildWarRewardInfoDlg.AddGuildData(packet2);
 				}
 			}
-			for (int i = 0; i < (int)packet.i16Count; i++)
-			{
-				GUILDWAR_REWARD_DATA packet3 = kDeserializePacket.GetPacket<GUILDWAR_REWARD_DATA>();
-				if (newGuildWarRewardInfoDlg != null)
-				{
-					newGuildWarRewardInfoDlg.AddRewardData(packet3);
-				}
-			}
-			newGuildWarRewardInfoDlg.RefreshRewardInfo();
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.GUILDWAR_CONDITION_DLG);
+			newGuildWarRewardInfoDlg.RefreshRankInfo();
 		}
 
 		public static void GS_GUILDWAR_REWARD_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_GUILDWAR_REWARD_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_REWARD_ACK>();
-			TsLog.LogOnlyEditor("GS_GUILDWAR_REWARD_ACK " + packet.i32Result);
+			if (packet.i32Result == 0)
+			{
+				NrTSingleton<GuildWarManager>.Instance.SetCanGetGuildWarReward(false);
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64CurMoney;
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("804"),
+					"count",
+					ANNUALIZED.Convert(packet.i32RewardGold)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("798"),
+					"itemname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.kRewarditem.m_nItemUnique),
+					"count",
+					packet.kRewarditem.m_nItemNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				NewGuildWarRewardInfoDlg newGuildWarRewardInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDWAR_REWARDINFO_DLG) as NewGuildWarRewardInfoDlg;
+				if (newGuildWarRewardInfoDlg != null)
+				{
+					newGuildWarRewardInfoDlg.SetRewardButtonEnable(false);
+				}
+			}
+			else
+			{
+				int i32Result = packet.i32Result;
+				switch (i32Result)
+				{
+				case 9561:
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("805"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					break;
+				case 9562:
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("214"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					break;
+				case 9563:
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("848"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					if (packet.CanGetRewardTime > 0L)
+					{
+						string empty2 = string.Empty;
+						DateTime dueDate = PublicMethod.GetDueDate(packet.CanGetRewardTime);
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("847"),
+							"month",
+							dueDate.Month,
+							"day",
+							dueDate.Day,
+							"hour",
+							dueDate.Hour,
+							"min",
+							dueDate.Minute
+						});
+						Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					}
+					break;
+				default:
+					if (i32Result != -30)
+					{
+						if (i32Result == -2 || i32Result == 21)
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("199"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							break;
+						}
+						if (i32Result != 31)
+						{
+							if (i32Result != 9500)
+							{
+								Main_UI_SystemMessage.ADDMessage(string.Format("GUILDWAR_REWARD Fail: {0}", packet.i32Result), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+								break;
+							}
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("846"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							break;
+						}
+					}
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("633"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					break;
+				}
+			}
 		}
 
 		public static void GS_GUILDWAR_GUILDINFO_INIT_ACK(NkDeserializePacket kDeserializePacket)
@@ -6726,32 +8211,15 @@ namespace PROTOCOL
 			}
 			foreach (NkSoldierInfo current in readySolList.GetList().Values)
 			{
-				if (current.GetSolPosType() == 7)
+				charPersonInfo.ChangeSolPosType(current.GetSolID(), 0, 0, 0, 0);
+				if (solMilitaryGroupDlg != null)
 				{
-					charPersonInfo.ChangeSolPosType(current.GetSolID(), 0, 0, 0, 0);
-					if (solMilitaryGroupDlg != null)
-					{
-						solMilitaryGroupDlg.SetSoldierUpdate(current);
-					}
+					solMilitaryGroupDlg.SetSoldierUpdate(current);
 				}
 			}
 			if (solMilitaryGroupDlg != null)
 			{
 				solMilitaryGroupDlg.CheckSkillUpSolNum();
-			}
-		}
-
-		public static void GS_GUILDWAR_RAIDBATTLEPOS_CHANGE_ACK(NkDeserializePacket kDeserializePacket)
-		{
-			GS_GUILDWAR_RAIDBATTLEPOS_CHANGE_ACK packet = kDeserializePacket.GetPacket<GS_GUILDWAR_RAIDBATTLEPOS_CHANGE_ACK>();
-			NewGuildWarDetailInfoDlg newGuildWarDetailInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDWAR_DETAILINFO_DLG) as NewGuildWarDetailInfoDlg;
-			if (newGuildWarDetailInfoDlg != null)
-			{
-				newGuildWarDetailInfoDlg.ChangeMode(NewGuildWarDetailInfoDlg.eMODE.eMODE_NORMAL);
-				if (packet.i32Result != 0)
-				{
-					NrTSingleton<GuildWarManager>.Instance.ShowNotifyFromResult(packet.i32Result);
-				}
 			}
 		}
 
@@ -6885,7 +8353,7 @@ namespace PROTOCOL
 					{
 						if (packet.nCharKind == 9999)
 						{
-							if (NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(nrCharBase.GetPersonInfo().GetKind(0)))
+							if (!NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(nrCharBase.GetPersonInfo().GetKind(0)))
 							{
 								goto IL_EC;
 							}
@@ -6977,17 +8445,17 @@ namespace PROTOCOL
 				if (NrTSingleton<NrGlobalReference>.Instance.useCache)
 				{
 					string str2 = string.Format("{0}GameDrama/", Option.GetProtocolRootPath(Protocol.HTTP));
-					TsPlatform.Operator.PlayMovieURL(str2 + str + ".mp4", Color.black, true, 1f);
+					NmMainFrameWork.PlayMovieURL(str2 + str + ".mp4", true, false, true);
 				}
 				else
 				{
-					TsPlatform.Operator.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/GameDrama/" + str + ".mp4", Color.black, true, 1f);
+					NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/GameDrama/" + str + ".mp4", true, false, true);
 				}
 			}
 			else
 			{
 				string str3 = string.Format("{0}GameDrama/", NrTSingleton<NrGlobalReference>.Instance.basePath);
-				TsPlatform.Operator.PlayMovieURL(str3 + str + ".mp4", Color.black, true, 1f);
+				NmMainFrameWork.PlayMovieURL(str3 + str + ".mp4", true, false, true);
 			}
 		}
 
@@ -7180,18 +8648,35 @@ namespace PROTOCOL
 				PlunderTargetInfoDlg plunderTargetInfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERTARGETINFO_DLG) as PlunderTargetInfoDlg;
 				if (plunderTargetInfoDlg != null)
 				{
-					plunderTargetInfoDlg.SetTargetInfoInfiBattle(TKString.NEWString(packet.strDefenseName), packet.i16CharLevel, packet.i32Rank, packet.i32StraightWin);
+					plunderTargetInfoDlg.SetTargetInfoInfiBattle(packet.bTargetShow, TKString.NEWString(packet.strDefenseName), packet.i16CharLevel, packet.i32Rank, packet.i32StraightWin);
 				}
-				for (int i = 0; i < 15; i++)
+				if (!packet.bTargetShow)
 				{
-					if (!SoldierBatch.SOLDIERBATCH.m_bMakeEnemyChar)
+					for (int i = 0; i < 15; i++)
 					{
-						SoldierBatch.SOLDIERBATCH.AddEnemyCharInfo(packet.DefenseSolInfo[i]);
+						TsLog.LogWarning(string.Concat(new object[]
+						{
+							"!!!!",
+							packet.DefenseSolInfo[i].nCharKind,
+							" : ",
+							packet.DefenseSolInfo[i].nStartPos,
+							" : ",
+							packet.DefenseSolInfo[i].nBattlePos
+						}), new object[0]);
+						if (!SoldierBatch.SOLDIERBATCH.m_bMakeEnemyChar)
+						{
+							SoldierBatch.SOLDIERBATCH.AddEnemyCharInfo(packet.DefenseSolInfo[i]);
+						}
+						else
+						{
+							SoldierBatch.SOLDIERBATCH.MakePlunderCharEnemy(packet.DefenseSolInfo[i], i);
+						}
 					}
-					else
-					{
-						SoldierBatch.SOLDIERBATCH.MakePlunderCharEnemy(packet.DefenseSolInfo[i]);
-					}
+				}
+				PlunderSolNumDlg plunderSolNumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+				if (plunderSolNumDlg != null && (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE))
+				{
+					plunderSolNumDlg.SetSumFightPowerAlly0(SoldierBatch.SOLDIERBATCH.SumFightPower, true);
 				}
 				return;
 			}
@@ -7205,19 +8690,11 @@ namespace PROTOCOL
 			}
 			else if (packet.i32Result == -30)
 			{
-				string empty = string.Empty;
 				long charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_INFIBATTLE_COOLTIME);
 				long curTime = PublicMethod.GetCurTime();
 				if (curTime < charSubData)
 				{
-					string text = PublicMethod.ConvertTime(charSubData - curTime);
-					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-					{
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("136"),
-						"timestring",
-						text
-					});
-					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("862"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				}
 			}
 			else if (packet.i32Result == -40)
@@ -7225,14 +8702,14 @@ namespace PROTOCOL
 				int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_INFIBATTLE_LEVEL);
 				if (kMyCharInfo.GetLevel() < value)
 				{
-					string empty2 = string.Empty;
-					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 					{
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("129"),
 						"level",
 						value
 					});
-					Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				}
 			}
 			else
@@ -7244,10 +8721,15 @@ namespace PROTOCOL
 
 		private static void InFiBattle_Start_Error()
 		{
-			PlunderStartAndReMatchDlg plunderStartAndReMatchDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDER_STARTANDREMATCH_DLG) as PlunderStartAndReMatchDlg;
-			if (plunderStartAndReMatchDlg != null)
+			PlunderSolNumDlg plunderSolNumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+			if (plunderSolNumDlg != null)
 			{
-				plunderStartAndReMatchDlg.ExitInfiBattle();
+				plunderSolNumDlg.CloseForm(null);
+			}
+			InfiCombinationDlg infiCombinationDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.INFICOMBINATION_DLG) as InfiCombinationDlg;
+			if (infiCombinationDlg != null)
+			{
+				infiCombinationDlg.CloseForm(null);
 			}
 		}
 
@@ -7257,6 +8739,7 @@ namespace PROTOCOL
 			TsLog.LogWarning("GS_INFIBATTLE_START_ACK Result " + packet.i32Result.ToString(), new object[0]);
 			NrCharBase @char = NrTSingleton<NkCharManager>.Instance.GetChar(1);
 			NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+			SoldierBatch.SOLDIERBATCH.RemoveLoadingEffect = true;
 			string empty = string.Empty;
 			InfiBattleDefine.eINFIBATTLE_STARTRESULT i32Result = (InfiBattleDefine.eINFIBATTLE_STARTRESULT)packet.i32Result;
 			switch (i32Result + 5)
@@ -7268,14 +8751,7 @@ namespace PROTOCOL
 				long num = charSubData - curTime;
 				if (num > 0L)
 				{
-					string empty2 = string.Empty;
-					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
-					{
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("136"),
-						"timestring",
-						PublicMethod.ConvertTime(num)
-					});
-					Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("862"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				}
 				if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
 				{
@@ -7289,6 +8765,30 @@ namespace PROTOCOL
 				}
 				return;
 			}
+			case InfiBattleDefine.eINFIBATTLE_STARTRESULT.eINFIBATTLE_STARTRESULT_WAITTIME:
+			case InfiBattleDefine.eINFIBATTLE_STARTRESULT.eINFIBATTLE_STARTRESULT_NOTPLAYERINFO:
+			case InfiBattleDefine.eINFIBATTLE_STARTRESULT.eINFIBATTLE_STARTRESULT_NOTLEADER:
+			case InfiBattleDefine.eINFIBATTLE_STARTRESULT.eINFIBATTLE_STARTRESULT_DISCONNECT_CS:
+			case InfiBattleDefine.eINFIBATTLE_STARTRESULT.eINFIBATTLE_STARTRESULT_BATTLEMAKE_FAIL:
+			case (InfiBattleDefine.eINFIBATTLE_STARTRESULT)9:
+				IL_94:
+				if (i32Result != (InfiBattleDefine.eINFIBATTLE_STARTRESULT)(-10))
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("120"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					return;
+				}
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("853"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
+				{
+					PlunderSolListDlg plunderSolListDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
+					if (plunderSolListDlg2 != null)
+					{
+						int solBatchNum2 = SoldierBatch.SOLDIERBATCH.GetSolBatchNum();
+						plunderSolListDlg2.SetSolNum(solBatchNum2, false);
+						plunderSolListDlg2.Show();
+					}
+				}
+				return;
 			case InfiBattleDefine.eINFIBATTLE_STARTRESULT.eINFIBATTLE_STARTRESULT_RANKSET:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("120"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				return;
@@ -7305,12 +8805,12 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
 				{
-					PlunderSolListDlg plunderSolListDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
-					if (plunderSolListDlg2 != null)
+					PlunderSolListDlg plunderSolListDlg3 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
+					if (plunderSolListDlg3 != null)
 					{
-						int solBatchNum2 = SoldierBatch.SOLDIERBATCH.GetSolBatchNum();
-						plunderSolListDlg2.SetSolNum(solBatchNum2, false);
-						plunderSolListDlg2.Show();
+						int solBatchNum3 = SoldierBatch.SOLDIERBATCH.GetSolBatchNum();
+						plunderSolListDlg3.SetSolNum(solBatchNum3, false);
+						plunderSolListDlg3.Show();
 					}
 				}
 				return;
@@ -7324,7 +8824,7 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("694"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				return;
 			}
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("120"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			goto IL_94;
 		}
 
 		public static void GS_INFIBATTLE_PRACTICE_START_ACK(NkDeserializePacket kDeserializePacket)
@@ -7378,7 +8878,7 @@ namespace PROTOCOL
 			{
 				return;
 			}
-			battle_ResultPlunderDlg.SetMode(Battle_ResultPlunderDlg.eMODE.eMODE_INFIBATTLE);
+			battle_ResultPlunderDlg.ShowMode();
 			battle_ResultPlunderDlg.ClearSolData();
 			for (int i = 0; i < (int)packet.i8NumSoldiers; i++)
 			{
@@ -7392,30 +8892,39 @@ namespace PROTOCOL
 		public static void GS_INFIBATTLE_END_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_INFIBATTLE_END_ACK packet = kDeserializePacket.GetPacket<GS_INFIBATTLE_END_ACK>();
-			if (packet.i32Rank >= 0)
+			if (packet.i32Rank > 0)
 			{
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfinityBattle_Rank = packet.i32Rank;
 			}
-			if (packet.i32OldRank >= 0)
+			if (packet.i32OldRank > 0)
 			{
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfinityBattle_OldRank = packet.i32OldRank;
 			}
-			if (packet.i32StraightWin >= 0)
+			if (packet.i32StraightWin > 0)
 			{
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleStraightWin = packet.i32StraightWin;
 			}
-			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERMAIN_DLG))
+			if (packet.i32BattleWin > 0)
 			{
-				PlunderMainDlg plunderMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERMAIN_DLG) as PlunderMainDlg;
-				if (plunderMainDlg != null)
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InifBattle_WinCount = packet.i32BattleWin;
+			}
+			if (packet.i32BattleTotal > 0)
+			{
+				if (packet.i32BattleTotal < packet.i32BattleWin)
 				{
-					eMODE mode = plunderMainDlg.GetMode();
-					if (mode == eMODE.eMODE_INFIBATTLE)
-					{
-						plunderMainDlg.SetMode(eMODE.eMODE_INFIBATTLE);
-						plunderMainDlg.SetTgValue(eMODE.eMODE_INFIBATTLE);
-					}
-					plunderMainDlg.Show();
+					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InifBattle_TotalCount = packet.i32BattleWin;
+				}
+				else
+				{
+					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InifBattle_TotalCount = packet.i32BattleTotal;
+				}
+			}
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_RESULT_PLUNDER_DLG))
+			{
+				Battle_ResultPlunderDlg battle_ResultPlunderDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_RESULT_PLUNDER_DLG) as Battle_ResultPlunderDlg;
+				if (battle_ResultPlunderDlg != null)
+				{
+					battle_ResultPlunderDlg.LinkData();
 				}
 			}
 		}
@@ -7423,6 +8932,32 @@ namespace PROTOCOL
 		public static void GS_INFIBATTLE_REWARDINFO_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_INFIBATTLE_REWARDINFO_ACK packet = kDeserializePacket.GetPacket<GS_INFIBATTLE_REWARDINFO_ACK>();
+			InfiBattleRankDlg infiBattleRankDlg;
+			if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.INFIBATTLE_RANK_DLG))
+			{
+				infiBattleRankDlg = (NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.INFIBATTLE_RANK_DLG) as InfiBattleRankDlg);
+			}
+			else
+			{
+				infiBattleRankDlg = (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.INFIBATTLE_RANK_DLG) as InfiBattleRankDlg);
+			}
+			if (infiBattleRankDlg != null)
+			{
+				infiBattleRankDlg.SetMyOldRankInfo(packet.MyRankData.i32TopRank, TKString.NEWString(packet.MyRankData.szCharName), packet.MyRankData.i32CharLevel, packet.MyRankData.i32BattleCnt, packet.MyRankData.i32WinCnt);
+				infiBattleRankDlg.SetTopRankStart();
+				for (int i = 0; i < (int)packet.i8SubDataCount; i++)
+				{
+					INFIBATTLE_TOPRANK packet2 = kDeserializePacket.GetPacket<INFIBATTLE_TOPRANK>();
+					infiBattleRankDlg.SetTopRank(i, packet2.i32TopRank, TKString.NEWString(packet2.szCharName), packet2.i32CharLevel, packet2.i32BattleCnt, packet2.i32WinCnt);
+				}
+				infiBattleRankDlg.SetTopRankEnd();
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.INFIBATTLE_REWARD_DLG);
+			}
+		}
+
+		public static void GS_INFIBATTLE_GET_REWARDINFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_INFIBATTLE_GET_REWARDINFO_ACK packet = kDeserializePacket.GetPacket<GS_INFIBATTLE_GET_REWARDINFO_ACK>();
 			InfiBattleReward infiBattleReward;
 			if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.INFIBATTLE_REWARD_DLG))
 			{
@@ -7435,13 +8970,6 @@ namespace PROTOCOL
 			if (infiBattleReward != null)
 			{
 				infiBattleReward.SetRewardInfo(packet);
-				infiBattleReward.SetTopRankStart();
-				for (int i = 0; i < 10; i++)
-				{
-					INFIBATTLE_TOPRANK packet2 = kDeserializePacket.GetPacket<INFIBATTLE_TOPRANK>();
-					infiBattleReward.SetTopRank(i, packet2.i32TopRank, TKString.NEWString(packet2.szCharName));
-				}
-				infiBattleReward.SetTopRankEnd();
 			}
 		}
 
@@ -7457,7 +8985,7 @@ namespace PROTOCOL
 			});
 			if (packet.i32Result == 0)
 			{
-				if (packet.i32itempos == 0)
+				if (packet.i32itempos < 0)
 				{
 					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("705"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				}
@@ -7474,6 +9002,33 @@ namespace PROTOCOL
 					});
 					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				}
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleReward = 1;
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERMAIN_DLG))
+				{
+					PlunderMainDlg plunderMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERMAIN_DLG) as PlunderMainDlg;
+					if (plunderMainDlg != null)
+					{
+						plunderMainDlg.SetRewardMark();
+					}
+				}
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.INFIBATTLE_RANK_DLG))
+				{
+					InfiBattleRankDlg infiBattleRankDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.INFIBATTLE_RANK_DLG) as InfiBattleRankDlg;
+					if (infiBattleRankDlg != null)
+					{
+						infiBattleRankDlg.SetRewardTexutre();
+					}
+				}
+				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+				if (bookmarkDlg != null)
+				{
+					bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.BATTLE);
+				}
+				BattleCollect_DLG battleCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLECOLLECT_DLG) as BattleCollect_DLG;
+				if (battleCollect_DLG != null)
+				{
+					battleCollect_DLG.Update_Notice();
+				}
 			}
 			else if (packet.i32Result == -10)
 			{
@@ -7486,6 +9041,48 @@ namespace PROTOCOL
 			else
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("178"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+		}
+
+		public static void GS_INFIBATTLE_RANK_GET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_INFIBATTLE_RANK_GET_ACK packet = kDeserializePacket.GetPacket<GS_INFIBATTLE_RANK_GET_ACK>();
+			TsLog.LogWarning("!!!! GS_INFIBATTLE_RANK_GET_ACK Reward {0} :  {1} , {2} , {3}", new object[]
+			{
+				packet.i32Result,
+				packet.i32InfinityBattle_Rank,
+				packet.i32InfinityBattle_OldRank,
+				packet.i8GetReward
+			});
+			if (packet.i32Result == 0)
+			{
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfinityBattle_Rank = packet.i32InfinityBattle_Rank;
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfinityBattle_OldRank = packet.i32InfinityBattle_OldRank;
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleStraightWin = packet.i32InfiBattleStraightWin;
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleReward = packet.i8GetReward;
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InifBattle_TotalCount = packet.i32InfinityBattle_TotalCount;
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InifBattle_WinCount = packet.i32InfinityBattle_WinCount;
+				if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERMAIN_DLG))
+				{
+					PlunderMainDlg plunderMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERMAIN_DLG) as PlunderMainDlg;
+					if (plunderMainDlg != null)
+					{
+						plunderMainDlg.Show();
+					}
+				}
+			}
+			else if (packet.i32Result == -1)
+			{
+				int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_INFIBATTLE_LEVEL);
+				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("129");
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					textFromNotify,
+					"level",
+					value.ToString()
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			}
 		}
 
@@ -7536,33 +9133,30 @@ namespace PROTOCOL
 				if (iTEM != null)
 				{
 					nItemUnique = iTEM.m_nItemUnique;
-					int nItemNum = iTEM.m_nItemNum;
-					int num = packet.kItem.m_nItemNum - nItemNum;
 				}
 				else
 				{
 					nItemUnique = packet.kItem.m_nItemUnique;
 					iTEM = packet.kItem;
-					int num = packet.kItem.m_nItemNum;
 				}
 				if (nItemUnique == 70000)
 				{
-					int num2;
+					int num;
 					if (iTEM != null)
 					{
-						num2 = iTEM.m_nItemNum - packet.kItem.m_nItemNum;
+						num = iTEM.m_nItemNum - packet.kItem.m_nItemNum;
 					}
 					else
 					{
-						num2 = packet.kItem.m_nItemNum;
+						num = packet.kItem.m_nItemNum;
 					}
-					if (num2 > 0)
+					if (num > 0)
 					{
-						NrTSingleton<FiveRocksEventManager>.Instance.HeartsInflow(eHEARTS_INFLOW.UNKNOWN_INFLOW, (long)num2);
+						NrTSingleton<FiveRocksEventManager>.Instance.HeartsInflow(eHEARTS_INFLOW.UNKNOWN_INFLOW, (long)num);
 					}
 					else
 					{
-						NrTSingleton<FiveRocksEventManager>.Instance.HeartsConsume(eHEARTS_CONSUME.UNKNOWN__USE, (long)num2);
+						NrTSingleton<FiveRocksEventManager>.Instance.HeartsConsume(eHEARTS_CONSUME.UNKNOWN__USE, (long)num);
 					}
 				}
 				if (packet.kItem.m_nItemUnique > 0)
@@ -7584,9 +9178,19 @@ namespace PROTOCOL
 					BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
 					if (bookmarkDlg != null)
 					{
-						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.SOLRECRUIT);
+						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.HERO);
+					}
+					HeroCollect_DLG heroCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.HEROCOLLECT_DLG) as HeroCollect_DLG;
+					if (heroCollect_DLG != null)
+					{
+						heroCollect_DLG.Update_Notice();
 					}
 				}
+			}
+			CostumeRoom_Dlg costumeRoom_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COSTUMEROOM_DLG) as CostumeRoom_Dlg;
+			if (costumeRoom_Dlg != null)
+			{
+				costumeRoom_Dlg.RefreshMoney();
 			}
 		}
 
@@ -7636,9 +9240,16 @@ namespace PROTOCOL
 			{
 				solEquipItemSelectDlg.Refresh();
 			}
-			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMPOSE_MAIN_DLG) && (SolComposeMainDlg.Instance.ContainSubSoldier(packet.nSolID) || SolComposeMainDlg.Instance.CheckBaseSoldier(soldierInfoFromSolID)))
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMPOSE_MAIN_DLG))
 			{
-				SolComposeMainDlg.Instance.MakeSubSolList();
+				if (SolComposeMainDlg.Instance.ContainSubSoldier(packet.nSolID) || SolComposeMainDlg.Instance.CheckBaseSoldier(soldierInfoFromSolID))
+				{
+					SolComposeMainDlg.Instance.MakeSubSolList();
+				}
+				if (SolComposeMainDlg.Instance.ContainExtractSoldier(packet.nSolID))
+				{
+					SolComposeMainDlg.Instance.RefreshSelectExtract();
+				}
 			}
 		}
 
@@ -7647,16 +9258,16 @@ namespace PROTOCOL
 			GS_ITEM_MOVE_ACK packet = kDeserializePacket.GetPacket<GS_ITEM_MOVE_ACK>();
 			if (packet.m_nResult == 0)
 			{
+				NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
+				if (nrCharUser == null)
+				{
+					return;
+				}
 				if (packet.m_byDestPosType == 10)
 				{
 					SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 					if (solMilitaryGroupDlg != null)
 					{
-						NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
-						if (nrCharUser == null)
-						{
-							return;
-						}
 						NkSoldierInfo soldierInfoFromSolID = nrCharUser.GetPersonInfo().GetSoldierInfoFromSolID(packet.m_nDestSolID);
 						if (soldierInfoFromSolID == null)
 						{
@@ -7669,6 +9280,16 @@ namespace PROTOCOL
 				if (solEquipItemSelectDlg != null)
 				{
 					solEquipItemSelectDlg.Refresh();
+				}
+				Myth_Legend_Info_DLG myth_Legend_Info_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_LEGEND_INFO_DLG) as Myth_Legend_Info_DLG;
+				if (myth_Legend_Info_DLG != null)
+				{
+					NkSoldierInfo soldierInfoFromSolID2 = nrCharUser.GetPersonInfo().GetSoldierInfoFromSolID(packet.m_nSrcSolID);
+					if (soldierInfoFromSolID2 == null)
+					{
+						return;
+					}
+					myth_Legend_Info_DLG.InitSetCharKind(soldierInfoFromSolID2.GetCharKind());
 				}
 				if (NrTSingleton<GameGuideManager>.Instance.ExecuteGuide)
 				{
@@ -7697,18 +9318,40 @@ namespace PROTOCOL
 				SolDetail_Info_Dlg solDetail_Info_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLDETAIL_DLG) as SolDetail_Info_Dlg;
 				if (solDetail_Info_Dlg != null)
 				{
-					solDetail_Info_Dlg.GetSelectToolBarRefresh();
+					solDetail_Info_Dlg.GetSelectToolBarRefresh(packet.m_nSrcSolID);
 				}
 			}
-			else if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.INVENTORY_DLG))
+			else
 			{
-				Inventory_Dlg inventory_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.INVENTORY_DLG) as Inventory_Dlg;
-				if (inventory_Dlg != null && inventory_Dlg.c_cCopyItem != null)
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.INVENTORY_DLG))
 				{
-					UnityEngine.Object.Destroy(inventory_Dlg.c_cCopyItem.gameObject);
-					inventory_Dlg.c_cCopyItem = null;
-					inventory_Dlg.c_ivImageView.RepositionItems();
+					Inventory_Dlg inventory_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.INVENTORY_DLG) as Inventory_Dlg;
+					if (inventory_Dlg != null && inventory_Dlg.c_cCopyItem != null)
+					{
+						UnityEngine.Object.Destroy(inventory_Dlg.c_cCopyItem.gameObject);
+						inventory_Dlg.c_cCopyItem = null;
+						inventory_Dlg.c_ivImageView.RepositionItems();
+					}
 				}
+				eRESULT nResult = (eRESULT)packet.m_nResult;
+				switch (nResult)
+				{
+				case eRESULT.R_FAIL_GEN_NOT_WAIT:
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("880"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					return;
+				case eRESULT.R_FAIL_GEN_WORKING:
+					IL_224:
+					if (nResult != eRESULT.R_FAIL_ITEM)
+					{
+						return;
+					}
+					goto IL_231;
+				case eRESULT.R_FAIL_EQUIPCLASS:
+					goto IL_231;
+				}
+				goto IL_224;
+				IL_231:
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("844"));
 			}
 		}
 
@@ -7757,6 +9400,20 @@ namespace PROTOCOL
 			NrTSingleton<GameGuideManager>.Instance.RemoveEquipGuide();
 		}
 
+		public static void GS_ITEM_MULTI_DELETE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEM_MULTI_DELETE_ACK packet = kDeserializePacket.GetPacket<GS_ITEM_MULTI_DELETE_ACK>();
+			if (packet.i32Result == 0)
+			{
+				Debug.LogError("SUCCESS");
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("838"));
+			}
+			NrTSingleton<GameGuideManager>.Instance.RemoveEquipGuide();
+		}
+
 		public static void GS_ITEMS_REMOVE_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_ITEMS_REMOVE_ACK packet = kDeserializePacket.GetPacket<GS_ITEMS_REMOVE_ACK>();
@@ -7780,7 +9437,12 @@ namespace PROTOCOL
 					BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
 					if (bookmarkDlg != null)
 					{
-						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.SOLRECRUIT);
+						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.HERO);
+					}
+					HeroCollect_DLG heroCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.HEROCOLLECT_DLG) as HeroCollect_DLG;
+					if (heroCollect_DLG != null)
+					{
+						heroCollect_DLG.Update_Notice();
 					}
 				}
 			}
@@ -7807,7 +9469,7 @@ namespace PROTOCOL
 						"count",
 						packet.m_nItemCount.ToString()
 					});
-					goto IL_43D;
+					goto IL_5E6;
 				case E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_BATTLE_DROP:
 					if ((int)packet.m_ParamVar == 1)
 					{
@@ -7819,7 +9481,7 @@ namespace PROTOCOL
 							Battle.BATTLE.ListGetItemDlg.Add(getItemDlg);
 						}
 					}
-					goto IL_43D;
+					goto IL_5E6;
 				case E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_QUEST_REWARD:
 				case (E_ITEM_CREATE_TYPE)3:
 				case E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_QUEST_ACCEPT:
@@ -7851,7 +9513,7 @@ namespace PROTOCOL
 								event_Dlg.ScheduleEventReq();
 							}
 						}
-						goto IL_43D;
+						goto IL_5E6;
 					}
 					case E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_MINE_TUTORIALITEMGET:
 					case E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_USEITEM_ADDMONEY:
@@ -7867,46 +9529,75 @@ namespace PROTOCOL
 								"count",
 								packet.m_nItemCount.ToString()
 							});
-							goto IL_43D;
+							goto IL_5E6;
 						case E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_COMPOSE:
 						{
 							IL_77:
-							if (e_ITEM_CREATE_TYPE != E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_COLOSSEUM_REWARD)
+							if (e_ITEM_CREATE_TYPE == E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_COLOSSEUM_REWARD)
 							{
-								goto IL_43D;
-							}
-							NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ColosseumOldRank = 0;
-							NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.COLOSSEUMREWARD_DLG);
-							BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-							if (bookmarkDlg != null)
-							{
-								bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.FIGHT);
-							}
-							if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.COLOSSEUMMAIN_DLG))
-							{
-								ColosseumDlg colosseumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COLOSSEUMMAIN_DLG) as ColosseumDlg;
-								if (colosseumDlg != null)
+								NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ColosseumOldRank = 0;
+								NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.COLOSSEUMREWARD_DLG);
+								BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+								if (bookmarkDlg != null)
 								{
-									colosseumDlg.SetShowLayer(1, false);
+									bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.BATTLE);
+								}
+								BattleCollect_DLG battleCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLECOLLECT_DLG) as BattleCollect_DLG;
+								if (battleCollect_DLG != null)
+								{
+									battleCollect_DLG.Update_Notice();
+								}
+								if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.COLOSSEUMMAIN_DLG))
+								{
+									ColosseumDlg colosseumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COLOSSEUMMAIN_DLG) as ColosseumDlg;
+									if (colosseumDlg != null)
+									{
+										colosseumDlg.SetShowLayer(1, false);
+									}
+								}
+								if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.COLOSSEUMRANKINFO_DLG))
+								{
+									ColosseumRankInfoDlg colosseumRankInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COLOSSEUMRANKINFO_DLG) as ColosseumRankInfoDlg;
+									if (colosseumRankInfoDlg != null)
+									{
+										colosseumRankInfoDlg.SetShowLayer(3, false);
+									}
+								}
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+								{
+									NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("339"),
+									"targetname",
+									NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet2),
+									"count",
+									packet.m_nItemCount.ToString()
+								});
+								goto IL_5E6;
+							}
+							if (e_ITEM_CREATE_TYPE != E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_VOUCHER_FREE_GIVE_ITME)
+							{
+								goto IL_5E6;
+							}
+							ITEM_VOUCHER_DATA itemVoucherDataFromItemID = NrTSingleton<ItemMallItemManager>.Instance.GetItemVoucherDataFromItemID(packet.i64ItemMallID);
+							if (itemVoucherDataFromItemID != null)
+							{
+								string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("817");
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref textFromNotify, new object[]
+								{
+									textFromNotify,
+									"targetname",
+									NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(itemVoucherDataFromItemID.i32GiveItemUnique),
+									"count",
+									itemVoucherDataFromItemID.i32GiveItemNum
+								});
+								Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+								NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.SetVoucherRefreshTime((eVOUCHER_TYPE)packet.ui8VoucherType, packet.i64ItemMallID, packet.i64VoucherRefreshTime);
+								ItemMallDlg itemMallDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMMALL_DLG) as ItemMallDlg;
+								if (itemMallDlg != null)
+								{
+									itemMallDlg.SetShowData();
 								}
 							}
-							if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.COLOSSEUMRANKINFO_DLG))
-							{
-								ColosseumRankInfoDlg colosseumRankInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COLOSSEUMRANKINFO_DLG) as ColosseumRankInfoDlg;
-								if (colosseumRankInfoDlg != null)
-								{
-									colosseumRankInfoDlg.SetShowLayer(3, false);
-								}
-							}
-							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-							{
-								NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("339"),
-								"targetname",
-								NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet2),
-								"count",
-								packet.m_nItemCount.ToString()
-							});
-							goto IL_43D;
+							goto IL_5E6;
 						}
 						case E_ITEM_CREATE_TYPE.E_ITEM_CREATE_TYPE_DAILYEVENT:
 						{
@@ -7920,19 +9611,43 @@ namespace PROTOCOL
 							{
 								@char.m_kCharMove.MoveStop(true, false);
 							}
-							long charWeekData = myCharInfo2.GetCharWeekData(0);
+							long charSubData = myCharInfo2.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_ATTENDANCE_SEQUENCE);
 							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 							{
 								NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("405"),
 								"day",
-								charWeekData
+								charSubData
 							});
-							DailyGift_Dlg dailyGift_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EVENT_DAILY_GIFT_DLG) as DailyGift_Dlg;
-							if (dailyGift_Dlg != null)
+							myCharInfo2.SetCharDetail(packet.m_nCharDetailType, packet.m_nDetailValue);
+							if (packet.m_nCharDetailType == 23)
 							{
-								dailyGift_Dlg.CheckDailyEventDay((int)charWeekData);
+								MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+								if (myCharInfoDlg != null)
+								{
+									myCharInfoDlg.Attend_Notice_Show();
+								}
 							}
-							goto IL_43D;
+							long charSubData2 = myCharInfo2.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_ATTENDANCE_TYPE);
+							if (charSubData2 == 2L)
+							{
+								New_Attend_Dlg new_Attend_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.EVENT_NEW_ATTEND) as New_Attend_Dlg;
+								if (new_Attend_Dlg != null)
+								{
+									new_Attend_Dlg.InitSet();
+									new_Attend_Dlg.CheckDailyEventDay((int)charSubData);
+									new_Attend_Dlg.SetitemToolTip(packet2.m_nItemUnique, packet.m_nItemCount);
+								}
+							}
+							else
+							{
+								Normal_Attend_Dlg normal_Attend_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.EVENT_NORMAL_ATTEND) as Normal_Attend_Dlg;
+								if (normal_Attend_Dlg != null)
+								{
+									normal_Attend_Dlg.InitSet();
+									normal_Attend_Dlg.SetitemToolTip(packet2.m_nItemUnique, packet.m_nItemCount);
+								}
+							}
+							goto IL_5E6;
 						}
 						}
 						goto IL_77;
@@ -7944,13 +9659,13 @@ namespace PROTOCOL
 							getItemDlg2.SetItem(packet2.m_nItemUnique, packet.m_nItemCount, packet2.m_nRank);
 							getItemDlg2.SetIndex(1);
 						}
-						goto IL_43D;
+						goto IL_5E6;
 					}
 					}
 					goto IL_61;
 				}
 				goto IL_43;
-				IL_43D:
+				IL_5E6:
 				if (empty != string.Empty)
 				{
 					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
@@ -8031,20 +9746,17 @@ namespace PROTOCOL
 			if (packet.i32Result == 0)
 			{
 				string empty = string.Empty;
-				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("174");
+				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("845");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 				{
 					textFromNotify,
-					"count1",
-					1,
-					"count2",
-					packet.i64TotalSellMoney
+					"count",
+					ANNUALIZED.Convert(packet.i64TotalSellMoney)
 				});
 				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 				if (0L < packet.i64AfterMoney)
 				{
 					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64AfterMoney;
-					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.SetEquipSellMoney(0L, false);
 				}
 			}
 			else
@@ -8072,6 +9784,12 @@ namespace PROTOCOL
 			NrTSingleton<GameGuideManager>.Instance.RemoveEquipGuide();
 			NrTSingleton<GameGuideManager>.Instance.RemoveGuide(GameGuideType.SELL_ITEM);
 			GS_ITEM_SELL_MULTI_ACK packet = kDeserializePacket.GetPacket<GS_ITEM_SELL_MULTI_ACK>();
+			TsLog.LogWarning(" Current Money = {0} , Add Money {1} , Total Money {2}", new object[]
+			{
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money,
+				packet.i64CurTotalSellMoney,
+				packet.i64AfterMoney
+			});
 			if (packet.i32Result == 0)
 			{
 				int num = 0;
@@ -8083,20 +9801,17 @@ namespace PROTOCOL
 					}
 				}
 				string empty = string.Empty;
-				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("174");
+				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("845");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 				{
 					textFromNotify,
-					"count1",
-					num,
-					"count2",
-					packet.i64CurTotalSellMoney
+					"count",
+					ANNUALIZED.Convert(packet.i64CurTotalSellMoney)
 				});
 				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 				if (0L < packet.i64AfterMoney)
 				{
 					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64AfterMoney;
-					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.SetEquipSellMoney(0L, false);
 				}
 			}
 			else
@@ -8118,6 +9833,15 @@ namespace PROTOCOL
 			}
 		}
 
+		public static void GS_ITEM_SELL_AUTO_BABEL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEM_SELL_AUTO_BABEL_ACK packet = kDeserializePacket.GetPacket<GS_ITEM_SELL_AUTO_BABEL_ACK>();
+			int i32Result = packet.i32Result;
+			switch (i32Result + 3)
+			{
+			}
+		}
+
 		public static void GS_ITEM_LOCK_MULTI_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_ITEM_LOCK_MULTI_ACK packet = kDeserializePacket.GetPacket<GS_ITEM_LOCK_MULTI_ACK>();
@@ -8131,7 +9855,7 @@ namespace PROTOCOL
 				{
 					if (packet.i64ItemID[i] != 0L)
 					{
-						ITEM itemFromItemID = NkUserInventory.GetInstance().GetItemFromItemID((long)((int)packet.i64ItemID[i]));
+						ITEM itemFromItemID = NkUserInventory.GetInstance().GetItemFromItemID(packet.i64ItemID[i]);
 						if (itemFromItemID != null)
 						{
 							itemFromItemID.m_nLock = ((!packet.bLocked[i]) ? 0 : 1);
@@ -8225,8 +9949,20 @@ namespace PROTOCOL
 				ExchangeItemDlg exchangeItemDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_ITEM_DLG) as ExchangeItemDlg;
 				if (exchangeItemDlg != null)
 				{
-					exchangeItemDlg.ResultMessage();
-					exchangeItemDlg.UpdateUI();
+					exchangeItemDlg.Result();
+				}
+				else
+				{
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("607"),
+						"targetname",
+						NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.nItemUnique),
+						"count",
+						packet.nItemNum
+					});
+					Main_UI_SystemMessage.ADDMessage(empty);
 				}
 			}
 		}
@@ -8240,11 +9976,20 @@ namespace PROTOCOL
 			GS_EXCHANGE_JEWELRY_ACK packet = kDeserializePacket.GetPacket<GS_EXCHANGE_JEWELRY_ACK>();
 			if (packet.nResult == 0)
 			{
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("645"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.nItemUnique),
+					"count",
+					packet.nItemNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				ExchangeJewelryDlg exchangeJewelryDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_JEWELRY_DLG) as ExchangeJewelryDlg;
 				if (exchangeJewelryDlg != null)
 				{
-					exchangeJewelryDlg.ResultMessage();
-					exchangeJewelryDlg.UpdateUI();
+					exchangeJewelryDlg.Update_List();
 				}
 			}
 		}
@@ -8258,12 +10003,375 @@ namespace PROTOCOL
 			GS_EXCHANGE_MYTHICSOL_ACK packet = kDeserializePacket.GetPacket<GS_EXCHANGE_MYTHICSOL_ACK>();
 			if (packet.nResult == 0)
 			{
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("645"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.nItemUnique),
+					"count",
+					packet.nItemNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				ExchangeMythicSolDlg exchangeMythicSolDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_MYTHICSOL_DLG) as ExchangeMythicSolDlg;
 				if (exchangeMythicSolDlg != null)
 				{
-					exchangeMythicSolDlg.ResultMessage();
 					exchangeMythicSolDlg.UpdateUI();
 				}
+			}
+		}
+
+		public static void GS_EXCHANGE_EVOLUTION_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
+			{
+				return;
+			}
+			GS_EXCHANGE_EVOLUTION_ACK packet = kDeserializePacket.GetPacket<GS_EXCHANGE_EVOLUTION_ACK>();
+			if (packet.nResult == 0)
+			{
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("645"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.nItemUnique),
+					"count",
+					packet.nItemNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+				ExchangeEvolutionDlg exchangeEvolutionDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_EVOLUTION_DLG) as ExchangeEvolutionDlg;
+				if (exchangeEvolutionDlg != null)
+				{
+					exchangeEvolutionDlg.Update_List();
+				}
+			}
+		}
+
+		public static void GS_MYTHICSOLLIMIT_INFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHICSOLLIMIT_INFO_ACK packet = kDeserializePacket.GetPacket<GS_MYTHICSOLLIMIT_INFO_ACK>();
+			NrTSingleton<PointManager>.Instance.ClearMythicSolLimit();
+			for (int i = 0; i < 10; i++)
+			{
+				if (packet.LimitSol[i] != 0)
+				{
+					NrTSingleton<PointManager>.Instance.AddMythicSolLimit(packet.LimitSol[i]);
+				}
+			}
+			ExchangeMythicSolDlg exchangeMythicSolDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_MYTHICSOL_DLG) as ExchangeMythicSolDlg;
+			if (exchangeMythicSolDlg != null)
+			{
+				exchangeMythicSolDlg.ShowUI();
+			}
+		}
+
+		public static void GS_EXCHANGE_GUILDWAR_CHECK_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
+			{
+				return;
+			}
+			GS_EXCHANGE_GUILDWAR_CHECK_ACK packet = kDeserializePacket.GetPacket<GS_EXCHANGE_GUILDWAR_CHECK_ACK>();
+			if (packet.nResult == 0)
+			{
+				ExchangeGuildWarDlg exchangeGuildWarDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_GUILDWAR_DLG) as ExchangeGuildWarDlg;
+				if (exchangeGuildWarDlg != null)
+				{
+					if (packet.nExchangeLimit != -1)
+					{
+						exchangeGuildWarDlg.AddExchangeLimitUpdate(packet.nItemUnique, packet.nExchangeLimit);
+						exchangeGuildWarDlg.ResultMessage();
+						exchangeGuildWarDlg.UpdateUI();
+					}
+					else
+					{
+						exchangeGuildWarDlg.ResultMessage();
+						exchangeGuildWarDlg.UpdateUI();
+					}
+				}
+			}
+		}
+
+		public static void GS_EXCHANGE_GUILDWAR_LIMITCOUNT_INFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
+			{
+				return;
+			}
+			GS_EXCHANGE_GUILDWAR_LIMITCOUNT_INFO_ACK packet = kDeserializePacket.GetPacket<GS_EXCHANGE_GUILDWAR_LIMITCOUNT_INFO_ACK>();
+			ExchangeGuildWarDlg exchangeGuildWarDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.EXCHANGE_GUILDWAR_DLG) as ExchangeGuildWarDlg;
+			if (exchangeGuildWarDlg != null)
+			{
+				for (int i = 0; i < 30; i++)
+				{
+					if (packet.nExchangeLimit[i] != -1)
+					{
+						exchangeGuildWarDlg.AddExchangeLimitUpdate(packet.nItemUnique[i], packet.nExchangeLimit[i]);
+					}
+				}
+			}
+		}
+
+		public static void GS_COSTUME_INFO_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_COSTUME_INFO_NFY packet = kDeserializePacket.GetPacket<GS_COSTUME_INFO_NFY>();
+			if (packet == null)
+			{
+				return;
+			}
+			if (packet.Result != 0)
+			{
+				return;
+			}
+			for (int i = 0; i < (int)packet.i16Count; i++)
+			{
+				COSTUME_INFO packet2 = kDeserializePacket.GetPacket<COSTUME_INFO>();
+				if (packet2 != null)
+				{
+					if (TsSceneSwitcher.Instance.CurrentSceneType == TsSceneSwitcher.ESceneType.WorldScene)
+					{
+						COSTUME_INFO costumeInfo = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeInfo(packet2.i32CostumeUnique);
+						if (costumeInfo == null || costumeInfo.i32CostumeCount < packet2.i32CostumeCount)
+						{
+							string text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("861");
+							text = text.Replace("@costumename@", NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeName(packet2.i32CostumeUnique));
+							Main_UI_SystemMessage.ADDMessage(text);
+						}
+					}
+					NrTSingleton<NrCharCostumeTableManager>.Instance.InsertCostumeData(packet2);
+				}
+			}
+			NrTSingleton<CostumeWearManager>.Instance.Refresh(null, true, true);
+		}
+
+		public static void GS_TIMESHOP_ITEMLIST_INFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_TIMESHOP_ITEMLIST_INFO_ACK packet = kDeserializePacket.GetPacket<GS_TIMESHOP_ITEMLIST_INFO_ACK>();
+			if (packet.i32Result == 0)
+			{
+				if (packet.i32ItemListCount <= 0)
+				{
+					return;
+				}
+				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
+				{
+					return;
+				}
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.Clear_UserTimeShopItemList();
+				for (int i = 0; i < packet.i32ItemListCount; i++)
+				{
+					TIMESHOP_ITEMINFO packet2 = kDeserializePacket.GetPacket<TIMESHOP_ITEMINFO>();
+					if (packet2 != null)
+					{
+						NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.Add_UserTimeShopItemList(packet2);
+					}
+				}
+				short refreshCount = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.RefreshCount;
+				if (packet.i16RefreshCount > refreshCount)
+				{
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("872")
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				}
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.Set_UserTimeShopInfo(packet.i16RefreshCount, packet.i64NextRefreshTime);
+				TimeShop_DLG timeShop_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.TIMESHOP_DLG) as TimeShop_DLG;
+				if (timeShop_DLG != null)
+				{
+					timeShop_DLG.Set_UserInfo();
+				}
+			}
+			else
+			{
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.TIMESHOP_DLG);
+			}
+		}
+
+		public static void GS_TIMESHOP_ITEMLIST_REFRESH_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_TIMESHOP_ITEMLIST_REFRESH_ACK packet = kDeserializePacket.GetPacket<GS_TIMESHOP_ITEMLIST_REFRESH_ACK>();
+			if (packet.i32Result != 0)
+			{
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("859")
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+		}
+
+		public static void GS_TIMESHOP_ITEM_BUY_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_TIMESHOP_ITEM_BUY_ACK packet = kDeserializePacket.GetPacket<GS_TIMESHOP_ITEM_BUY_ACK>();
+			if (packet.i32Result == 0)
+			{
+				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
+				{
+					return;
+				}
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.Set_UserTimeShopItemBuy(packet.i64IDX, packet.i8Buy);
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64Money;
+				TimeShop_DLG timeShop_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.TIMESHOP_DLG) as TimeShop_DLG;
+				if (timeShop_DLG != null)
+				{
+					timeShop_DLG.Set_ItemList();
+				}
+				string message = string.Empty;
+				if (packet.bIsInvenFull)
+				{
+					message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("874");
+					NoticeIconDlg.SetIcon(ICON_TYPE.POST, true);
+				}
+				else
+				{
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref message, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("195")
+					});
+				}
+				Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEMMALL_PRODUCTDETAIL_DLG);
+			}
+			else if (packet.i32Result == 9754)
+			{
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("873")
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			else
+			{
+				string empty2 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("859")
+				});
+				Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+		}
+
+		public static void GS_ITEMSHOP_ITEMPOPUP_INFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEMSHOP_ITEMPOPUP_INFO_ACK packet = kDeserializePacket.GetPacket<GS_ITEMSHOP_ITEMPOPUP_INFO_ACK>();
+			if (packet.i32Result == 0)
+			{
+				ItemMallDlg_ChallengeQuest itemMallDlg_ChallengeQuest = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMMALL_CHALLENGEQUEST_DLG) as ItemMallDlg_ChallengeQuest;
+				if (itemMallDlg_ChallengeQuest != null)
+				{
+					return;
+				}
+				SolRecruitDlg_ChallengeQuest solRecruitDlg_ChallengeQuest = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUIT_CHALLENGEQUEST_DLG) as SolRecruitDlg_ChallengeQuest;
+				if (solRecruitDlg_ChallengeQuest != null)
+				{
+					return;
+				}
+				long voucherRemainTimeFromItemID = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetVoucherRemainTimeFromItemID(packet.i64ShopIdx);
+				if (voucherRemainTimeFromItemID <= 0L)
+				{
+					PoPupShopDlg poPupShopDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMMALL_POPUPSHOP_DLG) as PoPupShopDlg;
+					if (poPupShopDlg != null)
+					{
+						poPupShopDlg.SetData((long)packet.i32Idx);
+					}
+				}
+			}
+		}
+
+		public static void GS_ITEMSHOP_ITEMPOPUP_DAYCOOLTIME_SET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEMSHOP_ITEMPOPUP_DAYCOOLTIME_SET_ACK packet = kDeserializePacket.GetPacket<GS_ITEMSHOP_ITEMPOPUP_DAYCOOLTIME_SET_ACK>();
+			if (packet.i32Result == 0)
+			{
+				POPUPSHOP_DATA pOPUPSHOP_DATA = new POPUPSHOP_DATA();
+				pOPUPSHOP_DATA.i32Idx = packet.i32Idx;
+				pOPUPSHOP_DATA.i32MaxBuyCount = packet.i32MaxBuyCount;
+				pOPUPSHOP_DATA.i64CoolTime = packet.i64CoolTime;
+				pOPUPSHOP_DATA.i64DayEndTime = packet.i64DayEndTime;
+				NrTSingleton<ItemMallPoPupShopManager>.Instance.Set_ServerValue(pOPUPSHOP_DATA);
+			}
+		}
+
+		public static void GS_EXCHANGE_EVENT_ITEM_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
+			{
+				return;
+			}
+			GS_EXCHANGE_EVENT_ITEM_ACK packet = kDeserializePacket.GetPacket<GS_EXCHANGE_EVENT_ITEM_ACK>();
+			if (packet.nResult == 0)
+			{
+				EventItem_ExchangDlg eventItem_ExchangDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_EVENTITEM_DLG) as EventItem_ExchangDlg;
+				if (eventItem_ExchangDlg != null)
+				{
+					eventItem_ExchangDlg.ReflashData(packet.nItemUnique, packet.nSelectNum);
+				}
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("607"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.nItemUnique),
+					"count",
+					packet.nSelectNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty);
+			}
+		}
+
+		public static void GS_EXCHANGE_EVENTITEM_LIMITCOUNT_INFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_EXCHANGE_EVENTITEM_LIMITCOUNT_INFO_ACK packet = kDeserializePacket.GetPacket<GS_EXCHANGE_EVENTITEM_LIMITCOUNT_INFO_ACK>();
+			EventItem_ExchangDlg eventItem_ExchangDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXCHANGE_EVENTITEM_DLG) as EventItem_ExchangDlg;
+			if (eventItem_ExchangDlg != null)
+			{
+				for (int i = 0; i < (int)packet.i16Count; i++)
+				{
+					ITEM_EXCHANGE_LIMIT packet2 = kDeserializePacket.GetPacket<ITEM_EXCHANGE_LIMIT>();
+					eventItem_ExchangDlg.AddLimitData(packet2);
+				}
+				eventItem_ExchangDlg.ShowUI();
+			}
+		}
+
+		public static void GS_ITEM_MATERIAL_USE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_ITEM_MATERIAL_USE_ACK packet = kDeserializePacket.GetPacket<GS_ITEM_MATERIAL_USE_ACK>();
+			TsLog.LogWarning("=== GS_ITEM_MATERIAL_USE_ACK - {0}", new object[]
+			{
+				packet.m_i32Result
+			});
+			if (packet.m_i32Result == 0)
+			{
+				NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+				if (kMyCharInfo == null)
+				{
+					return;
+				}
+				kMyCharInfo.SetCharSubData(packet.m_i32CharSubDataType, packet.m_i32CharSubDataValue);
+				if (packet.m_bType == 2)
+				{
+					Myth_Evolution_Main_DLG myth_Evolution_Main_DLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTH_EVOLUTION_MAIN_DLG) as Myth_Evolution_Main_DLG;
+					if (myth_Evolution_Main_DLG != null)
+					{
+						myth_Evolution_Main_DLG.SetEvolution();
+						myth_Evolution_Main_DLG.SetBaseSol(packet.i64SolID);
+					}
+				}
+				else if (packet.m_bType == 1)
+				{
+					Myth_Legend_Info_DLG myth_Legend_Info_DLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTH_LEGEND_INFO_DLG) as Myth_Legend_Info_DLG;
+					if (myth_Legend_Info_DLG != null)
+					{
+						myth_Legend_Info_DLG.InitSetCharKind(packet.i32CharKind);
+					}
+				}
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("911"), SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
 			}
 		}
 
@@ -8302,12 +10410,17 @@ namespace PROTOCOL
 							item_Box_RareRandom_Dlg.Set_Item_Complete(packet.m_caAddItem[0], packet.m_naAddItemNum[0], packet.m_nItemNum);
 						}
 					}
-					else
+					else if (packet.m_byAllOpen == 1)
 					{
-						Item_Box_Random_Dlg item_Box_Random_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEM_BOX_RANDOM_DLG) as Item_Box_Random_Dlg;
-						if (item_Box_Random_Dlg != null)
+						ItemBoxContinue_Dlg itemBoxContinue_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+						if (itemBoxContinue_Dlg != null)
 						{
-							item_Box_Random_Dlg.Set_Item_Complete(packet.m_caAddItem[0], packet.m_naAddItemNum[0], true);
+							itemBoxContinue_Dlg.RefreshData(packet);
+						}
+						Item_Box_Random_Result_Dlg item_Box_Random_Result_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_RANDOM_RESULT) as Item_Box_Random_Result_Dlg;
+						if (item_Box_Random_Result_Dlg != null)
+						{
+							item_Box_Random_Result_Dlg.SetData(packet);
 						}
 					}
 				}
@@ -8319,59 +10432,63 @@ namespace PROTOCOL
 				{
 				case eRESULT.R_ITEM_NUM:
 					NrTSingleton<ItemManager>.Instance.CheckBoxNeedItem(packet.m_lUnique, false, true);
-					goto IL_256;
+					goto IL_277;
 				case eRESULT.R_ITEM_SEAL_INFO:
 				{
-					IL_143:
+					IL_164:
 					if (nResult == eRESULT.R_FAIL_ITEM)
 					{
 						string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("2060");
 						Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-						goto IL_256;
+						goto IL_277;
 					}
 					if (nResult == eRESULT.R_FAIL_INVENTORY_FULL)
 					{
 						string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46");
 						Main_UI_SystemMessage.ADDMessage(textFromNotify3, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-						goto IL_256;
+						goto IL_277;
 					}
 					if (nResult == eRESULT.R_FAIL_INVENTORY_FULL_TICKET)
 					{
 						string textFromNotify4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773");
 						Main_UI_SystemMessage.ADDMessage(textFromNotify4, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-						goto IL_256;
+						goto IL_277;
 					}
 					if (nResult != eRESULT.R_BOX_NOT_ARRAY_INDEX)
 					{
 						string message = "Box Item Result = " + packet.m_nResult;
 						Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.DEBUG_MESSAGE);
-						goto IL_256;
+						goto IL_277;
 					}
 					string message2 = "Box Item Not Array Index";
 					Main_UI_SystemMessage.ADDMessage(message2, SYSTEM_MESSAGE_TYPE.DEBUG_MESSAGE);
-					goto IL_256;
+					goto IL_277;
 				}
 				case eRESULT.R_ITEM_HIGH_LEVEL:
 				{
 					string textFromNotify5 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("483");
 					Main_UI_SystemMessage.ADDMessage(textFromNotify5, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-					goto IL_256;
+					goto IL_277;
 				}
 				case eRESULT.R_ITEM_LOW_LEVEL:
 				{
 					string textFromNotify6 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("356");
 					Main_UI_SystemMessage.ADDMessage(textFromNotify6, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-					goto IL_256;
+					goto IL_277;
 				}
 				}
-				goto IL_143;
-				IL_256:
+				goto IL_164;
+				IL_277:
 				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEM_BOX_RANDOM_DLG);
 				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEM_BOX_SELECT_DLG);
 				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEM_BOX_ALL_DLG);
 			}
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEM_BOX_SELECT_DLG);
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEM_BOX_ALL_DLG);
+		}
+
+		public static void GS_ITEMMALL_BOX_TRADE_ACK(NkDeserializePacket kDeserializePacket)
+		{
 		}
 
 		public static void GS_ITEM_SUPPLY_USE_ACK(NkDeserializePacket kDeserializePacket)
@@ -8392,12 +10509,12 @@ namespace PROTOCOL
 				{
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_HPHEAL:
 					charSoldierList.AddHP(packet.m_shPara2, packet.m_nParaArray1);
-					goto IL_2CC;
+					goto IL_2D9;
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_MPHEAL:
-					goto IL_2CC;
+					goto IL_2D9;
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_ALLHEAL:
 					charSoldierList.AddHP(packet.m_shPara2, packet.m_nParaArray1);
-					goto IL_2CC;
+					goto IL_2D9;
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_EXP:
 				{
 					ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(packet.m_nItemUnique);
@@ -8416,19 +10533,19 @@ namespace PROTOCOL
 						});
 						Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 					}
-					goto IL_2CC;
+					goto IL_2D9;
 				}
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_ACTIVEUP:
-					goto IL_2CC;
+					goto IL_2D9;
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_WARP:
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_GETSOLDIER:
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_INJURYCURE:
 					IL_83:
 					if (eITEM_SUPPLY_FUNCTION2 != eITEM_SUPPLY_FUNCTION.SUPPLY_QUESTITEM)
 					{
-						goto IL_2CC;
+						goto IL_2D9;
 					}
-					goto IL_2CC;
+					goto IL_2D9;
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_NEARBYNPC:
 				{
 					NrCharBase charByCharUnique = NrTSingleton<NkCharManager>.Instance.GetCharByCharUnique((short)packet.m_shPara1);
@@ -8443,7 +10560,7 @@ namespace PROTOCOL
 					}
 					@char.MoveTo(charByCharUnique.GetCharObject().transform.position);
 					NrTSingleton<NkClientLogic>.Instance.SetPickChar(charByCharUnique);
-					goto IL_2CC;
+					goto IL_2D9;
 				}
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_PROTECTTIME:
 				{
@@ -8461,17 +10578,17 @@ namespace PROTOCOL
 						});
 						Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 					}
-					goto IL_2CC;
+					goto IL_2D9;
 				}
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_ADDMONEY:
 				{
 					ITEMINFO itemInfo3 = NrTSingleton<ItemManager>.Instance.GetItemInfo(packet.m_nItemUnique);
 					if (itemInfo3 != null)
 					{
-						NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.m_ni64CurrnetMoney;
 						string empty3 = string.Empty;
 						string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("478");
-						int num2 = itemInfo3.m_nParam[0];
+						long num2 = packet.m_ni64CurrnetMoney - NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money;
+						NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.m_ni64CurrnetMoney;
 						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
 						{
 							textFromNotify3,
@@ -8482,16 +10599,42 @@ namespace PROTOCOL
 						});
 						Main_UI_SystemMessage.ADDMessage(empty3, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 					}
-					goto IL_2CC;
+					goto IL_2D9;
 				}
 				}
 				goto IL_83;
-				IL_2CC:
+				IL_2D9:
 				string itemMaterialCode = NrTSingleton<ItemManager>.Instance.GetItemMaterialCode(packet.m_nItemUnique);
 				if (!string.IsNullOrEmpty(itemMaterialCode))
 				{
 					TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_ITEM", itemMaterialCode, "USE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 				}
+			}
+			else if (packet.m_nResult == 811)
+			{
+				COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
+				if (instance == null)
+				{
+					return;
+				}
+				int value = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_FASTBATTLE_MAXNUM);
+				string empty4 = string.Empty;
+				string textFromNotify4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("801");
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty4, new object[]
+				{
+					textFromNotify4,
+					"count",
+					value
+				});
+				Main_UI_SystemMessage.ADDMessage(empty4, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			else if (packet.m_nResult == 817)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("812"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			else if (packet.m_nResult == 814)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("508"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			}
 			else
 			{
@@ -8509,8 +10652,8 @@ namespace PROTOCOL
 				}
 				case eITEM_SUPPLY_FUNCTION.SUPPLY_PROTECTTIME:
 				{
-					string textFromNotify4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("314");
-					Main_UI_SystemMessage.ADDMessage(textFromNotify4, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					string textFromNotify5 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("314");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify5, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 					break;
 				}
 				}
@@ -8523,11 +10666,6 @@ namespace PROTOCOL
 			switch (packet.m_nSupplyFunction)
 			{
 			}
-		}
-
-		public static void GS_PURCHASE_ACK(NkDeserializePacket kDeserializePacket)
-		{
-			GS_PURCHASE_ACK packet = kDeserializePacket.GetPacket<GS_PURCHASE_ACK>();
 		}
 
 		public static void GS_MARKET_LIST_ACK(NkDeserializePacket kDeserializePacket)
@@ -8579,13 +10717,11 @@ namespace PROTOCOL
 			if (packet.m_nResult == 0)
 			{
 				string empty = string.Empty;
-				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("174");
+				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("845");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 				{
 					textFromNotify,
-					"count1",
-					packet.m_nSellItemAllCount,
-					"count2",
+					"count",
 					packet.m_lSellItemAllMoney
 				});
 				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
@@ -8907,7 +11043,7 @@ namespace PROTOCOL
 						Congraturation_DLG congraturation_DLG2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
 						if (congraturation_DLG2 != null)
 						{
-							congraturation_DLG2.PushBattleResultMessage(packet.szCharName, packet.i32FaceCharKind, packet5, packet.byReceibeUerType);
+							congraturation_DLG2.PushBattleResultMessage(packet.szCharName, packet.i32Param, packet5, packet.byReceibeUerType);
 							congraturation_DLG2.Show();
 						}
 					}
@@ -8943,51 +11079,61 @@ namespace PROTOCOL
 													congraturation_DLG4.Show();
 												}
 											}
-											else if (packet.byMessageType == 14)
+											else if (packet.byMessageType == 23)
 											{
-												GS_COMMUNITY_MESSAGE_ITEM_SKILL_GET packet8 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_ITEM_SKILL_GET>();
+												GS_COMMUNITY_MESSAGE_BABELTOWER_START packet8 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_BABELTOWER_START>();
 												Congraturation_DLG congraturation_DLG5 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
 												if (congraturation_DLG5 != null)
 												{
-													congraturation_DLG5.PushItemSkillGetMessage(packet8, packet.byReceibeUerType);
+													congraturation_DLG5.PushMythRaidStartMessage(packet8, packet.byReceibeUerType);
 													congraturation_DLG5.Show();
+												}
+											}
+											else if (packet.byMessageType == 14)
+											{
+												GS_COMMUNITY_MESSAGE_ITEM_SKILL_GET packet9 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_ITEM_SKILL_GET>();
+												Congraturation_DLG congraturation_DLG6 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG6 != null)
+												{
+													congraturation_DLG6.PushItemSkillGetMessage(packet9, packet.byReceibeUerType);
+													congraturation_DLG6.Show();
 												}
 											}
 											else if (packet.byMessageType == 15)
 											{
-												GS_COMMUNITY_MESSAGE_ELEMENTSOL_GET packet9 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_ELEMENTSOL_GET>();
+												GS_COMMUNITY_MESSAGE_ELEMENTSOL_GET packet10 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_ELEMENTSOL_GET>();
 												string textFromInterface3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1567");
 												string empty3 = string.Empty;
-												NrCharKindInfo charKindInfo2 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(packet9.i32CharKind);
+												NrCharKindInfo charKindInfo2 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(packet10.i32CharKind);
 												NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
 												{
 													textFromInterface3,
 													"targetname",
 													charKindInfo2.GetName()
 												});
-												Congraturation_DLG congraturation_DLG6 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
-												if (congraturation_DLG6 != null)
+												Congraturation_DLG congraturation_DLG7 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG7 != null)
 												{
-													congraturation_DLG6.PushElementSolGetMessage(packet9.i32CharKind, packet.szCharName, packet9.nGrade, packet.byReceibeUerType);
-													congraturation_DLG6.Show();
+													congraturation_DLG7.PushElementSolGetMessage(packet10.i32CharKind, packet.szCharName, packet10.nGrade, packet.byReceibeUerType);
+													congraturation_DLG7.Show();
 												}
 											}
 											else if (packet.byMessageType == 16)
 											{
-												GS_COMMUNITY_MESSAGE_GUILD packet10 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_GUILD>();
-												Congraturation_DLG congraturation_DLG7 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
-												if (congraturation_DLG7 != null)
+												GS_COMMUNITY_MESSAGE_GUILD packet11 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_GUILD>();
+												Congraturation_DLG congraturation_DLG8 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG8 != null)
 												{
-													congraturation_DLG7.PushGuildMessage(packet10, packet.byReceibeUerType);
-													congraturation_DLG7.Show();
+													congraturation_DLG8.PushGuildMessage(packet11, packet.byReceibeUerType);
+													congraturation_DLG8.Show();
 												}
-												if (packet10.i32SubMessageType == 2 || packet10.i32SubMessageType == 1)
+												if (packet11.i32SubMessageType == 2 || packet11.i32SubMessageType == 1)
 												{
 													if (SoldierBatch.GUILDBOSS_INFO == null)
 													{
 														return;
 													}
-													if ((int)SoldierBatch.GUILDBOSS_INFO.m_i16Floor == packet10.i32Param1)
+													if ((int)SoldierBatch.GUILDBOSS_INFO.m_i16Floor == packet11.i32Param1)
 													{
 														SoldierBatch.GUILDBOSS_INFO.m_i64CurPlayer = 0L;
 													}
@@ -9000,22 +11146,58 @@ namespace PROTOCOL
 											}
 											else if (packet.byMessageType == 17)
 											{
-												GS_COMMUNITY_MESSAGE_GENERAL_RECRUIT packet11 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_GENERAL_RECRUIT>();
+												GS_COMMUNITY_MESSAGE_GENERAL_RECRUIT packet12 = kDeserializePacket.GetPacket<GS_COMMUNITY_MESSAGE_GENERAL_RECRUIT>();
 												string textFromInterface4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1567");
 												string empty4 = string.Empty;
-												NrCharKindInfo charKindInfo3 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(packet11.i32CharKind);
+												NrCharKindInfo charKindInfo3 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(packet12.i32CharKind);
 												NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty4, new object[]
 												{
 													textFromInterface4,
 													"targetname",
 													charKindInfo3.GetName()
 												});
-												Congraturation_DLG congraturation_DLG8 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
-												if (congraturation_DLG8 != null)
+												Congraturation_DLG congraturation_DLG9 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG9 != null)
 												{
 													packet.byReceibeUerType = 3;
-													congraturation_DLG8.PushRECRUIT_LUCKYMessage(packet11.i32CharKind, packet.szCharName, packet11.nGrade, packet.byReceibeUerType, packet11.i32ItemUnique);
-													congraturation_DLG8.Show();
+													congraturation_DLG9.PushRECRUIT_LUCKYMessage(packet12.i32CharKind, packet.szCharName, packet12.nGrade, packet.byReceibeUerType, packet12.i32ItemUnique);
+													congraturation_DLG9.Show();
+												}
+											}
+											else if (packet.byMessageType == 20)
+											{
+												Congraturation_DLG congraturation_DLG10 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG10 != null)
+												{
+													congraturation_DLG10.PushGuildWar(packet.szCharName, packet.i64Param, 2939, 278);
+													congraturation_DLG10.Show();
+												}
+											}
+											else if (packet.byMessageType == 21)
+											{
+												Congraturation_DLG congraturation_DLG11 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG11 != null)
+												{
+													congraturation_DLG11.PushGuildWar(packet.szCharName, packet.i64Param, 2546, 279);
+													congraturation_DLG11.Show();
+												}
+											}
+											else if (packet.byMessageType == 22)
+											{
+												Congraturation_DLG congraturation_DLG12 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG12 != null)
+												{
+													congraturation_DLG12.PushMine(packet.szCharName, packet.i64Param, packet.byReceibeUerType, (short)packet.i32Param, 1307, 2954);
+													congraturation_DLG12.Show();
+												}
+											}
+											else if (packet.byMessageType == 24)
+											{
+												Congraturation_DLG congraturation_DLG13 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CONGRATURATIONDLG) as Congraturation_DLG;
+												if (congraturation_DLG13 != null)
+												{
+													congraturation_DLG13.PushGoldenEgg(packet.szCharName, packet.i32Param, (int)packet.i64Param);
+													congraturation_DLG13.Show();
 												}
 											}
 										}
@@ -9055,10 +11237,36 @@ namespace PROTOCOL
 			{
 				string text = string.Empty;
 				int i32Result = packet.i32Result;
-				if (i32Result == 9000)
+				switch (i32Result)
 				{
+				case 9000:
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("428");
+					goto IL_183;
+				case 9001:
+				case 9002:
+					IL_EF:
+					if (i32Result == 9560)
+					{
+						text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("730");
+						goto IL_183;
+					}
+					if (i32Result == 9561)
+					{
+						text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("827");
+						goto IL_183;
+					}
+					if (i32Result != -10)
+					{
+						goto IL_183;
+					}
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("89");
+					goto IL_183;
+				case 9003:
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("428");
+					goto IL_183;
 				}
+				goto IL_EF;
+				IL_183:
 				if (text != string.Empty)
 				{
 					Main_UI_SystemMessage.ADDMessage(text, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
@@ -9085,6 +11293,7 @@ namespace PROTOCOL
 		{
 			GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_ACK packet = kDeserializePacket.GetPacket<GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_ACK>();
 			MINE_GUILD_CURRENTSTATUS_INFO[] array = new MINE_GUILD_CURRENTSTATUS_INFO[packet.i32InfoCount];
+			bool flag = true;
 			if (packet.i32InfoCount <= 0)
 			{
 				MineSearchDlg mineSearchDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_SEARCH_DLG) as MineSearchDlg;
@@ -9096,26 +11305,55 @@ namespace PROTOCOL
 				else
 				{
 					mineSearchDlg = (NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_SEARCH_DLG) as MineSearchDlg);
-					if (mineSearchDlg != null)
+					if (mineSearchDlg != null && packet.bType != 2)
 					{
 						mineSearchDlg.Show();
 					}
 				}
-				MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
-				if (mineGuildCurrentStatusInfoDlg != null)
+				if (packet.bType == 0)
 				{
-					NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG);
+					flag = false;
 				}
 			}
-			else
+			if (flag)
 			{
-				MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
+				MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
+				mineGuildCurrentStatusInfoDlg.Clear();
 				for (int i = 0; i < packet.i32InfoCount; i++)
 				{
 					array[i] = kDeserializePacket.GetPacket<MINE_GUILD_CURRENTSTATUS_INFO>();
 				}
-				mineGuildCurrentStatusInfoDlg2.AddInfo(array);
-				mineGuildCurrentStatusInfoDlg2.Show(packet.i32Page, packet.i32TotalCount);
+				mineGuildCurrentStatusInfoDlg.SetRemainderCountGiveTime(packet.i64RemainderCounGiveTime);
+				mineGuildCurrentStatusInfoDlg.AddInfo(array, packet.bType);
+				mineGuildCurrentStatusInfoDlg.Show((packet.i32Page <= 0) ? 1 : packet.i32Page, (packet.i32TotalCount <= 0) ? 1 : packet.i32TotalCount);
+				MineSearchDlg mineSearchDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_SEARCH_DLG) as MineSearchDlg;
+				if (mineSearchDlg2 != null)
+				{
+					mineSearchDlg2.Close();
+				}
+				MineMainSelectDlg mineMainSelectDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_MAINSELECT_DLG) as MineMainSelectDlg;
+				if (mineMainSelectDlg != null)
+				{
+					mineMainSelectDlg.Close();
+				}
+				MineGuildPushConfirmDlg mineGuildPushConfirmDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_GUILDPUSH_CONFIRM_DLG) as MineGuildPushConfirmDlg;
+				if (mineGuildPushConfirmDlg != null)
+				{
+					mineGuildPushConfirmDlg.Close();
+					NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_GUILDPUSH_CONFIRM_DLG);
+				}
+			}
+			else
+			{
+				MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
+				if (mineGuildCurrentStatusInfoDlg2 != null)
+				{
+					mineGuildCurrentStatusInfoDlg2.Clear();
+					if (packet.bType == 0)
+					{
+						NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG);
+					}
+				}
 			}
 		}
 
@@ -9153,10 +11391,10 @@ namespace PROTOCOL
 				GameGuideMineNotify gameGuideMineNotify = NrTSingleton<GameGuideManager>.Instance.GetGuide(GameGuideType.MINE_ITEMGET) as GameGuideMineNotify;
 				if (gameGuideMineNotify != null)
 				{
-					gameGuideMineNotify.SetInfo(packet.byMode, packet.i64MineID, packet.i32ItemUnique, packet.i32ItemNum);
+					gameGuideMineNotify.SetInfo(packet.byMode, packet.i64MineID, packet.i32ItemUnique, packet.i32ItemNum, packet.i32BonusItemNum);
 				}
 			}
-			else if (packet.byMode == 1)
+			else if (packet.byMode == 2)
 			{
 				GameGuideMinePlunder gameGuideMinePlunder = NrTSingleton<GameGuideManager>.Instance.GetGuide(GameGuideType.MINE_PLUNDER) as GameGuideMinePlunder;
 				if (gameGuideMinePlunder != null)
@@ -9164,6 +11402,11 @@ namespace PROTOCOL
 					gameGuideMinePlunder.SetInfo(packet.i32ItemUnique);
 				}
 				NrTSingleton<GameGuideManager>.Instance.CheckGameGuide(GameGuideType.MINE_PLUNDER);
+				MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
+				if (mineGuildCurrentStatusInfoDlg != null)
+				{
+					mineGuildCurrentStatusInfoDlg.RefreshList();
+				}
 			}
 		}
 
@@ -9229,8 +11472,7 @@ namespace PROTOCOL
 							if (packet.clWaitGuildInfo[i].m_nGuildID > 0L)
 							{
 								guildname = TKString.NEWString(packet.clWaitGuildInfo[i].m_strGuildName);
-								long nGuildID = packet.clWaitGuildInfo[i].m_nGuildID;
-								mineWaitMiltaryInfoDlg.SetWaitGuildInfo(guildname, nGuildID);
+								mineWaitMiltaryInfoDlg.SetWaitGuildInfo(guildname, packet.clWaitGuildInfo[i].m_nGuildID, packet.clWaitGuildInfo[i].isHiddenInfo);
 							}
 						}
 						mineWaitMiltaryInfoDlg.GuildImageSetting();
@@ -9267,7 +11509,7 @@ namespace PROTOCOL
 				MineTutorialStepDlg mineTutorialStepDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_TUTORIAL_STEP_DLG) as MineTutorialStepDlg;
 				if (mineTutorialStepDlg != null)
 				{
-					mineTutorialStepDlg.SetStep(2L);
+					mineTutorialStepDlg.Close();
 				}
 			}
 		}
@@ -9275,25 +11517,1140 @@ namespace PROTOCOL
 		public static void GS_MINE_BATTLE_NOTIFY_NFY(NkDeserializePacket kDeserializePacket)
 		{
 			GS_MINE_BATTLE_NOTIFY_NFY packet = kDeserializePacket.GetPacket<GS_MINE_BATTLE_NOTIFY_NFY>();
-			string text = string.Empty;
 			string empty = string.Empty;
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2129");
+			string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2129");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{
-				text,
+				textFromInterface,
 				"targetname1",
 				TKString.NEWString(packet.szWinGuildName),
 				"targetname2",
 				TKString.NEWString(packet.szLoseGuildName)
 			});
-			if (NrTSingleton<NkClientLogic>.Instance.IsWorldScene())
+		}
+
+		public static void GS_MINE_JOIN_COUNT_GET_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MINE_JOIN_COUNT_GET_NFY packet = kDeserializePacket.GetPacket<GS_MINE_JOIN_COUNT_GET_NFY>();
+			NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+			if (myCharInfo == null)
 			{
-				ChatNoticeDlg chatNoticeDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CHAT_NOTICE_DLG) as ChatNoticeDlg;
-				if (chatNoticeDlg != null)
+				return;
+			}
+			myCharInfo.SetCharDetail(8, (long)packet.i16JoinCount);
+			string empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("870"),
+				"count",
+				packet.i16DecreaseJoinCount
+			});
+			Main_UI_SystemMessage.ADDMessage(empty);
+			MineGuildCurrentStatusInfoDlg mineGuildCurrentStatusInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG) as MineGuildCurrentStatusInfoDlg;
+			if (mineGuildCurrentStatusInfoDlg != null)
+			{
+				mineGuildCurrentStatusInfoDlg.SetRemainderCountGiveTime(packet.i64RemainderCountGiveTime);
+				mineGuildCurrentStatusInfoDlg.SetJointCount();
+			}
+		}
+
+		public static void GS_MINE_BATTLE_RESULT_REPORT_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MINE_BATTLE_RESULT_REPORT_ACK packet = kDeserializePacket.GetPacket<GS_MINE_BATTLE_RESULT_REPORT_ACK>();
+			if (packet.i32Result == 0)
+			{
+				Battle_ResultMineDlg battle_ResultMineDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_RESULT_MINE_DLG) as Battle_ResultMineDlg;
+				if (battle_ResultMineDlg == null)
 				{
-					chatNoticeDlg.AddText(empty);
+					return;
+				}
+				battle_ResultMineDlg.ClearData();
+				battle_ResultMineDlg.AddItemData(packet.i32ItemUnique, packet.i32IteNum, packet.i32BonusIteNum);
+				battle_ResultMineDlg.SetMailID(packet.i64MailID);
+				for (int i = 0; i < packet.i32MineResultCount; i++)
+				{
+					GS_BATTLE_RESULT_MINE packet2 = kDeserializePacket.GetPacket<GS_BATTLE_RESULT_MINE>();
+					battle_ResultMineDlg.SetBasicData(packet2);
+				}
+				for (int j = 0; j < packet.i32SolCount; j++)
+				{
+					GS_BATTLE_RESULT_SOLDIER packet3 = kDeserializePacket.GetPacket<GS_BATTLE_RESULT_SOLDIER>();
+					battle_ResultMineDlg.AddSolData(packet3);
+				}
+				for (int k = 0; k < packet.i32ContRankUserInfoCount; k++)
+				{
+					MINE_REPORT_CONTRANK_USER_INFO packet4 = kDeserializePacket.GetPacket<MINE_REPORT_CONTRANK_USER_INFO>();
+					battle_ResultMineDlg.AddContributionRankInfo(packet4);
+				}
+				battle_ResultMineDlg.Show();
+			}
+		}
+
+		public static void GS_MINE_BATTLE_RESULT_REWARD_GET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MINE_BATTLE_RESULT_REWARD_GET_ACK packet = kDeserializePacket.GetPacket<GS_MINE_BATTLE_RESULT_REWARD_GET_ACK>();
+			if (packet.i32Result == -10)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("199"));
+				return;
+			}
+			if (packet.i32Result == 31 || packet.i32Result == -20)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
+				return;
+			}
+			if (packet.i32Result == 76)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773"));
+				return;
+			}
+			if (packet.i32Result != 0)
+			{
+				return;
+			}
+			string empty = string.Empty;
+			if (packet.i32ItemUnique > 0 && packet.i32ItemNum > 0)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("607"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique),
+					"count",
+					packet.i32ItemNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			if (packet.i64TotalSolExp > 0L)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("849"),
+					"exp",
+					ANNUALIZED.Convert(packet.i64TotalSolExp)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
+			if (postDlg != null)
+			{
+				postDlg.RequestNextRecvList();
+			}
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.POST_RECV_DLG);
+			MineRecordDlg mineRecordDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_RECORD_DLG) as MineRecordDlg;
+			if (mineRecordDlg != null)
+			{
+				mineRecordDlg.Refresh_If_NonCompleteList();
+			}
+		}
+
+		public static void GS_MINE_BATTLE_RESULT_REWARD_GET_ALL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MINE_BATTLE_RESULT_REWARD_GET_ALL_ACK packet = kDeserializePacket.GetPacket<GS_MINE_BATTLE_RESULT_REWARD_GET_ALL_ACK>();
+			if (packet.i32Result == -10)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("199"));
+				return;
+			}
+			if (packet.i32Result == 31 || packet.i32Result == -20)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
+				return;
+			}
+			if (packet.i32Result == 76)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773"));
+				return;
+			}
+			if (packet.i32Result != 0)
+			{
+				return;
+			}
+			string empty = string.Empty;
+			if (packet.i32ItemUnique > 0 && packet.i32ItemNum > 0)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("607"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique),
+					"count",
+					packet.i32ItemNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			if (packet.i64TotalSolExp > 0L)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("849"),
+					"exp",
+					ANNUALIZED.Convert(packet.i64TotalSolExp)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			}
+			if (!packet.isEnd)
+			{
+				return;
+			}
+			MineRecordDlg mineRecordDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_RECORD_DLG) as MineRecordDlg;
+			if (mineRecordDlg != null)
+			{
+				mineRecordDlg.Refresh_If_NonCompleteList();
+			}
+		}
+
+		public static void GS_MINE_BATTLE_RESULT_LIST_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MINE_BATTLE_RESULT_LIST_ACK packet = kDeserializePacket.GetPacket<GS_MINE_BATTLE_RESULT_LIST_ACK>();
+			MineRecordDlg mineRecordDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_RECORD_DLG) as MineRecordDlg;
+			if (mineRecordDlg != null)
+			{
+				mineRecordDlg.SetList(packet, kDeserializePacket);
+			}
+		}
+
+		public static void GS_MINE_BATTLE_RESULT_GUILDWAR_LIST_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MINE_BATTLE_RESULT_GUILDWAR_LIST_ACK packet = kDeserializePacket.GetPacket<GS_MINE_BATTLE_RESULT_GUILDWAR_LIST_ACK>();
+			MineRecordGuildWarDlg mineRecordGuildWarDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_RECORD_GUILDWAR_DLG) as MineRecordGuildWarDlg;
+			if (mineRecordGuildWarDlg != null)
+			{
+				mineRecordGuildWarDlg.SetList(packet, kDeserializePacket);
+			}
+		}
+
+		public static void GS_MYTHRAID_GOLOBBY_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_GOLOBBY_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_GOLOBBY_ACK>();
+			if (packet.result == 0)
+			{
+				NrTSingleton<MythRaidManager>.Instance.SetSeason(packet.i8Season);
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.WHISPER_DLG);
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.TOOLTIP_DLG);
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.MYTHRAID_LOBBY_DLG);
+				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "ATTACK-FORMATION", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+				if (!Scene.IsCurScene(Scene.Type.SOLDIER_BATCH))
+				{
+					SoldierBatch.SOLDIER_BATCH_MODE = eSOLDIER_BATCH_MODE.MODE_MYTHRAID;
+					FacadeHandler.PushStage(Scene.Type.SOLDIER_BATCH);
+				}
+				SoldierBatch.MYTHRAID_INFO.SetMythRaidInfo(packet.nBabelRoomIndex, (eMYTHRAID_DIFFICULTY)packet.enumDifficulty, packet.nLeaderPersonID, packet.nMinLevel, packet.nMaxLevel);
+				for (int i = 0; i < 4; i++)
+				{
+					string charName = TKString.NEWString(packet.stMythRaidPersonInfo[i].szCharName);
+					SoldierBatch.MYTHRAID_INFO.stMythRaidPersonInfo[i].SetInfo(packet.stMythRaidPersonInfo[i].nPartyPersonID, charName, packet.stMythRaidPersonInfo[i].nLevel, packet.stMythRaidPersonInfo[i].bReady, packet.stMythRaidPersonInfo[i].nSlotType, packet.stMythRaidPersonInfo[i].nCharKind, (int)packet.stMythRaidPersonInfo[i].i16GuardianAngel);
+				}
+				SoldierBatch.MYTHRAID_INFO.SetPartyCount();
+				if (SoldierBatch.SOLDIERBATCH == null)
+				{
+					return;
+				}
+				if (SoldierBatch.MYTHRAID_INFO.GetPartyCount() > 1)
+				{
+					SoldierBatch.SOLDIERBATCH.SolBatchLock = true;
+					NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+					if (charPersonInfo.GetPersonID() == packet.nLeaderPersonID && !SoldierBatch.MYTHRAID_INFO.IsPartyBatch())
+					{
+						SoldierBatch.SOLDIERBATCH.ResetSolPosition();
+						SoldierBatch.SOLDIERBATCH.LoadBatchSolInfo_Party(null);
+					}
+				}
+				NrPersonInfoUser charPersonInfo2 = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				if (charPersonInfo2.GetPersonID() == packet.nLeaderPersonID)
+				{
+					Battle.isLeader = true;
+				}
+				else
+				{
+					Battle.isLeader = false;
+				}
+				SoldierBatch.MYTHRAID_INFO.InitReadyState();
+				if (SoldierBatch.MYTHRAID_INFO.GetPartyCount() > 1)
+				{
+					MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+					if (mythRaidLobbyUserListDlg != null)
+					{
+						mythRaidLobbyUserListDlg.RefreshSolInfo();
+						mythRaidLobbyUserListDlg.SetWaitingLock(true);
+					}
+					BabelTower_ChatDlg babelTower_ChatDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABELTOWER_CHAT) as BabelTower_ChatDlg;
+					if (babelTower_ChatDlg != null)
+					{
+						babelTower_ChatDlg.RefreshChatInfo();
+					}
+					for (int j = 0; j < 4; j++)
+					{
+						if (packet.stMythRaidPersonInfo[j].nPartyPersonID == packet.nEnterPersonID)
+						{
+							string text = TKString.NEWString(packet.stMythRaidPersonInfo[j].szCharName);
+							string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("187");
+							string empty = string.Empty;
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+							{
+								textFromNotify,
+								"charname",
+								text
+							});
+							Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+							Batch_Chat_DLG batch_Chat_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATCH_CAHT_DLG) as Batch_Chat_DLG;
+							if (batch_Chat_DLG != null)
+							{
+								string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3281");
+								string empty2 = string.Empty;
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+								{
+									textFromInterface,
+									"username",
+									text
+								});
+								batch_Chat_DLG.PushMsg(string.Empty, empty2, "2002");
+							}
+							break;
+						}
+					}
+				}
+				StageWorld.BATCH_MODE = eSOLDIER_BATCH_MODE.MODE_MYTHRAID;
+				NrTSingleton<MythRaidManager>.Instance.SetRaidType((eMYTHRAID_DIFFICULTY)packet.enumDifficulty);
+			}
+			else
+			{
+				string text2 = string.Empty;
+				int result = packet.result;
+				if (result != 8000)
+				{
+					if (result != 8001)
+					{
+						if (result != 1)
+						{
+							if (result != 8)
+							{
+								if (result != 701)
+								{
+									if (result == 9700)
+									{
+										text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("905");
+									}
+								}
+								else
+								{
+									text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("203");
+								}
+							}
+							else
+							{
+								text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("417");
+							}
+						}
+						else
+						{
+							text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("175");
+						}
+					}
+					else
+					{
+						text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("160");
+					}
+				}
+				else
+				{
+					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("161");
+				}
+				if (text2 != string.Empty)
+				{
+					Main_UI_SystemMessage.ADDMessage(text2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				}
 			}
+		}
+
+		public static void GS_MYTHRAID_TEST_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_TEST_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_TEST_ACK>();
+			Debug.LogError("_ACK : " + packet.Result);
+		}
+
+		public static void GS_MYTHRAID_BATTLEPOS_SET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_BATTLEPOS_SET_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_BATTLEPOS_SET_ACK>();
+			if (SoldierBatch.SOLDIERBATCH == null)
+			{
+				return;
+			}
+			SoldierBatch.SOLDIERBATCH.SetMythRaidSoldierBatch(packet);
+			MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+			if (mythRaidLobbyUserListDlg != null)
+			{
+				mythRaidLobbyUserListDlg.RefreshSolCount();
+			}
+		}
+
+		public static void GS_MYTHRAID_LEAVE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_LEAVE_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_LEAVE_ACK>();
+			if (SoldierBatch.SOLDIERBATCH == null)
+			{
+				return;
+			}
+			if (!SoldierBatch.MYTHRAID_INFO.IsMythRaidLeader(packet.nLeavePersonID))
+			{
+				if (packet.mode == 2)
+				{
+					NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+					if (charPersonInfo.GetPersonID() == packet.nLeavePersonID)
+					{
+						SoldierBatch.MYTHRAID_INFO.Init();
+						NrTSingleton<NkClientLogic>.Instance.SetClearMiddleStage();
+						return;
+					}
+				}
+				SoldierBatch.MYTHRAID_INFO.DeletePartyPerson(packet.nLeavePersonID);
+				SoldierBatch.MYTHRAID_INFO.SetPartyCount();
+				long[] array = new long[12];
+				for (int i = 0; i < 12; i++)
+				{
+					array[i] = 0L;
+				}
+				GS_MYTHRAID_BATTLEPOS_SET_ACK[] array2 = new GS_MYTHRAID_BATTLEPOS_SET_ACK[(int)packet.nSolCount];
+				for (int j = 0; j < (int)packet.nSolCount; j++)
+				{
+					array2[j] = kDeserializePacket.GetPacket<GS_MYTHRAID_BATTLEPOS_SET_ACK>();
+				}
+				int num = 0;
+				for (int k = 0; k < SoldierBatch.SOLDIERBATCH.GetBabelTowerTotalBatchInfoCount(); k++)
+				{
+					bool flag = true;
+					long babelTowerSolIDFromIndex = SoldierBatch.SOLDIERBATCH.GetBabelTowerSolIDFromIndex(k);
+					if (babelTowerSolIDFromIndex > 0L)
+					{
+						for (int l = 0; l < (int)packet.nSolCount; l++)
+						{
+							if (babelTowerSolIDFromIndex == array2[l].nSolID)
+							{
+								flag = false;
+							}
+						}
+						if (flag)
+						{
+							array[num] = babelTowerSolIDFromIndex;
+							num++;
+						}
+					}
+				}
+				for (int m = 0; m < 12; m++)
+				{
+					if (array[m] > 0L)
+					{
+						SoldierBatch.SOLDIERBATCH.DeleteBabelBatchInfoFromSolID(array[m]);
+					}
+				}
+				SoldierBatch.MYTHRAID_INFO.InitReadyState();
+				MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+				if (mythRaidLobbyUserListDlg != null)
+				{
+					mythRaidLobbyUserListDlg.RefreshSolInfo();
+					mythRaidLobbyUserListDlg.SetWaitingLock(false);
+				}
+				BabelTower_ChatDlg babelTower_ChatDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWER_CHAT) as BabelTower_ChatDlg;
+				if (babelTower_ChatDlg != null)
+				{
+					babelTower_ChatDlg.RefreshChatInfo();
+				}
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
+				{
+					PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
+					if (plunderSolListDlg != null)
+					{
+						plunderSolListDlg.m_bMyBatchMode = true;
+						plunderSolListDlg.SetSolNum((int)packet.nSolCount, false);
+					}
+				}
+				Batch_Chat_DLG batch_Chat_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATCH_CAHT_DLG) as Batch_Chat_DLG;
+				string text = TKString.NEWString(packet.szCharName);
+				if (batch_Chat_DLG != null)
+				{
+					string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3282");
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						textFromInterface,
+						"username",
+						text
+					});
+					batch_Chat_DLG.PushMsg(string.Empty, empty, "1106");
+				}
+			}
+			else
+			{
+				SoldierBatch.MYTHRAID_INFO.Init();
+				NrTSingleton<NkClientLogic>.Instance.SetClearMiddleStage();
+			}
+		}
+
+		public static void GS_MYTHRAID_CHARINFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_CHARINFO_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_CHARINFO_ACK>();
+			NrTSingleton<MythRaidManager>.Instance.SetMyInfo(packet);
+		}
+
+		public static void GS_MYTHRAID_BATTLEPOS_REFLASH_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_BATTLEPOS_REFLASH_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_BATTLEPOS_REFLASH_ACK>();
+			if (SoldierBatch.SOLDIERBATCH == null)
+			{
+				return;
+			}
+			long[] array = new long[12];
+			for (int i = 0; i < 12; i++)
+			{
+				array[i] = 0L;
+			}
+			GS_MYTHRAID_BATTLEPOS_SET_ACK[] array2 = new GS_MYTHRAID_BATTLEPOS_SET_ACK[packet.nSolCount];
+			for (int j = 0; j < packet.nSolCount; j++)
+			{
+				array2[j] = kDeserializePacket.GetPacket<GS_MYTHRAID_BATTLEPOS_SET_ACK>();
+			}
+			int num = 0;
+			bool flag = false;
+			for (int k = 0; k < SoldierBatch.SOLDIERBATCH.GetBabelTowerTotalBatchInfoCount(); k++)
+			{
+				bool flag2 = true;
+				long babelTowerSolIDFromIndex = SoldierBatch.SOLDIERBATCH.GetBabelTowerSolIDFromIndex(k);
+				if (babelTowerSolIDFromIndex > 0L)
+				{
+					flag = true;
+					for (int l = 0; l < packet.nSolCount; l++)
+					{
+						if (babelTowerSolIDFromIndex == array2[l].nSolID)
+						{
+							flag2 = false;
+						}
+					}
+					if (flag2)
+					{
+						array[num] = babelTowerSolIDFromIndex;
+						num++;
+					}
+				}
+			}
+			for (int m = 0; m < 12; m++)
+			{
+				if (array[m] > 0L)
+				{
+					SoldierBatch.SOLDIERBATCH.DeleteBabelBatchInfoFromSolID(array[m]);
+				}
+			}
+			if (!flag)
+			{
+				for (int n = 0; n < packet.nSolCount; n++)
+				{
+					SoldierBatch.SOLDIERBATCH.SetMythRaidSoldierBatch(array2[n]);
+				}
+			}
+			if (!SoldierBatch.BABELTOWER_INFO.IsPartyBatch())
+			{
+				SoldierBatch.SOLDIERBATCH.LoadBatchSolInfo_Party_MythRaid(array2);
+			}
+			MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+			if (mythRaidLobbyUserListDlg != null)
+			{
+				mythRaidLobbyUserListDlg.RefreshSolCount();
+				mythRaidLobbyUserListDlg.SetWaitingLock(false);
+			}
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
+			{
+				PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
+				if (plunderSolListDlg != null)
+				{
+					plunderSolListDlg.m_bMyBatchMode = true;
+					NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+					if (charPersonInfo == null)
+					{
+						return;
+					}
+					int babelTowerSolCount = SoldierBatch.SOLDIERBATCH.GetBabelTowerSolCount(charPersonInfo.GetPersonID());
+					plunderSolListDlg.SetSolNum(babelTowerSolCount, false);
+				}
+			}
+			SoldierBatch.SOLDIERBATCH.SolBatchLock = false;
+		}
+
+		public static void GS_MYTHRAID_CHANGE_SLOTTYPE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_CHANGE_SLOTTYPE_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_CHANGE_SLOTTYPE_ACK>();
+			if (SoldierBatch.SOLDIERBATCH == null)
+			{
+				return;
+			}
+			if (packet.pos < 0)
+			{
+				return;
+			}
+			SoldierBatch.MYTHRAID_INFO.SetSlotType(packet.pos, packet.change_type);
+			MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+			if (mythRaidLobbyUserListDlg != null)
+			{
+				mythRaidLobbyUserListDlg.RefreshSolInfo();
+				mythRaidLobbyUserListDlg.SetWaitingLock(false);
+			}
+		}
+
+		public static void GS_MYTHRAID_READY_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_READY_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_READY_ACK>();
+			if (SoldierBatch.SOLDIERBATCH == null)
+			{
+				return;
+			}
+			SoldierBatch.MYTHRAID_INFO.SetReadyBattle(packet.nPersonID, packet.bReady);
+			MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+			if (mythRaidLobbyUserListDlg != null)
+			{
+				mythRaidLobbyUserListDlg.RefreshSolInfo();
+				mythRaidLobbyUserListDlg.SetWaitingLock(false);
+			}
+		}
+
+		public static void GS_MYTHRAID_RANKINFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_RANKINFO_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_RANKINFO_ACK>();
+			MythRaid_Lobby_DLG mythRaid_Lobby_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_LOBBY_DLG) as MythRaid_Lobby_DLG;
+			if (mythRaid_Lobby_DLG == null)
+			{
+				return;
+			}
+			MYTHRAID_RANK_INFO[] array = new MYTHRAID_RANK_INFO[(int)packet.i16DataCount];
+			for (int i = 0; i < (int)packet.i16DataCount; i++)
+			{
+				MYTHRAID_RANK_INFO packet2 = kDeserializePacket.GetPacket<MYTHRAID_RANK_INFO>();
+				array[i] = packet2;
+			}
+			if (packet.ui8Type == 0)
+			{
+				mythRaid_Lobby_DLG.SetSoloRank(packet.i16PageIndex, array);
+			}
+			else if (packet.ui8Type == 1)
+			{
+				mythRaid_Lobby_DLG.SetPartyRank(packet.i16PageIndex, array);
+			}
+			mythRaid_Lobby_DLG.ShowRank();
+		}
+
+		public static void GS_MYTHRAID_GETREWARD_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_GETREWARD_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_GETREWARD_ACK>();
+			for (int i = 0; i < 7; i++)
+			{
+				if (packet.i32itempos[i] < 0)
+				{
+					NrTSingleton<MythRaidManager>.Instance.IsRewardMail = true;
+				}
+			}
+			int i32Result = packet.i32Result;
+			if (i32Result != 9700)
+			{
+				if (i32Result != 9701)
+				{
+					if (i32Result == 0)
+					{
+						if (packet.i8AskType == 0)
+						{
+							NrTSingleton<MythRaidManager>.Instance.MyRewardRank = packet.i32RewardInfo;
+							NrTSingleton<MythRaidManager>.Instance.CanGetReward = true;
+						}
+						else if (packet.i8AskType == 1)
+						{
+							NrTSingleton<MythRaidManager>.Instance.GetReward(packet.i32RewardUnique, packet.i32RewardNum, (eMYTHRAID_DIFFICULTY)packet.i8RaidType);
+						}
+					}
+				}
+				else
+				{
+					NrTSingleton<MythRaidManager>.Instance.MyRewardRank = packet.i32RewardInfo;
+				}
+			}
+			else if (packet.i8AskType == 1)
+			{
+				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("905");
+				Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+		}
+
+		public static void GS_MYTHRAID_PARTYSEARCH_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_PARTYSEARCH_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_PARTYSEARCH_ACK>();
+			byte i8MatchType = packet.i8MatchType;
+			if (i8MatchType != 0)
+			{
+				if (i8MatchType == 1)
+				{
+					NrTSingleton<MythRaidManager>.Instance.IsPartySearch = false;
+				}
+			}
+			else if (packet.i8Result == 0)
+			{
+				NrTSingleton<MythRaidManager>.Instance.IsPartySearch = true;
+			}
+			else
+			{
+				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("905");
+				Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+		}
+
+		public static void GS_BATTLE_ANGEL_EFFECT_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_BATTLE_ANGEL_EFFECT_ACK packet = kDeserializePacket.GetPacket<GS_BATTLE_ANGEL_EFFECT_ACK>();
+			Battle_Control_Dlg battle_Control_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+			if (battle_Control_Dlg != null)
+			{
+				battle_Control_Dlg.GuardianAngelEffectStart(packet.skillAngelUnique);
+				battle_Control_Dlg.Angelskill_Invoke_PersonID = packet.effectStartpersonID;
+			}
+		}
+
+		public static void GS_MYTHRAID_GUARDIANSELECT_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_GUARDIANSELECT_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_GUARDIANSELECT_ACK>();
+			if (packet.i16SelectedGuardianUnique == -2)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("906"));
+				return;
+			}
+			MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+			if (mythRaidLobbyUserListDlg != null)
+			{
+				mythRaidLobbyUserListDlg.SetGuardianInfo(packet.i64PersonID, (int)packet.i16SelectedGuardianUnique);
+			}
+		}
+
+		public static void GS_MYTHRAID_INVITE_FRIEND_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTHRAID_INVITE_FRIEND_ACK packet = kDeserializePacket.GetPacket<GS_MYTHRAID_INVITE_FRIEND_ACK>();
+			if (Launcher.Instance.LocalPatchLevel != Launcher.Instance.PatchLevelMax)
+			{
+				NrReceiveGame.OnMythRaidInviteCancelPatchLevel(packet);
+				return;
+			}
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			if (packet.Result == 0)
+			{
+				if (kMyCharInfo.m_PersonID == packet.ReqPersonID)
+				{
+					USER_FRIEND_INFO friend = kMyCharInfo.m_kFriendInfo.GetFriend(packet.InvitePersonID);
+					string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("302");
+					string empty = string.Empty;
+					if (friend != null)
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+						{
+							textFromNotify,
+							"charname",
+							TKString.NEWString(friend.szName)
+						});
+					}
+					else
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+						{
+							textFromNotify,
+							"charname",
+							TKString.NEWString(packet.InvitePersonName)
+						});
+					}
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				}
+				else if (kMyCharInfo.m_PersonID == packet.InvitePersonID)
+				{
+					USER_FRIEND_INFO friend2 = kMyCharInfo.m_kFriendInfo.GetFriend(packet.ReqPersonID);
+					string text = string.Empty;
+					string empty2 = string.Empty;
+					string title = string.Empty;
+					title = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("96");
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("97");
+					switch (packet.raidType)
+					{
+					case 0:
+						title = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("431");
+						text = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("434");
+						break;
+					case 1:
+						title = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("432");
+						text = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("435");
+						break;
+					case 2:
+						title = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("433");
+						text = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("436");
+						break;
+					}
+					if (friend2 != null)
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"charname",
+							TKString.NEWString(friend2.szName)
+						});
+					}
+					else
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							text,
+							"charname",
+							TKString.NEWString(packet.ReqPersonName)
+						});
+					}
+					MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+					msgBoxUI.SetMsg(new YesDelegate(NrReceiveGame.OnMythRaidInviteAccept), packet, new NoDelegate(NrReceiveGame.OnMythRaidInviteCancel), packet, title, empty2, eMsgType.MB_OK_CANCEL);
+					msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("317"));
+					msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("318"));
+				}
+			}
+			else
+			{
+				string text2 = string.Empty;
+				string text3 = string.Empty;
+				int result = packet.Result;
+				if (result != 1)
+				{
+					if (result != 29)
+					{
+						if (result == 501)
+						{
+							text3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("175");
+						}
+					}
+					else
+					{
+						text3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("215");
+					}
+				}
+				else
+				{
+					USER_FRIEND_INFO friend3 = kMyCharInfo.m_kFriendInfo.GetFriend(packet.InvitePersonID);
+					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("764");
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text3, new object[]
+					{
+						text2,
+						"targetname",
+						TKString.NEWString(friend3.szName)
+					});
+				}
+				if (text3 != string.Empty)
+				{
+					Main_UI_SystemMessage.ADDMessage(text3, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				}
+			}
+		}
+
+		public static void OnMythRaidInviteCancelPatchLevel(object EventObject)
+		{
+			GS_MYTHRAID_INVITE_FRIEND_ACK gS_MYTHRAID_INVITE_FRIEND_ACK = (GS_MYTHRAID_INVITE_FRIEND_ACK)EventObject;
+			GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ = new GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ();
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.nInvite = 2;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bAccept = false;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bMoveWorld = false;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.WorldID = 0;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.ChannelID = 0;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.PersonID = gS_MYTHRAID_INVITE_FRIEND_ACK.ReqPersonID;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ, gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ);
+		}
+
+		public static void OnMythRaidInviteAccept(object EventObject)
+		{
+			GS_MYTHRAID_INVITE_FRIEND_ACK gS_MYTHRAID_INVITE_FRIEND_ACK = (GS_MYTHRAID_INVITE_FRIEND_ACK)EventObject;
+			if (gS_MYTHRAID_INVITE_FRIEND_ACK == null)
+			{
+				return;
+			}
+			if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
+			{
+				return;
+			}
+			bool bMoveWorld = false;
+			if (Client.m_MyWS != (long)gS_MYTHRAID_INVITE_FRIEND_ACK.nReqPersonWorldID)
+			{
+				bMoveWorld = true;
+			}
+			GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ = new GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ();
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.nInvite = 0;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bAccept = true;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bMoveWorld = bMoveWorld;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.WorldID = gS_MYTHRAID_INVITE_FRIEND_ACK.nReqPersonWorldID;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.ChannelID = gS_MYTHRAID_INVITE_FRIEND_ACK.ReqPersonCHID;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.PersonID = gS_MYTHRAID_INVITE_FRIEND_ACK.ReqPersonID;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ, gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ);
+		}
+
+		public static void OnMythRaidInviteCancel(object EventObject)
+		{
+			GS_MYTHRAID_INVITE_FRIEND_ACK gS_MYTHRAID_INVITE_FRIEND_ACK = (GS_MYTHRAID_INVITE_FRIEND_ACK)EventObject;
+			GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ = new GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ();
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.nInvite = 1;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bAccept = false;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bMoveWorld = false;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.WorldID = 0;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.ChannelID = 0;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.PersonID = gS_MYTHRAID_INVITE_FRIEND_ACK.ReqPersonID;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ, gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ);
+		}
+
+		public static void NewExplorationErrMessage(int i32Result, int ItmeUnique = 0)
+		{
+			switch (i32Result)
+			{
+			case 9770:
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("508"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				break;
+			case 9771:
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("888"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				break;
+			case 9772:
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("893"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				break;
+			case 9773:
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("891"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				break;
+			case 9774:
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("899"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				break;
+			case 9775:
+				break;
+			default:
+				if (i32Result != 6)
+				{
+					if (i32Result != 31)
+					{
+						if (i32Result != 40)
+						{
+							if (i32Result != 76)
+							{
+								Main_UI_SystemMessage.ADDMessage(string.Format("Fail: {0}", i32Result), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							}
+							else
+							{
+								Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("773"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							}
+						}
+						else
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("915"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+						}
+					}
+					else
+					{
+						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					}
+				}
+				else
+				{
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("894"),
+						"targetname",
+						NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(ItmeUnique)
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				}
+				break;
+			}
+		}
+
+		public static void GS_NEWEXPLORATION_END_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWEXPLORATION_END_ACK packet = kDeserializePacket.GetPacket<GS_NEWEXPLORATION_END_ACK>();
+			if (packet.i32Result != 0)
+			{
+				NrReceiveGame.NewExplorationErrMessage(packet.i32Result, packet.i32ItemUnique);
+				return;
+			}
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			if (kMyCharInfo != null)
+			{
+				kMyCharInfo.SetCharSubData(packet.i32SubDataType, packet.i64SubDataValue);
+			}
+			string empty = string.Empty;
+			if (packet.bIsMailBox)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("855"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique),
+					"count",
+					packet.i32ItemNum
+				});
+			}
+			else
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("607"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32ItemUnique),
+					"count",
+					packet.i32ItemNum
+				});
+			}
+			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			NewExplorationMainDlg newExplorationMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+			if (newExplorationMainDlg != null)
+			{
+				newExplorationMainDlg.SetInfo();
+			}
+			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+			if (bookmarkDlg != null)
+			{
+				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.BATTLE);
+			}
+			BattleCollect_DLG battleCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLECOLLECT_DLG) as BattleCollect_DLG;
+			if (battleCollect_DLG != null)
+			{
+				battleCollect_DLG.Update_Notice();
+			}
+		}
+
+		public static void GS_NEWEXPLORATION_STAGE_CHALLENGE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWEXPLORATION_STAGE_CHALLENGE_ACK packet = kDeserializePacket.GetPacket<GS_NEWEXPLORATION_STAGE_CHALLENGE_ACK>();
+			if (packet.i32Result != 0)
+			{
+				NrReceiveGame.NewExplorationErrMessage(packet.i32Result, 0);
+				return;
+			}
+			if (!Scene.IsCurScene(Scene.Type.SOLDIER_BATCH))
+			{
+				SoldierBatch.SOLDIER_BATCH_MODE = eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION;
+				FacadeHandler.PushStage(Scene.Type.SOLDIER_BATCH);
+			}
+		}
+
+		public static void GS_NEWEXPLORATION_START_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWEXPLORATION_START_ACK packet = kDeserializePacket.GetPacket<GS_NEWEXPLORATION_START_ACK>();
+			if (packet.i32Result != 0)
+			{
+				NrReceiveGame.NewExplorationErrMessage(packet.i32Result, 0);
+				NewExploration_RepeatBgDlg newExploration_RepeatBgDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_REPEAT_DLG) as NewExploration_RepeatBgDlg;
+				if (newExploration_RepeatBgDlg != null)
+				{
+					newExploration_RepeatBgDlg.Close();
+				}
+				return;
+			}
+		}
+
+		public static void GS_NEWEXPLORATION_TREASURE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWEXPLORATION_TREASURE_ACK packet = kDeserializePacket.GetPacket<GS_NEWEXPLORATION_TREASURE_ACK>();
+			if (packet.i32Result != 0)
+			{
+				NrReceiveGame.NewExplorationErrMessage(packet.i32Result, 0);
+				BonusItemInfoDlg bonusItemInfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BONUS_ITEM_INFO_DLG) as BonusItemInfoDlg;
+				if (bonusItemInfoDlg != null)
+				{
+					bonusItemInfoDlg.SetOkButtonEnable(true);
+				}
+				return;
+			}
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			if (kMyCharInfo != null)
+			{
+				kMyCharInfo.SetCharWeekData(packet.i32WeekDataType, packet.i64WeekDataValue);
+			}
+			NewExplorationMainDlg newExplorationMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+			if (newExplorationMainDlg != null)
+			{
+				newExplorationMainDlg.SetFloorList();
+			}
+			BonusItemInfoDlg bonusItemInfoDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BONUS_ITEM_INFO_DLG) as BonusItemInfoDlg;
+			if (bonusItemInfoDlg2 != null)
+			{
+				bonusItemInfoDlg2.ActiveRewardEffect(new ResultDelegate(NrReceiveGame.BonusItemDelegate), packet);
+			}
+		}
+
+		public static void BonusItemDelegate(object obj)
+		{
+			GS_NEWEXPLORATION_TREASURE_ACK gS_NEWEXPLORATION_TREASURE_ACK = obj as GS_NEWEXPLORATION_TREASURE_ACK;
+			if (gS_NEWEXPLORATION_TREASURE_ACK == null)
+			{
+				return;
+			}
+			string empty = string.Empty;
+			for (int i = 0; i < 3; i++)
+			{
+				if (gS_NEWEXPLORATION_TREASURE_ACK.i32ItemUnique[i] > 0 && gS_NEWEXPLORATION_TREASURE_ACK.i32ItemNum[i] > 0)
+				{
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("607"),
+						"targetname",
+						NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(gS_NEWEXPLORATION_TREASURE_ACK.i32ItemUnique[i]),
+						"count",
+						gS_NEWEXPLORATION_TREASURE_ACK.i32ItemNum[i]
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+				}
+			}
+			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+			if (bookmarkDlg != null)
+			{
+				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.BATTLE);
+			}
+			BattleCollect_DLG battleCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLECOLLECT_DLG) as BattleCollect_DLG;
+			if (battleCollect_DLG != null)
+			{
+				battleCollect_DLG.Update_Notice();
+			}
+		}
+
+		public static void GS_NEWEXPLORATION_RESET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWEXPLORATION_RESET_ACK packet = kDeserializePacket.GetPacket<GS_NEWEXPLORATION_RESET_ACK>();
+			if (packet.i32Result != 0)
+			{
+				NrReceiveGame.NewExplorationErrMessage(packet.i32Result, 70002);
+				return;
+			}
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			if (kMyCharInfo == null)
+			{
+				return;
+			}
+			kMyCharInfo.SetCharDetail(packet.i32DetailType, packet.i64DetailValue);
+			sbyte resetCount = NrTSingleton<NewExplorationManager>.Instance.GetResetCount();
+			sbyte maxResetCount = NrTSingleton<NewExplorationManager>.Instance.GetMaxResetCount();
+			string empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("896"),
+				"count",
+				(int)maxResetCount - (int)resetCount
+			});
+			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			NewExplorationMainDlg newExplorationMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+			if (newExplorationMainDlg != null)
+			{
+				newExplorationMainDlg.SetInfo();
+				newExplorationMainDlg.SetFloorList();
+			}
+		}
+
+		public static void GS_NEWEXPLORATION_RANK_GET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWEXPLORATION_RANK_GET_ACK packet = kDeserializePacket.GetPacket<GS_NEWEXPLORATION_RANK_GET_ACK>();
+			NewExplorationMainDlg newExplorationMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+			if (newExplorationMainDlg != null)
+			{
+				newExplorationMainDlg.SetRankInfo(packet.i32Rank, packet.i32TotalUserCount);
+			}
+		}
+
+		public static void GS_NEWEXPLORATION_LASTWEEK_RANK_GET_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWEXPLORATION_LASTWEEK_RANK_GET_ACK packet = kDeserializePacket.GetPacket<GS_NEWEXPLORATION_LASTWEEK_RANK_GET_ACK>();
 		}
 
 		public static void GS_NEWGUILD_CREATE_ACK(NkDeserializePacket kDeserializePacket)
@@ -9345,14 +12702,14 @@ namespace PROTOCOL
 				});
 				Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 				NrCharUser nrCharUser = (NrCharUser)NrTSingleton<NkCharManager>.Instance.GetChar(1);
-				nrCharUser.SetUserGuildName(text, 0L);
+				nrCharUser.SetUserGuildName(text, 0L, false);
 				NrTSingleton<NewGuildManager>.Instance.AddJoin();
 				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_CREATE_DLG);
 				NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
 				DateTime dateTime = DateTime.Now.ToLocalTime();
-				DateTime arg_135_0 = dateTime;
+				DateTime arg_136_0 = dateTime;
 				DateTime dateTime2 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-				int num = (int)(arg_135_0 - dateTime2.ToLocalTime()).TotalSeconds;
+				int num = (int)(arg_136_0 - dateTime2.ToLocalTime()).TotalSeconds;
 				Dictionary<string, string> dictionary = new Dictionary<string, string>();
 				dictionary.Add("ts", num.ToString());
 				dictionary.Add("step", "create");
@@ -9381,9 +12738,10 @@ namespace PROTOCOL
 				NrTSingleton<NewGuildManager>.Instance.ClearDlg();
 				NrTSingleton<NewGuildManager>.Instance.Leave();
 				NrTSingleton<NewGuildManager>.Instance.ClearAgit();
+				NoticeIconDlg.SetIcon(ICON_TYPE.MINE_RECORED, false);
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("101"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				NrCharUser nrCharUser = (NrCharUser)NrTSingleton<NkCharManager>.Instance.GetChar(1);
-				nrCharUser.SetUserGuildName(string.Empty, 0L);
+				nrCharUser.SetUserGuildName(string.Empty, 0L, false);
 				break;
 			}
 			case 1:
@@ -9550,6 +12908,14 @@ namespace PROTOCOL
 						newGuildAdminMenuDlg.RefreshInfo();
 					}
 				}
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.NEWGUILD_MAIN_DLG))
+				{
+					NewGuildMainDlg newGuildMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWGUILD_MAIN_DLG) as NewGuildMainDlg;
+					if (newGuildMainDlg != null)
+					{
+						newGuildMainDlg.Set_ApplicantNotice();
+					}
+				}
 			}
 			else
 			{
@@ -9595,17 +12961,18 @@ namespace PROTOCOL
 							NrTSingleton<NewGuildManager>.Instance.GetGuildName()
 						});
 						Main_UI_SystemMessage.ADDMessage(empty);
-						nrCharUser.SetUserGuildName(string.Empty, 0L);
+						nrCharUser.SetUserGuildName(string.Empty, 0L, false);
 					}
 					NrTSingleton<NewGuildManager>.Instance.Clear();
 					NrTSingleton<NewGuildManager>.Instance.ClearDlg();
 					NrTSingleton<NewGuildManager>.Instance.Leave();
 					NrTSingleton<NewGuildManager>.Instance.ClearAgit();
+					NoticeIconDlg.SetIcon(ICON_TYPE.MINE_RECORED, false);
 					NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
 					DateTime dateTime = DateTime.Now.ToLocalTime();
-					DateTime arg_104_0 = dateTime;
+					DateTime arg_10C_0 = dateTime;
 					DateTime dateTime2 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-					int num = (int)(arg_104_0 - dateTime2.ToLocalTime()).TotalSeconds;
+					int num = (int)(arg_10C_0 - dateTime2.ToLocalTime()).TotalSeconds;
 					Dictionary<string, string> dictionary = new Dictionary<string, string>();
 					dictionary.Add("ts", num.ToString());
 					dictionary.Add("step", "leave");
@@ -9655,6 +13022,7 @@ namespace PROTOCOL
 					NrTSingleton<NewGuildManager>.Instance.ClearDlg();
 					NrTSingleton<NewGuildManager>.Instance.Leave();
 					NrTSingleton<NewGuildManager>.Instance.ClearAgit();
+					NoticeIconDlg.SetIcon(ICON_TYPE.MINE_RECORED, false);
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("378");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 					{
@@ -9764,7 +13132,18 @@ namespace PROTOCOL
 		{
 			GS_NEWGUILD_INFO_ACK packet = kDeserializePacket.GetPacket<GS_NEWGUILD_INFO_ACK>();
 			NrTSingleton<NewGuildManager>.Instance.Clear();
-			NrTSingleton<NewGuildManager>.Instance.AddGuildInfo(packet);
+			NrTSingleton<NewGuildManager>.Instance.SetGuildInfo(packet);
+			NrTSingleton<GuildWarManager>.Instance.SetCanGetGuildWarReward(packet.bCanGetGuildWarReward);
+			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+			if (bookmarkDlg != null)
+			{
+				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+			}
+			GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+			if (guildCollect_DLG != null)
+			{
+				guildCollect_DLG.Update_Notice();
+			}
 			for (int i = 0; i < (int)packet.i16NumGuildMembers; i++)
 			{
 				NEWGUILDMEMBER_INFO packet2 = kDeserializePacket.GetPacket<NEWGUILDMEMBER_INFO>();
@@ -9782,6 +13161,7 @@ namespace PROTOCOL
 					NewGuildMemberDlg newGuildMemberDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWGUILD_MEMBER_DLG) as NewGuildMemberDlg;
 					if (newGuildMemberDlg != null)
 					{
+						newGuildMemberDlg.SetGuildWarEnemyString(TKString.NEWString(packet.strGuildWarEnemyName));
 						newGuildMemberDlg.RefreshInfo();
 					}
 				}
@@ -9793,19 +13173,27 @@ namespace PROTOCOL
 						newGuildAdminMenuDlg.RefreshInfo();
 					}
 				}
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.AGIT_MAIN_DLG))
+				{
+					Agit_MainDlg agit_MainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.AGIT_MAIN_DLG) as Agit_MainDlg;
+					if (agit_MainDlg != null)
+					{
+						agit_MainDlg.RefreshInfo();
+					}
+				}
 				NrCharUser nrCharUser = (NrCharUser)NrTSingleton<NkCharManager>.Instance.GetChar(1);
 				if (nrCharUser != null)
 				{
 					if (0 < NrTSingleton<NewGuildManager>.Instance.GetSetImage())
 					{
-						nrCharUser.SetUserGuildName(NrTSingleton<NewGuildManager>.Instance.GetGuildName(), NrTSingleton<NewGuildManager>.Instance.GetGuildID());
+						nrCharUser.SetUserGuildName(NrTSingleton<NewGuildManager>.Instance.GetGuildName(), NrTSingleton<NewGuildManager>.Instance.GetGuildID(), NrTSingleton<NewGuildManager>.Instance.IsGuildWar());
 					}
 					else
 					{
-						nrCharUser.SetUserGuildName(NrTSingleton<NewGuildManager>.Instance.GetGuildName(), 0L);
+						nrCharUser.SetUserGuildName(NrTSingleton<NewGuildManager>.Instance.GetGuildName(), 0L, NrTSingleton<NewGuildManager>.Instance.IsGuildWar());
 					}
 				}
-				if (SoldierBatch.SOLDIERBATCH != null && SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+				if (SoldierBatch.SOLDIERBATCH != null && (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID))
 				{
 					BabelTowerInviteFriendListDlg babelTowerInviteFriendListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABELTOWER_INVITEFRIENDLIST_DLG) as BabelTowerInviteFriendListDlg;
 					if (babelTowerInviteFriendListDlg != null)
@@ -9813,7 +13201,6 @@ namespace PROTOCOL
 						babelTowerInviteFriendListDlg.ShowInivteList();
 					}
 				}
-				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.AGIT_MAIN_DLG);
 			}
 			else if (0L >= NrTSingleton<NewGuildManager>.Instance.GetGuildID())
 			{
@@ -9824,6 +13211,7 @@ namespace PROTOCOL
 				NewGuildMemberDlg newGuildMemberDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_MEMBER_DLG) as NewGuildMemberDlg;
 				if (newGuildMemberDlg2 != null)
 				{
+					newGuildMemberDlg2.SetGuildWarEnemyString(TKString.NEWString(packet.strGuildWarEnemyName));
 					newGuildMemberDlg2.RefreshInfo();
 				}
 			}
@@ -9832,7 +13220,6 @@ namespace PROTOCOL
 		public static void GS_NEWGUILD_DETAILINFO_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_NEWGUILD_DETAILINFO_ACK packet = kDeserializePacket.GetPacket<GS_NEWGUILD_DETAILINFO_ACK>();
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_MEMBER_DLG);
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_ADMINMENU_DLG);
 			NewGuildMainDlg newGuildMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_MAIN_DLG) as NewGuildMainDlg;
 			if (newGuildMainDlg != null)
@@ -9857,7 +13244,14 @@ namespace PROTOCOL
 			{
 				if (i32Result != 1)
 				{
-					if (i32Result == 6000)
+					if (i32Result != 6000)
+					{
+						if (i32Result == 6001)
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("36"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+						}
+					}
+					else
 					{
 						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 						{
@@ -9896,6 +13290,11 @@ namespace PROTOCOL
 				{
 					bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
 				}
+				GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+				if (guildCollect_DLG != null)
+				{
+					guildCollect_DLG.Update_Notice();
+				}
 			}
 		}
 
@@ -9923,11 +13322,11 @@ namespace PROTOCOL
 			{
 				if (0 < packet.ui8SetImage)
 				{
-					nrCharUser.SetUserGuildName(TKString.NEWString(packet.strGuildName), packet.i64GuildID);
+					nrCharUser.SetUserGuildName(TKString.NEWString(packet.strGuildName), packet.i64GuildID, packet.bGuildWar);
 				}
 				else
 				{
-					nrCharUser.SetUserGuildName(TKString.NEWString(packet.strGuildName), 0L);
+					nrCharUser.SetUserGuildName(TKString.NEWString(packet.strGuildName), 0L, packet.bGuildWar);
 				}
 			}
 		}
@@ -9938,7 +13337,7 @@ namespace PROTOCOL
 			NrCharUser nrCharUser = (NrCharUser)NrTSingleton<NkCharManager>.Instance.GetCharByPersonID(packet.i64PersonID);
 			if (nrCharUser != null)
 			{
-				nrCharUser.SetUserGuildName(string.Empty, 0L);
+				nrCharUser.SetUserGuildName(string.Empty, 0L, false);
 			}
 		}
 
@@ -9987,11 +13386,11 @@ namespace PROTOCOL
 			{
 				if (packet.bGuildPortrait)
 				{
-					nrCharUser.SetUserGuildName(TKString.NEWString(packet.szGuildName), packet.i64GuildID);
+					nrCharUser.SetUserGuildName(TKString.NEWString(packet.szGuildName), packet.i64GuildID, packet.bGuildWar);
 				}
 				else
 				{
-					nrCharUser.SetUserGuildName(TKString.NEWString(packet.szGuildName), 0L);
+					nrCharUser.SetUserGuildName(TKString.NEWString(packet.szGuildName), 0L, packet.bGuildWar);
 				}
 			}
 		}
@@ -10208,38 +13607,36 @@ namespace PROTOCOL
 				{
 					if (0 < packet.i32MailType)
 					{
-						text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("601");
+						text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("855");
 						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 						{
 							text2,
 							"targetname",
 							NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(babelGuildBossinfo.m_nBaseReward_ItemUnique),
-							"count2",
-							babelGuildBossinfo.m_nBaseReward_ItemNum
-						});
-						Main_UI_SystemMessage.ADDMessage(text, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
-					}
-					else
-					{
-						text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("600");
-						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
-						{
-							text2,
 							"count",
-							packet.i64AddMoney,
-							"targetname",
-							NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(babelGuildBossinfo.m_nBaseReward_ItemUnique),
-							"count2",
 							babelGuildBossinfo.m_nBaseReward_ItemNum
 						});
 						Main_UI_SystemMessage.ADDMessage(text, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 					}
+					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("600");
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+					{
+						text2,
+						"count",
+						ANNUALIZED.Convert(packet.i64AddMoney)
+					});
+					Main_UI_SystemMessage.ADDMessage(text, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				}
-				BabelGuildBossInfoDlg babelGuildBossInfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABEL_GUILDBOSS_INFO_DLG) as BabelGuildBossInfoDlg;
-				if (babelGuildBossInfoDlg != null)
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddGuildBossRewardInfo(false);
+				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+				if (bookmarkDlg != null)
 				{
-					babelGuildBossInfoDlg.Reward = 1;
-					babelGuildBossInfoDlg.Show();
+					bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+				}
+				GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+				if (guildCollect_DLG != null)
+				{
+					guildCollect_DLG.Update_Notice();
 				}
 			}
 			else
@@ -10256,9 +13653,13 @@ namespace PROTOCOL
 				{
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("595");
 				}
+				else if (packet.i32Result == 40)
+				{
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("915");
+				}
 				else if (packet.i32Result == -10)
 				{
-					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("650");
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("593");
 				}
 				else
 				{
@@ -10294,25 +13695,74 @@ namespace PROTOCOL
 			{
 				NEWGUILD_MY_BOSS_ROOMINFO packet2 = kDeserializePacket.GetPacket<NEWGUILD_MY_BOSS_ROOMINFO>();
 				kMyCharInfo.AddGuildBossMyRoomInfo(packet2);
+				if (babelGuildBossDlg != null && packet2.i16Floor > 0)
+				{
+					babelGuildBossDlg.UpdateFloor(packet2.i16Floor);
+				}
 			}
-			if (babelGuildBossDlg != null && packet.i16Floor > 0)
+		}
+
+		public static void GS_NEWGUILD_BOSS_JOININFO_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWGUILD_BOSS_JOININFO_NFY packet = kDeserializePacket.GetPacket<GS_NEWGUILD_BOSS_JOININFO_NFY>();
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			if (kMyCharInfo == null)
 			{
-				babelGuildBossDlg.UpdateFloor(packet.i16Floor);
+				return;
 			}
-			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-			if (bookmarkDlg != null)
+			kMyCharInfo.InitGuildBossRoomStateInfo();
+			bool flag;
+			if (packet.i32Result == 0)
 			{
-				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+				flag = true;
+				kMyCharInfo.AddGuildBossRewardInfo(flag);
 			}
-			NewGuildMemberDlg newGuildMemberDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWGUILD_MEMBER_DLG) as NewGuildMemberDlg;
-			if (newGuildMemberDlg != null)
+			else
 			{
-				newGuildMemberDlg.GuildBossCheck();
+				flag = false;
+				kMyCharInfo.AddGuildBossRewardInfo(flag);
 			}
-			BabelTowerMainDlg babelTowerMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWERMAIN_DLG) as BabelTowerMainDlg;
-			if (babelTowerMainDlg != null)
+			for (short num = 0; num < 16; num += 1)
 			{
-				babelTowerMainDlg.GuildBossCheck();
+				if (packet.i16Floor[(int)num] != 0)
+				{
+					if (packet.i64PersonContribute[(int)num] != -1L)
+					{
+						kMyCharInfo.AddGuildBossRoomStateInfo(packet.i16Floor[(int)num]);
+						flag = true;
+					}
+				}
+			}
+			if (flag)
+			{
+				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+				if (bookmarkDlg != null)
+				{
+					bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+				}
+				NewGuildMemberDlg newGuildMemberDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWGUILD_MEMBER_DLG) as NewGuildMemberDlg;
+				if (newGuildMemberDlg != null)
+				{
+					newGuildMemberDlg.GuildBossCheck();
+				}
+				BabelTowerMainDlg babelTowerMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWERMAIN_DLG) as BabelTowerMainDlg;
+				if (babelTowerMainDlg != null)
+				{
+					babelTowerMainDlg.GuildBossCheck();
+				}
+				BabelGuildBossDlg babelGuildBossDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABEL_GUILDBOSS_MAIN_DLG) as BabelGuildBossDlg;
+				if (babelGuildBossDlg != null)
+				{
+					for (short num2 = 1; num2 <= 16; num2 += 1)
+					{
+						babelGuildBossDlg.UpdateFloor(num2);
+					}
+				}
+				GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+				if (guildCollect_DLG != null)
+				{
+					guildCollect_DLG.Update_Notice();
+				}
 			}
 		}
 
@@ -10397,6 +13847,7 @@ namespace PROTOCOL
 			if (packet.i32Result == 0)
 			{
 				NrTSingleton<NewGuildManager>.Instance.SetFund(packet.i64AfterGuildFund);
+				NrTSingleton<NewGuildManager>.Instance.SetExitAgit(true);
 				NrTSingleton<NewGuildManager>.Instance.SetAgitLevel(packet.i16AgitLevel);
 				NrTSingleton<NewGuildManager>.Instance.SetAgitExp(packet.i64AgitExp);
 				NewGuildMemberDlg newGuildMemberDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWGUILD_MEMBER_DLG) as NewGuildMemberDlg;
@@ -10498,22 +13949,22 @@ namespace PROTOCOL
 		public static void GS_NEWGUILD_FUND_USE_HISTORY_GET_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_NEWGUILD_FUND_USE_HISTORY_GET_ACK packet = kDeserializePacket.GetPacket<GS_NEWGUILD_FUND_USE_HISTORY_GET_ACK>();
-			Agit_GoldRecordDlg agit_GoldRecordDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AGIT_GOLDRECORD_DLG) as Agit_GoldRecordDlg;
-			if (agit_GoldRecordDlg != null)
+			Agit_MainDlg agit_MainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AGIT_MAIN_DLG) as Agit_MainDlg;
+			if (agit_MainDlg != null)
 			{
-				agit_GoldRecordDlg.ClearFundUseInfo();
+				agit_MainDlg.ClearFundUseInfo();
 			}
 			for (int i = 0; i < (int)packet.i16Count; i++)
 			{
 				NEWGUILD_FUND_USE_INFO packet2 = kDeserializePacket.GetPacket<NEWGUILD_FUND_USE_INFO>();
-				if (agit_GoldRecordDlg != null)
+				if (agit_MainDlg != null)
 				{
-					agit_GoldRecordDlg.AddFundUseInfo(packet2);
+					agit_MainDlg.AddFundUseInfo(packet2);
 				}
 			}
-			if (agit_GoldRecordDlg != null)
+			if (agit_MainDlg != null)
 			{
-				agit_GoldRecordDlg.RefreshInfo();
+				agit_MainDlg.RefreshInfoGold();
 			}
 		}
 
@@ -10589,9 +14040,15 @@ namespace PROTOCOL
 				for (int i = 0; i < (int)packet.i16Count; i++)
 				{
 					AGIT_GOLDENEGG_INFO_SUB_DATA packet2 = kDeserializePacket.GetPacket<AGIT_GOLDENEGG_INFO_SUB_DATA>();
+					foreach (AGIT_GOLDENEGG_INFO_SUB_DATA current in rewardPersonInfoList)
+					{
+						if (current.i64PersonID == packet2.i64PersonID)
+						{
+						}
+					}
 					rewardPersonInfoList.Add(packet2);
 				}
-				agit_GoldenEggDlg.SetInfo(packet.i32GoldenEggPoint, packet.bCanGetReward);
+				agit_GoldenEggDlg.SetInfo(packet.i32GoldenEggPoint, packet.i32GoldenEggGetCount > 0);
 			}
 		}
 
@@ -10601,29 +14058,43 @@ namespace PROTOCOL
 			if (packet.i32Result == 0)
 			{
 				Agit_GoldenEggDramaDlg agit_GoldenEggDramaDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AGIT_GOLDENEGGDRAMA_DLG) as Agit_GoldenEggDramaDlg;
-				agit_GoldenEggDramaDlg.SetItem(packet.kItem);
-				if (packet.i8GoldenEggType == 1)
+				if (agit_GoldenEggDramaDlg != null)
 				{
-					agit_GoldenEggDramaDlg.ShowWhiteEgg();
+					agit_GoldenEggDramaDlg.SetItem(packet.kItem);
+					agit_GoldenEggDramaDlg.SetEggType(packet.i8GoldenEggType);
 				}
-				else
-				{
-					agit_GoldenEggDramaDlg.ShowGoldenEgg();
-				}
+				NrTSingleton<NewGuildManager>.Instance.SetCanGoldenEggReward(false);
 			}
 			else if (packet.i32Result == 31)
 			{
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"));
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			}
 			else if (packet.i32Result == 9500)
 			{
-				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("785");
-				Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("785"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+			else if (packet.i32Result == -10)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("199"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+			else if (packet.i32Result == 9400)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("593"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
 			}
 			else
 			{
 				string message = string.Format("result {0}", packet.i32Result);
 				Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+		}
+
+		public static void GS_NEWGUILD_AGIT_GOLDENEGG_REWARD_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_NEWGUILD_AGIT_GOLDENEGG_REWARD_NFY packet = kDeserializePacket.GetPacket<GS_NEWGUILD_AGIT_GOLDENEGG_REWARD_NFY>();
+			NrTSingleton<NewGuildManager>.Instance.SetCanGoldenEggReward(packet.bCanGet);
+			if (packet.bCanGet)
+			{
+				NrTSingleton<NewGuildManager>.Instance.GS_NEWGUILD_AGIT_GOLDENEGG_REWARD_NFY();
 			}
 		}
 
@@ -10717,9 +14188,30 @@ namespace PROTOCOL
 				{
 					communityUI_DLG.RequestCommunityData(communityUI_DLG.CurShowType);
 				}
+				NewExplorationMainDlg newExplorationMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+				if (newExplorationMainDlg != null)
+				{
+					newExplorationMainDlg.SetInfo();
+					newExplorationMainDlg.SetFloorList();
+				}
 				break;
 			}
 			case 9:
+			{
+				NrMyCharInfo myCharInfo2 = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+				if (myCharInfo2 != null)
+				{
+					myCharInfo2.InitCharWeekData();
+				}
+				NewExplorationMainDlg newExplorationMainDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+				if (newExplorationMainDlg2 != null)
+				{
+					newExplorationMainDlg2.SetInfo();
+					newExplorationMainDlg2.SetFloorList();
+				}
+				break;
+			}
+			case 10:
 			{
 				string message = string.Empty;
 				if (packet.nPara[0] == 0)
@@ -10743,14 +14235,14 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 10:
+			case 11:
 			{
 				string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("417");
 				Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				NrTSingleton<ChatManager>.Instance.PushSystemMsg(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1230"), textFromNotify2);
 				break;
 			}
-			case 12:
+			case 13:
 			{
 				int num5 = packet.nPara[0];
 				string text2 = string.Empty;
@@ -10784,37 +14276,37 @@ namespace PROTOCOL
 				}
 				break;
 			}
-			case 13:
+			case 14:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 14:
+			case 15:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("238"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 15:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("294"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-				break;
 			case 16:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1255"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("294"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			case 17:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("271"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1255"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			case 18:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("243"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("271"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			case 19:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("294"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("243"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			case 20:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("297"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("294"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			case 21:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("298"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("297"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			case 22:
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("299"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("298"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			case 23:
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("299"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				break;
+			case 24:
 			{
 				AuctionMainDlg auctionMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.AUCTION_MAIN_DLG) as AuctionMainDlg;
 				if (auctionMainDlg != null)
@@ -10823,28 +14315,28 @@ namespace PROTOCOL
 				}
 				break;
 			}
-			case 24:
+			case 25:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("283"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 25:
+			case 26:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("300"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 26:
+			case 27:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("447"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 27:
+			case 28:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("217"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 28:
+			case 29:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 29:
+			case 30:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("94"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 30:
+			case 31:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("316"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 31:
+			case 32:
 			{
 				string text3 = string.Empty;
 				if (0 < packet.nPara[1])
@@ -10860,7 +14352,7 @@ namespace PROTOCOL
 				NrTSingleton<ChatManager>.Instance.PushMsg(CHAT_TYPE.SYSTEM, name, text3);
 				break;
 			}
-			case 32:
+			case 33:
 			{
 				NewGuildDefine.eNEWGUILD_RESULT eNEWGUILD_RESULT = (NewGuildDefine.eNEWGUILD_RESULT)packet.nPara[0];
 				if (eNEWGUILD_RESULT == NewGuildDefine.eNEWGUILD_RESULT.eNEWGUILD_RESULT_DBLOADING)
@@ -10869,13 +14361,13 @@ namespace PROTOCOL
 				}
 				break;
 			}
-			case 33:
+			case 34:
 				NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_nChatBlockDate = (long)packet.nPara[0];
 				break;
-			case 34:
+			case 35:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("395"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 35:
+			case 36:
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("434"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
@@ -10887,7 +14379,7 @@ namespace PROTOCOL
 				}
 				break;
 			}
-			case 36:
+			case 37:
 			{
 				string empty3 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
@@ -10899,19 +14391,19 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty3, SYSTEM_MESSAGE_TYPE.ADMIN_SYSTEM_MESSAGE);
 				break;
 			}
-			case 37:
+			case 38:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("510"), SYSTEM_MESSAGE_TYPE.ADMIN_SYSTEM_MESSAGE);
 				break;
-			case 38:
+			case 39:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("513"), SYSTEM_MESSAGE_TYPE.ADMIN_SYSTEM_MESSAGE);
 				break;
-			case 39:
+			case 40:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("193"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 40:
+			case 41:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("535"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 41:
+			case 42:
 			{
 				int itemunique = packet.nPara[0];
 				int num6 = packet.nPara[1];
@@ -10927,17 +14419,17 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty4, SYSTEM_MESSAGE_TYPE.ADMIN_SYSTEM_MESSAGE);
 				break;
 			}
-			case 42:
+			case 43:
 				if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
 				{
 					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("616"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 					NrTSingleton<NkBabelMacroManager>.Instance.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_NONE, 0f);
 				}
 				break;
-			case 43:
+			case 44:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("643"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 44:
+			case 45:
 			{
 				string empty5 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
@@ -10951,7 +14443,7 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty5, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 45:
+			case 46:
 			{
 				string empty6 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty6, new object[]
@@ -10965,7 +14457,7 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty6, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 46:
+			case 47:
 			{
 				string empty7 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty7, new object[]
@@ -10979,7 +14471,7 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty7, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 47:
+			case 48:
 			{
 				string empty8 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty8, new object[]
@@ -10993,7 +14485,7 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty8, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 48:
+			case 49:
 			{
 				string empty9 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty9, new object[]
@@ -11005,7 +14497,7 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty9, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 49:
+			case 50:
 			{
 				string empty10 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty10, new object[]
@@ -11017,22 +14509,22 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty10, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 50:
+			case 51:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("149"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 51:
+			case 52:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("147"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 52:
+			case 53:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("619"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 53:
+			case 54:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("690"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 54:
+			case 55:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("695"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 55:
+			case 56:
 			{
 				string empty11 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty11, new object[]
@@ -11044,7 +14536,7 @@ namespace PROTOCOL
 				Main_UI_SystemMessage.ADDMessage(empty11, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 56:
+			case 57:
 			{
 				ColosseumDlg colosseumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COLOSSEUMMAIN_DLG) as ColosseumDlg;
 				if (colosseumDlg != null)
@@ -11059,45 +14551,46 @@ namespace PROTOCOL
 				}
 				break;
 			}
-			case 57:
+			case 58:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("175"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 58:
+			case 59:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("738"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 59:
+			case 60:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("732"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 60:
+			case 61:
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("46"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
-			case 61:
+			case 62:
 			{
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 				if (msgBoxUI == null)
 				{
 					return;
 				}
-				msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("237"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("238"), eMsgType.MB_OK);
+				msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("237"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("238"), eMsgType.MB_OK, 2);
 				msgBoxUI.Show();
 				break;
 			}
-			case 62:
+			case 63:
 			{
 				int num7 = packet.nPara[0];
 				string empty12 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty12, new object[]
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("776"),
-					"COUNT",
+					"count",
 					num7.ToString()
 				});
 				Main_UI_SystemMessage.ADDMessage(empty12, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				break;
 			}
-			case 63:
+			case 64:
 			{
-				if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
+				NrMyCharInfo myCharInfo3 = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+				if (myCharInfo3 == null)
 				{
 					return;
 				}
@@ -11106,18 +14599,61 @@ namespace PROTOCOL
 				{
 					char2.m_kCharMove.MoveStop(true, false);
 				}
-				int weekDayCount = packet.nPara[0];
+				int num8 = packet.nPara[0];
+				int a_Type = packet.nPara[1] / 1000;
+				int a_i32Group = packet.nPara[1] % 1000;
 				string empty13 = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty13, new object[]
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("786")
 				});
 				Main_UI_SystemMessage.ADDMessage(empty13, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-				DailyGift_Dlg dailyGift_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EVENT_DAILY_GIFT_DLG) as DailyGift_Dlg;
-				if (dailyGift_Dlg != null)
+				int num9 = 0;
+				short num10 = 0;
+				NrTSingleton<NrAttendance_Manager>.Instance.Get_Attend_Item((eATTENDANCE_USERTYPE)a_Type, a_i32Group, (short)num8, myCharInfo3.ConsecutivelyattendanceRewardType, ref num9, ref num10);
+				if (num9 <= 0 || num10 <= 0)
 				{
-					dailyGift_Dlg.CheckDailyEventDay(weekDayCount);
+					return;
 				}
+				long charSubData = myCharInfo3.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_ATTENDANCE_TYPE);
+				if (charSubData == 2L)
+				{
+					New_Attend_Dlg new_Attend_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.EVENT_NEW_ATTEND) as New_Attend_Dlg;
+					if (new_Attend_Dlg != null)
+					{
+						new_Attend_Dlg.InitSet();
+						new_Attend_Dlg.CheckDailyEventDay(num8);
+						new_Attend_Dlg.SetitemToolTip(num9, (int)num10);
+					}
+				}
+				else
+				{
+					Normal_Attend_Dlg normal_Attend_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.EVENT_NORMAL_ATTEND) as Normal_Attend_Dlg;
+					if (normal_Attend_Dlg != null)
+					{
+						normal_Attend_Dlg.InitSet();
+						normal_Attend_Dlg.SetitemToolTip(num9, (int)num10);
+					}
+				}
+				break;
+			}
+			case 65:
+			{
+				int num11 = packet.nPara[0];
+				string empty14 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty14, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("811"),
+					"hour",
+					num11.ToString()
+				});
+				Main_UI_SystemMessage.ADDMessage(empty14, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				break;
+			}
+			case 66:
+			{
+				string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("816");
+				Main_UI_SystemMessage.ADDMessage(textFromNotify3, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				break;
 			}
 			}
@@ -11180,7 +14716,7 @@ namespace PROTOCOL
 				}
 				else
 				{
-					SoldierBatch.SOLDIERBATCH.MakePlunderCharEnemy(packet.stTagetSolInfo[i]);
+					SoldierBatch.SOLDIERBATCH.MakePlunderCharEnemy(packet.stTagetSolInfo[i], i);
 				}
 			}
 		}
@@ -11196,7 +14732,6 @@ namespace PROTOCOL
 					PLUNDER_RECORDINFO packet2 = kDeserializePacket.GetPacket<PLUNDER_RECORDINFO>();
 					plunderRecordDlg.AddPlunderRecordInfo(packet2);
 				}
-				plunderRecordDlg.SetPlunderInfo(packet.i32Rank, packet.i32Win, packet.i32Lose);
 			}
 		}
 
@@ -11341,30 +14876,55 @@ namespace PROTOCOL
 			{
 				message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("103");
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI.SetMsg(null, null, title, message, eMsgType.MB_OK);
+				msgBoxUI.SetMsg(null, null, title, message, eMsgType.MB_OK, 2);
 			}
 			else
 			{
 				PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
-				postDlg.OnCharNameVerified();
+				if (postDlg != null)
+				{
+					postDlg.OnCharNameVerified();
+				}
 			}
 		}
 
 		public static void GS_MAILBOX_MINE_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_MAILBOX_MINE_ACK packet = kDeserializePacket.GetPacket<GS_MAILBOX_MINE_ACK>();
-			int i32MailBoxNum = packet.i32MailBoxNum;
-			GS_MAILBOX_INFO[] array = new GS_MAILBOX_INFO[i32MailBoxNum];
-			for (int i = 0; i < i32MailBoxNum; i++)
+			int num = packet.i32MailBoxNum;
+			GS_MAILBOX_INFO[] array = new GS_MAILBOX_INFO[num];
+			if (5 < num)
+			{
+				num = 5;
+			}
+			for (int i = 0; i < num; i++)
 			{
 				array[i] = kDeserializePacket.GetPacket<GS_MAILBOX_INFO>();
+				if (Application.isEditor)
+				{
+					TsLog.LogWarning(" {0} : {1} , {2} , {3} , {4} , {5} , {6} , {7} , {8} , {9} , {10} , {11} ", new object[]
+					{
+						i,
+						array[i].i64MailID,
+						array[i].i32MailType,
+						array[i].i64DateVary_Send,
+						array[i].i64CharMoney,
+						array[i].i64ItemID,
+						array[i].i64DateVary_End,
+						array[i].i32ItemUnique,
+						array[i].i32ItemNum,
+						array[i].i32CharKind,
+						array[i].i64SolID,
+						array[i].i8Grade
+					});
+				}
 			}
 			PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
 			if (postDlg != null)
 			{
-				postDlg.SetRecvList(packet.i32TotalMailNum, i32MailBoxNum, ref array);
+				postDlg.SetRecvList(packet.i32TotalMailNum, num, ref array);
 			}
-			if (i32MailBoxNum <= 0)
+			if (num <= 0)
 			{
 				NoticeIconDlg.SetIcon(ICON_TYPE.POST, false);
 			}
@@ -11436,10 +14996,37 @@ namespace PROTOCOL
 				return;
 			}
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.money;
+			if (packet.Addmoney > 0L)
+			{
+				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("804");
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					textFromNotify,
+					"count",
+					packet.Addmoney
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
+			}
 			PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
 			if (postDlg != null)
 			{
 				postDlg.RequestNextRecvList();
+			}
+			if (packet.nItem.IsValid())
+			{
+				string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.nItem.m_nItemUnique);
+				string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("803");
+				string empty2 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+				{
+					textFromNotify2,
+					"targetname",
+					itemNameByItemUnique,
+					"count",
+					packet.AddItemNum
+				});
+				Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
 			}
 			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MAIL", "MAILGET", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 			if (0L < packet.SoldierInfo.SolID)
@@ -11456,7 +15043,7 @@ namespace PROTOCOL
 					}
 					NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 					readySolList.AddSolInfo(packet.SoldierInfo, sOLDIER_BATTLESKILL_INFO, true);
-					for (int i = 0; i < 14; i++)
+					for (int i = 0; i < 16; i++)
 					{
 						NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(packet.SoldierInfo.SolID);
 						if (soldierInfoFromSolID != null)
@@ -11466,7 +15053,20 @@ namespace PROTOCOL
 					}
 					NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 					kMyCharInfo.SetCharSolGuide(packet.SoldierInfo.CharKind);
-					NrReceiveGame.SolRecruitAfter(packet.SoldierInfo, null, 1, 0, false);
+					NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(packet.SoldierInfo.CharKind);
+					if (charKindInfo == null)
+					{
+						return;
+					}
+					string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("802");
+					string empty3 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
+					{
+						textFromNotify3,
+						"targetname",
+						charKindInfo.GetName()
+					});
+					Main_UI_SystemMessage.ADDMessage(empty3, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
 				}
 			}
 		}
@@ -11479,8 +15079,16 @@ namespace PROTOCOL
 				return;
 			}
 			PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
-			postDlg.RequestRecvList();
+			if (postDlg != null)
+			{
+				postDlg.RequestNextRecvList();
+			}
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.POST_RECV_DLG);
+			MineRecordDlg mineRecordDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MINE_RECORD_DLG) as MineRecordDlg;
+			if (mineRecordDlg != null)
+			{
+				mineRecordDlg.Refresh_If_NonCompleteList();
+			}
 		}
 
 		public static void GS_MAILBOX_HISTORY_LIST_ACK(NkDeserializePacket kDeserializePacket)
@@ -11491,9 +15099,25 @@ namespace PROTOCOL
 			for (int i = 0; i < i32MailHistoryNum; i++)
 			{
 				array[i] = kDeserializePacket.GetPacket<MAILBOXHISTORY_INFO>();
+				if (Application.isEditor)
+				{
+					TsLog.LogWarning(" {0} : {1} , {2} , {3} , {4} , {5} , {6} ", new object[]
+					{
+						i,
+						array[i].i64MailID,
+						array[i].i32MailType,
+						array[i].i64DateVary_Send,
+						array[i].nMoney,
+						array[i].nItemUnique,
+						array[i].nSolKind
+					});
+				}
 			}
 			PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
-			postDlg.ShowHistory(packet, packet.i32TotalMailHistoryNum, i32MailHistoryNum, ref array);
+			if (postDlg != null)
+			{
+				postDlg.ShowHistory(packet, packet.i32TotalMailHistoryNum, i32MailHistoryNum, ref array);
+			}
 		}
 
 		public static void GS_MAILBOX_HISTORY_ACK(NkDeserializePacket kDeserializePacket)
@@ -11510,6 +15134,201 @@ namespace PROTOCOL
 			}
 		}
 
+		public static void GS_MAILBOX_TAKE_GETMAILALL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MAILBOX_TAKE_GETMAILALL_ACK packet = kDeserializePacket.GetPacket<GS_MAILBOX_TAKE_GETMAILALL_ACK>();
+			TsLog.LogWarning(" GS_MAILBOX_TAKE_GETMAILALL_ACK : Result : {0} ", new object[]
+			{
+				packet.Result
+			});
+			string text = string.Empty;
+			int result = packet.Result;
+			if (result != -50)
+			{
+				if (result == -40)
+				{
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507");
+					goto IL_A3;
+				}
+				if (result == -30)
+				{
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("447");
+					goto IL_A3;
+				}
+				if (result != -20 && result != -10)
+				{
+					goto IL_A3;
+				}
+			}
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270");
+			IL_A3:
+			if (packet.Result != 0)
+			{
+				if (text != string.Empty)
+				{
+					Main_UI_SystemMessage.ADDMessage(text, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
+				}
+				else
+				{
+					Debug.LogError("======= GS_MAILBOX_TAKE_GETMAILALL_ACK : " + packet.Result);
+				}
+			}
+		}
+
+		public static void GS_MAILBOX_TAKE_GETMAIL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MAILBOX_TAKE_GETMAIL_ACK packet = kDeserializePacket.GetPacket<GS_MAILBOX_TAKE_GETMAIL_ACK>();
+			TsLog.LogWarning(" GS_MAILBOX_TAKE_GETMAIL_ACK : Result : {0} ", new object[]
+			{
+				packet.Result
+			});
+			string text = string.Empty;
+			int result = packet.Result;
+			if (result != -50)
+			{
+				if (result == -40)
+				{
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507");
+					goto IL_A3;
+				}
+				if (result == -30)
+				{
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("447");
+					goto IL_A3;
+				}
+				if (result != -20 && result != -10)
+				{
+					goto IL_A3;
+				}
+			}
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270");
+			IL_A3:
+			if (packet.Result != 0)
+			{
+				if (text != string.Empty)
+				{
+					Main_UI_SystemMessage.ADDMessage(text, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
+				}
+				else
+				{
+					Debug.LogError("======= GS_MAILBOX_TAKE_GETMAIL_ACK : " + packet.Result);
+				}
+			}
+		}
+
+		public static void GS_MAILBOX_ALLSENDITEM_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MAILBOX_ALLSENDITEM_NFY packet = kDeserializePacket.GetPacket<GS_MAILBOX_ALLSENDITEM_NFY>();
+			if (packet == null)
+			{
+				return;
+			}
+			TsLog.LogWarning(" GS_MAILBOX_ALLSENDITEM_NFY : Result : {0} , {1} ", new object[]
+			{
+				packet.i32result,
+				packet.i8MailReawrdType
+			});
+			if (packet.i32result == 0)
+			{
+				if (packet.i8MailReawrdType == 1)
+				{
+					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money = packet.i64Maxmoney;
+					TsLog.LogWarning(" ADD Money : {0} , Money {1} ", new object[]
+					{
+						packet.i64AddMoney,
+						packet.i64Maxmoney
+					});
+					string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("804");
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						textFromNotify,
+						"count",
+						packet.i64AddMoney
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
+				}
+				if (packet.i8MailReawrdType == 2)
+				{
+					TsLog.LogWarning(" ADD Item {0}", new object[]
+					{
+						packet.item.m_nItemUnique
+					});
+					string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.item.m_nItemUnique);
+					string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("803");
+					string empty2 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					{
+						textFromNotify2,
+						"targetname",
+						itemNameByItemUnique,
+						"count",
+						packet.i32AddItemNum
+					});
+					Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
+				}
+				if (0L < packet.SoldierInfo.SolID)
+				{
+					TsLog.LogWarning(" ADD SOl : SolID {0} , SOlKind {1} ", new object[]
+					{
+						packet.SoldierInfo.CharKind,
+						packet.SoldierInfo.SolID
+					});
+					NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+					if (charPersonInfo != null)
+					{
+						SOLDIER_BATTLESKILL_INFO sOLDIER_BATTLESKILL_INFO = new SOLDIER_BATTLESKILL_INFO();
+						sOLDIER_BATTLESKILL_INFO.SolID = packet.SoldierInfo.SolID;
+						for (int i = 0; i < 6; i++)
+						{
+							sOLDIER_BATTLESKILL_INFO.BattleSkillData[i].BattleSkillUnique = packet.BattleSkillData[i].BattleSkillUnique;
+							sOLDIER_BATTLESKILL_INFO.BattleSkillData[i].BattleSkillLevel = packet.BattleSkillData[i].BattleSkillLevel;
+						}
+						NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+						readySolList.AddSolInfo(packet.SoldierInfo, sOLDIER_BATTLESKILL_INFO, true);
+						for (int i = 0; i < 16; i++)
+						{
+							NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(packet.SoldierInfo.SolID);
+							if (soldierInfoFromSolID != null)
+							{
+								soldierInfoFromSolID.SetSolSubData(i, packet.SolSubData[i]);
+							}
+						}
+						NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+						kMyCharInfo.SetCharSolGuide(packet.SoldierInfo.CharKind);
+						NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(packet.SoldierInfo.CharKind);
+						if (charKindInfo == null)
+						{
+							return;
+						}
+						string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("802");
+						string empty3 = string.Empty;
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
+						{
+							textFromNotify3,
+							"targetname",
+							charKindInfo.GetName()
+						});
+						Main_UI_SystemMessage.ADDMessage(empty3, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
+						SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+						if (solMilitaryGroupDlg != null)
+						{
+							solMilitaryGroupDlg.RefreshSolList();
+						}
+					}
+				}
+				else
+				{
+					TsLog.LogWarning(" ADD Sol Error SOlID", new object[0]);
+				}
+				PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
+				if (postDlg != null)
+				{
+					postDlg.RequestNextRecvList();
+				}
+			}
+		}
+
 		public static void GS_FRIEND_PUSH_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_FRIEND_PUSH_ACK packet = kDeserializePacket.GetPacket<GS_FRIEND_PUSH_ACK>();
@@ -11517,44 +15336,13 @@ namespace PROTOCOL
 			{
 				return;
 			}
-			if (packet.i8RecvType == 0)
+			if (packet.i32Result == -2)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("284"));
 			}
-		}
-
-		public static void GS_MAILBOX_REPORT_MINE_ACK(NkDeserializePacket kDeserializePacket)
-		{
-			GS_MAILBOX_REPORT_MINE_ACK packet = kDeserializePacket.GetPacket<GS_MAILBOX_REPORT_MINE_ACK>();
-			if (packet.i32Result == 0)
+			else if (packet.i32Result == -1)
 			{
-				Battle_ResultMineDlg battle_ResultMineDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_RESULT_MINE_DLG) as Battle_ResultMineDlg;
-				if (battle_ResultMineDlg == null)
-				{
-					return;
-				}
-				battle_ResultMineDlg.SetMailID(packet.i64MailID);
-				for (int i = 0; i < packet.i32MineResultCount; i++)
-				{
-					GS_BATTLE_RESULT_MINE packet2 = kDeserializePacket.GetPacket<GS_BATTLE_RESULT_MINE>();
-					battle_ResultMineDlg.SetBasicData(packet2);
-				}
-				for (int j = 0; j < packet.i32SolCount; j++)
-				{
-					GS_BATTLE_RESULT_SOLDIER packet3 = kDeserializePacket.GetPacket<GS_BATTLE_RESULT_SOLDIER>();
-					battle_ResultMineDlg.AddSolData(packet3);
-				}
-				for (int k = 0; k < packet.i32ItemCount; k++)
-				{
-					ITEM packet4 = kDeserializePacket.GetPacket<ITEM>();
-					battle_ResultMineDlg.AddItemData(packet4);
-				}
-				for (int l = 0; l < packet.i32ContRankUserInfoCount; l++)
-				{
-					MINE_REPORT_CONTRANK_USER_INFO packet5 = kDeserializePacket.GetPacket<MINE_REPORT_CONTRANK_USER_INFO>();
-					battle_ResultMineDlg.AddContributionRankInfo(packet5);
-				}
-				battle_ResultMineDlg.Show();
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("287"));
 			}
 		}
 
@@ -11695,7 +15483,7 @@ namespace PROTOCOL
 								"targetname",
 								NrTSingleton<NrCharKindInfoManager>.Instance.GetName((int)questByQuestUnique.GetQuestCommon().cQuestCondition[1].i64Param)
 							});
-							msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<NkQuestManager>.Instance.OpenQuestBattle), questByQuestUnique, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1532"), empty, eMsgType.MB_OK_CANCEL);
+							msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<NkQuestManager>.Instance.OpenQuestBattle), questByQuestUnique, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1532"), empty, eMsgType.MB_OK_CANCEL, 2);
 							msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
 							msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
 						}
@@ -11708,6 +15496,11 @@ namespace PROTOCOL
 					if (bookmarkDlg != null)
 					{
 						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.ADVENTURE);
+					}
+					AdventureCollect_DLG adventureCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ADVENTURECOLLECT_DLG) as AdventureCollect_DLG;
+					if (adventureCollect_DLG != null)
+					{
+						adventureCollect_DLG.Update_Notice();
 					}
 				}
 				NrTSingleton<FiveRocksEventManager>.Instance.QuestAccept(text);
@@ -11758,6 +15551,16 @@ namespace PROTOCOL
 			NkQuestManager instance = NrTSingleton<NkQuestManager>.Instance;
 			if (packet.Result != 0)
 			{
+				if (packet.Result == 31)
+				{
+					string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("472");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				}
+				else if (packet.Result == 76)
+				{
+					string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("818");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				}
 				NpcTalkUI_DLG npcTalkUI_DLG = (NpcTalkUI_DLG)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NPCTALK_DLG);
 				if (npcTalkUI_DLG != null)
 				{
@@ -11772,9 +15575,9 @@ namespace PROTOCOL
 				instance.CompleteQuest(text, packet.i32GroupUnique, packet.byCompleteQuest, packet.bCleared, packet.i32Grade, packet.i32CurGrade);
 				NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
 				DateTime dateTime = DateTime.Now.ToLocalTime();
-				DateTime arg_B6_0 = dateTime;
+				DateTime arg_109_0 = dateTime;
 				DateTime dateTime2 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-				int num = (int)(arg_B6_0 - dateTime2.ToLocalTime()).TotalSeconds;
+				int num = (int)(arg_109_0 - dateTime2.ToLocalTime()).TotalSeconds;
 				Dictionary<string, string> dictionary = new Dictionary<string, string>();
 				dictionary.Add("ts", num.ToString());
 				dictionary.Add("quest", text.ToString());
@@ -11833,6 +15636,11 @@ namespace PROTOCOL
 						if (bookmarkDlg != null)
 						{
 							bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.ADVENTURE);
+						}
+						AdventureCollect_DLG adventureCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ADVENTURECOLLECT_DLG) as AdventureCollect_DLG;
+						if (adventureCollect_DLG != null)
+						{
+							adventureCollect_DLG.Update_Notice();
 						}
 					}
 					NrTSingleton<FiveRocksEventManager>.Instance.QuestComplete(text);
@@ -11895,6 +15703,7 @@ namespace PROTOCOL
 					USER_QUEST_COMPLETE_INFO packet2 = kDeserializePacket.GetPacket<USER_QUEST_COMPLETE_INFO>();
 					instance.AddCompleteQuest(packet2);
 				}
+				instance.SetLoadCompletedQuest(true);
 			}
 			if (0 < packet.nRefresh)
 			{
@@ -11986,6 +15795,11 @@ namespace PROTOCOL
 					{
 						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.ADVENTURE);
 					}
+					AdventureCollect_DLG adventureCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ADVENTURECOLLECT_DLG) as AdventureCollect_DLG;
+					if (adventureCollect_DLG != null)
+					{
+						adventureCollect_DLG.Update_Notice();
+					}
 				}
 				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "QUEST", "CANCEL", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 				NrTSingleton<NkCharManager>.Instance.DeleteQuestMonsterEffect();
@@ -12065,201 +15879,215 @@ namespace PROTOCOL
 					userChallengeInfo.SetUserChallengeInfo(packet.m_kChallengeInfo);
 					NrTSingleton<ChallengeManager>.Instance.CalcContinueRewardNoticeCount();
 					NrTSingleton<ChallengeManager>.Instance.CalcDayRewardNoticeCount();
-					short nUnique = packet.m_kChallengeInfo.m_nUnique;
-					switch (nUnique)
+					RightMenuQuestUI rightMenuQuestUI = (RightMenuQuestUI)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MAIN_QUEST);
+					if (rightMenuQuestUI != null)
 					{
-					case 3170:
-						Social.ReportProgress("CgkIzeOZyPQCEAIQEA", 100.0, delegate(bool success)
+						rightMenuQuestUI.QuestUpdate();
+					}
+					if (!string.IsNullOrEmpty(Social.localUser.id))
+					{
+						short nUnique = packet.m_kChallengeInfo.m_nUnique;
+						switch (nUnique)
 						{
-						});
-						break;
-					case 3171:
-						Social.ReportProgress("CgkIzeOZyPQCEAIQCg", 100.0, delegate(bool success)
-						{
-						});
-						break;
-					case 3172:
-						Social.ReportProgress("CgkIzeOZyPQCEAIQFA", 100.0, delegate(bool success)
-						{
-						});
-						break;
-					default:
-						if (nUnique != 3030)
-						{
-							if (nUnique != 3050)
+						case 3170:
+							Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(14), 100.0, delegate(bool success)
 							{
-								if (nUnique != 3060)
+							});
+							break;
+						case 3171:
+							Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(15), 100.0, delegate(bool success)
+							{
+							});
+							break;
+						case 3172:
+							Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(16), 100.0, delegate(bool success)
+							{
+							});
+							break;
+						default:
+							if (nUnique != 3030)
+							{
+								if (nUnique != 3050)
 								{
-									if (nUnique != 3080)
+									if (nUnique != 3060)
 									{
-										if (nUnique != 3090)
+										if (nUnique != 3080)
 										{
-											if (nUnique != 3120)
+											if (nUnique != 3090)
 											{
-												if (nUnique != 3130)
+												if (nUnique != 3120)
 												{
-													if (nUnique != 3150)
+													if (nUnique != 3130)
 													{
-														if (nUnique != 10010)
+														if (nUnique != 3150)
 														{
-															if (nUnique != 10020)
+															if (nUnique != 10010)
 															{
-																if (nUnique != 10040)
+																if (nUnique != 10020)
 																{
-																	if (nUnique != 10050)
+																	if (nUnique != 10040)
 																	{
-																		if (nUnique == 10060)
+																		if (nUnique != 10050)
 																		{
-																			Social.ReportProgress("CgkIzeOZyPQCEAIQGw", 100.0, delegate(bool success)
+																			if (nUnique == 10060)
+																			{
+																				Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(21), 100.0, delegate(bool success)
+																				{
+																				});
+																			}
+																		}
+																		else
+																		{
+																			Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(20), 100.0, delegate(bool success)
 																			{
 																			});
 																		}
 																	}
 																	else
 																	{
-																		Social.ReportProgress("CgkIzeOZyPQCEAIQGg", 100.0, delegate(bool success)
+																		Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(19), 100.0, delegate(bool success)
 																		{
 																		});
 																	}
 																}
 																else
 																{
-																	Social.ReportProgress("CgkIzeOZyPQCEAIQDw", 100.0, delegate(bool success)
+																	Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(18), 100.0, delegate(bool success)
 																	{
 																	});
 																}
 															}
 															else
 															{
-																Social.ReportProgress("CgkIzeOZyPQCEAIQHA", 100.0, delegate(bool success)
+																Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(17), 100.0, delegate(bool success)
 																{
 																});
 															}
 														}
 														else
 														{
-															Social.ReportProgress("CgkIzeOZyPQCEAIQFw", 100.0, delegate(bool success)
+															int level = kMyCharInfo.GetLevel();
+															if (level >= 10)
 															{
-															});
+																Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(1), 100.0, delegate(bool success)
+																{
+																});
+															}
+															if (level >= 30)
+															{
+																Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(2), 100.0, delegate(bool success)
+																{
+																});
+															}
+															if (level >= 50)
+															{
+																Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(3), 100.0, delegate(bool success)
+																{
+																});
+															}
 														}
 													}
-													else
+													else if (packet.m_kChallengeInfo.m_nValue == 1L)
 													{
-														int level = kMyCharInfo.GetLevel();
-														if (level >= 10)
+														Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(12), 100.0, delegate(bool success)
 														{
-															Social.ReportProgress("CgkIzeOZyPQCEAIQBA", 100.0, delegate(bool success)
-															{
-															});
-														}
-														if (level >= 30)
-														{
-															Social.ReportProgress("CgkIzeOZyPQCEAIQBQ", 100.0, delegate(bool success)
-															{
-															});
-														}
-														if (level >= 50)
-														{
-															Social.ReportProgress("CgkIzeOZyPQCEAIQBg", 100.0, delegate(bool success)
-															{
-															});
-														}
+														});
 													}
-												}
-												else if (packet.m_kChallengeInfo.m_nValue == 1L)
-												{
-													Social.ReportProgress("CgkIzeOZyPQCEAIQFg", 100.0, delegate(bool success)
+													else if (packet.m_kChallengeInfo.m_nValue == 10L)
 													{
-													});
+														Social.ReportProgress("CgkIzeOZyPQCEAIQDA", 100.0, delegate(bool success)
+														{
+														});
+													}
+													else if (packet.m_kChallengeInfo.m_nValue == 30L)
+													{
+														Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(13), 100.0, delegate(bool success)
+														{
+														});
+													}
 												}
 												else if (packet.m_kChallengeInfo.m_nValue == 10L)
 												{
-													Social.ReportProgress("CgkIzeOZyPQCEAIQDA", 100.0, delegate(bool success)
-													{
-													});
-												}
-												else if (packet.m_kChallengeInfo.m_nValue == 30L)
-												{
-													Social.ReportProgress("CgkIzeOZyPQCEAIQEQ", 100.0, delegate(bool success)
+													Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(11), 100.0, delegate(bool success)
 													{
 													});
 												}
 											}
-											else if (packet.m_kChallengeInfo.m_nValue == 10L)
+											else if (packet.m_kChallengeInfo.m_nValue == 5L)
 											{
-												Social.ReportProgress("CgkIzeOZyPQCEAIQGA", 100.0, delegate(bool success)
+												Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(24), 100.0, delegate(bool success)
 												{
 												});
 											}
 										}
-										else if (packet.m_kChallengeInfo.m_nValue == 5L)
+										else if (packet.m_kChallengeInfo.m_nValue == 10L)
 										{
-											Social.ReportProgress("CgkIzeOZyPQCEAIQGQ", 100.0, delegate(bool success)
+											Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(22), 100.0, delegate(bool success)
+											{
+											});
+										}
+										else if (packet.m_kChallengeInfo.m_nValue == 30L)
+										{
+											Social.ReportProgress("CgkIzeOZyPQCEAIQDQ", 100.0, delegate(bool success)
+											{
+											});
+										}
+										else if (packet.m_kChallengeInfo.m_nValue == 50L)
+										{
+											Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(23), 100.0, delegate(bool success)
 											{
 											});
 										}
 									}
+									else if (packet.m_kChallengeInfo.m_nValue == 1L)
+									{
+										Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(7), 100.0, delegate(bool success)
+										{
+										});
+									}
 									else if (packet.m_kChallengeInfo.m_nValue == 10L)
 									{
-										Social.ReportProgress("CgkIzeOZyPQCEAIQEg", 100.0, delegate(bool success)
+										Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(8), 100.0, delegate(bool success)
 										{
 										});
 									}
 									else if (packet.m_kChallengeInfo.m_nValue == 30L)
 									{
-										Social.ReportProgress("CgkIzeOZyPQCEAIQDQ", 100.0, delegate(bool success)
+										Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(9), 100.0, delegate(bool success)
 										{
 										});
 									}
 								}
-								else if (packet.m_kChallengeInfo.m_nValue == 1L)
+								else
 								{
-									Social.ReportProgress("CgkIzeOZyPQCEAIQCQ", 100.0, delegate(bool success)
+									if (packet.m_kChallengeInfo.m_nValue >= 1L)
 									{
-									});
-								}
-								else if (packet.m_kChallengeInfo.m_nValue == 10L)
-								{
-									Social.ReportProgress("CgkIzeOZyPQCEAIQFQ", 100.0, delegate(bool success)
+										Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(4), 100.0, delegate(bool success)
+										{
+										});
+									}
+									if (packet.m_kChallengeInfo.m_nValue >= 20L)
 									{
-									});
-								}
-								else if (packet.m_kChallengeInfo.m_nValue == 30L)
-								{
-									Social.ReportProgress("CgkIzeOZyPQCEAIQEw", 100.0, delegate(bool success)
+										Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(5), 100.0, delegate(bool success)
+										{
+										});
+									}
+									if (packet.m_kChallengeInfo.m_nValue >= 30L)
 									{
-									});
-								}
-							}
-							else
-							{
-								if (packet.m_kChallengeInfo.m_nValue >= 1L)
-								{
-									Social.ReportProgress("CgkIzeOZyPQCEAIQBw", 100.0, delegate(bool success)
-									{
-									});
-								}
-								if (packet.m_kChallengeInfo.m_nValue >= 20L)
-								{
-									Social.ReportProgress("CgkIzeOZyPQCEAIQCw", 100.0, delegate(bool success)
-									{
-									});
-								}
-								if (packet.m_kChallengeInfo.m_nValue >= 30L)
-								{
-									Social.ReportProgress("CgkIzeOZyPQCEAIQCA", 100.0, delegate(bool success)
-									{
-									});
+										Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(6), 100.0, delegate(bool success)
+										{
+										});
+									}
 								}
 							}
-						}
-						else if (packet.m_kChallengeInfo.m_nValue == 20L)
-						{
-							Social.ReportProgress("CgkIzeOZyPQCEAIQDg", 100.0, delegate(bool success)
+							else if (packet.m_kChallengeInfo.m_nValue == 20L)
 							{
-							});
+								Social.ReportProgress(NrTSingleton<NrAchivementGoogleInfoMAnager>.Instance.GetCode(10), 100.0, delegate(bool success)
+								{
+								});
+							}
+							break;
 						}
-						break;
 					}
 					if (packet.m_nReward == 1)
 					{
@@ -12398,6 +16226,16 @@ namespace PROTOCOL
 					{
 						challengeDlg.SetChallengeInfo();
 					}
+					TimeShopInfo_DLG timeShopInfo_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.TIMESHOP_INFO_DLG) as TimeShopInfo_DLG;
+					if (timeShopInfo_DLG != null)
+					{
+						timeShopInfo_DLG.Set_ChallengeInfo();
+					}
+					TimeShop_DLG timeShop_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.TIMESHOP_DLG) as TimeShop_DLG;
+					if (timeShop_DLG != null)
+					{
+						timeShop_DLG.Set_RewardButton();
+					}
 				}
 			}
 			else if (packet.m_nResult == -1)
@@ -12407,35 +16245,27 @@ namespace PROTOCOL
 			}
 		}
 
+		public static void GS_SOLCOMBINATION_SYNC_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_SOLCOMBINATION_SYNC_ACK packet = kDeserializePacket.GetPacket<GS_SOLCOMBINATION_SYNC_ACK>();
+			PlunderSolNumDlg plunderSolNumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+			if (plunderSolNumDlg == null)
+			{
+				PlunderSolNumDlg._syncSolCombinationUniqueKey = packet.i32SolCombinationUnique;
+				Debug.Log("NORMAL, NrReceiveGame_SolCombination.cs, GS_SOLCOMBINATION_SYNC_ACK(), PlunderSolNumDlg is Null");
+				return;
+			}
+			plunderSolNumDlg.RenewCompleteCombinationLabel(packet.i32SolCombinationUnique, 0);
+		}
+
 		public static void GS_SOLDIER_LOAD_GET_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_SOLDIER_LOAD_GET_ACK packet = kDeserializePacket.GetPacket<GS_SOLDIER_LOAD_GET_ACK>();
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddSolWarehouseInfo(packet);
-			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
-			if (solMilitaryGroupDlg != null)
-			{
-				solMilitaryGroupDlg.RefreshSolWarehouseLoadAllInfo(packet.SoldierInfo.SolID);
-			}
 		}
 
 		public static void GS_SOLDIER_WAREHOUSE_GET_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			GS_SOLDIER_WAREHOUSE_GET_ACK packet = kDeserializePacket.GetPacket<GS_SOLDIER_WAREHOUSE_GET_ACK>();
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.SetLoadServerData(true);
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ClearSolWarehouseInfo();
-			for (int i = 0; i < (int)packet.i16SolWarehouseNum; i++)
-			{
-				SOL_WAREHOUSE_INFO packet2 = kDeserializePacket.GetPacket<SOL_WAREHOUSE_INFO>();
-				if (0L < packet2.i64SolID)
-				{
-					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddSolWarehouseInfo(packet2);
-				}
-			}
-			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
-			if (solMilitaryGroupDlg != null)
-			{
-				solMilitaryGroupDlg.RefreshSolWarehouse(packet);
-			}
 		}
 
 		public static void GS_SOLDIER_WAREHOUSE_MOVE_ACK(NkDeserializePacket kDeserializePacket)
@@ -12460,7 +16290,7 @@ namespace PROTOCOL
 						NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 						readySolList.AddSolInfo(packet.SoldierInfo, sOLDIER_BATTLESKILL_INFO, true);
 						nkSoldierInfo = charPersonInfo.GetSoldierInfoFromSolID(packet.SoldierInfo.SolID);
-						for (int i = 0; i < 14; i++)
+						for (int i = 0; i < 16; i++)
 						{
 							if (nkSoldierInfo != null)
 							{
@@ -12491,21 +16321,24 @@ namespace PROTOCOL
 				}
 				else if (packet.ui8SolPosType == 5)
 				{
-					NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
-					NkSoldierInfo solInfo = soldierReadyList.GetSolInfo(packet.SoldierInfo.SolID);
-					NrTSingleton<ExplorationManager>.Instance.RemoveSolInfo(packet.SoldierInfo.SolID);
-					soldierReadyList.DelSol(packet.SoldierInfo.SolID);
-					NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddSolWarehouseInfo(solInfo);
-					if (solInfo != null)
+					NkReadySolList readySolList2 = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+					if (readySolList2 != null)
 					{
-						string empty2 = string.Empty;
-						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						NkSoldierInfo solInfo = readySolList2.GetSolInfo(packet.SoldierInfo.SolID);
+						if (solInfo != null)
 						{
-							NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("588"),
-							"targetname",
-							solInfo.GetName()
-						});
-						Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+							NrTSingleton<ExplorationManager>.Instance.RemoveSolInfo(packet.SoldierInfo.SolID);
+							readySolList2.DelSol(packet.SoldierInfo.SolID);
+							NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.AddSolWarehouseInfo(solInfo);
+							string empty2 = string.Empty;
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+							{
+								NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("588"),
+								"targetname",
+								solInfo.GetName()
+							});
+							Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+						}
 					}
 				}
 				SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
@@ -12547,7 +16380,7 @@ namespace PROTOCOL
 				{
 					return;
 				}
-				for (int i = 0; i < 3; i++)
+				for (int i = 0; i < 6; i++)
 				{
 					soldierInfoFromSolID.SetBattleSkillData(i, packet.i32SkillUnique[i], (int)packet.i16SkillLevel[i]);
 				}
@@ -12674,16 +16507,47 @@ namespace PROTOCOL
 		public static void GS_SOLGUIDE_INFO_ACK(NkDeserializePacket kDeserializePacket)
 		{
 			GS_SOLGUIDE_INFO_ACK packet = kDeserializePacket.GetPacket<GS_SOLGUIDE_INFO_ACK>();
-			SolGuide_Dlg solGuide_Dlg = (SolGuide_Dlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLGUIDE_DLG);
-			if (solGuide_Dlg != null)
+			if (packet.bElementMark)
 			{
-				solGuide_Dlg.ClearSolGuideInfo();
-				for (int i = 0; i < (int)packet.i16Count; i++)
+				Myth_Evolution_Main_DLG myth_Evolution_Main_DLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTH_EVOLUTION_MAIN_DLG) as Myth_Evolution_Main_DLG;
+				if (myth_Evolution_Main_DLG != null)
 				{
-					SOLGUIDE_DATA packet2 = kDeserializePacket.GetPacket<SOLGUIDE_DATA>();
-					solGuide_Dlg.AddSolGuideInfo(packet2);
+					myth_Evolution_Main_DLG.ClearMythSolInfo();
+					for (int i = 0; i < (int)packet.i16Count; i++)
+					{
+						SOLGUIDE_DATA packet2 = kDeserializePacket.GetPacket<SOLGUIDE_DATA>();
+						myth_Evolution_Main_DLG.AddMythSolInfo(packet2);
+					}
+					myth_Evolution_Main_DLG.SetLegend();
 				}
-				solGuide_Dlg.SetGuideGuiSet(packet.bElementMark);
+			}
+			else
+			{
+				SolGuide_Dlg solGuide_Dlg = (SolGuide_Dlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLGUIDE_DLG);
+				if (solGuide_Dlg != null)
+				{
+					solGuide_Dlg.ClearSolGuideInfo();
+					for (int j = 0; j < (int)packet.i16Count; j++)
+					{
+						SOLGUIDE_DATA packet3 = kDeserializePacket.GetPacket<SOLGUIDE_DATA>();
+						solGuide_Dlg.AddSolGuideInfo(packet3);
+					}
+					solGuide_Dlg.SetGuideGuiSet(packet.bElementMark);
+					solGuide_Dlg.Show();
+					if (packet.i32CharKind > 0 && !NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLDETAIL_DLG))
+					{
+						SolDetail_Info_Dlg solDetail_Info_Dlg = (SolDetail_Info_Dlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLDETAIL_DLG);
+						if (!solDetail_Info_Dlg.Visible)
+						{
+							solDetail_Info_Dlg.Show();
+						}
+						SolSlotData solGuideData = solGuide_Dlg.GetSolGuideData(packet.i32CharKind);
+						if (solGuideData != null && solGuideData.i32KindInfo != 0)
+						{
+							solDetail_Info_Dlg.SetSolKind(solGuideData);
+						}
+					}
+				}
 			}
 		}
 
@@ -12714,6 +16578,166 @@ namespace PROTOCOL
 				if (solDetailinfoDlg != null)
 				{
 					solDetailinfoDlg.SetSolder();
+				}
+			}
+		}
+
+		public static void GS_PREVIEW_HERO_START_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_PREVIEW_HERO_START_ACK packet = kDeserializePacket.GetPacket<GS_PREVIEW_HERO_START_ACK>();
+			if (packet.i32Result == 0)
+			{
+				if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.SOLGUIDE_DLG))
+				{
+					SolGuide_Dlg solGuide_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLGUIDE_DLG) as SolGuide_Dlg;
+					if (solGuide_Dlg != null)
+					{
+						solGuide_Dlg.ChangeSceneDestory = false;
+						solGuide_Dlg.Hide();
+					}
+				}
+				else if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.SOLMILITARYGROUP_DLG))
+				{
+					SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+					if (solMilitaryGroupDlg != null)
+					{
+						solMilitaryGroupDlg.ChangeSceneDestory = false;
+						solMilitaryGroupDlg.Hide();
+					}
+				}
+				else if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.MYTH_EVOLUTION_MAIN_DLG))
+				{
+					Myth_Evolution_Main_DLG myth_Evolution_Main_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_EVOLUTION_MAIN_DLG) as Myth_Evolution_Main_DLG;
+					if (myth_Evolution_Main_DLG != null)
+					{
+						myth_Evolution_Main_DLG.ChangeSceneDestory = false;
+						myth_Evolution_Main_DLG.Hide();
+					}
+				}
+			}
+		}
+
+		public static void GS_COSTUME_BUY_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_COSTUME_BUY_ACK packet = kDeserializePacket.GetPacket<GS_COSTUME_BUY_ACK>();
+			if (packet.Result == -1000)
+			{
+				string empty = string.Empty;
+				int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_COSTUME_PRICE_ITEM_UNIQUE_1);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("198"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(value)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty);
+			}
+			else if (packet.Result == -1100)
+			{
+				string empty2 = string.Empty;
+				int value2 = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_COSTUME_PRICE_ITEM_UNIQUE_2);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("198"),
+					"targetname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(value2)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty2);
+			}
+			if (packet.Result != 0)
+			{
+				return;
+			}
+			NrTSingleton<CostumeBuyManager>.Instance.BuyCostumeEnd(packet);
+		}
+
+		public static void GS_MYTH_EVOLUTION_SOL_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_MYTH_EVOLUTION_SOL_ACK packet = kDeserializePacket.GetPacket<GS_MYTH_EVOLUTION_SOL_ACK>();
+			TsLog.LogWarning("!!!!!!!!!!!!!!!!! GS_MYTH_EVOLUTION_SOL_ACK Result : {0}", new object[]
+			{
+				packet.i32Result
+			});
+			if (packet.i32Result == 0)
+			{
+				NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+				NrSoldierList soldierList = charPersonInfo.GetSoldierList();
+				NkSoldierInfo nkSoldierInfo = soldierList.GetSoldierInfoBySolID(packet.i64SolID);
+				if (nkSoldierInfo == null)
+				{
+					nkSoldierInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySoldierInfoBySolID(packet.i64SolID);
+				}
+				if (nkSoldierInfo != null)
+				{
+					byte grade = nkSoldierInfo.GetGrade();
+					nkSoldierInfo.SetGrade(packet.i8Grade);
+					for (int i = 0; i < 2; i++)
+					{
+						nkSoldierInfo.SetBattleSkillData(packet.i32BattleSkillIndex[i], packet.i32BattleSkillUnique[i], packet.i32BattleSkillLevel[i]);
+					}
+					nkSoldierInfo.UpdateSoldierStatInfo();
+					Myth_Evolution_Success_DLG myth_Evolution_Success_DLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTH_EVOLUTION_SUCCESS_DLG) as Myth_Evolution_Success_DLG;
+					if (myth_Evolution_Success_DLG != null)
+					{
+						myth_Evolution_Success_DLG.LoadMyth_Evolurion(nkSoldierInfo, grade + 1, packet.i8Grade + 1);
+					}
+				}
+			}
+			else
+			{
+				string text = string.Empty;
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270") + " ( " + packet.i32Result.ToString() + ")";
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+			}
+		}
+
+		public static void GS_GMCOMMAND_MYTHSKILL_NFY(NkDeserializePacket kDeserializePacket)
+		{
+			GS_GMCOMMAND_MYTHSKILL_NFY packet = kDeserializePacket.GetPacket<GS_GMCOMMAND_MYTHSKILL_NFY>();
+			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+			NrSoldierList soldierList = charPersonInfo.GetSoldierList();
+			NkSoldierInfo nkSoldierInfo = soldierList.GetSoldierInfoBySolID(packet.i64BaseSOLID);
+			if (nkSoldierInfo == null)
+			{
+				nkSoldierInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySoldierInfoBySolID(packet.i64BaseSOLID);
+			}
+			if (nkSoldierInfo != null)
+			{
+				NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(nkSoldierInfo.GetCharKind());
+				if (charKindInfo == null)
+				{
+					return;
+				}
+				if (packet.i32BattleSkillUnique == 0)
+				{
+					for (int i = 1; i < 6; i++)
+					{
+						int battleSkillUnique = charKindInfo.GetBattleSkillUnique(i);
+						int battleSkillLevelByIndex = charKindInfo.GetBattleSkillLevelByIndex(i);
+						if (packet.i32BattleSkillUnique > 0)
+						{
+							nkSoldierInfo.SetBattleSkillData(i, battleSkillUnique, battleSkillLevelByIndex);
+						}
+						else
+						{
+							nkSoldierInfo.SetBattleSkillData(i, 0, 0);
+						}
+					}
+				}
+				else
+				{
+					for (int j = 1; j < 6; j++)
+					{
+						int battleSkillUnique = charKindInfo.GetBattleSkillUnique(j);
+						if (packet.i32BattleSkillUnique == battleSkillUnique)
+						{
+							nkSoldierInfo.SetBattleSkillData(j, packet.i32BattleSkillUnique, packet.i32BattleSkillLevel);
+						}
+						else
+						{
+							nkSoldierInfo.SetBattleSkillData(j, 0, 0);
+						}
+					}
 				}
 			}
 		}
@@ -12823,6 +16847,11 @@ namespace PROTOCOL
 				}
 				string charName = charPersonInfo.GetCharName();
 				PlayerPrefs.SetString(charName + "NewCommentID", packet.nNewLastCommentID.ToString());
+				StoryChatDlg storyChatDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.STORYCHAT_DLG) as StoryChatDlg;
+				if (storyChatDlg != null)
+				{
+					storyChatDlg.m_nCurrentPage = 1;
+				}
 				GS_STORYCHAT_GET_REQ gS_STORYCHAT_GET_REQ = new GS_STORYCHAT_GET_REQ();
 				gS_STORYCHAT_GET_REQ.nPersonID = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetPersonID();
 				gS_STORYCHAT_GET_REQ.nType = (byte)packet.m_nType;
@@ -12835,9 +16864,15 @@ namespace PROTOCOL
 			}
 			else if (0L < packet.m_nStoryChatID)
 			{
+				byte nType = 0;
+				StoryChatDlg storyChatDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.STORYCHAT_DLG) as StoryChatDlg;
+				if (storyChatDlg2 != null)
+				{
+					nType = (byte)storyChatDlg2.m_nCurrentTabInex;
+				}
 				GS_STORYCHAT_GET_REQ gS_STORYCHAT_GET_REQ2 = new GS_STORYCHAT_GET_REQ();
 				gS_STORYCHAT_GET_REQ2.nPersonID = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetPersonID();
-				gS_STORYCHAT_GET_REQ2.nType = (byte)packet.m_nType;
+				gS_STORYCHAT_GET_REQ2.nType = nType;
 				gS_STORYCHAT_GET_REQ2.nPage = 1;
 				gS_STORYCHAT_GET_REQ2.nPageSize = 4;
 				gS_STORYCHAT_GET_REQ2.nFirstStoryChatID = 0L;
@@ -12888,6 +16923,7 @@ namespace PROTOCOL
 				if (storyChatDetailDlg != null)
 				{
 					storyChatDetailDlg.UpdateCommentNumText(true);
+					storyChatDetailDlg.SetCommentList(packet.nNewLastCommentID);
 				}
 			}
 			else if (0L < packet.m_nStoryCommentID)
@@ -12939,30 +16975,17 @@ namespace PROTOCOL
 			}
 		}
 
-		public static void GS_STORYCOMMENT_LASTCOMMENTID_ACK(NkDeserializePacket kDeserializePacket)
+		public static void GS_STORYCOMMENT_NEWCOUNT_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			GS_STORYCOMMENT_LASTCOMMENTID_ACK packet = kDeserializePacket.GetPacket<GS_STORYCOMMENT_LASTCOMMENTID_ACK>();
-			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-			if (charPersonInfo == null)
+			GS_STORYCOMMENT_NEWCOUNT_ACK packet = kDeserializePacket.GetPacket<GS_STORYCOMMENT_NEWCOUNT_ACK>();
+			if (NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1) == null)
 			{
 				return;
 			}
-			string charName = charPersonInfo.GetCharName();
-			if (-1L < packet.nNewLastStoryCommentID)
+			StoryChatDlg storyChatDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.STORYCHAT_DLG) as StoryChatDlg;
+			if (storyChatDlg != null)
 			{
-				if (!PlayerPrefs.HasKey(charName + "NewCommentID"))
-				{
-					PlayerPrefs.SetString(charName + "NewCommentID", packet.nNewLastStoryCommentID.ToString());
-				}
-				else
-				{
-					long num = long.Parse(PlayerPrefs.GetString(charName + "NewCommentID"));
-					if (packet.nNewLastStoryCommentID > num)
-					{
-						NrTSingleton<UIDataManager>.Instance.NoticeStoryChat = true;
-						PlayerPrefs.SetString(charName + "NewCommentID", packet.nNewLastStoryCommentID.ToString());
-					}
-				}
+				storyChatDlg.SetTabNoticeCount(packet.nFriendChatCount, packet.nFriendChatID, packet.nGuildChatCount, packet.nGuildChatID, packet.nReplayChatCount, packet.nReplayChatID);
 			}
 		}
 
@@ -13032,20 +17055,18 @@ namespace PROTOCOL
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ColosseumOldGrade = packet.m_nColosseumOldGrade;
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ColosseumOldRank = packet.m_nColosseumOldRank;
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ColosseumWinCount = packet.m_nColosseumWinCount;
+			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleReward = packet.m_i8RankingReward;
 			NrTSingleton<NkClientLogic>.Instance.SetReadyResponse(true);
 			NrTSingleton<NkClientLogic>.Instance.SetLoginGameServer(false);
+			Debug.LogWarning("========== GS_LOAD_CHAR_NFY : SetLoginGameServer false ----- ");
 			NrTSingleton<GameGuideManager>.Instance.Update(GameGuideCheck.LOGIN);
-			FiveRocks.SetUserId(nrCharUser.GetCharName());
-			FiveRocks.SetUserLevel(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetLevel());
+			Tapjoy.SetUserID(nrCharUser.GetCharName());
+			Tapjoy.SetUserLevel(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetLevel());
 			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
 			if (charPersonInfo != null)
 			{
 				PlayerPrefs.SetInt(NrPrefsKey.PLAYER_LEVEL, charPersonInfo.GetLevel(0L));
 			}
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfinityBattle_Rank = packet.i32InfinityBattle_Rank;
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfinityBattle_OldRank = packet.i32InfinityBattle_OldRank;
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleStraightWin = packet.i32InfiBattleStraightWin;
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleCount = packet.i32InfiBattleCount;
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.HP_Auth = packet.i32HP_Auth;
 			System_Option_Dlg system_Option_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SYSTEM_OPTION) as System_Option_Dlg;
 			if (system_Option_Dlg != null)
@@ -13061,6 +17082,8 @@ namespace PROTOCOL
 					NrTSingleton<NrMainSystem>.Instance.ReLogin(false);
 				}
 			}
+			GS_INQUIRE_ANSWER_COUNT_REQ obj = new GS_INQUIRE_ANSWER_COUNT_REQ();
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_INQUIRE_ANSWER_COUNT_REQ, obj);
 		}
 
 		public static void GS_CHAR_LOGINDATAINFO_NFY(NkDeserializePacket kDeserializePacket)
@@ -13088,9 +17111,8 @@ namespace PROTOCOL
 				CHAR_WEEKDATA_INFO packet4 = kDeserializePacket.GetPacket<CHAR_WEEKDATA_INFO>();
 				myCharInfo.SetCharWeekData(packet4.nType, packet4.nValue);
 				int nType = packet4.nType;
-				if (nType == 0)
+				if (nType != 0)
 				{
-					NrTSingleton<NrDailyGiftManager>.Instance.SetServerGroupUnique(packet4.nParamValue);
 				}
 			}
 			for (int l = 0; l < (int)packet.nDetailinfoCount; l++)
@@ -13129,7 +17151,7 @@ namespace PROTOCOL
 				VIP_INFODATA packet8 = kDeserializePacket.GetPacket<VIP_INFODATA>();
 				NrTSingleton<NrTableVipManager>.Instance.AddVipInfo(packet8);
 			}
-			if (packet.nVipDataCount > 0 && myCharInfo != null)
+			if (packet.nVipDataCount > 0 && myCharInfo != null && NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 			{
 				myCharInfo.SetActivityTime(PublicMethod.GetCurTime());
 				myCharInfo.SetActivityMax();
@@ -13173,7 +17195,6 @@ namespace PROTOCOL
 			NrTSingleton<BountyHuntManager>.Instance.CheckBountyHuntInfoNPCCharKind();
 			kMyCharInfo.ClearBountyHuntClearInfo();
 			kMyCharInfo.BountyHuntUnique = packet.nBountyHuntUnique;
-			NrTSingleton<BountyHuntManager>.Instance.Week = packet.nBountyHuntWeek;
 			for (int i = 0; i < (int)packet.nBountyHuntCount; i++)
 			{
 				BOUNTYHUNT_CLEARINFO packet2 = kDeserializePacket.GetPacket<BOUNTYHUNT_CLEARINFO>();
@@ -13195,6 +17216,7 @@ namespace PROTOCOL
 					userChallengeInfo.SetUserChallengeInfo(packet3);
 				}
 			}
+			userChallengeInfo.SetLoadData(true);
 			NrTSingleton<ChallengeManager>.Instance.CalcContinueRewardNoticeCount();
 			NrTSingleton<ChallengeManager>.Instance.CalcDayRewardNoticeCount();
 			kMyCharInfo.ClearVoucherData();
@@ -13202,6 +17224,17 @@ namespace PROTOCOL
 			{
 				VOUCHER_DATA packet4 = kDeserializePacket.GetPacket<VOUCHER_DATA>();
 				kMyCharInfo.AddVoucherData(packet4);
+			}
+			NrTSingleton<ChallengeManager>.Instance.ChallengeEventRewardInfoInit();
+			for (int l = 0; l < (int)packet.nChallengeEvent_RewardCount; l++)
+			{
+				CHALLENGEEVENT_REWARDINFO packet5 = kDeserializePacket.GetPacket<CHALLENGEEVENT_REWARDINFO>();
+				NrTSingleton<ChallengeManager>.Instance.SetChallengeEventRewardInfo(packet5.i16ChallengeEvent_Unique);
+			}
+			for (int m = 0; m < (int)packet.nItemShop_PopUpShopCount; m++)
+			{
+				POPUPSHOP_DATA packet6 = kDeserializePacket.GetPacket<POPUPSHOP_DATA>();
+				NrTSingleton<ItemMallPoPupShopManager>.Instance.Set_ServerValue(packet6);
 			}
 		}
 
@@ -13264,6 +17297,9 @@ namespace PROTOCOL
 					MsgHandler.Handle("Rcv_BATTLE_RESULT", new object[0]);
 				}
 			}
+			if (Scene.IsCurScene(Scene.Type.WORLD))
+			{
+			}
 		}
 
 		public static void GS_SOLDIERS_NFY(NkDeserializePacket kDeserializePacket)
@@ -13282,6 +17318,7 @@ namespace PROTOCOL
 			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 			kMyCharInfo.DepolyCombatPower = 0L;
 			NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+			NrSolWarehouse warehouseSolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetWarehouseSolList();
 			NkMilitaryList militaryList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetMilitaryList();
 			List<long> list = new List<long>();
 			for (int i = 0; i < (int)packet.SolCount; i++)
@@ -13294,7 +17331,14 @@ namespace PROTOCOL
 				}
 				else
 				{
-					readySolList.AddSolInfo(packet2, null, false);
+					if (packet2.SolPosType == 5)
+					{
+						warehouseSolList.AddSolInfo(packet2, null, false);
+					}
+					else
+					{
+						readySolList.AddSolInfo(packet2, null, false);
+					}
 					if (packet2.SolPosType == 2)
 					{
 						NkSoldierInfo solInfo = readySolList.GetSolInfo(packet2.SolID);
@@ -13335,7 +17379,9 @@ namespace PROTOCOL
 			}
 			int faceCharKind = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetFaceCharKind();
 			byte faceSolGrade = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetFaceSolGrade();
-			nrCharUser.ChangeCharModel(faceCharKind, faceSolGrade);
+			long faceSolID = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetFaceSolID();
+			int faceCostumeUnique = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetFaceCostumeUnique();
+			nrCharUser.ChangeCharModel(faceCharKind, faceSolGrade, faceSolID, faceCostumeUnique);
 			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 			if (solMilitaryGroupDlg != null)
 			{
@@ -13361,7 +17407,7 @@ namespace PROTOCOL
 				{
 					iDInfo.m_nWorldID = packet.WorldID;
 				}
-				nrCharUser.ChangeCharModel(packet.kShapeInfo.nFaceCharKind, packet.kShapeInfo.nFaceGrade);
+				nrCharUser.ChangeCharModel(packet.kShapeInfo.nFaceCharKind, packet.kShapeInfo.nFaceGrade, packet.kShapeInfo.nFaceCharSolID, packet.kShapeInfo.nFaceCostumeUnique);
 				nrCharUser.ChangeCharPartInfo(packet.kShapeInfo.kPartInfo, true, true);
 				SUBCHAR_INFO packet2 = kDeserializePacket.GetPacket<SUBCHAR_INFO>();
 				nrCharUser.SetSubCharKindFromList(packet2.i32SubCharKind);
@@ -13371,11 +17417,11 @@ namespace PROTOCOL
 				{
 					if (packet.bCharGuildPortrait)
 					{
-						nrCharUser.SetUserGuildName(text, packet.GuildID);
+						nrCharUser.SetUserGuildName(text, packet.GuildID, packet.bGuildWar);
 					}
 					else
 					{
-						nrCharUser.SetUserGuildName(text, 0L);
+						nrCharUser.SetUserGuildName(text, 0L, packet.bGuildWar);
 					}
 				}
 			}
@@ -13397,7 +17443,7 @@ namespace PROTOCOL
 				}
 				else
 				{
-					nrCharUser.ChangeCharModel(packet.kShapeInfo.nFaceCharKind, packet.kShapeInfo.nFaceGrade);
+					nrCharUser.ChangeCharModel(packet.kShapeInfo.nFaceCharKind, packet.kShapeInfo.nFaceGrade, packet.kShapeInfo.nFaceCharSolID, packet.kShapeInfo.nFaceCostumeUnique);
 					nrCharUser.ChangeCharPartInfo(packet.kShapeInfo.kPartInfo, true, true);
 				}
 			}
@@ -13549,6 +17595,11 @@ namespace PROTOCOL
 							}
 							else
 							{
+								bool flag2 = false;
+								if (soldierInfoFromSolID.GetLevel() != (short)packet2.nUpdateData)
+								{
+									flag2 = true;
+								}
 								if (soldierInfoFromSolID.IsLeader())
 								{
 									short level = soldierInfoFromSolID.GetLevel();
@@ -13572,13 +17623,19 @@ namespace PROTOCOL
 								{
 									if (nrCharUser2.GetID() == nrCharUser.GetID())
 									{
-										AlarmManager.GetInstance().AddSolAlarm(packet2.nSolID);
+										if (flag2)
+										{
+											AlarmManager.GetInstance().AddSolAlarm(packet2.nSolID);
+										}
 										if (soldierInfoFromSolID.IsLeader())
 										{
-											kMyCharInfo.SetActivityMax();
-											if (kMyCharInfo.m_nActivityPoint < kMyCharInfo.m_nMaxActivityPoint)
+											if (NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 											{
-												kMyCharInfo.SetActivityPoint(kMyCharInfo.m_nMaxActivityPoint);
+												kMyCharInfo.SetActivityMax();
+												if (kMyCharInfo.m_nActivityPoint < kMyCharInfo.m_nMaxActivityPoint)
+												{
+													kMyCharInfo.SetActivityPoint(kMyCharInfo.m_nMaxActivityPoint);
+												}
 											}
 											NrTSingleton<GameGuideManager>.Instance.Update(GameGuideCheck.LEVELUP);
 											BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
@@ -13856,7 +17913,7 @@ namespace PROTOCOL
 				NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.AddEvent(packet2.m_nEventInfoWeek, packet2.m_nEventType, packet2.m_nStartTime, packet2.m_nEndDurationTime, packet2.m_nMaxLimitCount, packet2.m_nLeftEventTime, packet2.m_nDay, packet2.m_nWeek, packet2.m_nEventTitleText, packet2.m_nEventExplainText);
 				if (packet2.m_nPushNotice == 0)
 				{
-					if (packet2.m_nEventType == 14 || packet2.m_nEventType == 15 || packet2.m_nEventType == 16)
+					if (packet2.m_nEventType == 15 || packet2.m_nEventType == 16 || packet2.m_nEventType == 17)
 					{
 						NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
 						if (myCharInfo == null)
@@ -13879,20 +17936,21 @@ namespace PROTOCOL
 						AlarmManager.GetInstance().AddEventType(packet2.m_nEventType, packet2.m_nEventTitleText, packet2.m_nEventExplainText);
 					}
 				}
-				if (packet2.m_nEventType == 13 && NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MAIN))
+				if (packet2.m_nEventType == 14 && NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MAIN))
 				{
 					DailyDungeon_Main_Dlg dailyDungeon_Main_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DAILYDUNGEON_MAIN) as DailyDungeon_Main_Dlg;
 					if (dailyDungeon_Main_Dlg != null)
 					{
+						sbyte nDayOfWeek = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventWeek();
 						dailyDungeon_Main_Dlg.SetBG();
-						dailyDungeon_Main_Dlg.SetBasicData();
+						dailyDungeon_Main_Dlg.SetBasicData(nDayOfWeek, false);
 					}
 				}
 			}
-			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-			if (bookmarkDlg != null)
+			MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+			if (myCharInfoDlg != null)
 			{
-				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.MAINEVENT);
+				myCharInfoDlg.UpdateNoticeInfo();
 			}
 			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EVENT_MAIN))
 			{
@@ -13919,7 +17977,7 @@ namespace PROTOCOL
 				NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.AddEvent(packet.m_nEventInfoWeek, packet.m_nEventType, packet.m_nStartTime, packet.m_nEndDurationTime, packet.m_nMaxLimitCount, packet.m_nLeftEventTime, packet.m_nDay, packet.m_nWeek, packet.m_nEventTitleText, packet.m_nEventExplainText);
 				if (packet.m_nPushNotice == 0)
 				{
-					if (packet.m_nEventType == 14 || packet.m_nEventType == 15 || packet.m_nEventType == 16)
+					if (packet.m_nEventType == 15 || packet.m_nEventType == 16 || packet.m_nEventType == 17)
 					{
 						NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
 						if (myCharInfo == null)
@@ -13942,13 +18000,14 @@ namespace PROTOCOL
 						AlarmManager.GetInstance().AddEventType(packet.m_nEventType, packet.m_nEventTitleText, packet.m_nEventExplainText);
 					}
 				}
-				if (packet.m_nEventType == 13 && NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MAIN))
+				if (packet.m_nEventType == 14 && NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MAIN))
 				{
 					DailyDungeon_Main_Dlg dailyDungeon_Main_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DAILYDUNGEON_MAIN) as DailyDungeon_Main_Dlg;
 					if (dailyDungeon_Main_Dlg != null)
 					{
+						sbyte nDayOfWeek = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventWeek();
 						dailyDungeon_Main_Dlg.SetBG();
-						dailyDungeon_Main_Dlg.SetBasicData();
+						dailyDungeon_Main_Dlg.SetBasicData(nDayOfWeek, false);
 					}
 				}
 			}
@@ -13956,10 +18015,10 @@ namespace PROTOCOL
 			{
 				NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.DeleteEvent(packet.m_nEventInfoWeek, packet.m_nEventType);
 			}
-			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-			if (bookmarkDlg != null)
+			MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+			if (myCharInfoDlg != null)
 			{
-				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.MAINEVENT);
+				myCharInfoDlg.UpdateNoticeInfo();
 			}
 			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EVENT_MAIN))
 			{
@@ -14091,7 +18150,7 @@ namespace PROTOCOL
 					if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.COMMUNITY_DLG))
 					{
 						CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
-						communityUI_DLG.UpdateFriend(packet.i64PersonID);
+						communityUI_DLG.UpdateFriend(packet.i64PersonID, true);
 					}
 					if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.DLG_OTHER_CHAR_DETAIL))
 					{
@@ -14111,7 +18170,7 @@ namespace PROTOCOL
 				VIP_INFODATA packet2 = kDeserializePacket.GetPacket<VIP_INFODATA>();
 				NrTSingleton<NrTableVipManager>.Instance.AddVipInfo(packet2);
 			}
-			if (packet.i8VipInfoCount > 0)
+			if (packet.i8VipInfoCount > 0 && NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 			{
 				NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
 				if (myCharInfo != null)
@@ -14119,6 +18178,76 @@ namespace PROTOCOL
 					myCharInfo.SetActivityTime(PublicMethod.GetCurTime());
 					myCharInfo.SetActivityMax();
 				}
+			}
+		}
+
+		public static void GS_CONSECUTIVELY_ATTENDACNE_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_CONSECUTIVELY_ATTENDACNE_ACK packet = kDeserializePacket.GetPacket<GS_CONSECUTIVELY_ATTENDACNE_ACK>();
+			NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+			if (myCharInfo != null)
+			{
+				myCharInfo.ConsecutivelyattendanceTotalNum = packet.i8TotalNum;
+				myCharInfo.ConsecutivelyattendanceCurrentNum = packet.i8CurrentNum;
+				myCharInfo.ConsecutivelyattendanceReward = packet.bGetReward;
+				myCharInfo.ConsecutivelyattendanceRewardType = packet.i8RewardType;
+			}
+			TsLog.LogWarning("GS_CONSECUTIVELY_ATTENDACNE_NFY == {0} , {1} ,{2}, {3}", new object[]
+			{
+				packet.i8TotalNum,
+				packet.i8CurrentNum,
+				packet.bGetReward,
+				packet.i8RewardType
+			});
+			Normal_Attend_Dlg normal_Attend_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EVENT_NORMAL_ATTEND) as Normal_Attend_Dlg;
+			if (normal_Attend_Dlg != null)
+			{
+				normal_Attend_Dlg.Init_Consecutively_Attend();
+			}
+			if (packet.bGetReward)
+			{
+				MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+				if (myCharInfoDlg != null)
+				{
+					myCharInfoDlg.Attend_Notice_Show();
+				}
+			}
+		}
+
+		public static void GS_CONSECUTIVELY_ATTENDACNE_REWARD_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			GS_CONSECUTIVELY_ATTENDACNE_REWARD_ACK packet = kDeserializePacket.GetPacket<GS_CONSECUTIVELY_ATTENDACNE_REWARD_ACK>();
+			if (packet.i32Result == 0)
+			{
+				NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+				if (myCharInfo != null)
+				{
+					myCharInfo.ConsecutivelyattendanceReward = packet.bReward;
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("400"),
+						"itemname",
+						NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(packet.i32RewardUnique),
+						"count",
+						packet.i32RewardNum
+					});
+					Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+					MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+					if (myCharInfoDlg != null)
+					{
+						myCharInfoDlg.Attend_Notice_Show();
+					}
+					Normal_Attend_Dlg normal_Attend_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EVENT_NORMAL_ATTEND) as Normal_Attend_Dlg;
+					if (normal_Attend_Dlg != null)
+					{
+						normal_Attend_Dlg.Init_Consecutively_Attend();
+					}
+				}
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("214"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			}
 		}
 
@@ -14229,7 +18358,6 @@ namespace PROTOCOL
 
 		public static void WS_USER_PINGCOUNT_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			WS_USER_PINGCOUNT_ACK packet = kDeserializePacket.GetPacket<WS_USER_PINGCOUNT_ACK>();
 			NrTSingleton<NrMainSystem>.Instance.m_nWorldServerPingCount = 0;
 		}
 
@@ -14248,12 +18376,12 @@ namespace PROTOCOL
 					"]"
 				}));
 			}
-			if (packet.Result != 0)
+			if (packet.Result != 0 && !TsPlatform.IsEditor)
 			{
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 				string textFromPreloadText = NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("2");
 				string textFromPreloadText2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("1");
-				msgBoxUI.SetMsg(new YesDelegate(NrReceiveGame.On_OK_URL), null, textFromPreloadText, textFromPreloadText2, eMsgType.MB_OK);
+				msgBoxUI.SetMsg(new YesDelegate(NrReceiveGame.On_OK_URL), null, textFromPreloadText, textFromPreloadText2, eMsgType.MB_OK, 2);
 				int num = (int)(GUICamera.width / 2f - msgBoxUI.GetSize().x / 2f);
 				int num2 = (int)(GUICamera.height / 2f - msgBoxUI.GetSize().y / 2f);
 				msgBoxUI.SetLocation((float)num, (float)num2, 50f);
@@ -14278,7 +18406,7 @@ namespace PROTOCOL
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 				string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("27");
 				string message = string.Empty;
-				if (packet.Result == 40)
+				if (packet.Result == 41)
 				{
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref message, new object[]
 					{
@@ -14298,7 +18426,7 @@ namespace PROTOCOL
 				{
 					message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("83");
 				}
-				msgBoxUI.SetMsg(null, null, textFromMessageBox, message, eMsgType.MB_OK);
+				msgBoxUI.SetMsg(null, null, textFromMessageBox, message, eMsgType.MB_OK, 2);
 				int num = (int)(GUICamera.width / 2f - msgBoxUI.GetSize().x / 2f);
 				int num2 = (int)(GUICamera.height / 2f - msgBoxUI.GetSize().y / 2f);
 				msgBoxUI.SetLocation((float)num, (float)num2, 50f);
@@ -14355,9 +18483,9 @@ namespace PROTOCOL
 				if (component)
 				{
 					DateTime dateTime = DateTime.Now.ToLocalTime();
-					DateTime arg_3DB_0 = dateTime;
+					DateTime arg_3DC_0 = dateTime;
 					DateTime dateTime2 = new DateTime(1970, 1, 1, 0, 0, 0, 0);
-					int num3 = (int)(arg_3DB_0 - dateTime2.ToLocalTime()).TotalSeconds;
+					int num3 = (int)(arg_3DC_0 - dateTime2.ToLocalTime()).TotalSeconds;
 					Dictionary<string, string> dictionary = new Dictionary<string, string>();
 					dictionary.Add("ts", num3.ToString());
 					dictionary.Add("step", "login");
@@ -14373,6 +18501,8 @@ namespace PROTOCOL
 					component.TrackLoad(dictionary);
 				}
 			}
+			NrTSingleton<MATEventManager>.Instance.Set_UserID(NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_UID.ToString());
+			NrTSingleton<MATEventManager>.Instance.MeasureEvent("Login");
 		}
 
 		public static void WS_USER_LOGIN_MOVING_WORLD_ACK(NkDeserializePacket kDeserializePacket)
@@ -14384,6 +18514,12 @@ namespace PROTOCOL
 				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.RECONNECT_DLG);
 				return;
 			}
+			WS_DEVICEID_SET_REQ wS_DEVICEID_SET_REQ = new WS_DEVICEID_SET_REQ();
+			if (TsPlatform.IsMobile && !TsPlatform.IsEditor)
+			{
+				TKString.StringChar(TsPlatform.Operator.GetMobileDeviceId(), ref wS_DEVICEID_SET_REQ.DeviceID);
+			}
+			SendPacket.GetInstance().SendObject(16777299, wS_DEVICEID_SET_REQ);
 			NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_UID = packet.m_nUID;
 			NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_siAuthSessionKey = packet.m_nSessionKey;
 			GS_AUTH_SESSION_REQ gS_AUTH_SESSION_REQ = new GS_AUTH_SESSION_REQ();
@@ -14697,7 +18833,7 @@ namespace PROTOCOL
 			WS_USER_RELOGIN_ACK packet = kDeserializePacket.GetPacket<WS_USER_RELOGIN_ACK>();
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.WAIT_DLG);
 			Debug.LogWarning("WS_USER_RELOGIN_ACK RESULT:" + packet.Result);
-			if (packet.Result == 41)
+			if (packet.Result == 42)
 			{
 				if (TsPlatform.IsMobile)
 				{
@@ -14715,7 +18851,7 @@ namespace PROTOCOL
 					string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("25");
 					string textFromMessageBox2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("26");
 					MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-					msgBoxUI.SetMsg(null, null, textFromMessageBox, textFromMessageBox2, eMsgType.MB_OK);
+					msgBoxUI.SetMsg(null, null, textFromMessageBox, textFromMessageBox2, eMsgType.MB_OK, 2);
 					NrTSingleton<NrMainSystem>.Instance.ReLogin(true);
 				}
 				else if (TsPlatform.IsMobile)
@@ -14741,7 +18877,7 @@ namespace PROTOCOL
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 				if (msgBoxUI != null)
 				{
-					msgBoxUI.SetMsg(new YesDelegate(NrReceiveGame.On_LoginOUT_OK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("94"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("116"), eMsgType.MB_OK);
+					msgBoxUI.SetMsg(new YesDelegate(NrReceiveGame.On_LoginOUT_OK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("94"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("116"), eMsgType.MB_OK, 2);
 				}
 				else
 				{
@@ -14763,11 +18899,13 @@ namespace PROTOCOL
 				}
 				else if (packet.Result == -2)
 				{
-					message = NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("719");
+					message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("719");
+					NmFacebookManager.instance.initFBUserData();
 				}
 				else
 				{
 					message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("145");
+					NmFacebookManager.instance.initFBUserData();
 				}
 				NmFacebookManager.instance.FacebookActive = false;
 				Main_UI_SystemMessage.ADDMessage(message);
@@ -14857,7 +18995,7 @@ namespace PROTOCOL
 
 		public static void On_OK(object a_oObject)
 		{
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 		}
 
 		public static void On_OK_URL(object a_oObject)
@@ -14874,7 +19012,7 @@ namespace PROTOCOL
 		public static void On_LoginOUT_OK(object a_oObject)
 		{
 			NrMobileAuthSystem.Instance.Auth.DeleteAuthInfo();
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 		}
 
 		public static void WS_SUPPORTER_ADD_ACK(NkDeserializePacket kDeserializePacket)
@@ -14907,7 +19045,46 @@ namespace PROTOCOL
 
 		public static void WS_PLATFORM_INVITE_FRIENDS_ACK(NkDeserializePacket kDeserializePacket)
 		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("629"));
+			WS_PLATFORM_INVITE_FRIENDS_ACK packet = kDeserializePacket.GetPacket<WS_PLATFORM_INVITE_FRIENDS_ACK>();
+			if (packet.i32Result == -10)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("624"));
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("629"));
+			}
+		}
+
+		public static void WS_AUCTION_AUTHINFO_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			WS_AUCTION_AUTHINFO_ACK packet = kDeserializePacket.GetPacket<WS_AUCTION_AUTHINFO_ACK>();
+			if (packet.i32Result == 0)
+			{
+				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AUCTION_MAIN_DLG);
+			}
+			else
+			{
+				MainMenuDlg mainMenuDlg = (MainMenuDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MAINMENU_DLG);
+				if (mainMenuDlg != null)
+				{
+					mainMenuDlg.SetHP_AuthMessageBox();
+				}
+			}
+		}
+
+		public static void WS_INQUIRE_ANSWER_COUNT_ACK(NkDeserializePacket kDeserializePacket)
+		{
+			WS_INQUIRE_ANSWER_COUNT_ACK packet = kDeserializePacket.GetPacket<WS_INQUIRE_ANSWER_COUNT_ACK>();
+			if (packet == null)
+			{
+				return;
+			}
+			Debug.Log("Customer Answer Count : " + packet.iAnswerCount);
+			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() != null)
+			{
+				NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().CustomerAnswerCount = packet.iAnswerCount;
+			}
 		}
 	}
 }

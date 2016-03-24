@@ -21,6 +21,19 @@ namespace UnityForms
 
 		private Vector3 position = Vector3.zero;
 
+		private Toolbar.TEXTPOS textPos;
+
+		private float offSetY = 8f;
+
+		public Toolbar.TEXTPOS TextPos
+		{
+			set
+			{
+				this.textPos = value;
+				this.SetTextPos(this._Tab[0]);
+			}
+		}
+
 		public UIPanelTab[] Control_Tab
 		{
 			get
@@ -189,6 +202,55 @@ namespace UnityForms
 
 		public void AddPaelTapDelegate()
 		{
+			for (int i = 0; i < this._Tab.Length; i++)
+			{
+				this._Tab[i].AddValueChangedDelegate(new EZValueChangedDelegate(this.ChangeTextY));
+			}
+		}
+
+		public void ChangeTextY(IUIObject obj)
+		{
+			UIPanelTab uIPanelTab = (UIPanelTab)obj;
+			if (this.textPos == Toolbar.TEXTPOS.CENTER)
+			{
+				return;
+			}
+			this.SetTextPos(uIPanelTab);
+		}
+
+		private void SetTextPos(UIPanelTab tab)
+		{
+			if (null == tab)
+			{
+				return;
+			}
+			if (this.textPos != Toolbar.TEXTPOS.CENTER)
+			{
+				for (int i = 0; i < this._Tab.Length; i++)
+				{
+					if (!(null == this._Tab[i]))
+					{
+						if (!(null == this._Tab[i].spriteText) && !(null == this._Tab[i].spriteTextShadow))
+						{
+							if (tab == this._Tab[i])
+							{
+								this._Tab[i].spriteText.transform.localPosition = Vector3.zero;
+								this._Tab[i].spriteTextShadow.transform.localPosition = new Vector3(this._Tab[i].spriteTextShadow.transform.localPosition.x, this._Tab[i].spriteText.transform.localPosition.y - 0.6f, this._Tab[i].spriteTextShadow.transform.localPosition.z);
+							}
+							else if (this.textPos == Toolbar.TEXTPOS.UP)
+							{
+								this._Tab[i].spriteText.transform.localPosition = new Vector3(0f, this.offSetY, 0f);
+								this._Tab[i].spriteTextShadow.transform.localPosition = new Vector3(this._Tab[i].spriteTextShadow.transform.localPosition.x, this._Tab[i].spriteText.transform.localPosition.y - 0.6f, this._Tab[i].spriteTextShadow.transform.localPosition.z);
+							}
+							else if (this.textPos == Toolbar.TEXTPOS.DOWN)
+							{
+								this._Tab[i].spriteText.transform.localPosition = new Vector3(0f, -this.offSetY, 0f);
+								this._Tab[i].spriteTextShadow.transform.localPosition = new Vector3(this._Tab[i].spriteTextShadow.transform.localPosition.x, this._Tab[i].spriteText.transform.localPosition.y - 0.6f, this._Tab[i].spriteTextShadow.transform.localPosition.z);
+							}
+						}
+					}
+				}
+			}
 		}
 
 		public void SetEnabled(bool value)

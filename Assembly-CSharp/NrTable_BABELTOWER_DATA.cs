@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BABELTOWER_DATA : NrTableBase
 {
-	public NrTable_BABELTOWER_DATA() : base(CDefinePath.BABELTOWER_URL, true)
+	public NrTable_BABELTOWER_DATA() : base(CDefinePath.BABELTOWER_URL)
 	{
 	}
 

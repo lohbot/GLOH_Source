@@ -13,6 +13,8 @@ public class ItemSelectDlg : Form
 
 	private Label m_lbText;
 
+	private Button m_btClose;
+
 	private ITEM m_SelectItem;
 
 	private long m_SolID;
@@ -42,6 +44,8 @@ public class ItemSelectDlg : Form
 		this.m_ListBox.SetColumnRect(2, 94, 48, 140, 25, SpriteText.Anchor_Pos.Middle_Left, 26f, false);
 		this.m_ListBox.SetColumnRect(3, 234, 48, 180, 25, SpriteText.Anchor_Pos.Middle_Right, 26f, false);
 		this.m_ListBox.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnItemClick));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 	}
 
 	public void SetData(long SolID)

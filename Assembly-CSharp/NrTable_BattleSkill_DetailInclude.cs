@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BattleSkill_DetailInclude : NrTableBase
 {
-	public NrTable_BattleSkill_DetailInclude() : base(CDefinePath.s_strBattleSkillDetailIncludeURL, true)
+	public NrTable_BattleSkill_DetailInclude() : base(CDefinePath.s_strBattleSkillDetailIncludeURL)
 	{
 	}
 

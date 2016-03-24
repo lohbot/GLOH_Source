@@ -94,7 +94,7 @@ public class StageSelectChar : AStage
 	[DebuggerHidden]
 	private IEnumerator _MoveSubStageSelect()
 	{
-		StageSelectChar.<_MoveSubStageSelect>c__Iterator44 <_MoveSubStageSelect>c__Iterator = new StageSelectChar.<_MoveSubStageSelect>c__Iterator44();
+		StageSelectChar.<_MoveSubStageSelect>c__Iterator47 <_MoveSubStageSelect>c__Iterator = new StageSelectChar.<_MoveSubStageSelect>c__Iterator47();
 		<_MoveSubStageSelect>c__Iterator.<>f__this = this;
 		return <_MoveSubStageSelect>c__Iterator;
 	}
@@ -102,7 +102,7 @@ public class StageSelectChar : AStage
 	[DebuggerHidden]
 	private IEnumerator _PostProcessSelectCharScene()
 	{
-		return new StageSelectChar.<_PostProcessSelectCharScene>c__Iterator45();
+		return new StageSelectChar.<_PostProcessSelectCharScene>c__Iterator48();
 	}
 
 	protected void MoveSubStage(Type kType)

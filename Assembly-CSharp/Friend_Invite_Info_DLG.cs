@@ -114,7 +114,7 @@ public class Friend_Invite_Info_DLG : Form
 			this.m_lbFaceharKindName.Text = charKindInfo.GetName();
 		}
 		this.m_ItFaceChar_Image.SetSolImageTexure(eCharImageType.LARGE, charKindInfo.GetCharKind(), -1);
-		this.m_dtMineChar_Image.SetTexture(eCharImageType.SMALL, 242, -1);
+		this.m_dtMineChar_Image.SetTexture(eCharImageType.SMALL, 242, -1, string.Empty);
 		this.Show();
 	}
 

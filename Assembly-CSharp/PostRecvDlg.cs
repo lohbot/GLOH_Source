@@ -30,6 +30,8 @@ public class PostRecvDlg : Form
 
 	private Button _l1_Button_reply1;
 
+	private Button m_btClose;
+
 	private ScrollLabel _l2_ScrollLabel_message;
 
 	private Button _l2_Button_reply2;
@@ -104,6 +106,8 @@ public class PostRecvDlg : Form
 		expr_199.Click = (EZValueChangedDelegate)Delegate.Combine(expr_199.Click, new EZValueChangedDelegate(this.OnClickReply));
 		this.m_strOK = this._l2_Button_OK2.GetText();
 		this.m_strReplay = this._l2_Button_reply2.GetText();
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.InitControl();
 		base.Draggable = false;
 		base.SetScreenCenter();
@@ -188,58 +192,65 @@ public class PostRecvDlg : Form
 		{
 			text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("464");
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2085");
-			Button expr_19F = this._l2_Button_reply2;
-			expr_19F.Click = (EZValueChangedDelegate)Delegate.Remove(expr_19F.Click, new EZValueChangedDelegate(this.OnClickReply));
-			Button expr_1C6 = this._l2_Button_reply2;
-			expr_1C6.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C6.Click, new EZValueChangedDelegate(this.OnClickOK));
-			Button expr_1ED = this._l2_Button_OK2;
-			expr_1ED.Click = (EZValueChangedDelegate)Delegate.Remove(expr_1ED.Click, new EZValueChangedDelegate(this.OnClickOK));
-			Button expr_214 = this._l2_Button_OK2;
-			expr_214.Click = (EZValueChangedDelegate)Delegate.Combine(expr_214.Click, new EZValueChangedDelegate(this.OnClickCancel));
-		}
-		else if (_eMailType == eMAIL_TYPE.MAIL_TYPE_SYSTEM_ADD_FRIEND_FACEBOOK)
-		{
-			text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("398");
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10");
-			Button expr_269 = this._l2_Button_reply2;
-			expr_269.Click = (EZValueChangedDelegate)Delegate.Remove(expr_269.Click, new EZValueChangedDelegate(this.OnClickReply));
-			Button expr_290 = this._l2_Button_reply2;
-			expr_290.Click = (EZValueChangedDelegate)Delegate.Combine(expr_290.Click, new EZValueChangedDelegate(this.OnClickOK));
-			Button expr_2B7 = this._l2_Button_OK2;
-			expr_2B7.Click = (EZValueChangedDelegate)Delegate.Remove(expr_2B7.Click, new EZValueChangedDelegate(this.OnClickOK));
-			Button expr_2DE = this._l2_Button_OK2;
-			expr_2DE.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2DE.Click, new EZValueChangedDelegate(this.OnClickCancel));
-		}
-		else if (_eMailType == eMAIL_TYPE.MAIL_TYPE_REPORT_MINE_RESULT || _eMailType == eMAIL_TYPE.MAIL_TYPE_EXPEDITION_RESULT_REPORT)
-		{
-			text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1088");
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("415");
-			Button expr_33F = this._l2_Button_reply2;
-			expr_33F.Click = (EZValueChangedDelegate)Delegate.Remove(expr_33F.Click, new EZValueChangedDelegate(this.OnClickReply));
-			Button expr_366 = this._l2_Button_reply2;
-			expr_366.Click = (EZValueChangedDelegate)Delegate.Combine(expr_366.Click, new EZValueChangedDelegate(this.OnClickReport));
-			Button expr_38D = this._l2_Button_OK2;
-			expr_38D.Click = (EZValueChangedDelegate)Delegate.Remove(expr_38D.Click, new EZValueChangedDelegate(this.OnClickOK));
-			Button expr_3B4 = this._l2_Button_OK2;
-			expr_3B4.Click = (EZValueChangedDelegate)Delegate.Combine(expr_3B4.Click, new EZValueChangedDelegate(this.OnClickConfirm));
-		}
-		else if (_eMailType == eMAIL_TYPE.MAIL_TYPE_SYSTEM_INVITE_GUILD)
-		{
-			text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("317");
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("318");
-			Button expr_409 = this._l2_Button_reply2;
-			expr_409.Click = (EZValueChangedDelegate)Delegate.Remove(expr_409.Click, new EZValueChangedDelegate(this.OnClickReply));
-			Button expr_430 = this._l2_Button_reply2;
-			expr_430.Click = (EZValueChangedDelegate)Delegate.Combine(expr_430.Click, new EZValueChangedDelegate(this.OnClickOK));
-			Button expr_457 = this._l2_Button_OK2;
-			expr_457.Click = (EZValueChangedDelegate)Delegate.Remove(expr_457.Click, new EZValueChangedDelegate(this.OnClickOK));
-			Button expr_47E = this._l2_Button_OK2;
-			expr_47E.Click = (EZValueChangedDelegate)Delegate.Combine(expr_47E.Click, new EZValueChangedDelegate(this.OnClickCancel));
+			this._l2_Button_reply2.SetButtonTextureKey("Win_B_NewBtnBlue");
+			this._l2_Button_OK2.SetButtonTextureKey("Win_B_NewBtnRed");
+			Button expr_1BF = this._l2_Button_reply2;
+			expr_1BF.Click = (EZValueChangedDelegate)Delegate.Remove(expr_1BF.Click, new EZValueChangedDelegate(this.OnClickReply));
+			Button expr_1E6 = this._l2_Button_reply2;
+			expr_1E6.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1E6.Click, new EZValueChangedDelegate(this.OnClickOK));
+			Button expr_20D = this._l2_Button_OK2;
+			expr_20D.Click = (EZValueChangedDelegate)Delegate.Remove(expr_20D.Click, new EZValueChangedDelegate(this.OnClickOK));
+			Button expr_234 = this._l2_Button_OK2;
+			expr_234.Click = (EZValueChangedDelegate)Delegate.Combine(expr_234.Click, new EZValueChangedDelegate(this.OnClickCancel));
 		}
 		else
 		{
-			text = this.m_strOK;
-			text2 = this.m_strReplay;
+			this._l2_Button_reply2.SetButtonTextureKey("Win_B_NewBtnOrange");
+			this._l2_Button_OK2.SetButtonTextureKey("Win_B_NewBtnOrange");
+			if (_eMailType == eMAIL_TYPE.MAIL_TYPE_SYSTEM_ADD_FRIEND_FACEBOOK)
+			{
+				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("398");
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10");
+				Button expr_2A9 = this._l2_Button_reply2;
+				expr_2A9.Click = (EZValueChangedDelegate)Delegate.Remove(expr_2A9.Click, new EZValueChangedDelegate(this.OnClickReply));
+				Button expr_2D0 = this._l2_Button_reply2;
+				expr_2D0.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2D0.Click, new EZValueChangedDelegate(this.OnClickOK));
+				Button expr_2F7 = this._l2_Button_OK2;
+				expr_2F7.Click = (EZValueChangedDelegate)Delegate.Remove(expr_2F7.Click, new EZValueChangedDelegate(this.OnClickOK));
+				Button expr_31E = this._l2_Button_OK2;
+				expr_31E.Click = (EZValueChangedDelegate)Delegate.Combine(expr_31E.Click, new EZValueChangedDelegate(this.OnClickCancel));
+			}
+			else if (_eMailType == eMAIL_TYPE.MAIL_TYPE_REPORT_MINE_RESULT || _eMailType == eMAIL_TYPE.MAIL_TYPE_EXPEDITION_RESULT_REPORT)
+			{
+				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1088");
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("415");
+				Button expr_37F = this._l2_Button_reply2;
+				expr_37F.Click = (EZValueChangedDelegate)Delegate.Remove(expr_37F.Click, new EZValueChangedDelegate(this.OnClickReply));
+				Button expr_3A6 = this._l2_Button_reply2;
+				expr_3A6.Click = (EZValueChangedDelegate)Delegate.Combine(expr_3A6.Click, new EZValueChangedDelegate(this.OnClickReport));
+				Button expr_3CD = this._l2_Button_OK2;
+				expr_3CD.Click = (EZValueChangedDelegate)Delegate.Remove(expr_3CD.Click, new EZValueChangedDelegate(this.OnClickOK));
+				Button expr_3F4 = this._l2_Button_OK2;
+				expr_3F4.Click = (EZValueChangedDelegate)Delegate.Combine(expr_3F4.Click, new EZValueChangedDelegate(this.OnClickConfirm));
+			}
+			else if (_eMailType == eMAIL_TYPE.MAIL_TYPE_SYSTEM_INVITE_GUILD)
+			{
+				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("317");
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("318");
+				Button expr_449 = this._l2_Button_reply2;
+				expr_449.Click = (EZValueChangedDelegate)Delegate.Remove(expr_449.Click, new EZValueChangedDelegate(this.OnClickReply));
+				Button expr_470 = this._l2_Button_reply2;
+				expr_470.Click = (EZValueChangedDelegate)Delegate.Combine(expr_470.Click, new EZValueChangedDelegate(this.OnClickOK));
+				Button expr_497 = this._l2_Button_OK2;
+				expr_497.Click = (EZValueChangedDelegate)Delegate.Remove(expr_497.Click, new EZValueChangedDelegate(this.OnClickOK));
+				Button expr_4BE = this._l2_Button_OK2;
+				expr_4BE.Click = (EZValueChangedDelegate)Delegate.Combine(expr_4BE.Click, new EZValueChangedDelegate(this.OnClickCancel));
+			}
+			else
+			{
+				text = this.m_strOK;
+				text2 = this.m_strReplay;
+			}
 		}
 		base.ShowLayer(this.m_Layer);
 		this._l2_Button_reply2.SetText(text2);
@@ -279,26 +290,30 @@ public class PostRecvDlg : Form
 			case eMAIL_TYPE.MAIL_TYPE_AUCTION_HOLD:
 			case eMAIL_TYPE.MAIL_TYPE_AUCTION_HOLD_CANCEL_REGISTER:
 			case eMAIL_TYPE.MAIL_TYPE_AUCTION_HOLD_CANCEL_TENDER:
-				goto IL_F3;
+				goto IL_103;
 			case eMAIL_TYPE.MAIL_TYPE_SOLDIERGROUP_RECRUIT:
 			case eMAIL_TYPE.MAIL_TYPE_GM_CREATESOL:
 			case eMAIL_TYPE.MAIL_TYPE_SOLDIERGROUP_CASH_RECRUIT:
+			case eMAIL_TYPE.MAIL_TYPE_INVENTORY_FULL:
 				strSendCharName = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2311");
-				goto IL_14B;
+				goto IL_15B;
 			case eMAIL_TYPE.MAIL_TYPE_INFIBATTLE_REWARD:
 			case eMAIL_TYPE.MAIL_TYPE_INFIBATTLE_WEEK_REWARD:
 				strSendCharName = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1574");
-				goto IL_14B;
+				goto IL_15B;
 			case eMAIL_TYPE.MAIL_TYPE_BOUNTYHUNT_REWARD:
 				strSendCharName = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2344");
-				goto IL_14B;
+				goto IL_15B;
 			case eMAIL_TYPE.MAIL_TYPE_KAKAOFRIEND_EVENT_REWARD:
 			case eMAIL_TYPE.MAIL_TYPE_ITEMMALL_GIFT:
 			case eMAIL_TYPE.MAIL_TYPE_INVITE_EVENT_REWARD:
 			case eMAIL_TYPE.MAIL_TYPE_CHUKONG_ITEMMALL_SEND:
 			case eMAIL_TYPE.MAIL_TYPE_EXPEDITION_RESULT_REPORT:
 			case eMAIL_TYPE.MAIL_TYPE_EXPEDITION_GIVE_ITEM:
-				IL_CC:
+			case eMAIL_TYPE.MAIL_TYPE_FRIENDGIFT_ITEM:
+			case eMAIL_TYPE.MAIL_TYPE_MYTHRAID_ITEM:
+			case eMAIL_TYPE.MAIL_TYPE_COSTUME_GIFT:
+				IL_DC:
 				switch (mailType)
 				{
 				case eMAIL_TYPE.MAIL_TYPE_AUCTION_REGISTER:
@@ -306,19 +321,19 @@ public class PostRecvDlg : Form
 				case eMAIL_TYPE.MAIL_TYPE_AUCTION_TENDER:
 				case eMAIL_TYPE.MAIL_TYPE_AUCTION_REGISTER_CANCEL:
 				case eMAIL_TYPE.MAIL_TYPE_AUCTION_REGISTER_FAIL:
-					goto IL_F3;
+					goto IL_103;
 				case eMAIL_TYPE.MAIL_TYPE_REPORT_MINE_RESULT:
-					goto IL_14B;
+					goto IL_15B;
 				default:
-					goto IL_14B;
+					goto IL_15B;
 				}
 				break;
 			}
-			goto IL_CC;
-			IL_F3:
+			goto IL_DC;
+			IL_103:
 			strSendCharName = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1144");
 		}
-		IL_14B:
+		IL_15B:
 		if (i64Money != 0L)
 		{
 			bHaveMoney = true;
@@ -472,7 +487,7 @@ public class PostRecvDlg : Form
 			}
 			string textFromInterface3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(text, "\n \n", strMsg, "\n \n", textFromInterface3);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_MARKET_ITEM_SOLD:
 		{
@@ -495,7 +510,7 @@ public class PostRecvDlg : Form
 			string empty3 = string.Empty;
 			string textFromInterface4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty3, "\n", text, "\n", textFromInterface4);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_MARKET_RETURN:
 		{
@@ -512,11 +527,11 @@ public class PostRecvDlg : Form
 			string empty4 = string.Empty;
 			string textFromInterface6 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty4, "\n", text, "\n", textFromInterface6);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_QUEST:
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(strMsg);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_BUY_ITEM:
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_QUEST_ITEM:
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_EXTRACTED_ITEM:
@@ -531,17 +546,19 @@ public class PostRecvDlg : Form
 		case eMAIL_TYPE.MAIL_TYPE_PROMOTION_EVENT:
 		case eMAIL_TYPE.MAIL_TYPE_XPSPROMOTION_REWARD_1:
 		case eMAIL_TYPE.MAIL_TYPE_CHUKONG_ITEMMALL_SEND:
-			IL_5A3:
+		case eMAIL_TYPE.MAIL_TYPE_FRIENDGIFT_ITEM:
+		case eMAIL_TYPE.MAIL_TYPE_MYTHRAID_ITEM:
+			IL_5C7:
 			if (mailType != eMAIL_TYPE.MAIL_TYPE_USER_TO_GUILD)
 			{
 				string textFromInterface7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1544");
 				string textFromInterface8 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 				text = strMsg;
 				text = NrTSingleton<UIDataManager>.Instance.GetString(textFromInterface7, "\n \n", text, "\n \n", textFromInterface8);
-				goto IL_1A1C;
+				goto IL_1BBA;
 			}
 			text = strMsg;
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_INVITE_FRIEND:
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2086");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
@@ -550,7 +567,7 @@ public class PostRecvDlg : Form
 				"targetname",
 				strSendCharName
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_ADD_FRIEND_FACEBOOK:
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 			{
@@ -558,7 +575,7 @@ public class PostRecvDlg : Form
 				"username",
 				strSendCharName
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_RECOMMEND_SEND:
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 			{
@@ -566,7 +583,7 @@ public class PostRecvDlg : Form
 				"targetname",
 				strSendCharName
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_RECOMMEND_RECV:
 		{
 			string text6 = string.Empty;
@@ -582,7 +599,7 @@ public class PostRecvDlg : Form
 				"tergetname2",
 				text6
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_RECOMMEND_REWARD:
 		{
@@ -608,7 +625,7 @@ public class PostRecvDlg : Form
 				"count",
 				num3
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_AUCTION_REGISTER:
 		case eMAIL_TYPE.MAIL_TYPE_AUCTION_BEFORETENDER:
@@ -646,18 +663,18 @@ public class PostRecvDlg : Form
 			{
 				NrTSingleton<FiveRocksEventManager>.Instance.HeartsConsume(eHEARTS_CONSUME.AUCTION_TEX, aUCTIONINFO.i64Commission);
 			}
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_REPORT_MINE_RESULT:
 		{
 			int num5 = 0;
 			string text7 = string.Empty;
-			string empty5 = string.Empty;
 			string text8 = string.Empty;
 			string text9 = string.Empty;
+			string text10 = string.Empty;
 			MINE_RESULT mINE_RESULT = (MINE_RESULT)ReceivePakcet.DeserializePacket(binaryData, 0, out num5, typeof(MINE_RESULT));
-			text8 = TKString.NEWString(mINE_RESULT.m_szName);
-			text9 = TKString.NEWString(mINE_RESULT.m_szGuildName);
+			text9 = TKString.NEWString(mINE_RESULT.m_szName);
+			text10 = TKString.NEWString(mINE_RESULT.m_szGuildName);
 			this.m_i64LegionActionID = mINE_RESULT.m_i64LegionActionID;
 			if (mINE_RESULT.m_bAttack)
 			{
@@ -666,11 +683,11 @@ public class PostRecvDlg : Form
 					if (mINE_RESULT.m_bWin)
 					{
 						text7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1362");
-						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text8, new object[]
 						{
 							text7,
 							"targetname1",
-							text8,
+							text9,
 							"targetname3",
 							NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1318")
 						});
@@ -678,24 +695,24 @@ public class PostRecvDlg : Form
 					else
 					{
 						text7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1363");
-						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text8, new object[]
 						{
 							text7,
 							"targetname1",
-							text8
+							text9
 						});
 					}
 				}
 				else if (mINE_RESULT.m_bWin)
 				{
 					text7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1354");
-					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text8, new object[]
 					{
 						text7,
 						"targetname1",
-						text8,
-						"targetname2",
 						text9,
+						"targetname2",
+						text10,
 						"targetname3",
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1318")
 					});
@@ -703,26 +720,26 @@ public class PostRecvDlg : Form
 				else
 				{
 					text7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1355");
-					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text8, new object[]
 					{
 						text7,
 						"targetname1",
-						text8,
+						text9,
 						"targetname2",
-						text9
+						text10
 					});
 				}
 			}
 			else if (mINE_RESULT.m_bWin)
 			{
 				text7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1356");
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text8, new object[]
 				{
 					text7,
 					"targetname1",
-					text8,
-					"targetname2",
 					text9,
+					"targetname2",
+					text10,
 					"targetname3",
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1318")
 				});
@@ -730,21 +747,27 @@ public class PostRecvDlg : Form
 			else
 			{
 				text7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1357");
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text8, new object[]
 				{
 					text7,
 					"targetname1",
-					text8,
-					"targetname2",
 					text9,
+					"targetname2",
+					text10,
 					"targetname3",
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1318")
 				});
 			}
+			string empty5 = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParamColor(out empty5, new string[]
+			{
+				strMsg
+			});
+			text8 += empty5;
 			string empty6 = string.Empty;
 			string textFromInterface9 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
-			text = NrTSingleton<UIDataManager>.Instance.GetString(empty6, "\n", empty5, "\n", textFromInterface9);
-			goto IL_1A1C;
+			text = NrTSingleton<UIDataManager>.Instance.GetString(empty6, "\n", text8, "\n", textFromInterface9);
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_INVITE_GUILD:
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
@@ -753,7 +776,7 @@ public class PostRecvDlg : Form
 				"targetname",
 				strMsg
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_MINE_GIVEITEM:
 		{
 			string textFromInterface10 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1631");
@@ -767,7 +790,7 @@ public class PostRecvDlg : Form
 				strSendCharName
 			});
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty8, "\n", empty7, "\n", textFromInterface11);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_MINE_BACKMOVE_GETITEM:
 		{
@@ -775,7 +798,7 @@ public class PostRecvDlg : Form
 			string textFromInterface12 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			string textFromInterface13 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1708");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty9, "\n", textFromInterface13, "\n", textFromInterface12);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_NEWGUILD_CHANGEMASTER:
 		{
@@ -787,14 +810,14 @@ public class PostRecvDlg : Form
 				"count",
 				nEWGUILD_SIMPLEINFO.i16CheckDay
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_SUPPORTER:
 		{
-			string text10 = string.Empty;
+			string text11 = string.Empty;
 			if (NrTSingleton<NkCharManager>.Instance.GetChar(1) != null)
 			{
-				text10 = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetCharName();
+				text11 = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetCharName();
 			}
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 			{
@@ -802,11 +825,11 @@ public class PostRecvDlg : Form
 				"targetname1",
 				this.m_strSendCharName,
 				"targetname2",
-				text10,
+				text11,
 				"targetname3",
 				this.m_strSendCharName
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_SUPPORTER_REWARD:
 		{
@@ -822,11 +845,11 @@ public class PostRecvDlg : Form
 					}
 				}
 			}
-			string text11 = string.Empty;
-			text11 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1920");
+			string text12 = string.Empty;
+			text12 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1920");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 			{
-				text11,
+				text12,
 				"targetname1",
 				this.m_strSendCharName,
 				"level",
@@ -836,43 +859,43 @@ public class PostRecvDlg : Form
 				"targetname2",
 				this.m_strSendCharName
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAILTYPE_SYSTEM_MINE_DELMINE_BACK:
 		{
 			string empty10 = string.Empty;
 			string textFromInterface14 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
-			string text12 = string.Empty;
+			string text13 = string.Empty;
 			string empty11 = string.Empty;
-			text12 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1925");
+			text13 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1925");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty11, new object[]
 			{
-				text12,
+				text13,
 				"targetname1",
 				strSendCharName
 			});
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty10, "\n", empty11, "\n", textFromInterface14);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_GMSETITEM:
 		{
-			string text13 = string.Empty;
+			string text14 = string.Empty;
 			if (NrTSingleton<NkCharManager>.Instance.GetChar(1) != null)
 			{
-				text13 = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetCharName();
+				text14 = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetCharName();
 			}
 			string empty12 = string.Empty;
-			string text14 = string.Empty;
-			text14 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1976");
+			string text15 = string.Empty;
+			text15 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1976");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty12, new object[]
 			{
-				text14,
+				text15,
 				"username",
-				text13
+				text14
 			});
 			string textFromInterface15 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty12, "\n \n", strMsg, "\n \n", textFromInterface15);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_SOLDELITEM:
 			if (strMsg.Length == 0)
@@ -885,11 +908,11 @@ public class PostRecvDlg : Form
 				NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(this.m_iCharKind);
 				if (charKindInfo != null)
 				{
-					string text15 = string.Empty;
-					text15 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1958");
+					string text16 = string.Empty;
+					text16 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1958");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 					{
-						text15,
+						text16,
 						"targetname",
 						charKindInfo.GetName()
 					});
@@ -899,26 +922,26 @@ public class PostRecvDlg : Form
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1959");
 				}
 			}
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_NEWGUILDBOSS_REWARD:
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1974");
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_MINE_FAIL_DEFENGUILD:
 		{
 			string empty13 = string.Empty;
 			string textFromInterface16 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			string textFromInterface17 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2055");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty13, "\n", textFromInterface17, "\n", textFromInterface16);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_CHALLENGE_REWARD:
 		{
-			string text16 = string.Empty;
+			string text17 = string.Empty;
 			string empty14 = string.Empty;
 			string textFromInterface18 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			if (NrTSingleton<NkCharManager>.Instance.GetChar(1) != null)
 			{
-				text16 = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetCharName();
+				text17 = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetCharName();
 			}
 			int num8 = 0;
 			if (int.TryParse(strMsg, out num8) && num8 == 20000)
@@ -927,7 +950,7 @@ public class PostRecvDlg : Form
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2135"),
 					"username",
-					text16,
+					text17,
 					"itemname",
 					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(item.m_nItemUnique),
 					"count",
@@ -935,7 +958,7 @@ public class PostRecvDlg : Form
 				});
 			}
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty14, "\r\n\r\n\r\n", textFromInterface18);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_SOLDIERGROUP_RECRUIT:
 		case eMAIL_TYPE.MAIL_TYPE_SOLDIERGROUP_CASH_RECRUIT:
@@ -944,7 +967,7 @@ public class PostRecvDlg : Form
 			this.m_iLevel = i16Level;
 			this.m_byGrade = i8Grade;
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2310");
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_INFIBATTLE_REWARD:
 		case eMAIL_TYPE.MAIL_TYPE_INFIBATTLE_WEEK_REWARD:
 		{
@@ -952,7 +975,7 @@ public class PostRecvDlg : Form
 			string textFromInterface20 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2334");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(textFromInterface19, "\n \n", text, "\n \n", textFromInterface20);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_BOUNTYHUNT_REWARD:
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
@@ -963,7 +986,7 @@ public class PostRecvDlg : Form
 				"count",
 				item.m_nItemNum
 			});
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_KAKAOFRIEND_EVENT_REWARD:
 		{
 			string empty15 = string.Empty;
@@ -979,7 +1002,7 @@ public class PostRecvDlg : Form
 				});
 			}
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty15, "\r\n\r\n\r\n", textFromInterface21);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_GM_CREATESOL:
 		{
@@ -991,7 +1014,7 @@ public class PostRecvDlg : Form
 			string textFromInterface23 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = strMsg;
 			text = NrTSingleton<UIDataManager>.Instance.GetString(textFromInterface22, "\n \n", text, "\n \n", textFromInterface23);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_ITEMMALL_GIFT:
 			if (strMsg != string.Empty)
@@ -1010,27 +1033,27 @@ public class PostRecvDlg : Form
 					});
 				}
 			}
-			goto IL_1A1C;
+			goto IL_1BBA;
 		case eMAIL_TYPE.MAIL_TYPE_INVITE_EVENT_REWARD:
 		{
 			string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("404");
 			string textFromInterface24 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(textFromMessageBox, "\r\n\r\n\r\n", textFromInterface24);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_EXPEDITION_RESULT_REPORT:
 		{
 			int num10 = 0;
-			string text17 = string.Empty;
-			string empty16 = string.Empty;
 			string text18 = string.Empty;
+			string empty16 = string.Empty;
 			string text19 = string.Empty;
+			string text20 = string.Empty;
 			EXPEDITION_RESULT eXPEDITION_RESULT = (EXPEDITION_RESULT)ReceivePakcet.DeserializePacket(binaryData, 0, out num10, typeof(EXPEDITION_RESULT));
 			this.m_i64LegionActionID = eXPEDITION_RESULT.m_i64ExpeditionBattleID;
 			NrCharKindInfo charKindInfo2 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(eXPEDITION_RESULT.m_i32LeaderKind);
 			if (charKindInfo2 != null)
 			{
-				text18 = charKindInfo2.GetName();
+				text19 = charKindInfo2.GetName();
 			}
 			EXPEDITION_CREATE_DATA expedtionCreateData = BASE_EXPEDITION_CREATE_DATA.GetExpedtionCreateData(eXPEDITION_RESULT.m_i16ExpeditionCreateDataID);
 			if (expedtionCreateData != null)
@@ -1038,62 +1061,62 @@ public class PostRecvDlg : Form
 				EXPEDITION_DATA expeditionDataFromGrade = BASE_EXPEDITION_DATA.GetExpeditionDataFromGrade(expedtionCreateData.GetGrade());
 				if (expeditionDataFromGrade != null)
 				{
-					text19 = expeditionDataFromGrade.Expedition_Name + eXPEDITION_RESULT.m_i16ExpeditionCreateDataID.ToString();
+					text20 = expeditionDataFromGrade.Expedition_Name + eXPEDITION_RESULT.m_i16ExpeditionCreateDataID.ToString();
 				}
 			}
 			if (eXPEDITION_RESULT.m_bUserAttack)
 			{
 				if (eXPEDITION_RESULT.m_bWin)
 				{
-					text17 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2485");
+					text18 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2485");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty16, new object[]
 					{
-						text17,
-						"targetname1",
 						text18,
+						"targetname1",
+						text19,
 						"targetname2",
-						text19
+						text20
 					});
 				}
 				else
 				{
-					text17 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2486");
+					text18 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2486");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty16, new object[]
 					{
-						text17,
+						text18,
 						"targetname",
-						text18
+						text19
 					});
 				}
 			}
 			else if (eXPEDITION_RESULT.m_bWin)
 			{
-				text17 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2487");
+				text18 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2487");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty16, new object[]
 				{
-					text17,
-					"targetname1",
 					text18,
+					"targetname1",
+					text19,
 					"targetname2",
-					text19
+					text20
 				});
 			}
 			else
 			{
-				text17 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2488");
+				text18 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2488");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty16, new object[]
 				{
-					text17,
-					"targetname1",
 					text18,
+					"targetname1",
+					text19,
 					"targetname2",
-					text19
+					text20
 				});
 			}
 			string empty17 = string.Empty;
 			string textFromInterface25 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty17, "\n", empty16, "\n", textFromInterface25);
-			goto IL_1A1C;
+			goto IL_1BBA;
 		}
 		case eMAIL_TYPE.MAIL_TYPE_EXPEDITION_GIVE_ITEM:
 		{
@@ -1101,11 +1124,57 @@ public class PostRecvDlg : Form
 			string textFromInterface26 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
 			string textFromInterface27 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2675");
 			text = NrTSingleton<UIDataManager>.Instance.GetString(empty18, "\n", textFromInterface27, "\n", textFromInterface26);
-			goto IL_1A1C;
+			goto IL_1BBA;
+		}
+		case eMAIL_TYPE.MAIL_TYPE_COSTUME_GIFT:
+			if (string.IsNullOrEmpty(strMsg))
+			{
+				int costumeUnique = Convert.ToInt32(strMsg);
+				string costumeName = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeName(costumeUnique);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2581"),
+					"CharName",
+					strSendCharName,
+					"Product",
+					costumeName
+				});
+			}
+			goto IL_1BBA;
+		case eMAIL_TYPE.MAIL_TYPE_INVENTORY_FULL:
+		{
+			string textFromInterface28 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1544");
+			string textFromInterface29 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1937");
+			string textFromInterface30 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1545");
+			text = NrTSingleton<UIDataManager>.Instance.GetString(textFromInterface28, "\n \n", textFromInterface29, "\n \n", textFromInterface30);
+			goto IL_1BBA;
+		}
+		case eMAIL_TYPE.MAIL_TYPE_GUILD_GOLDENBELL:
+		{
+			string text21 = string.Empty;
+			string text22 = string.Empty;
+			if (item != null)
+			{
+				text21 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(item.m_nItemUnique);
+				text22 = item.m_nItemNum.ToString();
+			}
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3717"),
+				"GuildName",
+				strMsg,
+				"CharName",
+				strSendCharName,
+				"ItemName",
+				text21,
+				"ItemNum",
+				text22
+			});
+			goto IL_1BBA;
 		}
 		}
-		goto IL_5A3;
-		IL_1A1C:
+		goto IL_5C7;
+		IL_1BBA:
 		ScrollLabel scrollLabel = (this.m_Layer != 1) ? this._l2_ScrollLabel_message : this._l1_ScrollLabel_message;
 		text = text.Replace("\r\n", "\n");
 		scrollLabel.SetScrollLabel(text);
@@ -1131,10 +1200,10 @@ public class PostRecvDlg : Form
 						NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_WEAPON_GOOD", this.m_itItem, this.m_itItem.GetSize());
 					}
 					string empty19 = string.Empty;
-					string textFromInterface28 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("889");
+					string textFromInterface31 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("889");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty19, new object[]
 					{
-						textFromInterface28,
+						textFromInterface31,
 						"count1",
 						item.m_nItemNum
 					});
@@ -1207,6 +1276,11 @@ public class PostRecvDlg : Form
 
 	private void OnClickConfirm(IUIObject obj)
 	{
+		if (this.m_bIsHistory)
+		{
+			base.CloseNow();
+			return;
+		}
 		if (this.m_eMailType == eMAIL_TYPE.MAIL_TYPE_REPORT_MINE_RESULT || this.m_eMailType == eMAIL_TYPE.MAIL_TYPE_EXPEDITION_RESULT_REPORT)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("514"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
@@ -1246,7 +1320,7 @@ public class PostRecvDlg : Form
 		if (0L < this.m_lSolIDTrade)
 		{
 			NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-			if (readySolList == null || readySolList.GetCount() >= 50)
+			if (readySolList == null || readySolList.GetCount() >= 100)
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 				return;

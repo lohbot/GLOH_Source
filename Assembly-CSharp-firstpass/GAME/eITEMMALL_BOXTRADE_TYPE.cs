@@ -1,0 +1,11 @@
+using System;
+
+namespace GAME
+{
+	public enum eITEMMALL_BOXTRADE_TYPE
+	{
+		NONE,
+		ITEMMALL_TRADETYPE_GETBOX,
+		ITEMMALL_TRADETYPE_GETITEM
+	}
+}

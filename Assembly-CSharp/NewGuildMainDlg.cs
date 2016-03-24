@@ -1,14 +1,13 @@
 using Ndoors.Memory;
 using PROTOCOL;
 using PROTOCOL.GAME;
+using PROTOCOL.GAME.ID;
 using System;
 using UnityEngine;
 using UnityForms;
 
 public class NewGuildMainDlg : Form
 {
-	private DrawTexture m_dtGuildMap;
-
 	private DrawTexture m_dtGuildFlag;
 
 	private Button m_btBack;
@@ -53,6 +52,8 @@ public class NewGuildMainDlg : Form
 
 	private Label m_lbFund;
 
+	private NewListBox m_DeclareWarList;
+
 	private string m_strText = string.Empty;
 
 	private long m_lGuildID;
@@ -67,16 +68,19 @@ public class NewGuildMainDlg : Form
 
 	private bool m_bHelp3;
 
+	private bool m_bIsDeclareWarTarget;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		instance.LoadFileAll(ref form, "NewGuild/DLG_NewGuild_Main", G_ID.NEWGUILD_MAIN_DLG, true);
+		base.ShowBlackBG(0.5f);
+		base.SetScreenCenter();
 	}
 
 	public override void SetComponent()
 	{
-		this.m_dtGuildMap = (base.GetControl("DrawTexture_Guild_Map") as DrawTexture);
 		this.m_dtGuildFlag = (base.GetControl("DrawTexture_Guild_Flag") as DrawTexture);
 		this.m_btBack = (base.GetControl("Button_Back") as Button);
 		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickBack));
@@ -108,6 +112,7 @@ public class NewGuildMainDlg : Form
 		this.m_btHelp3 = (base.GetControl("Button_Help03") as Button);
 		this.m_btHelp3.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp3));
 		this.m_lbFund = (base.GetControl("Label_GuildMoneyCount") as Label);
+		this.m_DeclareWarList = (base.GetControl("nlb_DeclareWar") as NewListBox);
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strText, new object[]
 		{
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1859"),
@@ -115,9 +120,8 @@ public class NewGuildMainDlg : Form
 			NrTSingleton<NewGuildManager>.Instance.GetNewMasterCheckDay()
 		});
 		this.m_lbHelp2.SetText(this.m_strText);
+		this.m_lbGuildName.transform.localPosition = new Vector3(this.m_lbGuildName.transform.localPosition.x, this.m_lbGuildName.transform.localPosition.y, 0.08f);
 		base.AllHideLayer();
-		base.SetScreenCenter();
-		base.ShowBlackBG(0.5f);
 		this.SetBundleDownload();
 		NrTSingleton<FiveRocksEventManager>.Instance.Placement("guilddlg_open");
 	}
@@ -137,7 +141,12 @@ public class NewGuildMainDlg : Form
 	{
 		this.m_lGuildID = ACK.i64GuildID;
 		this.m_strGuildName = TKString.NEWString(ACK.strGuildName);
-		this.m_lbGuildName.SetText(this.m_strGuildName);
+		if (ACK.bGuildWar)
+		{
+			this.m_strGuildName = string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1401"), this.m_strGuildName);
+		}
+		this.m_lbGuildName.Text = this.m_strGuildName;
+		this.Send_GS_DECLAREWAR_LIST_REQ();
 		int i16Rank = (int)ACK.i16Rank;
 		if (0 < i16Rank)
 		{
@@ -243,6 +252,36 @@ public class NewGuildMainDlg : Form
 		{
 			this.m_lbGuildCreateDate.SetText(string.Empty);
 		}
+		this.m_bIsDeclareWarTarget = ACK.bIsDeclareWarTarget;
+		this.SetButton();
+		this.m_lbFund.SetText(ANNUALIZED.Convert(ACK.i64Fund));
+		switch (i16Rank)
+		{
+		case 1:
+			this.m_dtMedal.Hide(false);
+			this.m_dtMedal.SetTexture("Win_I_Rank03");
+			break;
+		case 2:
+			this.m_dtMedal.Hide(false);
+			this.m_dtMedal.SetTexture("Win_I_Rank02");
+			break;
+		case 3:
+			this.m_dtMedal.Hide(false);
+			this.m_dtMedal.SetTexture("Win_I_Rank01");
+			break;
+		default:
+			this.m_dtMedal.Hide(true);
+			break;
+		}
+		if (0L < this.m_lGuildID)
+		{
+			string guildPortraitURL = NrTSingleton<NkCharManager>.Instance.GetGuildPortraitURL(this.m_lGuildID);
+			WebFileCache.RequestImageWebFile(guildPortraitURL, new WebFileCache.ReqTextureCallback(this.ReqWebImageCallback), null);
+		}
+	}
+
+	public void SetButton()
+	{
 		if (0L < NrTSingleton<NewGuildManager>.Instance.GetGuildID() && this.m_lGuildID == NrTSingleton<NewGuildManager>.Instance.GetGuildID())
 		{
 			this.m_btLeaveAndApplicantAndDeclareWar.Hide(false);
@@ -271,36 +310,42 @@ public class NewGuildMainDlg : Form
 				this.m_btLeaveAndApplicantAndDeclareWar.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("583"));
 				this.m_btLeaveAndApplicantAndDeclareWar.Hide(false);
 			}
+			else if (NrTSingleton<NewGuildManager>.Instance.CanDeclareWarSet())
+			{
+				this.m_btLeaveAndApplicantAndDeclareWar.Hide(false);
+				if (!this.m_bIsDeclareWarTarget)
+				{
+					this.m_btLeaveAndApplicantAndDeclareWar.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2836"));
+				}
+				else
+				{
+					this.m_btLeaveAndApplicantAndDeclareWar.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2883"));
+				}
+			}
 			else
 			{
 				this.m_btLeaveAndApplicantAndDeclareWar.Hide(true);
 			}
 			this.m_btAdmin.Hide(true);
 		}
-		this.m_lbFund.SetText(ANNUALIZED.Convert(ACK.i64Fund));
-		switch (i16Rank)
+	}
+
+	public void Set_ApplicantNotice()
+	{
+		if (0 < NrTSingleton<NewGuildManager>.Instance.GetApplicantCount() && NrTSingleton<NewGuildManager>.Instance.IsDischargeMember(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID))
 		{
-		case 1:
-			this.m_dtMedal.Hide(false);
-			this.m_dtMedal.SetTexture("Win_I_Rank03");
-			break;
-		case 2:
-			this.m_dtMedal.Hide(false);
-			this.m_dtMedal.SetTexture("Win_I_Rank02");
-			break;
-		case 3:
-			this.m_dtMedal.Hide(false);
-			this.m_dtMedal.SetTexture("Win_I_Rank01");
-			break;
-		default:
-			this.m_dtMedal.Hide(true);
-			break;
+			this.m_bxApplicantNum.Hide(false);
+			this.m_bxApplicantNum.SetText(NrTSingleton<NewGuildManager>.Instance.GetApplicantCount().ToString());
 		}
-		if (0L < this.m_lGuildID)
+		else
 		{
-			string guildPortraitURL = NrTSingleton<NkCharManager>.Instance.GetGuildPortraitURL(this.m_lGuildID);
-			WebFileCache.RequestImageWebFile(guildPortraitURL, new WebFileCache.ReqTextureCallback(this.ReqWebImageCallback), null);
+			this.m_bxApplicantNum.Hide(true);
 		}
+	}
+
+	public void SetIsDeclareWarTarget(bool IsDeclareWarTarget)
+	{
+		this.m_bIsDeclareWarTarget = IsDeclareWarTarget;
 	}
 
 	private void ReqWebImageCallback(Texture2D txtr, object _param)
@@ -337,15 +382,29 @@ public class NewGuildMainDlg : Form
 				{
 					return;
 				}
-				string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2836");
+				string title = string.Empty;
 				string empty = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				if (!this.m_bIsDeclareWarTarget)
 				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("264"),
-					"targetname",
-					this.m_strGuildName
-				});
-				msgBoxUI.SetMsg(new YesDelegate(this.ClickSendDeclareWar), null, null, null, textFromInterface, empty, eMsgType.MB_OK_CANCEL);
+					title = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2836");
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("264"),
+						"targetname",
+						this.m_strGuildName
+					});
+				}
+				else
+				{
+					title = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2883");
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("277"),
+						"targetname",
+						this.m_strGuildName
+					});
+				}
+				msgBoxUI.SetMsg(new YesDelegate(this.ClickSendDeclareWar), null, null, null, title, empty, eMsgType.MB_OK_CANCEL);
 			}
 		}
 		else if (0L >= NrTSingleton<NewGuildManager>.Instance.GetGuildID())
@@ -362,7 +421,6 @@ public class NewGuildMainDlg : Form
 	public void ClickAdmin(IUIObject obj)
 	{
 		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_ADMINMENU_DLG);
-		base.CloseNow();
 	}
 
 	public void SetLeaveGuild()
@@ -406,12 +464,11 @@ public class NewGuildMainDlg : Form
 
 	public void ClickBack(IUIObject obj)
 	{
-		if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DECLAREWAR_GUILDLIST_DLG) == null)
+		if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDWAR_LIST_DLG) == null)
 		{
 			if (0L < NrTSingleton<NewGuildManager>.Instance.GetGuildID() && NrTSingleton<NewGuildManager>.Instance.GetGuildID() == this.m_lGuildID)
 			{
 				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_MEMBER_DLG);
-				NrTSingleton<NewGuildManager>.Instance.Send_GS_NEWGUILD_INFO_REQ(0);
 			}
 			else
 			{
@@ -423,9 +480,7 @@ public class NewGuildMainDlg : Form
 
 	public void SetBundleDownload()
 	{
-		string textureFromBundle = string.Format("UI/Etc/GuildBG", new object[0]);
-		this.m_dtGuildMap.SetTextureFromBundle(textureFromBundle);
-		textureFromBundle = string.Format("UI/Etc/GuildImg03", new object[0]);
+		string textureFromBundle = string.Format("UI/Etc/GuildImg03", new object[0]);
 		this.m_dtGuildFlag.SetTextureFromBundle(textureFromBundle);
 	}
 
@@ -468,10 +523,65 @@ public class NewGuildMainDlg : Form
 		}
 	}
 
+	public void Send_GS_DECLAREWAR_LIST_REQ()
+	{
+		GS_DECLAREWAR_LIST_REQ gS_DECLAREWAR_LIST_REQ = new GS_DECLAREWAR_LIST_REQ();
+		gS_DECLAREWAR_LIST_REQ.GuildID = this.m_lGuildID;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_DECLAREWAR_LIST_REQ, gS_DECLAREWAR_LIST_REQ);
+	}
+
 	public void ClickSendDeclareWar(object EventObject)
 	{
-		GS_DECLAREWAR_SET_TARGET_REQ gS_DECLAREWAR_SET_TARGET_REQ = new GS_DECLAREWAR_SET_TARGET_REQ();
-		gS_DECLAREWAR_SET_TARGET_REQ.i64TargetGuildId = this.m_lGuildID;
-		SendPacket.GetInstance().SendObject(2327, gS_DECLAREWAR_SET_TARGET_REQ);
+		if (!this.m_bIsDeclareWarTarget)
+		{
+			GS_DECLAREWAR_SET_TARGET_REQ gS_DECLAREWAR_SET_TARGET_REQ = new GS_DECLAREWAR_SET_TARGET_REQ();
+			gS_DECLAREWAR_SET_TARGET_REQ.i64TargetGuildId = this.m_lGuildID;
+			SendPacket.GetInstance().SendObject(2328, gS_DECLAREWAR_SET_TARGET_REQ);
+		}
+		else
+		{
+			GS_DECLAREWAR_CANCEL_REQ obj = new GS_DECLAREWAR_CANCEL_REQ();
+			SendPacket.GetInstance().SendObject(2330, obj);
+		}
+	}
+
+	public void ClearDeclareWarList()
+	{
+		this.m_DeclareWarList.Clear();
+	}
+
+	public void SetDeclareWarInfo(string strGuildName, string targetName)
+	{
+		if (strGuildName == string.Empty)
+		{
+			return;
+		}
+		NewListItem newListItem = new NewListItem(this.m_DeclareWarList.ColumnNum, true, string.Empty);
+		string empty = string.Empty;
+		if (targetName == strGuildName)
+		{
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2943"),
+				"targetname",
+				strGuildName
+			});
+		}
+		else
+		{
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2942"),
+				"targetname",
+				strGuildName
+			});
+		}
+		newListItem.SetListItemData(0, empty, null, null, null);
+		this.m_DeclareWarList.Add(newListItem);
+	}
+
+	public void SetDeclareWarInfoEnd()
+	{
+		this.m_DeclareWarList.RepositionItems();
 	}
 }

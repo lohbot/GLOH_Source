@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableWorldMapInfo : NrTableBase
 {
-	public NkTableWorldMapInfo() : base(CDefinePath.WORLDMAP_INFO_URL, true)
+	public NkTableWorldMapInfo() : base(CDefinePath.WORLDMAP_INFO_URL)
 	{
 	}
 

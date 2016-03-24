@@ -13,5 +13,7 @@ namespace PROTOCOL.GAME
 		public byte nStartPos;
 
 		public byte nBattlePos;
+
+		public int nCostumeUnique;
 	}
 }

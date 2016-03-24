@@ -25,5 +25,13 @@ namespace PROTOCOL
 		public long i64Fund;
 
 		public char[] strGuildNotice = new char[50];
+
+		public int i32GuildWarPoint;
+
+		public bool bIsExitAgit;
+
+		public bool bIsGuildWar;
+
+		public bool bIsGuildWarCancelReservation;
 	}
 }

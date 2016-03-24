@@ -1,10 +1,9 @@
-using Ndoors.Framework.Stage;
 using System;
 using TsLibs;
 
 public class CAMERASETTING_DATA : NrTableData
 {
-	public Scene.Type m_eScene;
+	public int m_eType;
 
 	public int m_Level;
 
@@ -13,6 +12,8 @@ public class CAMERASETTING_DATA : NrTableData
 	public float m_YRotate;
 
 	public float m_Fov;
+
+	public float m_Fov4_3;
 
 	public float m_RunFov;
 
@@ -56,6 +57,7 @@ public class CAMERASETTING_DATA : NrTableData
 		row.GetColumn(num++, out this.m_Zoom);
 		row.GetColumn(num++, out this.m_YRotate);
 		row.GetColumn(num++, out this.m_Fov);
+		row.GetColumn(num++, out this.m_Fov4_3);
 		row.GetColumn(num++, out this.m_RunFov);
 		row.GetColumn(num++, out this.m_RunTime);
 		row.GetColumn(num++, out this.m_LerpTime);
@@ -101,5 +103,14 @@ public class CAMERASETTING_DATA : NrTableData
 			return this.m_fElfZoom;
 		}
 		return 0f;
+	}
+
+	public float GetFOV()
+	{
+		if (NrTSingleton<ScreenSizeManager>.Instance.IsScreen4_3())
+		{
+			return this.m_Fov4_3;
+		}
+		return this.m_Fov;
 	}
 }

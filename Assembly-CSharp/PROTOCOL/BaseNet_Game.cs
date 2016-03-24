@@ -53,7 +53,7 @@ namespace PROTOCOL
 				int index2 = index;
 				index += num;
 				num3 = NrReceiveGame.Receive_GamePacket(btBuffer, index, packetHeader);
-				if (this.m_bSavePacket && packetHeader.type >= 200 && packetHeader.type <= 254)
+				if (this.m_bSavePacket && packetHeader.type >= 200 && packetHeader.type <= 267)
 				{
 					NrTSingleton<NkBattleReplayManager>.Instance.SavePacket(btBuffer, packetHeader.type, index2, num3 + num);
 				}
@@ -64,14 +64,14 @@ namespace PROTOCOL
 				}
 				if ((int)packetHeader.size != num3)
 				{
-					Debug.LogWarning(string.Concat(new object[]
+					Debug.LogException(new Exception(string.Concat(new object[]
 					{
 						"Err: PrevePackType: Watch Out Protocol ID:",
 						((eGAME_PACKET_ID)this.mPrevPackType).ToString(),
 						":Total:",
 						totalSize
-					}));
-					Debug.LogError(string.Concat(new object[]
+					})));
+					Debug.LogException(new Exception(string.Concat(new object[]
 					{
 						"Err :Receive_GamePacket Not Match=(Type:",
 						((eGAME_PACKET_ID)packetHeader.type).ToString(),
@@ -81,7 +81,7 @@ namespace PROTOCOL
 						num3,
 						")I:",
 						index
-					}));
+					})));
 					num3 = (int)packetHeader.size;
 					if (0 > packetHeader.size)
 					{

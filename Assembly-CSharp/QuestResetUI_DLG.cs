@@ -271,7 +271,7 @@ public class QuestResetUI_DLG : Form
 				"Targetname1",
 				this.m_CurQuestGroup.GetGroupTitle()
 			});
-			msgBoxUI.SetMsg(new YesDelegate(this.On_Ok), this.m_CurQuestGroup, textFromInterface, empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.On_Ok), this.m_CurQuestGroup, textFromInterface, empty, eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 

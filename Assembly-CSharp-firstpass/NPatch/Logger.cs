@@ -27,19 +27,26 @@ namespace NPatch
 			{
 				try
 				{
-					string text = DateTime.Now.ToString("yyyy/MM/dd hh:mm:ss");
-					string path = Logger.logPath + "/NPatchLog.txt";
-					StreamWriter streamWriter = new StreamWriter(path, true, Encoding.UTF8);
-					streamWriter.WriteLine(string.Concat(new string[]
+					string text = DateTime.Now.ToString("yyyy/MM/dd H:mm:ss");
+					string path = Path.Combine(Logger.logPath, "NPatchLog.txt");
+					string s = string.Concat(new string[]
 					{
 						text,
 						"\t",
 						errorInfo,
 						"\t",
 						log,
-						"\t"
-					}));
-					streamWriter.Close();
+						"\r\n"
+					});
+					byte[] bytes = Encoding.UTF8.GetBytes(s);
+					if (!Directory.Exists(path))
+					{
+						Directory.CreateDirectory(Logger.logPath);
+					}
+					using (FileStream fileStream = new FileStream(path, FileMode.Append, FileAccess.Write, FileShare.Read))
+					{
+						fileStream.Write(bytes, 0, bytes.Length);
+					}
 				}
 				catch (Exception ex)
 				{

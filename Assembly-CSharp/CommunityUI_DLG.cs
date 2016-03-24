@@ -45,6 +45,8 @@ public class CommunityUI_DLG : Form
 
 	private Button m_btFriendMenu;
 
+	private Button m_bFriendAllItemGet;
+
 	private Label m_laFriendNum;
 
 	private DrawTexture m_dtFriendNum;
@@ -64,6 +66,10 @@ public class CommunityUI_DLG : Form
 	private Button m_btRewardSort;
 
 	private DrawTexture[] m_dtSort = new DrawTexture[5];
+
+	private Button m_HelpButton;
+
+	private DrawTexture[] m_dtHL = new DrawTexture[5];
 
 	private Button m_btSelectBattleSol;
 
@@ -177,6 +183,9 @@ public class CommunityUI_DLG : Form
 		this.m_btFriendMenu = (base.GetControl("Button_Find") as Button);
 		this.m_btFriendMenu.Click = new EZValueChangedDelegate(this.BtnClickFindMenu);
 		base.SetShowLayer(3, true);
+		this.m_bFriendAllItemGet = (base.GetControl("Button_AllGet") as Button);
+		this.m_bFriendAllItemGet.Click = new EZValueChangedDelegate(this.BtnFriendItemAllGet);
+		this.m_bFriendAllItemGet.enabled = true;
 		this.m_btSelectBattleSol = (base.GetControl("BT_Help") as Button);
 		this.m_btSelectBattleSol.Click = new EZValueChangedDelegate(this.BtnClickSelectBattleSol);
 		this.m_btNameSort = (base.GetControl("BT_NameSort") as Button);
@@ -199,6 +208,14 @@ public class CommunityUI_DLG : Form
 		this.m_dtSort[2] = (base.GetControl("DT_Arrow_Support01") as DrawTexture);
 		this.m_dtSort[3] = (base.GetControl("DT_Arrow_Support01_C") as DrawTexture);
 		this.m_dtSort[4] = (base.GetControl("DT_Arrow_Reward") as DrawTexture);
+		this.m_dtHL[0] = (base.GetControl("DT_LB_NAME_HL") as DrawTexture);
+		this.m_dtHL[1] = (base.GetControl("DT_LB_State_HL") as DrawTexture);
+		this.m_dtHL[2] = (base.GetControl("DT_LB_FriendSol01_HL") as DrawTexture);
+		this.m_dtHL[3] = (base.GetControl("DT_LB_Mysol_HL") as DrawTexture);
+		this.m_dtHL[4] = (base.GetControl("DT_LB_Reward_HL") as DrawTexture);
+		this.m_HelpButton = (base.GetControl("Help_List") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
+		this.ChangeSortTexture(true);
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
 		this.Hide();
@@ -259,7 +276,7 @@ public class CommunityUI_DLG : Form
 		this.ChangeMode(this.m_eCurShowType);
 	}
 
-	public void UpdateFriend(long _friend_personid)
+	public void UpdateFriend(long _friend_personid, bool reposition = true)
 	{
 		int num = this.ListBox_FriendIndex(_friend_personid);
 		if (num < 0)
@@ -275,9 +292,21 @@ public class CommunityUI_DLG : Form
 				this.m_LBList[(int)this.m_eCurShowType].RemoveAdd(num, newListItem);
 			}
 		}
-		this.m_LBList[(int)this.m_eCurShowType].RepositionItems();
+		if (reposition)
+		{
+			this.m_LBList[(int)this.m_eCurShowType].RepositionItems();
+		}
 		this.ShowFriendCountInfo();
 		this.ShowFriendHelpSolCountInfo();
+	}
+
+	public void RepositionFriend()
+	{
+		if (this.m_LBList == null || this.m_LBList[(int)this.m_eCurShowType] == null)
+		{
+			return;
+		}
+		this.m_LBList[(int)this.m_eCurShowType].RepositionItems();
 	}
 
 	public void UpdateCommunity_Friend(COMMUNITY_USER_INFO info)
@@ -430,11 +459,11 @@ public class CommunityUI_DLG : Form
 		this.m_LBList[(int)this.m_eCurShowType].Clear();
 		this.ShowFriendCountInfo();
 		this.ShowFriendHelpSolCountInfo();
+		this.SortCommunity();
 		if (this.m_CommunityUserList.Count <= 0)
 		{
 			return;
 		}
-		this.SortCommunity();
 		for (int i = 0; i < this.m_CommunityUserList.Count; i++)
 		{
 			COMMUNITY_USER_INFO cOMMUNITY_USER_INFO = this.m_CommunityUserList[i];
@@ -474,7 +503,7 @@ public class CommunityUI_DLG : Form
 				num = this.m_CommunityUserList.Count;
 			}
 			int limitFriendCount = BASE_FRIENDCOUNTLIMIT_DATA.GetLimitFriendCount((short)kMyCharInfo.GetLevel());
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1334");
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3182");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{
 				text,
@@ -503,7 +532,7 @@ public class CommunityUI_DLG : Form
 		else if (this.m_eCurShowType == eCOMMUNITYDLG_SHOWTYPE.eSHOWTYPE_HELPSOLSET)
 		{
 			this.m_laFriendNum.Hide(false);
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1941");
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3183");
 			long charDetail = kMyCharInfo.GetCharDetail(9);
 			int limitFriendCount = BASE_FRIENDCOUNTLIMIT_DATA.GetLimitFriendCount((short)kMyCharInfo.GetLevel());
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
@@ -549,6 +578,18 @@ public class CommunityUI_DLG : Form
 		return result;
 	}
 
+	public void SetItemAll()
+	{
+		if (NrTSingleton<NkCharManager>.Instance.AddExpHelpsolCount() > 0)
+		{
+			this.m_bFriendAllItemGet.SetEnabled(true);
+		}
+		else
+		{
+			this.m_bFriendAllItemGet.SetEnabled(false);
+		}
+	}
+
 	private void ShowLayer(CommunityUI_DLG.eLAYER _layer)
 	{
 		for (int i = 0; i < 7; i++)
@@ -559,6 +600,7 @@ public class CommunityUI_DLG : Form
 		base.SetShowLayer((int)_layer, true);
 		if (_layer == CommunityUI_DLG.eLAYER.eLAYER_INPUT_HELPSOL)
 		{
+			this.SetItemAll();
 			base.SetShowLayer(3, true);
 		}
 		this.m_GameFriend.Visible = true;
@@ -568,7 +610,7 @@ public class CommunityUI_DLG : Form
 
 	private NewListItem SetListItem_Colum(COMMUNITY_USER_INFO _community_user_info)
 	{
-		NewListItem newListItem = new NewListItem(this.m_LBList[(int)this.m_eCurShowType].ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_LBList[(int)this.m_eCurShowType].ColumnNum, true, string.Empty);
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(_community_user_info.i32FaceCharKind);
 		if (charKindInfo == null)
 		{
@@ -579,11 +621,14 @@ public class CommunityUI_DLG : Form
 		nkListSolInfo.SolCharKind = _community_user_info.i32FaceCharKind;
 		nkListSolInfo.SolGrade = -1;
 		nkListSolInfo.SolLevel = _community_user_info.i16Level;
+		nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(_community_user_info.i32CostumeUnique);
 		EVENT_HERODATA eventHeroCharFriendCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharFriendCode(charKindInfo.GetCharKind());
 		if (this.m_eCurShowType == eCOMMUNITYDLG_SHOWTYPE.eSHOWTYPE_SELECTBATTLE && _community_user_info.i64PersonID < 11L)
 		{
 			GMHELP_INFO gMHelpKindInfo = NrTSingleton<NrBaseTableManager>.Instance.GetGMHelpKindInfo(_community_user_info.Friend_HelpSolInfo.i64HelpSolID.ToString());
 			newListItem.SetListItemData(12, false);
+			newListItem.SetListItemData(13, false);
+			newListItem.SetListItemData(4, false);
 			if (gMHelpKindInfo == null)
 			{
 				nkListSolInfo.ShowLevel = true;
@@ -604,11 +649,11 @@ public class CommunityUI_DLG : Form
 				if (eventHeroCharFriendCode != null)
 				{
 					newListItem.SetListItemData(0, "Win_I_EventSol", null, null, null);
-					newListItem.SetListItemData(12, true);
+					newListItem.SetListItemData(13, true);
 				}
 				else
 				{
-					newListItem.SetListItemData(12, false);
+					newListItem.SetListItemData(13, false);
 				}
 			}
 			else if (this.m_eCurShowType == eCOMMUNITYDLG_SHOWTYPE.eSHOWTYPE_HELPSOLSET)
@@ -616,11 +661,11 @@ public class CommunityUI_DLG : Form
 				if (eventHeroCharFriendCode != null)
 				{
 					newListItem.SetListItemData(0, "Win_I_EventSol", null, null, null);
-					newListItem.SetListItemData(18, true);
+					newListItem.SetListItemData(19, true);
 				}
 				else
 				{
-					newListItem.SetListItemData(18, false);
+					newListItem.SetListItemData(19, false);
 				}
 			}
 		}
@@ -628,32 +673,37 @@ public class CommunityUI_DLG : Form
 		{
 			if (this.m_eCurShowType == eCOMMUNITYDLG_SHOWTYPE.eSHOWTYPE_SELECTBATTLE)
 			{
-				newListItem.SetListItemData(12, false);
+				newListItem.SetListItemData(13, false);
 			}
 			else
 			{
-				newListItem.SetListItemData(18, false);
+				newListItem.SetListItemData(19, false);
 			}
 			newListItem.SetListItemData(1, _community_user_info.UserPortrait, null, _community_user_info.i16Level, null, null);
 		}
 		newListItem.SetListItemData(2, _community_user_info.strName, null, null, null);
 		if (_community_user_info.strGuildName != string.Empty)
 		{
-			newListItem.SetListItemData(3, _community_user_info.strGuildName, null, null, null);
+			string str = string.Empty;
+			if (_community_user_info.bGuildWar)
+			{
+				str = NrTSingleton<CTextParser>.Instance.GetTextColor("1401");
+			}
+			newListItem.SetListItemData(3, str + _community_user_info.strGuildName, null, null, null);
 		}
 		string gradeTexture = NrTSingleton<NrTable_ColosseumRankReward_Manager>.Instance.GetGradeTexture(_community_user_info.i16ColosseumGrade);
 		if (gradeTexture != string.Empty)
 		{
-			newListItem.SetListItemData(4, gradeTexture, null, null, null);
+			newListItem.SetListItemData(5, gradeTexture, null, null, null);
 		}
-		newListItem.SetListItemData(9, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtClickRightMenu), null);
+		newListItem.SetListItemData(10, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtClickRightMenu), null);
 		if (_community_user_info.strPlatformName.Length > 0)
 		{
-			newListItem.SetListItemData(17, true);
+			newListItem.SetListItemData(18, true);
 		}
 		else
 		{
-			newListItem.SetListItemData(17, false);
+			newListItem.SetListItemData(18, false);
 		}
 		if (this.m_eCurShowType == eCOMMUNITYDLG_SHOWTYPE.eSHOWTYPE_HELPSOLSET)
 		{
@@ -661,10 +711,10 @@ public class CommunityUI_DLG : Form
 			{
 				newListItem.SetListItemData(2, false);
 				newListItem.SetListItemData(3, false);
-				newListItem.SetListItemData(17, true);
-				newListItem.SetListItemData(17, _community_user_info.strName, null, null, null);
+				newListItem.SetListItemData(18, true);
+				newListItem.SetListItemData(18, _community_user_info.strName, null, null, null);
 			}
-			newListItem.SetListItemData(19, false);
+			newListItem.SetListItemData(20, false);
 		}
 		if (_community_user_info.Friend_HelpSolInfo.i32SolKind <= 0)
 		{
@@ -672,9 +722,9 @@ public class CommunityUI_DLG : Form
 			{
 				newListItem.SetListItemData(13, false);
 			}
-			newListItem.SetListItemData(5, false);
-			newListItem.SetListItemData(7, true);
-			newListItem.SetListItemData(8, false);
+			newListItem.SetListItemData(6, false);
+			newListItem.SetListItemData(8, true);
+			newListItem.SetListItemData(9, false);
 		}
 		else
 		{
@@ -684,18 +734,25 @@ public class CommunityUI_DLG : Form
 				{
 					newListItem.SetListItemData(2, false);
 					newListItem.SetListItemData(3, false);
-					newListItem.SetListItemData(14, _community_user_info.strName, null, null, null);
+					newListItem.SetListItemData(15, _community_user_info.strName, null, null, null);
 				}
 				else
 				{
-					newListItem.SetListItemData(3, _community_user_info.strGuildName, null, null, null);
-					newListItem.SetListItemData(14, false);
+					if (_community_user_info.strGuildName != string.Empty)
+					{
+						string str2 = string.Empty;
+						if (_community_user_info.bGuildWar)
+						{
+							str2 = NrTSingleton<CTextParser>.Instance.GetTextColor("1106");
+						}
+						newListItem.SetListItemData(3, str2 + _community_user_info.strGuildName, null, null, null);
+					}
+					newListItem.SetListItemData(15, false);
 				}
-				newListItem.SetListItemData(4, false);
-				newListItem.SetListItemData(13, false);
+				newListItem.SetListItemData(5, false);
 			}
-			newListItem.SetListItemData(7, false);
-			newListItem.SetListItemData(8, _community_user_info.GetHelpSolUse());
+			newListItem.SetListItemData(8, false);
+			newListItem.SetListItemData(9, _community_user_info.GetHelpSolUse());
 			NrCharKindInfo charKindInfo2 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(_community_user_info.Friend_HelpSolInfo.i32SolKind);
 			if (charKindInfo2 != null)
 			{
@@ -704,12 +761,13 @@ public class CommunityUI_DLG : Form
 				nkListSolInfo2.SolGrade = (int)_community_user_info.Friend_HelpSolInfo.bySolGrade;
 				nkListSolInfo2.SolLevel = _community_user_info.Friend_HelpSolInfo.iSolLevel;
 				nkListSolInfo2.FightPower = (long)_community_user_info.Friend_HelpSolInfo.i32SolFightPower;
+				nkListSolInfo2.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(_community_user_info.Friend_HelpSolInfo.i32SolFaceCostumeUnique);
 				UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(nkListSolInfo2.SolCharKind, nkListSolInfo2.SolGrade);
 				if (legendFrame != null)
 				{
-					newListItem.SetListItemData(5, legendFrame, null, null, null);
+					newListItem.SetListItemData(6, legendFrame, null, null, null);
 				}
-				newListItem.SetListItemData(5, true);
+				newListItem.SetListItemData(6, true);
 				if (this.m_eCurShowType == eCOMMUNITYDLG_SHOWTYPE.eSHOWTYPE_SELECTBATTLE)
 				{
 					NrCharKindInfo charKindInfo3 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(nkListSolInfo2.SolCharKind);
@@ -729,25 +787,26 @@ public class CommunityUI_DLG : Form
 						nkListSolInfo2.ShowLevel = false;
 					}
 					nkListSolInfo2.ShowLevel = false;
-					newListItem.SetListItemData(6, nkListSolInfo2, null, null, null);
+					newListItem.SetListItemData(7, nkListSolInfo2, null, null, null);
 					string legendName = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendName(nkListSolInfo2.SolCharKind, nkListSolInfo2.SolGrade, charKindInfo2.GetName());
-					newListItem.SetListItemData(10, legendName, null, null, null);
-					newListItem.SetListItemData(11, NrTSingleton<UIDataManager>.Instance.GetString("Lv ", _community_user_info.Friend_HelpSolInfo.iSolLevel.ToString()), null, null, null);
+					newListItem.SetListItemData(11, legendName, null, null, null);
+					newListItem.SetListItemData(12, NrTSingleton<UIDataManager>.Instance.GetString("Lv ", _community_user_info.Friend_HelpSolInfo.iSolLevel.ToString()), null, null, null);
 					UIBaseInfoLoader legendFrame2 = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(nkListSolInfo2.SolCharKind, nkListSolInfo2.SolGrade);
 					if (legendFrame != null)
 					{
-						newListItem.SetListItemData(5, legendFrame2, null, null, null);
+						newListItem.SetListItemData(6, legendFrame2, null, null, null);
 					}
+					newListItem.SetListItemData(14, false);
 				}
 				else
 				{
 					UIBaseInfoLoader legendFrame3 = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(nkListSolInfo2.SolCharKind, nkListSolInfo2.SolGrade);
 					if (legendFrame != null)
 					{
-						newListItem.SetListItemData(5, legendFrame3, null, null, null);
+						newListItem.SetListItemData(6, legendFrame3, null, null, null);
 					}
 					nkListSolInfo2.ShowLevel = true;
-					newListItem.SetListItemData(6, nkListSolInfo2, null, null, null);
+					newListItem.SetListItemData(7, nkListSolInfo2, null, null, null);
 				}
 			}
 		}
@@ -757,47 +816,85 @@ public class CommunityUI_DLG : Form
 			string empty2 = string.Empty;
 			if (_community_user_info.i16BattleMatch >= 10000)
 			{
-				if (_community_user_info.i16BattleMatch >= 21000)
+				if (_community_user_info.i16BattleMatch >= 30000)
 				{
-					newListItem.SetListItemData(10, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2320"), null, null, null);
-					newListItem.SetListItemData(16, false);
+					short num = _community_user_info.i16BattleMatch - 31000;
+					string text2 = string.Empty;
+					if (_community_user_info.i16BattleMatch >= 31000)
+					{
+						switch (num)
+						{
+						case 0:
+							text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3243");
+							break;
+						case 1:
+							text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3244");
+							break;
+						case 2:
+							text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3245");
+							break;
+						}
+						newListItem.SetListItemData(17, text2, _community_user_info, new EZValueChangedDelegate(this.BtnClickMythRaid), null);
+					}
+					else
+					{
+						switch (num)
+						{
+						case 0:
+							text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3243");
+							break;
+						case 1:
+							text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3244");
+							break;
+						case 2:
+							text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3245");
+							break;
+						}
+						newListItem.SetListItemData(11, text2, null, null, null);
+						newListItem.SetListItemData(17, false);
+					}
+				}
+				else if (_community_user_info.i16BattleMatch >= 21000)
+				{
+					newListItem.SetListItemData(11, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2320"), null, null, null);
+					newListItem.SetListItemData(17, false);
 				}
 				else if (_community_user_info.i16BattleMatch >= 10000 && _community_user_info.i16BattleMatch < 20000)
 				{
 					CommunityUI_DLG.CurrentLocationName(_community_user_info, ref empty, ref empty2);
 					string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("649");
-					short num = _community_user_info.i16BattleMatch - 10000;
+					short num2 = _community_user_info.i16BattleMatch - 10000;
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 					{
 						textFromInterface,
 						"floor",
-						num
+						num2
 					});
-					newListItem.SetListItemData(10, NrTSingleton<CTextParser>.Instance.GetTextColor(empty2) + empty, null, null, null);
-					newListItem.SetListItemData(16, false);
+					newListItem.SetListItemData(11, NrTSingleton<CTextParser>.Instance.GetTextColor(empty2) + empty, null, null, null);
+					newListItem.SetListItemData(17, false);
 				}
 				else
 				{
 					string textFromInterface2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("649");
-					short num2 = _community_user_info.i16BattleMatch - 20000;
+					short num3 = _community_user_info.i16BattleMatch - 20000;
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 					{
 						textFromInterface2,
 						"floor",
-						num2
+						num3
 					});
-					newListItem.SetListItemData(16, empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickBabelTower), null);
+					newListItem.SetListItemData(17, empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickBabelTower), null);
 				}
 			}
 			else
 			{
 				CommunityUI_DLG.CurrentLocationName(_community_user_info, ref empty, ref empty2);
-				newListItem.SetListItemData(10, NrTSingleton<CTextParser>.Instance.GetTextColor(empty2) + empty, null, null, null);
-				newListItem.SetListItemData(16, false);
+				newListItem.SetListItemData(11, NrTSingleton<CTextParser>.Instance.GetTextColor(empty2) + empty, null, null, null);
+				newListItem.SetListItemData(17, false);
 			}
 			NkSoldierInfo nkSoldierInfo = _community_user_info.MyHelpSol();
-			newListItem.SetListItemData(20, false);
 			newListItem.SetListItemData(21, false);
+			newListItem.SetListItemData(22, false);
 			if (nkSoldierInfo != null)
 			{
 				NrCharKindInfo charKindInfo4 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(nkSoldierInfo.GetCharKind());
@@ -807,43 +904,44 @@ public class CommunityUI_DLG : Form
 					nkListSolInfo3.SolCharKind = nkSoldierInfo.GetCharKind();
 					nkListSolInfo3.SolGrade = (int)nkSoldierInfo.GetGrade();
 					nkListSolInfo3.SolLevel = nkSoldierInfo.GetLevel();
+					nkListSolInfo3.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(nkSoldierInfo);
 					nkListSolInfo3.ShowLevel = true;
 					UIBaseInfoLoader legendFrame4 = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(nkListSolInfo3.SolCharKind, nkListSolInfo3.SolGrade);
 					if (legendFrame4 != null)
 					{
-						newListItem.SetListItemData(11, legendFrame4, null, null, null);
+						newListItem.SetListItemData(12, legendFrame4, null, null, null);
 					}
-					newListItem.SetListItemData(11, true);
-					newListItem.SetListItemData(12, nkListSolInfo3, null, null, null);
-					newListItem.SetListItemData(13, false);
+					newListItem.SetListItemData(12, true);
+					newListItem.SetListItemData(13, nkListSolInfo3, null, null, null);
+					newListItem.SetListItemData(14, false);
 					if (nkSoldierInfo.AddHelpExp <= 0L)
 					{
-						newListItem.SetListItemEnable(14, false);
+						newListItem.SetListItemEnable(15, false);
 					}
 					else
 					{
-						newListItem.SetListItemEnable(14, true);
-						newListItem.SetListItemData(14, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickHelpSol_ExpGive), null);
+						newListItem.SetListItemEnable(15, true);
+						newListItem.SetListItemData(15, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickHelpSol_ExpGive), null);
 					}
 					if (nkSoldierInfo.HelpSolUse)
 					{
-						newListItem.SetListItemData(21, true);
+						newListItem.SetListItemData(22, true);
 					}
 					else
 					{
-						newListItem.SetListItemData(21, false);
+						newListItem.SetListItemData(22, false);
 					}
-					newListItem.SetListItemData(15, true);
-					newListItem.SetListItemData(15, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickHelpSolUnSet), null);
+					newListItem.SetListItemData(16, true);
+					newListItem.SetListItemData(16, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickHelpSolUnSet), null);
 				}
 			}
 			else
 			{
-				newListItem.SetListItemData(11, false);
 				newListItem.SetListItemData(12, false);
-				newListItem.SetListItemData(13, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickSelectHelpSol), null);
-				newListItem.SetListItemEnable(14, false);
-				newListItem.SetListItemData(15, false);
+				newListItem.SetListItemData(13, false);
+				newListItem.SetListItemData(14, string.Empty, _community_user_info, new EZValueChangedDelegate(this.BtnClickSelectHelpSol), null);
+				newListItem.SetListItemEnable(15, false);
+				newListItem.SetListItemData(16, false);
 			}
 		}
 		newListItem.Data = _community_user_info;
@@ -965,6 +1063,28 @@ public class CommunityUI_DLG : Form
 		}
 	}
 
+	private void BtnClickMythRaid(IUIObject obj)
+	{
+		COMMUNITY_USER_INFO cOMMUNITY_USER_INFO = (COMMUNITY_USER_INFO)obj.Data;
+		bool bMoveWorld = false;
+		if (Client.m_MyWS != (long)cOMMUNITY_USER_INFO.i32WorldID_Connect)
+		{
+			bMoveWorld = true;
+		}
+		bool flag = NrTSingleton<BabelTowerManager>.Instance.IsBabelStart();
+		if (flag)
+		{
+			GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ = new GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ();
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.nInvite = 0;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bAccept = true;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.bMoveWorld = bMoveWorld;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.WorldID = cOMMUNITY_USER_INFO.i32WorldID_Connect;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.ChannelID = cOMMUNITY_USER_INFO.byLocation;
+			gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ.PersonID = cOMMUNITY_USER_INFO.i64PersonID;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_INVITE_FRIEND_AGREE_REQ, gS_MYTHRAID_INVITE_FRIEND_AGREE_REQ);
+		}
+	}
+
 	private void BtnShowEffectHelpSol(IUIObject obj)
 	{
 		DirectionDLG directionDLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_DIRECTION) as DirectionDLG;
@@ -977,6 +1097,30 @@ public class CommunityUI_DLG : Form
 	private void BtnClickFindMenu(IUIObject obj)
 	{
 		NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.COMMUNITY_FRIENDMENU_DLG);
+	}
+
+	private void BtnFriendItemAllGet(IUIObject obj)
+	{
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo == null)
+		{
+			return;
+		}
+		long charDetail = kMyCharInfo.GetCharDetail(9);
+		int limitFriendCount = BASE_FRIENDCOUNTLIMIT_DATA.GetLimitFriendCount((short)kMyCharInfo.GetLevel());
+		if (charDetail >= (long)limitFriendCount)
+		{
+			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("502");
+			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return;
+		}
+		int num = limitFriendCount - (int)charDetail;
+		if (num > 0)
+		{
+			GS_FRIEND_HELPSOL_ALL_REQ gS_FRIEND_HELPSOL_ALL_REQ = new GS_FRIEND_HELPSOL_ALL_REQ();
+			gS_FRIEND_HELPSOL_ALL_REQ.bFriendMaxNum = (byte)num;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_FRIEND_HELPSOL_ALL_REQ, gS_FRIEND_HELPSOL_ALL_REQ);
+		}
 	}
 
 	private void BtClickListBox(IUIObject obj)
@@ -1015,10 +1159,11 @@ public class CommunityUI_DLG : Form
 		{
 			return;
 		}
+		bool isGuildUser = cOMMUNITY_USER_INFO.strGuildName != string.Empty && cOMMUNITY_USER_INFO.strGuildName != string.Empty;
 		bool flag;
 		if (cOMMUNITY_USER_INFO.byLocation <= 0 || !cOMMUNITY_USER_INFO.bConnect)
 		{
-			flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.COMMUNITY_FRIEND_LOGOFF, CRightClickMenu.TYPE.SIMPLE_SECTION_1);
+			flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.COMMUNITY_FRIEND_LOGOFF, CRightClickMenu.TYPE.SIMPLE_SECTION_1, isGuildUser);
 		}
 		else if (Client.m_MyWS != (long)cOMMUNITY_USER_INFO.i32WorldID || Client.m_MyCH != cOMMUNITY_USER_INFO.byLocation)
 		{
@@ -1032,11 +1177,11 @@ public class CommunityUI_DLG : Form
 				"!=",
 				cOMMUNITY_USER_INFO.byLocation
 			}));
-			flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.COMMUNITY_FRIEND_DIFF_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3);
+			flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.COMMUNITY_FRIEND_DIFF_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3, isGuildUser);
 		}
 		else
 		{
-			flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.COMMUNITY_FRIEND_SAME_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3);
+			flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.COMMUNITY_FRIEND_SAME_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3, isGuildUser);
 		}
 		Button button = obj as Button;
 		if (button != null && flag)
@@ -1070,7 +1215,7 @@ public class CommunityUI_DLG : Form
 				"Charname",
 				cOMMUNITY_USER_INFO.strName
 			});
-			msgBoxUI.SetMsg(new YesDelegate(this.FriendDelYes), cOMMUNITY_USER_INFO, textFromInterface, empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.FriendDelYes), cOMMUNITY_USER_INFO, textFromInterface, empty, eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 
@@ -1084,10 +1229,11 @@ public class CommunityUI_DLG : Form
 		SolMilitarySelectDlg solMilitarySelectDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLMILITARYSELECT_DLG) as SolMilitarySelectDlg;
 		if (solMilitarySelectDlg != null)
 		{
+			solMilitarySelectDlg.SetLoadType(SolMilitarySelectDlg.LoadType.COMMUNITY);
 			solMilitarySelectDlg.SetLocationByForm(this);
 			solMilitarySelectDlg.SortwithoutHelpsol = true;
 			solMilitarySelectDlg.SetFocus();
-			solMilitarySelectDlg.Refresh();
+			solMilitarySelectDlg.SetSortList();
 			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 		}
 		this.m_bListBtnCheck = true;
@@ -1211,6 +1357,15 @@ public class CommunityUI_DLG : Form
 	public void MsgBoxCancelEvent(MsgBoxUI BoxUI, object EventObject)
 	{
 		Debug.LogError("MsgBoxOKEvent");
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.Friend.ToString());
+		}
 	}
 
 	public List<COMMUNITY_USER_INFO> GetCommunity_User()
@@ -1589,10 +1744,12 @@ public class CommunityUI_DLG : Form
 				if (this.m_eSort == (CommunityUI_DLG.eSORT)i)
 				{
 					this.m_dtSort[i].Visible = true;
+					this.m_dtHL[i].Visible = true;
 				}
 				else
 				{
 					this.m_dtSort[i].Visible = false;
+					this.m_dtHL[i].Visible = false;
 				}
 			}
 		}
@@ -1614,6 +1771,7 @@ public class CommunityUI_DLG : Form
 		for (int i = 0; i < 5; i++)
 		{
 			this.m_dtSort[i].Visible = false;
+			this.m_dtHL[i].Visible = false;
 		}
 		this.m_btNameSort.controlIsEnabled = false;
 		this.m_btConnectTimeSort.controlIsEnabled = false;

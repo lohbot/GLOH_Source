@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ChallengeTimeTable : NrTableBase
 {
-	public NrTable_ChallengeTimeTable(string strFilePath) : base(strFilePath, true)
+	public NrTable_ChallengeTimeTable(string strFilePath) : base(strFilePath)
 	{
 	}
 

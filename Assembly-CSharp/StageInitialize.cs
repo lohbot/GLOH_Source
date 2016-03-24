@@ -16,6 +16,8 @@ public class StageInitialize : AStage
 
 	private static bool IsTableLoaded;
 
+	private float tableLoadingStartTime;
+
 	public override Scene.Type SceneType()
 	{
 		return Scene.Type.INITIALIZE;
@@ -23,6 +25,8 @@ public class StageInitialize : AStage
 
 	public override void OnPrepareSceneChange()
 	{
+		UnityEngine.Debug.Log("Performance Table Loading Start");
+		this.tableLoadingStartTime = Time.realtimeSinceStartup;
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.LOGIN_SELECT_PLATFORM_DLG);
 		NrLoadPageScreen.LoginLatestChar = (NrTSingleton<NrMainSystem>.Instance.GetLatestPersonID() > 0L);
 		if (NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_BANDNAVER || NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_BANDGOOGLE)
@@ -43,6 +47,7 @@ public class StageInitialize : AStage
 		{
 			NmMainFrameWork.DeleteImage();
 		}
+		NrTSingleton<PreloadDataTableMgr>.Instance.StopPreLoadTable();
 	}
 
 	public override void OnEnter()
@@ -66,9 +71,18 @@ public class StageInitialize : AStage
 		if (!StageInitialize.IsTableLoaded && !NrTSingleton<NrMainSystem>.Instance.m_ReLogin)
 		{
 			TsAudioManager.Container.LoadXML();
-			base.StartTaskSerial(this._DownloadTextMgrTables());
-			base.StartTaskSerial(this._Download1stTables());
-			base.StartTaskSerial(this._Download2ndTables());
+			bool isLoadWWW = NrTSingleton<NrGlobalReference>.Instance.isLoadWWW;
+			UnityEngine.Debug.LogError("읽기 시작 : " + ((!isLoadWWW) ? "동기" : "비동기"));
+			if (!isLoadWWW)
+			{
+				base.StartTaskSerial(TableDataLoad.Load());
+			}
+			else
+			{
+				base.StartTaskSerial(this._DownloadTextMgrTables());
+				base.StartTaskSerial(this._Download1stTables());
+				base.StartTaskSerial(this._Download2ndTables());
+			}
 		}
 		base.StartTaskSerial(this._StageProcess());
 		base.StartTaskSerial(CommonTasks.FinalizeChangeScene(false));
@@ -77,6 +91,8 @@ public class StageInitialize : AStage
 
 	public override void OnExit()
 	{
+		float num = Time.realtimeSinceStartup - this.tableLoadingStartTime;
+		UnityEngine.Debug.LogError("Performance Table Loading Stage End : " + num);
 		TsLog.Log("====== {0}.OnExit", new object[]
 		{
 			base.GetType().FullName
@@ -94,7 +110,7 @@ public class StageInitialize : AStage
 					MsgBoxUI msgBoxUI = (MsgBoxUI)NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG);
 					if (msgBoxUI != null)
 					{
-						msgBoxUI.SetMsg(new YesDelegate(this._OnMessageBoxOK_QuitGame), null, "경고", "캐릭터 정보를 읽어오는데 실패하였습니다...\r\n어플을 재실행해주세요.", eMsgType.MB_OK);
+						msgBoxUI.SetMsg(new YesDelegate(this._OnMessageBoxOK_QuitGame), null, "경고", "캐릭터 정보를 읽어오는데 실패하였습니다...\r\n어플을 재실행해주세요.", eMsgType.MB_OK, 2);
 						NrLoadPageScreen.ShowHideLoadingImg(false);
 					}
 					TsLog.LogWarning("CID {0} User not found!", new object[]
@@ -125,7 +141,7 @@ public class StageInitialize : AStage
 	private void _OnMessageBoxOK_QuitGame(object a_oObject)
 	{
 		NrMobileAuthSystem.Instance.Auth.DeleteAuthInfo();
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 
 	public bool OnGameServerConnected()
@@ -135,7 +151,7 @@ public class StageInitialize : AStage
 			MsgBoxUI msgBoxUI = (MsgBoxUI)NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG);
 			if (msgBoxUI != null)
 			{
-				msgBoxUI.SetMsg(new YesDelegate(this._OnMessageBoxOK_QuitGame), null, "경고", "lastpersonid가 0이다,,...\r\n어플을 재실행해주세요.", eMsgType.MB_OK);
+				msgBoxUI.SetMsg(new YesDelegate(this._OnMessageBoxOK_QuitGame), null, "경고", "lastpersonid가 0이다,,...\r\n어플을 재실행해주세요.", eMsgType.MB_OK, 2);
 			}
 		}
 		TsLog.LogWarning("{0}.Rcv_WS_CONNECT_GAMESERVER_ACK", new object[]
@@ -159,7 +175,7 @@ public class StageInitialize : AStage
 	[DebuggerHidden]
 	private IEnumerator _StageProcess()
 	{
-		StageInitialize.<_StageProcess>c__Iterator35 <_StageProcess>c__Iterator = new StageInitialize.<_StageProcess>c__Iterator35();
+		StageInitialize.<_StageProcess>c__Iterator38 <_StageProcess>c__Iterator = new StageInitialize.<_StageProcess>c__Iterator38();
 		<_StageProcess>c__Iterator.<>f__this = this;
 		return <_StageProcess>c__Iterator;
 	}
@@ -202,8 +218,12 @@ public class StageInitialize : AStage
 		tableInspector.RegistWait(nkTableCharKindMonsterInfo, nrTableCharKindNPCInfo);
 		tableInspector.RegistWait(nrTableCharKindNPCInfo, nkTableCharKindSolGradeInfo);
 		tableInspector.RegistWait(nkTableCharKindSolGradeInfo, tbl);
+		tableInspector.RegistWait(nrTableCharKindInfo, new NrTableCharKindGuideInfo());
+		tableInspector.RegistWait(nrTableCharKindInfo, new NrTableCharKindLegendInfo());
+		tableInspector.RegistWait(nrTableCharKindInfo, new NrTableSolGuide());
 		NkTableItemTypeInfo nkTableItemTypeInfo = new NkTableItemTypeInfo();
 		tableInspector.RegistWait(nrTableCharKindInfo, nkTableItemTypeInfo);
+		tableInspector.RegistWait(nrTableCharKindInfo, new NrTableMythRaidInfo());
 		tableInspector.RegistWait(nkTableItemTypeInfo, new NrTable_Item_Accessory());
 		tableInspector.RegistWait(nkTableItemTypeInfo, new NrTable_Item_Armor());
 		tableInspector.RegistWait(nkTableItemTypeInfo, new NrTable_Item_Box());
@@ -214,6 +234,7 @@ public class StageInitialize : AStage
 		tableInspector.RegistWait(nkTableItemTypeInfo, new NrTable_Item_Ticket());
 		tableInspector.RegistWait(nkTableItemTypeInfo, new NrTable_Item_Weapon());
 		tableInspector.RegistWait(nkTableItemTypeInfo, new NrTable_ItemReduce());
+		tableInspector.RegistWait(nkTableItemTypeInfo, new NrTable_Group_Sol_Ticket());
 		tableInspector.Regist(new NrTable_ITEM_COMPOSE());
 		tableInspector.Regist(new NrTable_Item_Rank(CDefinePath.s_strItemRankURL));
 		tableInspector.Regist(new NrTable_ITEM_BOX_GROUP_DATA());
@@ -235,8 +256,15 @@ public class StageInitialize : AStage
 		tableInspector.Regist(new NrTable_JewelryTable(CDefinePath.JEWELRY_TABLE_PATH));
 		tableInspector.Regist(new NrTable_PointLimitTable(CDefinePath.POINTLIMIT_TABLE_PATH));
 		tableInspector.Regist(new NrTable_MythicSolTable(CDefinePath.MYTHICSOL_TABLE_PATH));
+		tableInspector.Regist(new NrTable_GuildWarable(CDefinePath.GUILDWAR_EXCHANGE_TABLE_PATH));
+		tableInspector.Regist(new NrTable_EventExchangeTable(CDefinePath.EVENT_EXCHANGE_TABLE_PATH));
 		tableInspector.Regist(new NrTable_ExplorationTable(CDefinePath.EXPLORATION_TABLE_PATH));
 		tableInspector.Regist(new NrTable_ReservedWord(CDefinePath.RESERVEDWORD_TABLE_PATH));
+		tableInspector.Regist(new NrTable_NewExplorationInfoTable(CDefinePath.NEWEXPLORATION_INFO_URL));
+		tableInspector.Regist(new NrTable_NewExplorationSRewardTable(CDefinePath.NEWEXPLORATION_SREWARD_URL));
+		tableInspector.Regist(new NrTable_NewExplorationTreasure(CDefinePath.NEWEXPLORATION_TREASURE_URL));
+		tableInspector.Regist(new NrTable_NewExplorationResetInfo(CDefinePath.NEWEXPLORATION_RESET_INFO_URL));
+		tableInspector.Regist(new NrTable_NewExplorationRankReward(CDefinePath.NEWEXPLORATION_RANK_REWARD_INFO_URL));
 		NrTableClientNpcInfo tbl2 = new NrTableClientNpcInfo(CDefinePath.QUEST_CLIENTNPC_INFO);
 		NrTableQuestCommon nrTableQuestCommon = new NrTableQuestCommon(CDefinePath.QUEST_COMMON_PATH);
 		NrTableQuestReward tbl3 = new NrTableQuestReward(CDefinePath.QUEST_REWARD_PATH);
@@ -251,10 +279,10 @@ public class StageInitialize : AStage
 		tableInspector.RegistWait(nrTableQuestCommon, tbl6);
 		tableInspector.Regist(new NrTable_GameGuideInfo());
 		tableInspector.Regist(new NrTable_AdventureInfo());
-		tableInspector.Regist(new NrTableSolGuide());
 		tableInspector.Regist(new NrTableRecommend_Reward());
 		tableInspector.Regist(new NrTableSupporter_Reward());
 		tableInspector.Regist(new NrTableDailyGift());
+		tableInspector.Regist(new NrTableAttendance());
 		tableInspector.Regist(new NrTableSolExtractRate());
 		tableInspector.Regist(new NrTableTranscendence_Cost());
 		tableInspector.Regist(new NrTableTranscendence_Rate());
@@ -269,6 +297,13 @@ public class StageInitialize : AStage
 		tableInspector.Regist(new NrTable_BountyEco());
 		tableInspector.Regist(new NrTable_AgitInfo());
 		tableInspector.Regist(new NrTable_AgitNPC());
+		tableInspector.Regist(new NrTableGuildWarReward());
+		tableInspector.Regist(new NrTableLevelupGuide());
+		tableInspector.Regist(new NrTableMythRaid_Clear_Reward());
+		tableInspector.Regist(new NrTableMythRaid_Rank_Reward());
+		tableInspector.Regist(new NrTableMythRaid_GuardianAngel());
+		tableInspector.Regist(new NrTable_AutoSell());
+		tableInspector.Regist(new NrTableMythEvolution());
 		return tableInspector;
 	}
 
@@ -286,13 +321,18 @@ public class StageInitialize : AStage
 		NrTable_BattleSkill_TrainingInclude nrTable_BattleSkill_TrainingInclude = new NrTable_BattleSkill_TrainingInclude();
 		NrTable_BattleSkill_Training nrTable_BattleSkill_Training = new NrTable_BattleSkill_Training();
 		NrTable_BattleSkill_Icon tbl = new NrTable_BattleSkill_Icon();
+		NrTable_MythSkill_Training tbl2 = new NrTable_MythSkill_Training();
 		tableInspector.Regist(nrTable_BattleSkill_Base);
 		tableInspector.RegistWait(nrTable_BattleSkill_Base, nrTable_BattleSkill_DetailInclude);
 		tableInspector.RegistWait(nrTable_BattleSkill_DetailInclude, nrTable_BattleSkill_Detail);
 		tableInspector.RegistWait(nrTable_BattleSkill_Detail, nrTable_BattleSkill_TrainingInclude);
 		tableInspector.RegistWait(nrTable_BattleSkill_TrainingInclude, nrTable_BattleSkill_Training);
 		tableInspector.RegistWait(nrTable_BattleSkill_Training, tbl);
+		tableInspector.Regist(tbl2);
 		tableInspector.Regist(new NrTable_ITEM_REFORGE());
+		tableInspector.Regist(new NrTable_ITEMSKILLREINFORCE());
+		tableInspector.Regist(new NrTable_ITEMEVOLUTION());
+		tableInspector.Regist(new NrTable_ExchangeEvolutionTable(CDefinePath.s_strExchangeEvolutionURL));
 		tableInspector.Regist(new NrTable_ITEM_SELL());
 		tableInspector.Regist(new NrTable_BATTLE_SREWARD());
 		tableInspector.Regist(new NrTable_BATTLE_BABEL_SREWARD());
@@ -326,6 +366,20 @@ public class StageInitialize : AStage
 		tableInspector.Regist(EXPEDITION_CONSTANT_MANAGER.GetInstance());
 		tableInspector.Regist(new TableData_GameWebCallURLInfo());
 		tableInspector.Regist(NewGuildConstant_Manager.GetInstance());
+		tableInspector.Regist(new NrTable_GAME_HELP());
+		tableInspector.Regist(new NrTable_Achivement_Google());
+		tableInspector.Regist(new NrTable_SetItem());
+		tableInspector.Regist(new NrTableSolCombinationSkill(CDefinePath.SOLCOMBINE_INFO_URL));
+		tableInspector.Regist(new NrTable_Item_Break());
+		tableInspector.Regist(new BASE_RATE_OPENURL_DATA());
+		tableInspector.Regist(new NrTable_VipSubInfo());
+		tableInspector.Regist(new NrTableCharCostume(CDefinePath.CHAR_COSTUME));
+		tableInspector.Regist(new NrTable_ItemMall_PoPupShop());
+		tableInspector.Regist(new NrTableTimeShop());
+		tableInspector.Regist(new NrTableTimeShopRefresh());
+		tableInspector.Regist(new NrTable_ITEM_MAKERANK());
+		tableInspector.Regist(new NrEmulator_Table());
+		tableInspector.Regist(new TableMovieUrl(CDefinePath.MOVIE_URL));
 		TsLog.LogWarning("_Download2ndTables!!!!!!!!!!!!!!!!!!!--------2222222222222222222222222222222222222", new object[0]);
 		return tableInspector;
 	}

@@ -8,6 +8,6 @@ namespace PROTOCOL.GAME
 
 		public int RecruitType;
 
-		public int SolSeason;
+		public int SubData;
 	}
 }

@@ -199,7 +199,7 @@ public class TsBundleService : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator _DownloadPerList(List<WWWItem> wiList, bool unloadAfterPostProcess, PostProcPerList cbDownloadPostProcPerList, object cbTargetGroupGO)
 	{
-		TsBundleService.<_DownloadPerList>c__Iterator20 <_DownloadPerList>c__Iterator = new TsBundleService.<_DownloadPerList>c__Iterator20();
+		TsBundleService.<_DownloadPerList>c__Iterator21 <_DownloadPerList>c__Iterator = new TsBundleService.<_DownloadPerList>c__Iterator21();
 		<_DownloadPerList>c__Iterator.wiList = wiList;
 		<_DownloadPerList>c__Iterator.cbDownloadPostProcPerList = cbDownloadPostProcPerList;
 		<_DownloadPerList>c__Iterator.cbTargetGroupGO = cbTargetGroupGO;
@@ -215,7 +215,7 @@ public class TsBundleService : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator _DownloadPerItem(WWWItem wItem, int prioIdx)
 	{
-		TsBundleService.<_DownloadPerItem>c__Iterator21 <_DownloadPerItem>c__Iterator = new TsBundleService.<_DownloadPerItem>c__Iterator21();
+		TsBundleService.<_DownloadPerItem>c__Iterator22 <_DownloadPerItem>c__Iterator = new TsBundleService.<_DownloadPerItem>c__Iterator22();
 		<_DownloadPerItem>c__Iterator.wItem = wItem;
 		<_DownloadPerItem>c__Iterator.prioIdx = prioIdx;
 		<_DownloadPerItem>c__Iterator.<$>wItem = wItem;
@@ -334,7 +334,7 @@ public class TsBundleService : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator PatchListLoadAsync()
 	{
-		return new TsBundleService.<PatchListLoadAsync>c__Iterator22();
+		return new TsBundleService.<PatchListLoadAsync>c__Iterator23();
 	}
 
 	private void Update()

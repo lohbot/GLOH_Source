@@ -31,17 +31,20 @@ public class EventTriggerStageLoader
 	[DebuggerHidden]
 	public static IEnumerator LoadEventTrigger()
 	{
-		return new EventTriggerStageLoader.<LoadEventTrigger>c__Iterator4();
+		return new EventTriggerStageLoader.<LoadEventTrigger>c__Iterator6();
 	}
 
 	public static void SetLoadingInfo(string path, EventTriggerStageLoader.LoadComplete LoadCompleteFunc)
 	{
 		string text = string.Empty;
-		if (!NrTSingleton<NrGlobalReference>.Instance.useCache)
+		if (!NrTSingleton<NrGlobalReference>.Instance.isLoadWWW)
+		{
+			text = string.Format("{0}{1}.xml", CDefinePath.XMLPath(), path);
+		}
+		else if (!NrTSingleton<NrGlobalReference>.Instance.useCache)
 		{
 			text = string.Format("{0}{1}.xml", CDefinePath.XMLPath(), path);
 			EventTriggerStageLoader._ItemType = ItemType.USER_STRING;
-			path = text;
 		}
 		else
 		{
@@ -54,8 +57,8 @@ public class EventTriggerStageLoader
 				text = string.Format("{0}{1}{2}", CDefinePath.XMLBundlePath(), path, Option.extAsset);
 			}
 			EventTriggerStageLoader._ItemType = ItemType.USER_ASSETB;
-			path = text;
 		}
+		path = text;
 		EventTriggerStageLoader._Path = path;
 		EventTriggerStageLoader._LoadComplete = LoadCompleteFunc;
 		EventTriggerStageLoader.HasLoadItem = true;

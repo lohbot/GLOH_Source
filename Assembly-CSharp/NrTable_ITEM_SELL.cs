@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ITEM_SELL : NrTableBase
 {
-	public NrTable_ITEM_SELL() : base(CDefinePath.s_strItemSellURL, true)
+	public NrTable_ITEM_SELL() : base(CDefinePath.s_strItemSellURL)
 	{
 	}
 

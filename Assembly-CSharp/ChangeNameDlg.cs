@@ -65,7 +65,7 @@ public class ChangeNameDlg : Form
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 		if (msgBoxUI != null)
 		{
-			msgBoxUI.SetMsg(new YesDelegate(this._onOK), this, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("168"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("200"), eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this._onOK), this, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("168"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("200"), eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 

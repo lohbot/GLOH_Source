@@ -9,7 +9,7 @@ public class charSpend : NrTableData
 
 	public long iCharWillChargeGold;
 
-	public short iResurrection_spend;
+	public long iResurrection_spend;
 
 	public long lFriendSopprtGold;
 

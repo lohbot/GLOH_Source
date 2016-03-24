@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableIndunInfo : NrTableBase
 {
-	public NkTableIndunInfo() : base(CDefinePath.INDUN_INFO_URL, true)
+	public NkTableIndunInfo() : base(CDefinePath.INDUN_INFO_URL)
 	{
 	}
 

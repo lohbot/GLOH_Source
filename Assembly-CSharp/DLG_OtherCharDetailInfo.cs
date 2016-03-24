@@ -54,7 +54,7 @@ public class DLG_OtherCharDetailInfo : Form
 
 	private DrawTexture[] SolSelect = new DrawTexture[2];
 
-	private DrawTexture[][] m_dtSlot = new DrawTexture[2][];
+	private ItemTexture[][] m_dtSlot = new ItemTexture[2][];
 
 	private Button[][] m_btSlot = new Button[2][];
 
@@ -64,13 +64,15 @@ public class DLG_OtherCharDetailInfo : Form
 
 	private Button m_btAddFriend;
 
+	private Button m_btClose;
+
 	private NewListBox m_lbFriend_DetailInfo;
 
 	private DrawTexture m_dtFriendFaceBookImg;
 
 	private Label m_laFriendFaceBookID;
 
-	private ListBox m_lxList;
+	private NewListBox m_lxList;
 
 	private Button m_btPagePre;
 
@@ -79,6 +81,8 @@ public class DLG_OtherCharDetailInfo : Form
 	private Button m_btPageNext;
 
 	private DrawTexture[] m_DrawTexture_Slot = new DrawTexture[6];
+
+	private DrawTexture[] m_DrawTexture_Slot2 = new DrawTexture[6];
 
 	private int Info_mode;
 
@@ -119,12 +123,12 @@ public class DLG_OtherCharDetailInfo : Form
 		string name = string.Empty;
 		for (int i = 0; i < 2; i++)
 		{
-			this.m_dtSlot[i] = new DrawTexture[6];
+			this.m_dtSlot[i] = new ItemTexture[6];
 			this.m_btSlot[i] = new Button[6];
 			for (int j = 0; j < 6; j++)
 			{
-				name = string.Format("DrawTexture_SolIcn{0}{1}", i, j + 1);
-				this.m_dtSlot[i][j] = (base.GetControl(name) as DrawTexture);
+				name = string.Format("ItemTexture_SolIcn{0}{1}", i, j + 1);
+				this.m_dtSlot[i][j] = (base.GetControl(name) as ItemTexture);
 				name = string.Format("Button_SolBtn{0}{1}", i, j + 1);
 				this.m_btSlot[i][j] = (base.GetControl(name) as Button);
 				this.m_btSlot[i][j].TabIndex = j;
@@ -137,38 +141,33 @@ public class DLG_OtherCharDetailInfo : Form
 		this.m_btAddFriend = (base.GetControl("Button_AddFriend") as Button);
 		Button expr_242 = this.m_btAddFriend;
 		expr_242.Click = (EZValueChangedDelegate)Delegate.Combine(expr_242.Click, new EZValueChangedDelegate(this.OnAddFriend));
-		this.m_lxList = (base.GetControl("ListBox_ListBox") as ListBox);
+		this.m_lxList = (base.GetControl("NLB_connection") as NewListBox);
 		if (null != this.m_lxList)
 		{
-			this.m_lxList.RightMouseSelect = true;
-			this.m_lxList.AddRightMouseDelegate(new EZValueChangedDelegate(this.BtnClickListBox));
-			this.m_lxList.UseColumnRect = true;
-			this.m_lxList.ColumnNum = 4;
-			this.m_lxList.LineHeight = 50f;
-			this.m_lxList.SetColumnRect(0, 5, 5, 30, 30);
-			this.m_lxList.SetColumnRect(1, 37, 5, 280, 30, SpriteText.Anchor_Pos.Middle_Left, 22f, false);
-			this.m_lxList.SetColumnRect(2, 322, 5, 130, 30, SpriteText.Anchor_Pos.Middle_Center, 22f, false);
-			this.m_lxList.SetColumnRect(3, 454, 5, 154, 30, SpriteText.Anchor_Pos.Middle_Center, 22f, false);
-			this.m_lxList.SelectStyle = "Win_B_ListBtn02";
+			this.m_lxList.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtnClickListBox));
 		}
 		this.m_bxCurrentPage = (base.GetControl("Box_Page") as Box);
 		this.m_btPagePre = (base.GetControl("Button_Pagepre") as Button);
-		Button expr_386 = this.m_btPagePre;
-		expr_386.Click = (EZValueChangedDelegate)Delegate.Combine(expr_386.Click, new EZValueChangedDelegate(this.OnPrePage));
+		Button expr_2D3 = this.m_btPagePre;
+		expr_2D3.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2D3.Click, new EZValueChangedDelegate(this.OnPrePage));
 		this.m_btPageNext = (base.GetControl("Button_Pagenext") as Button);
-		Button expr_3C3 = this.m_btPageNext;
-		expr_3C3.Click = (EZValueChangedDelegate)Delegate.Combine(expr_3C3.Click, new EZValueChangedDelegate(this.OnNextPage));
+		Button expr_310 = this.m_btPageNext;
+		expr_310.Click = (EZValueChangedDelegate)Delegate.Combine(expr_310.Click, new EZValueChangedDelegate(this.OnNextPage));
 		for (int k = 0; k < 6; k++)
 		{
 			this.m_DrawTexture_Slot[k] = (base.GetControl(string.Format("DrawTexture_Slot{0}", 11 + k)) as DrawTexture);
+			this.m_DrawTexture_Slot2[k] = (base.GetControl(string.Format("DrawTexture_Slot{0:00}", 1 + k)) as DrawTexture);
 		}
 		this.m_lbFriend_DetailInfo = (base.GetControl("NLB_Info") as NewListBox);
 		this.m_dtFriendFaceBookImg = (base.GetControl("DrawTexture_fb02") as DrawTexture);
 		this.m_dtFriendFaceBookImg.Hide(true);
 		this.m_laFriendFaceBookID = (base.GetControl("LB_fbname02") as Label);
 		this.m_laFriendFaceBookID.SetText(string.Empty);
+		this.m_btClose = (base.GetControl("Button_Close") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.m_Page = new NrPage(this.m_btPagePre, this.m_btPageNext, new REFRESH_VOIDFUC(this.OnPageList));
 		base.SetScreenCenter();
+		base.ShowBlackBG(0.5f);
 		this.OnClickToolBar(this.m_TB.Control_Tab[0]);
 	}
 
@@ -241,7 +240,7 @@ public class DLG_OtherCharDetailInfo : Form
 	{
 		IUIListObject selectItem = this.m_lxList.GetSelectItem();
 		COMMUNITY_USER_INFO cOMMUNITY_USER_INFO = (COMMUNITY_USER_INFO)selectItem.Data;
-		int num = this.m_lxList.SelectIndex;
+		int num = this.m_lxList.SelectedItem.GetIndex();
 		num = Mathf.Clamp(num, 0, this.m_CommunityUserList.Count);
 		cOMMUNITY_USER_INFO = this.m_CommunityUserList[num];
 		bool flag = false;
@@ -249,7 +248,7 @@ public class DLG_OtherCharDetailInfo : Form
 		{
 			if (cOMMUNITY_USER_INFO.byLocation <= 0 || !cOMMUNITY_USER_INFO.bConnect)
 			{
-				flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.OTHER_FRIEND_LOGOFF, CRightClickMenu.TYPE.SIMPLE_SECTION_1);
+				flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.OTHER_FRIEND_LOGOFF, CRightClickMenu.TYPE.SIMPLE_SECTION_1, false);
 			}
 			else if (Client.m_MyWS != (long)cOMMUNITY_USER_INFO.i32WorldID || Client.m_MyCH != cOMMUNITY_USER_INFO.byLocation)
 			{
@@ -263,11 +262,11 @@ public class DLG_OtherCharDetailInfo : Form
 					"!=",
 					cOMMUNITY_USER_INFO.byLocation
 				}));
-				flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.OTHER_FRIEND_DIFF_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3);
+				flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.OTHER_FRIEND_DIFF_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3, false);
 			}
 			else
 			{
-				flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.OTHER_FRIEND_SAME_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3);
+				flag = NrTSingleton<CRightClickMenu>.Instance.CreateUI(cOMMUNITY_USER_INFO.i64PersonID, 0, cOMMUNITY_USER_INFO.strName, CRightClickMenu.KIND.OTHER_FRIEND_SAME_SV_CLICK, CRightClickMenu.TYPE.SIMPLE_SECTION_3, false);
 			}
 		}
 		else
@@ -346,6 +345,14 @@ public class DLG_OtherCharDetailInfo : Form
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		if (0L < PersonID)
 		{
+			if (this.m_CommunityUserList != null)
+			{
+				this.m_CommunityUserList.Clear();
+			}
+			if (this.m_SolList != null)
+			{
+				this.m_SolList.Init();
+			}
 			this.m_PersonID = PersonID;
 			this.m_PersonCharName = szCharName;
 			long num = 0L;
@@ -358,6 +365,7 @@ public class DLG_OtherCharDetailInfo : Form
 			}
 			else
 			{
+				this.Info_mode = 0;
 				base.ShowLayer(3);
 			}
 			if (szIntroMsg == string.Empty)
@@ -416,17 +424,31 @@ public class DLG_OtherCharDetailInfo : Form
 	{
 		if (_EventHero != null)
 		{
-			this.m_DrawTexture_Slot[iSolIndex].SetTexture("Win_I_EventSol");
-			this.m_dtSlot[this.Info_mode][iSolIndex].SetTextureEvent(eCharImageType.SMALL, pkSolInfo.GetCharKind(), (int)pkSolInfo.GetGrade());
+			if (this.Info_mode == 1)
+			{
+				this.m_DrawTexture_Slot[iSolIndex].SetTexture("Win_I_EventSol");
+			}
+			if (this.Info_mode == 0)
+			{
+				this.m_DrawTexture_Slot2[iSolIndex].SetTexture("Win_I_EventSol");
+			}
+			this.m_dtSlot[this.Info_mode][iSolIndex].SetSolImageTexure(eCharImageType.SMALL, this.GetListSolInfo(pkSolInfo));
 		}
 		else
 		{
 			UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(pkSolInfo.GetCharKind(), (int)pkSolInfo.GetGrade());
 			if (legendFrame != null)
 			{
-				this.m_DrawTexture_Slot[iSolIndex].SetTexture(legendFrame);
+				if (this.Info_mode == 1)
+				{
+					this.m_DrawTexture_Slot[iSolIndex].SetTexture(legendFrame);
+				}
+				if (this.Info_mode == 0)
+				{
+					this.m_DrawTexture_Slot2[iSolIndex].SetTexture(legendFrame);
+				}
 			}
-			this.m_dtSlot[this.Info_mode][iSolIndex].SetTextureEffect(eCharImageType.SMALL, pkSolInfo.GetCharKind(), (int)pkSolInfo.GetGrade());
+			this.m_dtSlot[this.Info_mode][iSolIndex].SetSolImageTexure(eCharImageType.SMALL, this.GetListSolInfo(pkSolInfo));
 		}
 	}
 
@@ -446,7 +468,7 @@ public class DLG_OtherCharDetailInfo : Form
 						if (communityUI_DLG != null)
 						{
 							COMMUNITY_USER_INFO community_User = communityUI_DLG.GetCommunity_User(this.m_PersonID);
-							if (community_User.UserPortrait != null)
+							if (community_User != null && community_User.UserPortrait != null)
 							{
 								this.m_dtSlot[this.Info_mode][i].SetTexture(community_User.UserPortrait);
 							}
@@ -475,8 +497,8 @@ public class DLG_OtherCharDetailInfo : Form
 						charNameBySoldierInfo
 					});
 					this.m_btSlot[this.Info_mode][i].ToolTip = empty;
-					Button expr_14D = this.m_btSlot[this.Info_mode][i];
-					expr_14D.Click = (EZValueChangedDelegate)Delegate.Combine(expr_14D.Click, new EZValueChangedDelegate(this.OnClickSol));
+					Button expr_153 = this.m_btSlot[this.Info_mode][i];
+					expr_153.Click = (EZValueChangedDelegate)Delegate.Combine(expr_153.Click, new EZValueChangedDelegate(this.OnClickSol));
 					this.SOLDIER_EQUIPINFO_REQ(this.m_PersonID, soldierInfo.GetSolID());
 				}
 				else
@@ -486,7 +508,7 @@ public class DLG_OtherCharDetailInfo : Form
 				}
 			}
 			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-			if (kMyCharInfo.m_PersonID == this.m_PersonID || !kMyCharInfo.m_kFriendInfo.IsFriend(kMyCharInfo.m_PersonID))
+			if (kMyCharInfo.m_PersonID == this.m_PersonID || kMyCharInfo.m_kFriendInfo.IsFriend(kMyCharInfo.m_PersonID))
 			{
 				this.m_btAddFriend.Visible = false;
 			}
@@ -542,14 +564,14 @@ public class DLG_OtherCharDetailInfo : Form
 		for (int i = num; i < num2; i++)
 		{
 			COMMUNITY_USER_INFO cOMMUNITY_USER_INFO = this.m_CommunityUserList[i];
-			ListItem listItem = new ListItem();
+			NewListItem newListItem = new NewListItem(this.m_lxList.ColumnNum, true, string.Empty);
 			CommunityUI_DLG.CurrentLocationName(cOMMUNITY_USER_INFO, ref empty, ref empty2);
-			listItem.SetColumnGUIContent(0, string.Empty, this.GetLoaderImg(CommunityUI_DLG.CommunityIcon(cOMMUNITY_USER_INFO)));
-			listItem.SetColumnStr(1, cOMMUNITY_USER_INFO.strName, NrTSingleton<CTextParser>.Instance.GetTextColor("1002"));
-			listItem.SetColumnStr(2, cOMMUNITY_USER_INFO.i16Level.ToString(), NrTSingleton<CTextParser>.Instance.GetTextColor("1002"));
-			listItem.SetColumnStr(3, empty, NrTSingleton<CTextParser>.Instance.GetTextColor(empty2));
-			listItem.Key = cOMMUNITY_USER_INFO;
-			this.m_lxList.Add(listItem);
+			newListItem.SetListItemData(0, this.GetLoaderImg(CommunityUI_DLG.CommunityIcon(cOMMUNITY_USER_INFO)), null, null, null);
+			newListItem.SetListItemData(1, cOMMUNITY_USER_INFO.strName, null, null, null);
+			newListItem.SetListItemData(2, cOMMUNITY_USER_INFO.i16Level.ToString(), null, null, null);
+			newListItem.SetListItemData(3, NrTSingleton<CTextParser>.Instance.GetTextColor(empty2) + empty, null, null, null);
+			newListItem.Data = cOMMUNITY_USER_INFO;
+			this.m_lxList.Add(newListItem);
 		}
 		this.m_lxList.RepositionItems();
 		this.m_bxCurrentPage.Text = string.Format("{0}/{1}", this.m_Page.CURRENT_PAGE, this.m_Page.MAX_PAGE);
@@ -569,20 +591,36 @@ public class DLG_OtherCharDetailInfo : Form
 		USER_FRIEND_INFO friend = kMyCharInfo.m_kFriendInfo.GetFriend(this.m_PersonID);
 		this.Friend_Detail_Value[0] = ACK.FriendHelpCount;
 		this.Friend_Detail_Value[1] = (int)ACK.ColosseumGrade;
-		this.Friend_Detail_Value[2] = ACK.PlunderRank;
+		this.Friend_Detail_Value[2] = ACK.i32InfiRank;
 		this.Friend_Detail_Value[3] = (int)ACK.i16BabelClearFloor;
 		this.m_lbFriend_DetailInfo.Clear();
 		string text = string.Empty;
 		string text2 = string.Empty;
 		for (int i = 0; i < 4; i++)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbFriend_DetailInfo.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbFriend_DetailInfo.ColumnNum, true, string.Empty);
 			text2 = this.GetFriendDetailTitleText(i);
 			newListItem.SetListItemData(0, text2, null, null, null);
 			text = this.GetFriendDetailinfoText(i);
 			if (i == 1)
 			{
 				text2 = NrTSingleton<NrTable_ColosseumRankReward_Manager>.Instance.GetGradeTextKey((short)this.Friend_Detail_Value[i]);
+			}
+			else if (i == 2)
+			{
+				if ((short)this.Friend_Detail_Value[i] == 0)
+				{
+					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2225");
+				}
+				else
+				{
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+					{
+						text,
+						"count",
+						this.Friend_Detail_Value[i]
+					});
+				}
 			}
 			else
 			{
@@ -616,7 +654,7 @@ public class DLG_OtherCharDetailInfo : Form
 			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2521");
 			break;
 		case 2:
-			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2170");
+			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2217");
 			break;
 		case 3:
 			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2169");
@@ -641,6 +679,23 @@ public class DLG_OtherCharDetailInfo : Form
 			break;
 		}
 		return result;
+	}
+
+	private NkListSolInfo GetListSolInfo(NkSoldierInfo solInfo)
+	{
+		if (solInfo == null)
+		{
+			return null;
+		}
+		return new NkListSolInfo
+		{
+			ShowCombat = false,
+			ShowLevel = false,
+			ShowGrade = true,
+			SolGrade = (int)solInfo.GetGrade(),
+			SolCharKind = solInfo.GetCharKind(),
+			SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(solInfo)
+		};
 	}
 
 	private void FRIEND_DETAILINFO_REQ(long personid)

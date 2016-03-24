@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_Item_Second_Equip : NrTableBase
 {
-	public NrTable_Item_Second_Equip() : base(CDefinePath.s_strItemSecondEquipURL, true)
+	public NrTable_Item_Second_Equip() : base(CDefinePath.s_strItemSecondEquipURL)
 	{
 	}
 

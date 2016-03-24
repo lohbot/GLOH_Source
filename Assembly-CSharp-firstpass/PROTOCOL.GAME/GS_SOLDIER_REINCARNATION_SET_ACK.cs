@@ -10,9 +10,9 @@ namespace PROTOCOL.GAME
 
 		public long i64SolID;
 
-		public int[] i32SkillUnique = new int[3];
+		public int[] i32SkillUnique = new int[6];
 
-		public short[] i16SkillLevel = new short[3];
+		public short[] i16SkillLevel = new short[6];
 
 		public long i64CurMoney;
 

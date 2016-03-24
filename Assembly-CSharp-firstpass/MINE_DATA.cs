@@ -39,11 +39,7 @@ public class MINE_DATA : NrTableData
 
 	public int nDivision_num;
 
-	public int nFaildefence_num;
-
 	public string Mine_UI_Icon = string.Empty;
-
-	public string Mine_MiniIcon = string.Empty;
 
 	public MINE_DATA()
 	{
@@ -70,9 +66,7 @@ public class MINE_DATA : NrTableData
 		this.nMine_min = 0;
 		this.nMine_max = 0;
 		this.nDivision_num = 0;
-		this.nFaildefence_num = 0;
 		this.Mine_UI_Icon = string.Empty;
-		this.Mine_MiniIcon = string.Empty;
 	}
 
 	public override void SetData(TsDataReader.Row row)
@@ -96,9 +90,7 @@ public class MINE_DATA : NrTableData
 		row.GetColumn(num++, out this.nMine_min);
 		row.GetColumn(num++, out this.nMine_max);
 		row.GetColumn(num++, out this.nDivision_num);
-		row.GetColumn(num++, out this.nFaildefence_num);
 		row.GetColumn(num++, out this.Mine_UI_Icon);
-		row.GetColumn(num++, out this.Mine_MiniIcon);
 	}
 
 	public byte GetGrade()

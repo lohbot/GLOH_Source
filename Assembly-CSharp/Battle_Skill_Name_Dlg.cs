@@ -6,6 +6,8 @@ public class Battle_Skill_Name_Dlg : Form
 {
 	private Label m_lbSkillName;
 
+	private Label m_lbSkillDescription;
+
 	private float m_fStartTime;
 
 	private float m_fAniTime = 0.1f;
@@ -29,6 +31,7 @@ public class Battle_Skill_Name_Dlg : Form
 	public override void SetComponent()
 	{
 		this.m_lbSkillName = (base.GetControl("Label_skill") as Label);
+		this.m_lbSkillDescription = (base.GetControl("Label_SkillDescription") as Label);
 		Vector2 location = new Vector2(GUICamera.width / 2f - base.GetSize().x / 2f, 0f);
 		base.SetLocation(location);
 		this.Hide();
@@ -88,6 +91,44 @@ public class Battle_Skill_Name_Dlg : Form
 		{
 			string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey);
 			this.m_lbSkillName.SetText(textFromInterface);
+			string text = string.Empty;
+			string[] array = new string[6];
+			bool flag = false;
+			for (int i = 0; i < 6; i++)
+			{
+				if (battleSkillBase.m_nSkillDescSub[i] == string.Empty || battleSkillBase.m_nSkillDescSub[i] == "0")
+				{
+					array[i] = string.Empty;
+				}
+				else
+				{
+					array[i] = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_nSkillDescSub[i]);
+					flag = true;
+				}
+			}
+			if (flag)
+			{
+				for (int i = 0; i < 6; i++)
+				{
+					if (i > 0 && i < 6)
+					{
+						if (array[i - 1] != string.Empty && array[i] != string.Empty)
+						{
+							text += "     ";
+							text += array[i];
+						}
+						else
+						{
+							text += array[i];
+						}
+					}
+					else if (array[i] != string.Empty)
+					{
+						text += array[i];
+					}
+				}
+				this.m_lbSkillDescription.SetText(text);
+			}
 			this.m_fStartTime = Time.time;
 			this.Show();
 		}

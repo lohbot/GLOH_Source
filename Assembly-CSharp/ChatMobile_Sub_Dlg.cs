@@ -1,4 +1,5 @@
 using GAME;
+using GameMessage;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
@@ -55,6 +56,8 @@ public class ChatMobile_Sub_Dlg : Form
 	private ChatMobileDlg m_MainChat;
 
 	private int _nChangeChannel = 1;
+
+	private int m_nChatTap;
 
 	public bool HideControl
 	{
@@ -143,6 +146,27 @@ public class ChatMobile_Sub_Dlg : Form
 		base.ShowLayer(1);
 		this.m_MainChat = (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.CHAT_MAIN_DLG) as ChatMobileDlg);
 		base.SetScreenCenter();
+		this.ChatStart();
+		this.m_nChatTap = PlayerPrefs.GetInt(NrPrefsKey.CHAT_SUB_TAP, 0);
+		CHAT_TYPE changeTap = (CHAT_TYPE)this.m_nChatTap;
+		this.SetChangeTap(changeTap);
+	}
+
+	private void ChatStart()
+	{
+		for (int i = 0; i < this._Manager.GetChatMsgListCount(); i++)
+		{
+			MainChatMsg chatMsgData = this._Manager.GetChatMsgData(i);
+			if (string.Empty == chatMsgData.color)
+			{
+				chatMsgData.color = ChatManager.GetChatColorKey(chatMsgData.type);
+			}
+			this._clChat.PushText(chatMsgData.name, chatMsgData.msg, chatMsgData.color, chatMsgData.linkItem);
+			if (chatMsgData.type == CHAT_TYPE.GUILD)
+			{
+				this._clChatGuild.PushText(chatMsgData.name, chatMsgData.msg, chatMsgData.color, chatMsgData.linkItem);
+			}
+		}
 	}
 
 	private void OnInputText(IKeyFocusable obj)
@@ -159,7 +183,8 @@ public class ChatMobile_Sub_Dlg : Form
 		EmoticonDlg emoticonDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.EMOTICON_DLG) as EmoticonDlg;
 		if (emoticonDlg != null)
 		{
-			emoticonDlg.SetLocation(base.GetSizeX() - emoticonDlg.GetSizeX() - 1f, GUICamera.height - emoticonDlg.GetSizeY());
+			emoticonDlg.DonotDepthChange(base.GetLocation().z - 8f);
+			emoticonDlg.SetLocation(base.GetLocationX() + base.GetSizeX() - emoticonDlg.GetSizeX() - 1f, base.GetLocationY() + base.GetSizeY() - emoticonDlg.GetSizeY() - 65f);
 			emoticonDlg.SetCharType(CHAT_TYPE.NORMAL);
 		}
 	}
@@ -204,7 +229,11 @@ public class ChatMobile_Sub_Dlg : Form
 		string text = this.ConvertLinkText(this._tfInput.Text);
 		if (text.Contains("[#"))
 		{
-			text = text.Replace("[#", string.Empty);
+			text = text.Replace("[#", " ");
+		}
+		if (text.Contains("RGBA("))
+		{
+			text = text.Replace("RGBA(", " ");
 		}
 		if (!NrTSingleton<ChatManager>.Instance.ProcessClientCommand(text, ref this._clChat))
 		{
@@ -215,6 +244,18 @@ public class ChatMobile_Sub_Dlg : Form
 			}
 			NrTSingleton<ChatManager>.Instance.SendMessage(cHAT_TYPE, text, this.useItemLinkText, this.linkItem, 0, 0L, 0);
 			NrTSingleton<ChatManager>.Instance.MakeChatText(this, cHAT_TYPE, kMyCharInfo.ColosseumGrade, text, this.linkItem);
+		}
+		string text2 = string.Empty;
+		if ("true" == MsgHandler.HandleReturn<string>("ReservedWordManagerIsUse", new object[0]))
+		{
+			text2 = MsgHandler.HandleReturn<string>("ReservedWordManagerReplaceWord", new object[]
+			{
+				text
+			});
+		}
+		if (text2.Contains("*"))
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("797"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 		}
 		this._tfInput.ClearText();
 		this.useItemLinkText = false;
@@ -270,8 +311,13 @@ public class ChatMobile_Sub_Dlg : Form
 			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("190");
 			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			InputNumberDlg inputNumberDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_INPUTNUMBER) as InputNumberDlg;
-			inputNumberDlg.SetCallback(new Action<InputNumberDlg, object>(this.On_Input_ChangeChannel), null, new Action<InputNumberDlg, object>(this.On_Input_CancelChannel), null);
-			inputNumberDlg.SetMinMax(1L, 300L);
+			if (inputNumberDlg != null)
+			{
+				inputNumberDlg.DonotDepthChange(base.GetLocation().z - 16f);
+				inputNumberDlg.SetScreenCenter();
+				inputNumberDlg.SetCallback(new Action<InputNumberDlg, object>(this.On_Input_ChangeChannel), null, new Action<InputNumberDlg, object>(this.On_Input_CancelChannel), null);
+				inputNumberDlg.SetMinMax(1L, 300L);
+			}
 			this.ChangeChannelMode(true);
 		}
 	}
@@ -311,13 +357,23 @@ public class ChatMobile_Sub_Dlg : Form
 		{
 			return;
 		}
-		CHAT_TYPE cHAT_TYPE = (CHAT_TYPE)uIPanelTab.panel.index;
-		this.m_SelectTab = cHAT_TYPE;
+		CHAT_TYPE changeTap = (CHAT_TYPE)uIPanelTab.panel.index;
+		this.SetChangeTap(changeTap);
+	}
+
+	private void ChangeTab(CHAT_TYPE type)
+	{
+		this.m_SelectTab = type;
+		this.ChangeChannelMode(false);
+	}
+
+	private void SetChangeTap(CHAT_TYPE selectTab)
+	{
+		this.m_SelectTab = selectTab;
 		base.ShowLayer((int)(this.m_SelectTab + 1));
-		CHAT_TYPE cHAT_TYPE2 = cHAT_TYPE;
-		if (cHAT_TYPE2 != CHAT_TYPE.NORMAL)
+		if (selectTab != CHAT_TYPE.NORMAL)
 		{
-			if (cHAT_TYPE2 == CHAT_TYPE.GUILD)
+			if (selectTab == CHAT_TYPE.GUILD)
 			{
 				this._lChatType.Text = NrTSingleton<CTextParser>.Instance.GetTextColor(ChatManager.GetChatColorKey(CHAT_TYPE.GUILD)) + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2139");
 				this._btChangeType1.controlIsEnabled = false;
@@ -330,19 +386,14 @@ public class ChatMobile_Sub_Dlg : Form
 			this._lChatType.Text = NrTSingleton<CTextParser>.Instance.GetTextColor(ChatManager.GetChatColorKey(CHAT_TYPE.NORMAL)) + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2138");
 			this.SetChatType();
 		}
-		if (cHAT_TYPE != CHAT_TYPE.NORMAL && NrTSingleton<ChatManager>.Instance.GetUniqueFromMegType(cHAT_TYPE) <= 0)
+		PlayerPrefs.SetInt(NrPrefsKey.CHAT_SUB_TAP, (int)selectTab);
+		if (selectTab != CHAT_TYPE.NORMAL && NrTSingleton<ChatManager>.Instance.GetUniqueFromMegType(selectTab) <= 0)
 		{
 			this.chatTab.SetSelectTabIndex((int)this.m_SelectTab);
 			return;
 		}
-		this.ChangeTab(cHAT_TYPE);
+		this.ChangeTab(selectTab);
 		this.SetChannelText();
-	}
-
-	private void ChangeTab(CHAT_TYPE type)
-	{
-		this.m_SelectTab = type;
-		this.ChangeChannelMode(false);
 	}
 
 	private void OnClickOption(IUIObject obj)
@@ -517,8 +568,8 @@ public class ChatMobile_Sub_Dlg : Form
 
 	public override void CloseForm(IUIObject obj)
 	{
+		base.CloseForm(obj);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.EMOTICON_DLG);
-		this.Hide();
 	}
 
 	public override void Hide()

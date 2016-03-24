@@ -5,6 +5,7 @@ using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
 using TsBundle;
+using UnityEngine;
 using UnityForms;
 
 public class ExchangePointDlg : Form
@@ -115,6 +116,7 @@ public class ExchangePointDlg : Form
 		this.m_kEquipItem = (base.GetControl("CheckBox_Item") as Toggle);
 		this.m_kEquipItem.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickEquipItem));
 		this.m_kSelectItem = (base.GetControl("ImageView_equip") as ItemTexture);
+		this.m_kSelectItem.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSelectItem));
 		this.m_kSell = (base.GetControl("Button_confirm") as Button);
 		this.m_kSell.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSell));
 		this.m_kMinus = (base.GetControl("Button_CountDown") as Button);
@@ -352,16 +354,16 @@ public class ExchangePointDlg : Form
 		{
 			for (int i = 0; i < this.m_kList.Count; i++)
 			{
-				UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_kList.GetItem(i);
-				if (!(null == uIListItemContainer))
+				UIListItemContainer item = this.m_kList.GetItem(i);
+				if (!(null == item))
 				{
-					if (uIListItemContainer.IsSelected())
+					if (item.IsSelected())
 					{
-						uIListItemContainer.GetElement(5).Visible = true;
+						item.GetElement(5).Visible = true;
 					}
 					else
 					{
-						uIListItemContainer.GetElement(5).Visible = false;
+						item.GetElement(5).Visible = false;
 					}
 				}
 			}
@@ -458,7 +460,7 @@ public class ExchangePointDlg : Form
 				{
 					if (0 < pointTable.m_nGetPoint)
 					{
-						NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true);
+						NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true, string.Empty);
 						string name = NrTSingleton<ItemManager>.Instance.GetName(current);
 						newListItem.SetListItemData(1, current, null, null, null);
 						newListItem.SetListItemData(2, name, null, null, null);
@@ -571,7 +573,7 @@ public class ExchangePointDlg : Form
 						long num2 = (long)(itemSellData2.nItemSellMoney / NrTSingleton<PointManager>.Instance.GetItemBuyRate());
 						if (0L < num2)
 						{
-							NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true);
+							NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true, string.Empty);
 							newListItem.SetListItemData(1, list[k], null, null, null);
 							string name = NrTSingleton<ItemManager>.Instance.GetName(list[k]);
 							newListItem.SetListItemData(2, name, null, null, null);
@@ -640,6 +642,21 @@ public class ExchangePointDlg : Form
 		{
 			this.ShowEquipList();
 			this.m_kEquipPointName.Visible = false;
+		}
+	}
+
+	private void ClickSelectItem(IUIObject obj)
+	{
+		ItemTooltipDlg itemTooltipDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMTOOLTIP_DLG) as ItemTooltipDlg;
+		if (this.m_kSelectItem.Data is ITEM)
+		{
+			ITEM pkItem = (ITEM)this.m_kSelectItem.Data;
+			itemTooltipDlg.Set_Tooltip((G_ID)base.WindowID, pkItem, null, false);
+		}
+		else
+		{
+			Debug.LogError("Can't Find Obj type");
+			itemTooltipDlg.Close();
 		}
 	}
 }

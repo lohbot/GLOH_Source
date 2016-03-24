@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BattleSkill_Icon : NrTableBase
 {
-	public NrTable_BattleSkill_Icon() : base(CDefinePath.s_strBattleSkillIconURL, true)
+	public NrTable_BattleSkill_Icon() : base(CDefinePath.s_strBattleSkillIconURL)
 	{
 	}
 

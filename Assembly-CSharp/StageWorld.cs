@@ -18,11 +18,15 @@ public class StageWorld : AStage
 
 	public static bool s_bIsShowRegionName = true;
 
+	public static bool s_bIsFirstWorld = true;
+
 	private static eSOLDIER_BATCH_MODE m_eBatchMode = eSOLDIER_BATCH_MODE.MODE_MAX;
 
 	private static eMINE_MESSAGE m_eMineMsgType;
 
 	private static ePLUNDER_MESSAGE m_ePlunderMsgType;
+
+	private static eBATTLE_ROOMTYPE m_eBattleRoomType;
 
 	private static readonly string s_WorldAudioListener = "_WorldAudioListener";
 
@@ -39,8 +43,6 @@ public class StageWorld : AStage
 	public bool m_bAfterWorldLoadComplete;
 
 	public bool m_bEmulatorCheck;
-
-	private static bool bSendFirstProfile;
 
 	public static eSOLDIER_BATCH_MODE BATCH_MODE
 	{
@@ -78,6 +80,18 @@ public class StageWorld : AStage
 		}
 	}
 
+	public static eBATTLE_ROOMTYPE BATTLEROOM_TYPE
+	{
+		get
+		{
+			return StageWorld.m_eBattleRoomType;
+		}
+		set
+		{
+			StageWorld.m_eBattleRoomType = value;
+		}
+	}
+
 	public StageWorld()
 	{
 		this.m_kCharMapInfo = new NrCharMapInfo();
@@ -93,13 +107,18 @@ public class StageWorld : AStage
 		NrLoadPageScreen.DecideLoadingType(Scene.CurScene, this.SceneType());
 		NrLoadPageScreen.StepUpMain(1);
 		this._mapLoader.Reset();
+		StageWorld.m_eBattleRoomType = eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NONE;
 		if (Scene.CurScene != Scene.Type.BATTLE)
 		{
 			NrLoadPageScreen.ShowHideLoadingImg(true);
 		}
-		else if (Battle.BATTLE.Observer)
+		else
 		{
-			NrLoadPageScreen.ShowHideLoadingImg(true);
+			StageWorld.m_eBattleRoomType = Battle.BATTLE.BattleRoomtype;
+			if (Battle.BATTLE.Observer || StageWorld.m_eBattleRoomType == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+			{
+				NrLoadPageScreen.ShowHideLoadingImg(true);
+			}
 		}
 		if ((Scene.PreScene == Scene.Type.BATTLE || Scene.CurScene == Scene.Type.BATTLE || Scene.PreScene == Scene.Type.SOLDIER_BATCH || Scene.CurScene == Scene.Type.SOLDIER_BATCH) && (TsPlatform.IsLowSystemMemory || TsPlatform.IsEditor))
 		{
@@ -108,6 +127,7 @@ public class StageWorld : AStage
 			gS_WARP_REQ.nMode = 1;
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_WARP_REQ, gS_WARP_REQ);
 		}
+		NmMainFrameWork.DeleteImage();
 		base.ResetCoTasks();
 	}
 
@@ -164,11 +184,12 @@ public class StageWorld : AStage
 	[DebuggerHidden]
 	private IEnumerator TestGC()
 	{
-		return new StageWorld.<TestGC>c__Iterator58();
+		return new StageWorld.<TestGC>c__Iterator5B();
 	}
 
 	public override void OnExit()
 	{
+		StageWorld.s_bIsFirstWorld = false;
 		NrTSingleton<NkQuestManager>.Instance.ClearClientNpc();
 		NrTSingleton<NrAutoPath>.Instance.ClearRPPoint();
 		NrTSingleton<MapManager>.Instance.ClearExtraMapInfo();
@@ -258,31 +279,31 @@ public class StageWorld : AStage
 	[DebuggerHidden]
 	private IEnumerator ChangeTerritoryStage()
 	{
-		return new StageWorld.<ChangeTerritoryStage>c__Iterator59();
+		return new StageWorld.<ChangeTerritoryStage>c__Iterator5C();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _StageProcess()
 	{
-		StageWorld.<_StageProcess>c__Iterator5A <_StageProcess>c__Iterator5A = new StageWorld.<_StageProcess>c__Iterator5A();
-		<_StageProcess>c__Iterator5A.<>f__this = this;
-		return <_StageProcess>c__Iterator5A;
+		StageWorld.<_StageProcess>c__Iterator5D <_StageProcess>c__Iterator5D = new StageWorld.<_StageProcess>c__Iterator5D();
+		<_StageProcess>c__Iterator5D.<>f__this = this;
+		return <_StageProcess>c__Iterator5D;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _ProcessAfterWorldLoadComplete()
 	{
-		StageWorld.<_ProcessAfterWorldLoadComplete>c__Iterator5B <_ProcessAfterWorldLoadComplete>c__Iterator5B = new StageWorld.<_ProcessAfterWorldLoadComplete>c__Iterator5B();
-		<_ProcessAfterWorldLoadComplete>c__Iterator5B.<>f__this = this;
-		return <_ProcessAfterWorldLoadComplete>c__Iterator5B;
+		StageWorld.<_ProcessAfterWorldLoadComplete>c__Iterator5E <_ProcessAfterWorldLoadComplete>c__Iterator5E = new StageWorld.<_ProcessAfterWorldLoadComplete>c__Iterator5E();
+		<_ProcessAfterWorldLoadComplete>c__Iterator5E.<>f__this = this;
+		return <_ProcessAfterWorldLoadComplete>c__Iterator5E;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _ProcessBattleMapLoad()
 	{
-		StageWorld.<_ProcessBattleMapLoad>c__Iterator5C <_ProcessBattleMapLoad>c__Iterator5C = new StageWorld.<_ProcessBattleMapLoad>c__Iterator5C();
-		<_ProcessBattleMapLoad>c__Iterator5C.<>f__this = this;
-		return <_ProcessBattleMapLoad>c__Iterator5C;
+		StageWorld.<_ProcessBattleMapLoad>c__Iterator5F <_ProcessBattleMapLoad>c__Iterator5F = new StageWorld.<_ProcessBattleMapLoad>c__Iterator5F();
+		<_ProcessBattleMapLoad>c__Iterator5F.<>f__this = this;
+		return <_ProcessBattleMapLoad>c__Iterator5F;
 	}
 
 	private void Load_Completed()
@@ -599,30 +620,30 @@ public class StageWorld : AStage
 	[DebuggerHidden]
 	private IEnumerator EndWorldLoad()
 	{
-		StageWorld.<EndWorldLoad>c__Iterator5D <EndWorldLoad>c__Iterator5D = new StageWorld.<EndWorldLoad>c__Iterator5D();
-		<EndWorldLoad>c__Iterator5D.<>f__this = this;
-		return <EndWorldLoad>c__Iterator5D;
+		StageWorld.<EndWorldLoad>c__Iterator60 <EndWorldLoad>c__Iterator = new StageWorld.<EndWorldLoad>c__Iterator60();
+		<EndWorldLoad>c__Iterator.<>f__this = this;
+		return <EndWorldLoad>c__Iterator;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator OpenMobileNotice()
 	{
-		return new StageWorld.<OpenMobileNotice>c__Iterator5E();
+		return new StageWorld.<OpenMobileNotice>c__Iterator61();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator BlueStacksCheck()
 	{
-		StageWorld.<BlueStacksCheck>c__Iterator5F <BlueStacksCheck>c__Iterator5F = new StageWorld.<BlueStacksCheck>c__Iterator5F();
-		<BlueStacksCheck>c__Iterator5F.<>f__this = this;
-		return <BlueStacksCheck>c__Iterator5F;
+		StageWorld.<BlueStacksCheck>c__Iterator62 <BlueStacksCheck>c__Iterator = new StageWorld.<BlueStacksCheck>c__Iterator62();
+		<BlueStacksCheck>c__Iterator.<>f__this = this;
+		return <BlueStacksCheck>c__Iterator;
 	}
 
 	private void OnKickOutUser(object a_oObject)
 	{
 		if ((bool)a_oObject)
 		{
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 		}
 		this.m_bEmulatorCheck = true;
 	}

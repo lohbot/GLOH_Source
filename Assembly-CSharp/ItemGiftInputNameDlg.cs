@@ -16,10 +16,13 @@ public class ItemGiftInputNameDlg : Form
 
 	private ITEM_MALL_ITEM m_SelectItem;
 
+	private CharCostumeInfo_Data m_giftCostumeData;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
+		form.TopMost = true;
 		instance.LoadFileAll(ref form, "Item/dlg_gift_input_name", G_ID.ITEMGIFTINPUTNAME_DLG, true);
 	}
 
@@ -46,15 +49,30 @@ public class ItemGiftInputNameDlg : Form
 		if (msgBoxUI != null)
 		{
 			string empty = string.Empty;
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			if (this.m_giftCostumeData != null)
 			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("327"),
-				"Product",
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromItem(this.m_SelectItem.m_strTextKey),
-				"targetname",
-				text
-			});
-			msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKEvent), text, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), empty, eMsgType.MB_OK_CANCEL);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("327"),
+					"Product",
+					NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeName(this.m_giftCostumeData.m_costumeUnique),
+					"targetname",
+					text
+				});
+				msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKCostume), text, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), empty, eMsgType.MB_OK_CANCEL);
+			}
+			else
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("327"),
+					"Product",
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromItem(this.m_SelectItem.m_strTextKey),
+					"targetname",
+					text
+				});
+				msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKEvent), text, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), empty, eMsgType.MB_OK_CANCEL);
+			}
 		}
 	}
 
@@ -74,6 +92,16 @@ public class ItemGiftInputNameDlg : Form
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_ITEMMALL_CHECK_CAN_TRADE_REQ, gS_ITEMMALL_CHECK_CAN_TRADE_REQ);
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEMGIFTINPUTNAME_DLG);
 		}
+	}
+
+	public void MsgBoxOKCostume(object eventObject)
+	{
+		string text = (string)eventObject;
+		if (string.IsNullOrEmpty(text) || this.m_giftCostumeData == null)
+		{
+			return;
+		}
+		NrTSingleton<CostumeBuyManager>.Instance.BuyCostume(this.m_giftCostumeData, text);
 	}
 
 	private void ClickCancel(IUIObject obj)
@@ -111,5 +139,10 @@ public class ItemGiftInputNameDlg : Form
 	{
 		this.m_SelectItem = SelectItem;
 		this.m_eSellType = eSellType;
+	}
+
+	public void SetGiftCostumeData(CharCostumeInfo_Data costumeData)
+	{
+		this.m_giftCostumeData = costumeData;
 	}
 }

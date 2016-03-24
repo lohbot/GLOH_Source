@@ -1,4 +1,3 @@
-using GAME;
 using GameMessage.Private;
 using Ndoors.Framework.Stage;
 using System;
@@ -10,6 +9,10 @@ public class KeyboardShotCutCommandLayer : InputCommandLayer
 {
 	public KeyboardShotCutCommandLayer()
 	{
+		if (TsPlatform.IsMobile && !TsPlatform.IsEditor)
+		{
+			return;
+		}
 		base.AddKeyInputDelegate(new KeyInputDelegate(this.CloseForm));
 		base.AddKeyInputDelegate(new KeyInputDelegate(KeyboardShotCutCommandLayer.ShowSolMilityDlg));
 		base.AddKeyInputDelegate(new KeyInputDelegate(this.ShowPostDlg));
@@ -58,7 +61,7 @@ public class KeyboardShotCutCommandLayer : InputCommandLayer
 			SolMilitarySelectDlg solMilitarySelectDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYSELECT_DLG) as SolMilitarySelectDlg;
 			if (solMilitarySelectDlg != null)
 			{
-				solMilitarySelectDlg.CloseByParent(79);
+				solMilitarySelectDlg.CloseByParent(82);
 			}
 		}
 	}
@@ -195,12 +198,12 @@ public class KeyboardShotCutCommandLayer : InputCommandLayer
 
 	public void Other()
 	{
-		if (NkInputManager.GetKeyUp(KeyCode.F7))
+		if (NkInputManager.GetKeyUp(KeyCode.F9))
 		{
-			Agit_GoldenEggDramaDlg agit_GoldenEggDramaDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AGIT_GOLDENEGGDRAMA_DLG) as Agit_GoldenEggDramaDlg;
-			ITEM item = NkUserInventory.GetInstance().GetItem(50305);
-			agit_GoldenEggDramaDlg.SetItem(item);
-			agit_GoldenEggDramaDlg.ShowWhiteEgg();
+		}
+		if (NkInputManager.GetKeyUp(KeyCode.F10))
+		{
+			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWEXPLORATION_MAIN_DLG);
 		}
 		if (NkInputManager.GetKeyUp(KeyCode.Z) && NkInputManager.GetKey(KeyCode.LeftShift))
 		{

@@ -35,15 +35,17 @@ namespace UnityForms
 			}
 		}
 
-		private bool m_bEnable = true;
+		public string m_szColumnData = string.Empty;
 
-		private int m_nMaxCoulmnNum = 1;
+		public bool m_bEnable = true;
 
-		private NewListItem.NewListItemData[] m_itemDataList;
+		public int m_nMaxCoulmnNum = 1;
 
-		private object m_kData;
+		public NewListItem.NewListItemData[] m_itemDataList;
 
-		private bool _EventMark;
+		public object m_kData;
+
+		public bool _EventMark;
 
 		public object Data
 		{
@@ -69,8 +71,9 @@ namespace UnityForms
 			}
 		}
 
-		public NewListItem(int maxNum, bool enable = true)
+		public NewListItem(int maxNum, bool enable = true, string columnData = "")
 		{
+			this.m_szColumnData = columnData;
 			this.m_nMaxCoulmnNum = maxNum;
 			this.m_itemDataList = new NewListItem.NewListItemData[maxNum];
 			for (int i = 0; i < maxNum; i++)
@@ -79,6 +82,19 @@ namespace UnityForms
 			}
 			this.m_bEnable = enable;
 			this.m_kData = null;
+		}
+
+		public void Set(NewListItem item)
+		{
+			this.m_szColumnData = item.m_szColumnData;
+			this.m_bEnable = item.m_bEnable;
+			this.m_nMaxCoulmnNum = item.m_nMaxCoulmnNum;
+			for (int i = 0; i < this.m_nMaxCoulmnNum; i++)
+			{
+				this.m_itemDataList[i] = item.m_itemDataList[i];
+			}
+			this.m_kData = item.m_kData;
+			this._EventMark = item._EventMark;
 		}
 
 		public void SetEnable(bool flag)
@@ -188,6 +204,17 @@ namespace UnityForms
 			if (0 <= index && this.m_nMaxCoulmnNum > index)
 			{
 				this.m_itemDataList[index].realData = solInfo;
+				this.m_itemDataList[index].data = data;
+				this.m_itemDataList[index].eventDelegate = eventDelegate;
+				this.m_itemDataList[index].downDelegate = downDelegate;
+			}
+		}
+
+		public void SetListItemData(int index, CostumeDrawTextureInfo costumeInfo, object data = null, EZValueChangedDelegate eventDelegate = null, EZValueChangedDelegate downDelegate = null)
+		{
+			if (0 <= index && this.m_nMaxCoulmnNum > index)
+			{
+				this.m_itemDataList[index].realData = costumeInfo;
 				this.m_itemDataList[index].data = data;
 				this.m_itemDataList[index].eventDelegate = eventDelegate;
 				this.m_itemDataList[index].downDelegate = downDelegate;

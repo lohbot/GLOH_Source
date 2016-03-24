@@ -23,7 +23,7 @@ public class GameGuidePurchaseRestore : GameGuideInfo
 				NrTSingleton<GameGuideManager>.Instance.ExecuteGuide = true;
 			}
 		}
-		if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_TStore)
+		else if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_TStore)
 		{
 			if (BillingManager_TStore.Instance.IsRecoveryItem())
 			{
@@ -34,6 +34,20 @@ public class GameGuidePurchaseRestore : GameGuideInfo
 			if (component2 != null)
 			{
 				component2.SendRestoreItem();
+				NrTSingleton<GameGuideManager>.Instance.ExecuteGuide = true;
+			}
+		}
+		else if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_NStore)
+		{
+			if (BillingManager_NStore.Instance.IsRecoveryItem())
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("666"));
+				return;
+			}
+			BillingManager_NStore component3 = BillingManager_NStore.Instance.GetComponent<BillingManager_NStore>();
+			if (component3 != null)
+			{
+				component3.StartRecoveryItem();
 				NrTSingleton<GameGuideManager>.Instance.ExecuteGuide = true;
 			}
 		}
@@ -64,6 +78,14 @@ public class GameGuidePurchaseRestore : GameGuideInfo
 			if (component2 != null)
 			{
 				return component2.IsCheckRestoreItem();
+			}
+		}
+		if (BillingManager.eBillingType == BillingManager.eBillingManager_Type.BillingManager_NStore)
+		{
+			BillingManager_NStore component3 = BillingManager_NStore.Instance.GetComponent<BillingManager_NStore>();
+			if (component3 != null && component3.m_PurchaseList.Count > 0)
+			{
+				return true;
 			}
 		}
 		return false;

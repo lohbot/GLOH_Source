@@ -35,6 +35,8 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 
 	private int m_iReadyApplicantCount;
 
+	private bool m_bCanGetGoldenEggReward;
+
 	private NewGuildAgit m_NewGuildAgit = new NewGuildAgit();
 
 	private NewGuildManager()
@@ -62,9 +64,12 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_MEMBER_DLG);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_LIST_DLG);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_MAIN_DLG);
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_INVITE_MENU_DLG);
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_INVITE_INPUT_DLG);
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_ADMINMENU_DLG);
 	}
 
-	public void AddGuildInfo(GS_NEWGUILD_INFO_ACK ACK)
+	public void SetGuildInfo(GS_NEWGUILD_INFO_ACK ACK)
 	{
 		this.m_lCreateMoney = ACK.i64CreateMoney;
 		this.m_iLevelForCreate = ACK.i16LevelForCreate;
@@ -78,14 +83,7 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 		this.m_NewGuildAgit.AgitExp = ACK.i64AgitExp;
 		this.m_i32FundExchangeRate = ACK.i32FundExchangeRate;
 		this.m_i32FundDonation = ACK.i32FundDonation;
-		NrTSingleton<GuildWarManager>.Instance.GuildWarJoinCount = ACK.i16GuildWarJoinCount;
-		NrTSingleton<GuildWarManager>.Instance.GuildWarRound = ACK.i16GuildWarRound;
-		NrTSingleton<GuildWarManager>.Instance.GuildWarGuildID = ACK.i64GuildWarGuildID;
-		NrTSingleton<GuildWarManager>.Instance.GuildWarStartTime = ACK.i64GuildWarStartTime;
-		NrTSingleton<GuildWarManager>.Instance.GuildWarGuildName = TKString.NEWString(ACK.strGuildWarGuildName);
-		NrTSingleton<GuildWarManager>.Instance.GuildWarApplyLevel = ACK.i16GuildWarApplyLevel;
-		NrTSingleton<GuildWarManager>.Instance.GuildWarApplySolLevel = ACK.i16GuildWarApplySolLevel;
-		this.m_NewGuild.AddGuildInfo(ACK.GuildInfo);
+		this.m_NewGuild.SetGuildInfo(ACK.GuildInfo);
 	}
 
 	public long GetCreateMoney()
@@ -173,6 +171,26 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 		return this.m_NewGuildAgit.GetGoldenEggGetLastPerson();
 	}
 
+	public bool CanGetGoldenEggReward()
+	{
+		return this.m_bCanGetGoldenEggReward;
+	}
+
+	public void SetCanGoldenEggReward(bool bIsGetReward)
+	{
+		this.m_bCanGetGoldenEggReward = bIsGetReward;
+		BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+		if (bookmarkDlg != null)
+		{
+			bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+		}
+		GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+		if (guildCollect_DLG != null)
+		{
+			guildCollect_DLG.Update_Notice();
+		}
+	}
+
 	public void AddMemberInfo(NEWGUILDMEMBER_INFO NewGuildMemberInfo)
 	{
 		this.m_NewGuild.AddMemberInfo(NewGuildMemberInfo);
@@ -188,6 +206,11 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 			if (bookmarkDlg != null)
 			{
 				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+			}
+			GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+			if (guildCollect_DLG != null)
+			{
+				guildCollect_DLG.Update_Notice();
 			}
 		}
 	}
@@ -307,6 +330,21 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 		return this.m_NewGuild.GetApplicantInfoFromPersonID(lPersonID);
 	}
 
+	public bool IsGuildWar()
+	{
+		return this.m_NewGuild.IsGuildWar();
+	}
+
+	public void SetExitAgit(bool isExitAgit)
+	{
+		this.m_NewGuild.SetExitAgit(isExitAgit);
+	}
+
+	public bool IsExitAgit()
+	{
+		return this.m_NewGuild.IsExitAgit();
+	}
+
 	public void RemoveApplicant(long lPersonID)
 	{
 		this.m_NewGuild.RemoveApplicant(lPersonID);
@@ -317,6 +355,11 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 			if (bookmarkDlg != null)
 			{
 				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+			}
+			GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+			if (guildCollect_DLG != null)
+			{
+				guildCollect_DLG.Update_Notice();
 			}
 		}
 	}
@@ -404,9 +447,15 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 		if (NrTSingleton<ContentsLimitManager>.Instance.IsMineApply((short)NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetLevel()))
 		{
 			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-			if (bookmarkDlg != null && !bookmarkDlg.IsListAdd(BookmarkDlg.TYPE.MINE))
+			if (bookmarkDlg != null)
 			{
-				bookmarkDlg.SetBookmarkInfo();
+				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+			}
+			GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+			if (guildCollect_DLG != null)
+			{
+				guildCollect_DLG.Set_GuildButtons();
+				guildCollect_DLG.Update_Notice();
 			}
 		}
 	}
@@ -414,9 +463,15 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 	public void Leave()
 	{
 		BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-		if (bookmarkDlg != null && bookmarkDlg.IsListAdd(BookmarkDlg.TYPE.MINE))
+		if (bookmarkDlg != null)
 		{
-			bookmarkDlg.SetBookmarkInfo();
+			bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.NEWGUILD);
+		}
+		GuildCollect_DLG guildCollect_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDCOLLECT_DLG) as GuildCollect_DLG;
+		if (guildCollect_DLG != null)
+		{
+			guildCollect_DLG.Set_GuildButtons();
+			guildCollect_DLG.Update_Notice();
 		}
 	}
 
@@ -533,8 +588,18 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 			if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kCharMapInfo.m_nMapIndex != 12 && Scene.CurScene != Scene.Type.BATTLE)
 			{
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI.SetMsg(new YesDelegate(this.MsgOKMoveAgit), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("252"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("253"), eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.MsgOKMoveAgit), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("252"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("253"), eMsgType.MB_OK_CANCEL, 2);
 			}
+		}
+	}
+
+	public void GS_NEWGUILD_AGIT_GOLDENEGG_REWARD_NFY()
+	{
+		Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("868"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_kCharMapInfo.m_nMapIndex != 12 && Scene.CurScene != Scene.Type.BATTLE && Scene.CurScene != Scene.Type.PREPAREGAME)
+		{
+			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+			msgBoxUI.SetMsg(new YesDelegate(this.MsgOKMoveAgit), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("357"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("358"), eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 
@@ -585,6 +650,22 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 			return;
 		}
 		this.m_NewGuildAgit.ClearNPCInfo();
+		for (byte b = 1; b < 6; b += 1)
+		{
+			AgitNPCData agitNPCData = NrTSingleton<NrBaseTableManager>.Instance.GetAgitNPCData(b.ToString());
+			if (agitNPCData != null)
+			{
+				NrCharKindInfo charKindInfoFromCode = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfoFromCode(agitNPCData.strCharCode);
+				if (charKindInfoFromCode != null)
+				{
+					NrCharBase charByCharKind = NrTSingleton<NkCharManager>.Instance.GetCharByCharKind(charKindInfoFromCode.GetCharKind());
+					if (charByCharKind != null)
+					{
+						NrTSingleton<NkCharManager>.Instance.DeleteChar(charByCharKind.GetID());
+					}
+				}
+			}
+		}
 		for (int i = 0; i < this.m_NewGuildAgit.GetAgitNPCSubDataCount(); i++)
 		{
 			AGIT_NPC_SUB_DATA agitNPCSubData = this.m_NewGuildAgit.GetAgitNPCSubData(i);
@@ -618,6 +699,10 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 		}
 		NrCharKindInfo charKindInfoFromCode = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfoFromCode(agitNPCData.strCharCode);
 		if (charKindInfoFromCode == null)
+		{
+			return;
+		}
+		if (NrTSingleton<NkCharManager>.Instance.GetCharByCharKind(charKindInfoFromCode.GetCharKind()) != null)
 		{
 			return;
 		}
@@ -735,6 +820,15 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 
 	public void Set_Agit_Resut(int i32Result)
 	{
+		switch (i32Result)
+		{
+		case 9401:
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("754"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			break;
+		case 9404:
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("771"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			break;
+		}
 		if (i32Result == 2)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("508"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
@@ -748,6 +842,6 @@ public class NewGuildManager : NrTSingleton<NewGuildManager>
 
 	public bool CanDeclareWarSet()
 	{
-		return true;
+		return !NrTSingleton<ContentsLimitManager>.Instance.IsNewGuildWarLimit();
 	}
 }

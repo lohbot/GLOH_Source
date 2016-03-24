@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_Item_Armor : NrTableBase
 {
-	public NrTable_Item_Armor() : base(CDefinePath.s_strItemArmorURL, true)
+	public NrTable_Item_Armor() : base(CDefinePath.s_strItemArmorURL)
 	{
 	}
 

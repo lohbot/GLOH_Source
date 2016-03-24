@@ -8,8 +8,6 @@ namespace PROTOCOL.GAME
 
 		public int i32GoldenEggPoint;
 
-		public bool bCanGetReward;
-
 		public short i16Count;
 	}
 }

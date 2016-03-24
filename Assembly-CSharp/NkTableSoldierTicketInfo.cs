@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableSoldierTicketInfo : NrTableBase
 {
-	public NkTableSoldierTicketInfo() : base(CDefinePath.SOLDIER_TICKETINFO_URL, true)
+	public NkTableSoldierTicketInfo() : base(CDefinePath.SOLDIER_TICKETINFO_URL)
 	{
 	}
 

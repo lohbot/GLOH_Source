@@ -54,6 +54,10 @@ public class COMMUNITY_USER_INFO
 
 	public Texture2D UserPortrait;
 
+	public bool bGuildWar;
+
+	public int i32CostumeUnique;
+
 	public void Set(USER_FRIEND_INFO userFriendInfo)
 	{
 		this.strName = TKString.NEWString(userFriendInfo.szName);
@@ -68,12 +72,21 @@ public class COMMUNITY_USER_INFO
 		this.ui8HelpSolUse = userFriendInfo.ui8HelpUse;
 		this.i32FaceCharKind = userFriendInfo.i32FaceCharKind;
 		this.byUserPlayState = userFriendInfo.i8UserPlayState;
+		this.i32CostumeUnique = userFriendInfo.i32FaceCharCostumeUnique;
 		this.Friend_HelpSolInfo = userFriendInfo.FriendHelpSolInfo;
 		this.strFaceBookID = TKString.NEWString(userFriendInfo.szFaceBookID);
 		this.strPlatformName = TKString.NEWString(userFriendInfo.szPlatformName);
 		this.strPlatformName.Trim();
 		this.i64LogoutTime = userFriendInfo.i64LogoutTIme;
-		this.strGuildName = TKString.NEWString(userFriendInfo.szGuildName);
+		string[] array = TKString.NEWString(userFriendInfo.szGuildName).Split(new char[]
+		{
+			'_'
+		});
+		this.strGuildName = array[0];
+		if (array.Length > 1)
+		{
+			this.bGuildWar = true;
+		}
 		this.i16ColosseumGrade = userFriendInfo.i16ColosseumGrade;
 		this.ui8UserPortrait = userFriendInfo.ui8UserPortrait;
 		if (userFriendInfo.ui8UserPortrait == 1 && this.i64PersonID > 0L && this.i64PersonID > 11L)
@@ -96,9 +109,19 @@ public class COMMUNITY_USER_INFO
 		this.i32MapUnique = userFriendInfo.i32MapUnique;
 		this.i32FaceCharKind = userFriendInfo.i32FaceCharKind;
 		this.byUserPlayState = userFriendInfo.i8UserPlayState;
+		this.i32CostumeUnique = userFriendInfo.i32FaceCharCostumeUnique;
+		this.Friend_HelpSolInfo = userFriendInfo.FriendHelpSolInfo;
 		this.strPlatformName = TKString.NEWString(userFriendInfo.szPlatformName);
 		this.i64LogoutTime = userFriendInfo.i64LogoutTIme;
-		this.strGuildName = TKString.NEWString(userFriendInfo.szGuildName);
+		string[] array = TKString.NEWString(userFriendInfo.szGuildName).Split(new char[]
+		{
+			'_'
+		});
+		this.strGuildName = array[0];
+		if (array.Length > 1)
+		{
+			this.bGuildWar = true;
+		}
 		this.i16ColosseumGrade = userFriendInfo.i16ColosseumGrade;
 		this.ui8UserPortrait = userFriendInfo.ui8UserPortrait;
 		if (userFriendInfo.ui8UserPortrait == 1 && this.i64PersonID > 0L && this.i64PersonID > 11L)
@@ -117,6 +140,7 @@ public class COMMUNITY_USER_INFO
 		this.bConnect = (_guildmember.GetMapUnique() > 0);
 		this.i32MapUnique = _guildmember.GetMapUnique();
 		this.i32FaceCharKind = _guildmember.GetFaceCharKind();
+		this.i32CostumeUnique = _guildmember.GetCostumeUnique();
 	}
 
 	private void ReqWebUserImageCallback(Texture2D txtr, object _param)

@@ -53,8 +53,8 @@ namespace SimpleJSON
 		{
 			get
 			{
-				JSONNode.<>c__Iterator16 <>c__Iterator = new JSONNode.<>c__Iterator16();
-				JSONNode.<>c__Iterator16 expr_07 = <>c__Iterator;
+				JSONNode.<>c__Iterator17 <>c__Iterator = new JSONNode.<>c__Iterator17();
+				JSONNode.<>c__Iterator17 expr_07 = <>c__Iterator;
 				expr_07.$PC = -2;
 				return expr_07;
 			}
@@ -64,9 +64,9 @@ namespace SimpleJSON
 		{
 			get
 			{
-				JSONNode.<>c__Iterator17 <>c__Iterator = new JSONNode.<>c__Iterator17();
+				JSONNode.<>c__Iterator18 <>c__Iterator = new JSONNode.<>c__Iterator18();
 				<>c__Iterator.<>f__this = this;
-				JSONNode.<>c__Iterator17 expr_0E = <>c__Iterator;
+				JSONNode.<>c__Iterator18 expr_0E = <>c__Iterator;
 				expr_0E.$PC = -2;
 				return expr_0E;
 			}
@@ -493,11 +493,7 @@ namespace SimpleJSON
 
 		public void SaveToCompressedFile(string aFileName)
 		{
-			Directory.CreateDirectory(new FileInfo(aFileName).Directory.FullName);
-			using (FileStream fileStream = File.OpenWrite(aFileName))
-			{
-				this.SaveToCompressedStream(fileStream);
-			}
+			throw new Exception("Can't use File IO stuff in webplayer");
 		}
 
 		public string SaveToCompressedBase64()
@@ -514,11 +510,7 @@ namespace SimpleJSON
 
 		public void SaveToFile(string aFileName)
 		{
-			Directory.CreateDirectory(new FileInfo(aFileName).Directory.FullName);
-			using (FileStream fileStream = File.OpenWrite(aFileName))
-			{
-				this.SaveToStream(fileStream);
-			}
+			throw new Exception("Can't use File IO stuff in webplayer");
 		}
 
 		public string SaveToBase64()
@@ -583,12 +575,7 @@ namespace SimpleJSON
 
 		public static JSONNode LoadFromCompressedFile(string aFileName)
 		{
-			JSONNode result;
-			using (FileStream fileStream = File.OpenRead(aFileName))
-			{
-				result = JSONNode.LoadFromCompressedStream(fileStream);
-			}
-			return result;
+			throw new Exception("Can't use File IO stuff in webplayer");
 		}
 
 		public static JSONNode LoadFromCompressedBase64(string aBase64)
@@ -612,12 +599,7 @@ namespace SimpleJSON
 
 		public static JSONNode LoadFromFile(string aFileName)
 		{
-			JSONNode result;
-			using (FileStream fileStream = File.OpenRead(aFileName))
-			{
-				result = JSONNode.LoadFromStream(fileStream);
-			}
-			return result;
+			throw new Exception("Can't use File IO stuff in webplayer");
 		}
 
 		public static JSONNode LoadFromBase64(string aBase64)

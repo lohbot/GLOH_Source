@@ -1,25 +1,28 @@
+using NLibCs;
+using SERVICE;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace TsLibs
 {
 	public class TsDataReader : IDisposable, IEnumerable
 	{
-		public interface IBinding
+		public interface IBindee
 		{
 			bool ReadFrom(TsDataReader dr);
 		}
 
-		public interface IBindingRow
+		public interface IRowBindee
 		{
 			bool ReadFrom(TsDataReader.Row tsRow);
 		}
 
-		public class Row : IDisposable
+		public class Row
 		{
 			public enum TYPE
 			{
@@ -31,7 +34,13 @@ namespace TsLibs
 				LINE_DATA
 			}
 
+			public static TsDataReader.Row EMPTY = new TsDataReader.Row(null);
+
 			protected List<string> values = new List<string>();
+
+			protected TsDataReader _owner;
+
+			protected string[] arrValues;
 
 			public TsDataReader.Row.TYPE LineType
 			{
@@ -47,17 +56,340 @@ namespace TsLibs
 				}
 			}
 
+			public string[] ArrValues
+			{
+				get
+				{
+					return this.arrValues;
+				}
+			}
+
 			public int ColumnCount
 			{
 				get
 				{
+					if (this.arrValues != null && 0 < this.arrValues.Length)
+					{
+						return this.arrValues.Length;
+					}
 					return this.values.Count;
 				}
 			}
 
-			public string GetToken(int index)
+			public NDataStr this[int columnInndex]
 			{
-				return this.GetColumn(index);
+				get
+				{
+					NDataStr result;
+					this.GetColumn(columnInndex, out result.str, false);
+					return result;
+				}
+			}
+
+			public NDataStr this[string columnName]
+			{
+				get
+				{
+					int index = 0;
+					if (this._owner != null)
+					{
+						this._owner.ReadFieldNames();
+						index = this._owner.GetFieldIndex(columnName);
+					}
+					NDataStr result;
+					this.GetColumn(index, out result.str, false);
+					return result;
+				}
+			}
+
+			public Row()
+			{
+			}
+
+			internal Row(TsDataReader owner)
+			{
+				this._owner = owner;
+			}
+
+			public bool GetColumn(int index, out uint output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && uint.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && uint.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0u;
+				return false;
+			}
+
+			public bool GetColumn(int index, out long output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && long.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && long.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0L;
+				return false;
+			}
+
+			public bool GetColumn(int index, out ulong output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && ulong.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && ulong.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0uL;
+				return false;
+			}
+
+			public bool GetColumn(int index, out short output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && short.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && short.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0;
+				return false;
+			}
+
+			public bool GetColumn(int index, out ushort output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && ushort.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && ushort.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0;
+				return false;
+			}
+
+			public bool GetColumn(int index, out double output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && double.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && double.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0.0;
+				return false;
+			}
+
+			public bool GetColumn(int index, out float output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && float.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && float.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0f;
+				return false;
+			}
+
+			public bool GetColumn(int index, out byte output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && byte.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && byte.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0;
+				return false;
+			}
+
+			public bool GetColumn(int index, out sbyte output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && sbyte.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && sbyte.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0;
+				return false;
+			}
+
+			public bool GetColumn(int index, out int output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length && int.TryParse(this.arrValues[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+					if (this.values != null && index < this.values.Count && int.TryParse(this.values[index], out output))
+					{
+						bool result = true;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = 0;
+				return false;
+			}
+
+			public bool GetColumn(int index, out bool output)
+			{
+				try
+				{
+					if (this.arrValues != null && index < this.arrValues.Length)
+					{
+						bool result;
+						if (this.arrValues[index] == "0" || this.arrValues[index] == "false")
+						{
+							output = false;
+							result = true;
+							return result;
+						}
+						if (this.arrValues[index] == "1" || this.arrValues[index] == "true")
+						{
+							output = true;
+							result = true;
+							return result;
+						}
+						output = false;
+						result = false;
+						return result;
+					}
+					else if (this.values != null && index < this.values.Count)
+					{
+						bool result;
+						if (this.values[index] == "0" || this.values[index] == "false")
+						{
+							output = false;
+							result = true;
+							return result;
+						}
+						if (this.values[index] == "1" || this.values[index] == "true")
+						{
+							output = true;
+							result = true;
+							return result;
+						}
+						output = false;
+						result = false;
+						return result;
+					}
+				}
+				catch (Exception msg)
+				{
+					this._OutputDebug(msg);
+				}
+				output = false;
+				return false;
 			}
 
 			public bool GetColumn(int index, out string output)
@@ -70,6 +402,19 @@ namespace TsLibs
 				output = "(null)";
 				try
 				{
+					if (this.arrValues != null && index < this.arrValues.Length)
+					{
+						if (bAutoReplace)
+						{
+							output = this.arrValues[index].Replace("{\\r\\n}", "\r\n").Replace("{\\t}", "\\t");
+						}
+						else
+						{
+							output = this.arrValues[index];
+						}
+						bool result = true;
+						return result;
+					}
 					if (this.values != null && index < this.values.Count)
 					{
 						if (bAutoReplace)
@@ -80,12 +425,13 @@ namespace TsLibs
 						{
 							output = this.values[index];
 						}
-						return true;
+						bool result = true;
+						return result;
 					}
 				}
-				catch (Exception o)
+				catch (Exception msg)
 				{
-					this._OutputDebug(o);
+					this._OutputDebug(msg);
 				}
 				return false;
 			}
@@ -104,239 +450,50 @@ namespace TsLibs
 				return result;
 			}
 
-			public bool GetColumn(int index, out bool output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count)
-					{
-						int num = 0;
-						int.TryParse(this.values[index], out num);
-						output = (num >= 1);
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = false;
-				return false;
-			}
-
-			public bool GetColumn(int index, out int output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && int.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0;
-				return false;
-			}
-
-			public bool GetColumn(int index, out uint output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && uint.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0u;
-				return false;
-			}
-
-			public bool GetColumn(int index, out long output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && long.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0L;
-				return false;
-			}
-
-			public bool GetColumn(int index, out ulong output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && ulong.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0uL;
-				return false;
-			}
-
-			public bool GetColumn(int index, out short output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && short.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0;
-				return false;
-			}
-
-			public bool GetColumn(int index, out ushort output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && ushort.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0;
-				return false;
-			}
-
-			public bool GetColumn(int index, out double output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && double.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0.0;
-				return false;
-			}
-
-			public bool GetColumn(int index, out float output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && float.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0f;
-				return false;
-			}
-
-			public bool GetColumn(int index, out byte output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && byte.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0;
-				return false;
-			}
-
-			public bool GetColumn(int index, out sbyte output)
-			{
-				try
-				{
-					if (this.values != null && index < this.values.Count && sbyte.TryParse(this.values[index], out output))
-					{
-						return true;
-					}
-				}
-				catch (Exception o)
-				{
-					this._OutputDebug(o);
-				}
-				output = 0;
-				return false;
-			}
-
 			public bool GetColumn(ref object[] args)
 			{
 				bool result;
 				try
 				{
+					NDataStr dstr = default(NDataStr);
 					for (int i = 0; i < args.Length; i++)
 					{
-						string text = this.values[i];
+						dstr.str = this.values[i];
 						if (args[i] is string)
 						{
-							args[i] = text;
+							args[i] = dstr.str;
 						}
 						else if (args[i] is int)
 						{
-							args[i] = int.Parse(text);
+							args[i] = dstr;
 						}
 						else if (args[i] is double)
 						{
-							args[i] = double.Parse(text);
+							args[i] = dstr;
 						}
 						else if (args[i] is float)
 						{
-							args[i] = float.Parse(text);
+							args[i] = dstr;
 						}
 						else if (args[i] is uint)
 						{
-							args[i] = uint.Parse(text);
+							args[i] = dstr;
 						}
 						else if (args[i] is long)
 						{
-							args[i] = long.Parse(text);
+							args[i] = dstr;
 						}
 						else if (args[i] is ulong)
 						{
-							args[i] = ulong.Parse(text);
+							args[i] = dstr;
 						}
 						else if (args[i] is short)
 						{
-							args[i] = short.Parse(text);
+							args[i] = dstr;
 						}
 						else if (args[i] is ushort)
 						{
-							args[i] = ushort.Parse(text);
+							args[i] = dstr;
 						}
 						else
 						{
@@ -345,31 +502,27 @@ namespace TsLibs
 								result = false;
 								return result;
 							}
-							args[i] = bool.Parse(text);
+							args[i] = dstr;
 						}
 					}
 					result = true;
 				}
-				catch (Exception o)
+				catch (Exception msg)
 				{
-					this._OutputDebug(o);
+					this._OutputDebug(msg);
 					result = false;
 				}
 				return result;
-			}
-
-			public void Dispose()
-			{
-				this.Clear();
 			}
 
 			public void Clear()
 			{
 				this.LineType = TsDataReader.Row.TYPE.LINE_NONE;
 				this.values.Clear();
+				this.arrValues = null;
 			}
 
-			private void _OutputDebug(object o)
+			private void _OutputDebug(object msg)
 			{
 			}
 
@@ -397,6 +550,35 @@ namespace TsLibs
 				return string.Format("{0}: X", this.LineType);
 			}
 
+			public string ToDataString()
+			{
+				if (1 < this.Values.Count)
+				{
+					int num = 0;
+					foreach (string current in this.Values)
+					{
+						num += current.Length;
+					}
+					int num2 = 0;
+					StringBuilder stringBuilder = new StringBuilder(num + 100);
+					foreach (string current2 in this.Values)
+					{
+						stringBuilder.AppendFormat("{0}", current2);
+						if (num2 < this.Values.Count - 1)
+						{
+							stringBuilder.AppendFormat("\t", new object[0]);
+						}
+						num2++;
+					}
+					return stringBuilder.ToString();
+				}
+				if (this.Values.Count == 1)
+				{
+					return string.Format("{0}", this.values[0]);
+				}
+				return string.Empty;
+			}
+
 			public void __parse_from(string line)
 			{
 				this.__parse_from(line, 0, 0, '\t');
@@ -414,7 +596,7 @@ namespace TsLibs
 				while (i < num)
 				{
 					c = line[i];
-					if (c != ' ')
+					if (c != ' ' && c != '﻿')
 					{
 						break;
 					}
@@ -426,7 +608,7 @@ namespace TsLibs
 					this.Values.Add(string.Empty);
 					return;
 				}
-				if ((c == '/' && line[i + 1] == '/') || c == '#')
+				if ((c == '/' && line[i + 1] == '/') || c == '#' || c == ';')
 				{
 					this.LineType = TsDataReader.Row.TYPE.LINE_COMMENT;
 				}
@@ -442,6 +624,7 @@ namespace TsLibs
 				{
 					this.LineType = TsDataReader.Row.TYPE.LINE_DATA;
 				}
+				bool flag = c == '\t';
 				int num2 = 0;
 				int num3 = i;
 				for (int j = i; j < num; j++)
@@ -449,6 +632,10 @@ namespace TsLibs
 					num2++;
 					if (seperator == line[j])
 					{
+						if (flag)
+						{
+							flag = (num2 - 1 == 0);
+						}
 						this.Values.Add(line.Substring(num3, num2 - 1));
 						num3 = j + 1;
 						num2 = 0;
@@ -460,16 +647,71 @@ namespace TsLibs
 				}
 				else
 				{
-					this.Values.Add(line.Substring(num3, num2));
+					string text = line.Substring(num3, num2);
+					this.Values.Add(text);
+					if (flag)
+					{
+						flag = string.IsNullOrEmpty(text);
+					}
 				}
-				if (this.LineType == TsDataReader.Row.TYPE.LINE_SECTION || this.LineType == TsDataReader.Row.TYPE.LINE_SUBSECTION)
+				if (flag)
 				{
-					this.Values[0] = this.Values[0].ToLower();
+					this.LineType = TsDataReader.Row.TYPE.LINE_BLANK;
 				}
+			}
+
+			public void __parse_from_immediate(string line, int nStartLine, int nLineLength, char seperator)
+			{
+				if (nLineLength == 0 && nStartLine == 0)
+				{
+					nLineLength = line.Length;
+				}
+				int i = nStartLine;
+				char c = '\0';
+				int num = nStartLine + nLineLength;
+				while (i < num)
+				{
+					c = line[i];
+					if (c != ' ' && c != '﻿')
+					{
+						break;
+					}
+					i++;
+				}
+				if (c == '\0')
+				{
+					this.LineType = TsDataReader.Row.TYPE.LINE_BLANK;
+					this.Values.Add(string.Empty);
+					return;
+				}
+				if ((c == '/' && line[i + 1] == '/') || c == '#' || c == ';')
+				{
+					this.LineType = TsDataReader.Row.TYPE.LINE_COMMENT;
+				}
+				else if (c == '[')
+				{
+					this.LineType = TsDataReader.Row.TYPE.LINE_SECTION;
+				}
+				else if (c == '<')
+				{
+					this.LineType = TsDataReader.Row.TYPE.LINE_SUBSECTION;
+				}
+				else
+				{
+					this.LineType = TsDataReader.Row.TYPE.LINE_DATA;
+				}
+				bool flag = c == '\t';
+				string text = line.Substring(i, num - i);
+				char[] separator = new char[]
+				{
+					seperator
+				};
+				string[] array = text.Split(separator, StringSplitOptions.None);
+				this.arrValues = array;
 			}
 		}
 
-		protected struct _RowEnum : IEnumerator
+		protected class _RowEnum : IEnumerator
 		{
 			public TsDataReader _dr;
 
@@ -488,7 +730,7 @@ namespace TsLibs
 					TsDataReader.Row currentRow;
 					try
 					{
-						currentRow = this._dr.GetCurrentRow();
+						currentRow = this._dr.CurrentRow;
 					}
 					catch (Exception var_0_16)
 					{
@@ -511,15 +753,11 @@ namespace TsLibs
 
 			public void Reset()
 			{
-				this._dr.MoveCurrentSectionFirst();
+				this._dr._curSection.FirstLine(0);
 			}
 		}
 
-		protected List<TsDataReader.Row> m_kRowString = new List<TsDataReader.Row>();
-
-		protected int m_nCurrentRow;
-
-		protected int m_nCurSectionRow;
+		public delegate bool RowDataCallback(TsDataReader.Row row);
 
 		protected static string[] LineSeperators = new string[]
 		{
@@ -528,7 +766,21 @@ namespace TsLibs
 
 		protected static bool ms_bOptimize = true;
 
-		public static TsDataReader.Row EMPTY_ROW = new TsDataReader.Row();
+		public static TsDataReader.Row EMPTY_ROW = new TsDataReader.Row(null);
+
+		public string m_strCurrentReadSection = string.Empty;
+
+		public bool m_bIsReadSection;
+
+		protected internal List<TsDataReader.Row> m_list_Rows = new List<TsDataReader.Row>();
+
+		protected Dictionary<string, int> m_dic_FieldIndex = new Dictionary<string, int>();
+
+		protected TsDataSection _curSection;
+
+		public static bool EditorMode;
+
+		private Encoding encoding = Encoding.UTF8;
 
 		public static bool UseOptimize
 		{
@@ -540,6 +792,28 @@ namespace TsLibs
 			{
 				TsDataReader.ms_bOptimize = value;
 			}
+		}
+
+		public TsDataReader.Row CurrentRow
+		{
+			get
+			{
+				return this._curSection.CurrentRow;
+			}
+		}
+
+		public TsDataSection CurrentSection
+		{
+			get
+			{
+				return this._curSection;
+			}
+		}
+
+		public bool UseSubSection
+		{
+			get;
+			set;
 		}
 
 		public char[] ColumnSeperators
@@ -554,15 +828,354 @@ namespace TsLibs
 			set;
 		}
 
+		public string FileName
+		{
+			get;
+			set;
+		}
+
+		public string MD5FileName
+		{
+			get;
+			set;
+		}
+
+		public Dictionary<string, int> FieldIndex
+		{
+			get
+			{
+				return this.m_dic_FieldIndex;
+			}
+		}
+
+		public bool UseMD5
+		{
+			get;
+			set;
+		}
+
+		public string GetName
+		{
+			get
+			{
+				if (this.UseMD5)
+				{
+					return this.MD5FileName;
+				}
+				return this.FileName;
+			}
+		}
+
+		public TsDataSection this[string sectionName]
+		{
+			get
+			{
+				bool flag = true;
+				if (this._curSection == null)
+				{
+					this._curSection = new TsDataSection(this, sectionName);
+				}
+				else
+				{
+					flag = this._curSection.FindSection(sectionName);
+				}
+				if (flag)
+				{
+					return this._curSection;
+				}
+				return new TsDataSection(new TsDataReader(), sectionName);
+			}
+		}
+
 		public TsDataReader()
 		{
+			this.FileName = string.Empty;
 			this.ColumnSeperators = new char[]
 			{
 				'\t'
 			};
 			this.ColumnSeperator = '\t';
-			this.m_nCurrentRow = -1;
-			this.m_nCurSectionRow = -1;
+			this._curSection = new TsDataSection(this, string.Empty);
+			this.UseSubSection = false;
+			this.UseMD5 = false;
+			this._clear();
+		}
+
+		public bool ReadTo(TsDataReader.IBindee bindee)
+		{
+			return bindee.ReadFrom(this);
+		}
+
+		public bool ReadToCurrentRow(TsDataReader.IRowBindee rowBindee)
+		{
+			return rowBindee.ReadFrom(this.CurrentRow);
+		}
+
+		public TsDataStr ReadKeyData(string keyName)
+		{
+			TsDataStr result = default(TsDataStr);
+			keyName = keyName.ToLower();
+			if (this._curSection.SectionName.Equals(string.Empty))
+			{
+				this._curSection.FirstLine(0);
+			}
+			else
+			{
+				this._curSection.FirstLine(1);
+			}
+			string text = string.Empty;
+			foreach (TsDataReader.Row row in this)
+			{
+				char[] separator = new char[]
+				{
+					'='
+				};
+				string[] array = row.ToDataString().Split(separator, 2);
+				text = array[0].ToLower().TrimStart(new char[0]);
+				if (text.StartsWith(keyName))
+				{
+					result.str = array[1].Trim();
+					return result;
+				}
+			}
+			return TsDataStr.Empty;
+		}
+
+		public bool ReadKeyData(string keyName, out string value, string default_value = "")
+		{
+			bool flag = this.ReadKeyDataNoException(keyName, out value, default_value);
+			if (!flag)
+			{
+				throw new NoKeyDataException(this, this._curSection, keyName);
+			}
+			return flag;
+		}
+
+		public bool ReadKeyDataNoException(string keyName, out string value, string default_value = "")
+		{
+			value = default_value;
+			keyName = keyName.ToLower();
+			if (this._curSection.SectionName.Equals(string.Empty))
+			{
+				this._curSection.FirstLine(0);
+			}
+			else
+			{
+				this._curSection.FirstLine(1);
+			}
+			string text = string.Empty;
+			foreach (TsDataReader.Row row in this)
+			{
+				string[] array = row.GetColumn(0).ToLower().Split(new char[]
+				{
+					'='
+				});
+				text = array[0].ToLower().TrimStart(new char[0]);
+				if (text.StartsWith(keyName))
+				{
+					value = array[1].Trim();
+					return true;
+				}
+			}
+			return false;
+		}
+
+		public bool ReadKeyData(string keyName, out int value, int defalut_value)
+		{
+			value = defalut_value;
+			string s;
+			return this.ReadKeyData(keyName, out s, string.Empty) && int.TryParse(s, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out uint value, uint defalut_value)
+		{
+			value = defalut_value;
+			string s;
+			return this.ReadKeyData(keyName, out s, string.Empty) && uint.TryParse(s, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out short value, short defalut_value)
+		{
+			value = defalut_value;
+			string s;
+			return this.ReadKeyData(keyName, out s, string.Empty) && short.TryParse(s, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out ushort value, ushort defalut_value)
+		{
+			value = defalut_value;
+			string s;
+			return this.ReadKeyData(keyName, out s, string.Empty) && ushort.TryParse(s, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out long value, long defalut_value)
+		{
+			value = defalut_value;
+			string s;
+			return this.ReadKeyData(keyName, out s, string.Empty) && long.TryParse(s, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out ulong value, ulong defalut_value)
+		{
+			value = defalut_value;
+			string s;
+			return this.ReadKeyData(keyName, out s, string.Empty) && ulong.TryParse(s, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out float value, float defalut_value)
+		{
+			value = defalut_value;
+			string s;
+			return this.ReadKeyData(keyName, out s, string.Empty) && float.TryParse(s, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out double value, double defalut_value)
+		{
+			value = defalut_value;
+			string empty = string.Empty;
+			return this.ReadKeyData(keyName, out empty, string.Empty) && double.TryParse(empty, out value);
+		}
+
+		public bool ReadKeyData(string keyName, out int value)
+		{
+			return this.ReadKeyData(keyName, out value, 0);
+		}
+
+		public bool ReadKeyData(string keyName, out uint value)
+		{
+			return this.ReadKeyData(keyName, out value, 0u);
+		}
+
+		public bool ReadKeyData(string keyName, out short value)
+		{
+			return this.ReadKeyData(keyName, out value, 0);
+		}
+
+		public bool ReadKeyData(string keyName, out ushort value)
+		{
+			return this.ReadKeyData(keyName, out value, 0);
+		}
+
+		public bool ReadKeyData(string keyName, out long value)
+		{
+			return this.ReadKeyData(keyName, out value, 0L);
+		}
+
+		public bool ReadKeyData(string keyName, out ulong value)
+		{
+			return this.ReadKeyData(keyName, out value, 0uL);
+		}
+
+		public bool ReadKeyData(string keyName, out float value)
+		{
+			return this.ReadKeyData(keyName, out value, 0f);
+		}
+
+		public bool ReadKeyData(string keyName, out double value)
+		{
+			return this.ReadKeyData(keyName, out value, 0.0);
+		}
+
+		public bool ReadKeyData(string keyName, out bool value)
+		{
+			return this.ReadKeyData(keyName, out value, false);
+		}
+
+		public bool ReadKeyData(string keyName, out bool value, bool defalut_value)
+		{
+			value = defalut_value;
+			string text;
+			if (this.ReadKeyData(keyName, out text, string.Empty))
+			{
+				text = text.ToLower();
+				if (text.Contains("true"))
+				{
+					value = true;
+				}
+				else if (text.Contains("false"))
+				{
+					value = false;
+				}
+				else
+				{
+					int num;
+					if (!int.TryParse(text, out num))
+					{
+						return false;
+					}
+					value = (num != 0);
+				}
+				return true;
+			}
+			return false;
+		}
+
+		public static string GetMD5(string str)
+		{
+			if (str == string.Empty)
+			{
+				return string.Empty;
+			}
+			StringBuilder stringBuilder = new StringBuilder();
+			MD5CryptoServiceProvider mD5CryptoServiceProvider = new MD5CryptoServiceProvider();
+			str = str.ToLower();
+			str = Path.GetFileName(str);
+			byte[] bytes = Encoding.ASCII.GetBytes(str);
+			byte[] array = mD5CryptoServiceProvider.ComputeHash(bytes);
+			byte[] array2 = array;
+			for (int i = 0; i < array2.Length; i++)
+			{
+				byte b = array2[i];
+				stringBuilder.Append(b.ToString("x2"));
+			}
+			return stringBuilder.ToString().ToLower();
+		}
+
+		public Stream GetFileStream(string filename)
+		{
+			FileStream fileStream = new FileStream(filename, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+			FileInfo fileInfo = new FileInfo(filename);
+			NEncrypt.enc_type enc_type = NEncrypt.IsForwarded(fileStream);
+			if (enc_type != NEncrypt.enc_type.ENC_NONE)
+			{
+				Stream stream = this.Decrypt(fileStream, Convert.ToUInt32(fileInfo.Length));
+				stream.Position = 0L;
+				return stream;
+			}
+			return fileStream;
+		}
+
+		public Stream GetFileStream(Stream stream)
+		{
+			NEncrypt.enc_type enc_type = NEncrypt.IsForwarded(stream);
+			if (enc_type != NEncrypt.enc_type.ENC_NONE)
+			{
+				Stream stream2 = this.Decrypt(stream, Convert.ToUInt32(stream.Length));
+				stream2.Position = 0L;
+				return stream2;
+			}
+			return stream;
+		}
+
+		public static TsDataReader FromFile(string filename, bool useMD5)
+		{
+			TsDataReader tsDataReader = new TsDataReader();
+			tsDataReader.UseMD5 = useMD5;
+			if (tsDataReader.Load(filename))
+			{
+				return tsDataReader;
+			}
+			return null;
+		}
+
+		public static TsDataReader FromContext(string context)
+		{
+			TsDataReader tsDataReader = new TsDataReader();
+			if (tsDataReader.LoadFrom(context))
+			{
+				return tsDataReader;
+			}
+			return null;
 		}
 
 		public bool LoadFrom(string strContext)
@@ -572,6 +1185,20 @@ namespace TsLibs
 			{
 				return false;
 			}
+			MemoryStream memoryStream = new MemoryStream();
+			StreamWriter streamWriter = new StreamWriter(memoryStream, this.encoding);
+			streamWriter.Write(strContext);
+			streamWriter.Flush();
+			memoryStream.Position = 0L;
+			using (Stream fileStream = this.GetFileStream(memoryStream))
+			{
+				using (StreamReader streamReader = new StreamReader(fileStream, this.encoding, true))
+				{
+					strContext = streamReader.ReadToEnd();
+				}
+			}
+			streamWriter.Close();
+			memoryStream.Close();
 			if (TsDataReader.UseOptimize)
 			{
 				return this.__parse_line_optimize(strContext);
@@ -579,22 +1206,91 @@ namespace TsLibs
 			return this.__parse_line(strContext);
 		}
 
-		public bool LoadFrom(string strContext, TsDataReader.IBinding bindingObject)
+		public bool LoadFrom(string strContext, Encoding _encoding)
 		{
-			this._clear();
-			return strContext != null && this.LoadFrom(strContext) && bindingObject.ReadFrom(this);
+			this.encoding = _encoding;
+			return this.LoadFrom(strContext);
 		}
 
-		public bool LoadFrom(string strContext, string strSection, TsDataReader.IBindingRow bindingObject)
+		public bool LoadFrom(string strContext, TsDataReader.IBindee bindee)
 		{
 			this._clear();
-			return strContext != null && this.__parse_line_optimize(strContext, strSection, bindingObject);
+			if (strContext == null)
+			{
+				return false;
+			}
+			MemoryStream memoryStream = new MemoryStream();
+			StreamWriter streamWriter = new StreamWriter(memoryStream, Encoding.Default);
+			streamWriter.Write(strContext);
+			streamWriter.Flush();
+			memoryStream.Position = 0L;
+			using (Stream fileStream = this.GetFileStream(memoryStream))
+			{
+				using (StreamReader streamReader = new StreamReader(fileStream, Encoding.Default, true))
+				{
+					strContext = streamReader.ReadToEnd();
+				}
+			}
+			streamWriter.Close();
+			memoryStream.Close();
+			return this.LoadFrom(strContext) && bindee.ReadFrom(this);
+		}
+
+		public bool LoadFrom(string strContext, string strSection, TsDataReader.IRowBindee rowBindee)
+		{
+			this._clear();
+			if (strContext == null)
+			{
+				return false;
+			}
+			MemoryStream memoryStream = new MemoryStream();
+			StreamWriter streamWriter = new StreamWriter(memoryStream, Encoding.Default);
+			streamWriter.Write(strContext);
+			streamWriter.Flush();
+			memoryStream.Position = 0L;
+			using (Stream fileStream = this.GetFileStream(memoryStream))
+			{
+				using (StreamReader streamReader = new StreamReader(fileStream, Encoding.Default, true))
+				{
+					strContext = streamReader.ReadToEnd();
+				}
+			}
+			streamWriter.Close();
+			memoryStream.Close();
+			return this.__parse_line_optimize(strContext, strSection, rowBindee);
+		}
+
+		public bool LoadFromImmediate(string strContext, string readImmediateSector, TsDataReader.RowDataCallback dataCallback)
+		{
+			this._clear();
+			return strContext != null && this.__parse_line_optimize_immediate(strContext, readImmediateSector, dataCallback);
+		}
+
+		private bool __parse_line_optimize_immediate(string strContext, string readImmediateSector, TsDataReader.RowDataCallback dataCallback)
+		{
+			int nStartLine = 0;
+			int num = 0;
+			for (int i = 0; i < strContext.Length; i++)
+			{
+				if (strContext[i] == '\r' && strContext[i + 1] == '\n')
+				{
+					this.__parse_row_optimize_immediate(strContext, nStartLine, num, readImmediateSector, dataCallback);
+					nStartLine = ++i + 1;
+					num = 0;
+				}
+				else
+				{
+					num++;
+				}
+			}
+			this.__parse_row_optimize_immediate(strContext, nStartLine, num, readImmediateSector, dataCallback);
+			return true;
 		}
 
 		private bool __parse_line(string strContext)
 		{
 			string[] array = strContext.Split(TsDataReader.LineSeperators, StringSplitOptions.RemoveEmptyEntries);
-			this.m_kRowString.Capacity = 2000;
+			this.m_list_Rows.Capacity = 2000;
 			string[] array2 = array;
 			for (int i = 0; i < array2.Length; i++)
 			{
@@ -625,7 +1321,7 @@ namespace TsLibs
 			return true;
 		}
 
-		private bool __parse_line_optimize(string strContext, string strSection, TsDataReader.IBindingRow bindingRow)
+		private bool __parse_line_optimize(string strContext, string strSection, TsDataReader.IRowBindee rowBindee)
 		{
 			int i = 0;
 			int num = 0;
@@ -661,12 +1357,12 @@ namespace TsLibs
 						}
 						if (flag2)
 						{
-							this.__parse_row_optimize(strContext, i, num, bindingRow);
+							this.__parse_row_optimize(strContext, i, num, rowBindee);
 						}
 					}
 					else
 					{
-						this.__parse_row_optimize(strContext, i, num, bindingRow);
+						this.__parse_row_optimize(strContext, i, num, rowBindee);
 					}
 					i = ++j + 1;
 					num = 0;
@@ -676,7 +1372,7 @@ namespace TsLibs
 					num++;
 				}
 			}
-			this.__parse_row_optimize(strContext, i, num, bindingRow);
+			this.__parse_row_optimize(strContext, i, num, rowBindee);
 			return true;
 		}
 
@@ -690,22 +1386,22 @@ namespace TsLibs
 			return result;
 		}
 
-		public bool LoadFrom(byte[] bytes, TsDataReader.IBinding bindingObject)
+		public bool LoadFrom(byte[] bytes, TsDataReader.IBindee bindee)
 		{
 			bool result;
 			using (MemoryStream memoryStream = new MemoryStream(bytes))
 			{
-				result = this.LoadFrom(memoryStream, bindingObject);
+				result = this.LoadFrom(memoryStream, bindee);
 			}
 			return result;
 		}
 
-		public bool LoadFrom(byte[] bytes, string strSection, TsDataReader.IBindingRow bindingObject)
+		public bool LoadFrom(byte[] bytes, string strSection, TsDataReader.IRowBindee bindee)
 		{
 			bool result;
 			using (MemoryStream memoryStream = new MemoryStream(bytes))
 			{
-				result = this.LoadFrom(memoryStream, strSection, bindingObject);
+				result = this.LoadFrom(memoryStream, strSection, bindee);
 			}
 			return result;
 		}
@@ -713,11 +1409,14 @@ namespace TsLibs
 		public bool LoadFrom(Stream stream)
 		{
 			this._clear();
+			Stream fileStream;
+			stream = (fileStream = this.GetFileStream(stream));
+			bool result;
 			try
 			{
-				using (StreamReader streamReader = new StreamReader(stream, Encoding.Default, true))
+				using (StreamReader streamReader = new StreamReader(stream, this.encoding, true))
 				{
-					this.m_kRowString.Capacity = 2000;
+					this.m_list_Rows.Capacity = 2000;
 					if (TsDataReader.UseOptimize)
 					{
 						string text;
@@ -735,50 +1434,149 @@ namespace TsLibs
 							this.__parse_row(text);
 						}
 					}
-					streamReader.Close();
+					result = true;
 				}
-				return true;
 			}
-			catch (Exception var_2_91)
+			finally
+			{
+				if (fileStream != null)
+				{
+					((IDisposable)fileStream).Dispose();
+				}
+			}
+			return result;
+		}
+
+		public bool LoadFrom(Stream stream, Encoding _encoding)
+		{
+			this.encoding = _encoding;
+			return this.LoadFrom(stream);
+		}
+
+		public bool LoadFrom(Stream stream, TsDataReader.IBindee bindee)
+		{
+			this._clear();
+			try
+			{
+				Stream fileStream;
+				stream = (fileStream = this.GetFileStream(stream));
+				try
+				{
+					using (StreamReader streamReader = new StreamReader(stream, Encoding.Default, true))
+					{
+						string strContext = streamReader.ReadToEnd();
+						streamReader.Close();
+						return this.LoadFrom(strContext, bindee);
+					}
+				}
+				finally
+				{
+					if (fileStream != null)
+					{
+						((IDisposable)fileStream).Dispose();
+					}
+				}
+			}
+			catch (Exception var_3_63)
 			{
 			}
 			return false;
 		}
 
-		public bool LoadFrom(Stream stream, TsDataReader.IBinding bindingObject)
+		public bool LoadFrom(Stream stream, string strSection, TsDataReader.IRowBindee rowBindee)
 		{
 			this._clear();
+			Stream fileStream;
+			stream = (fileStream = this.GetFileStream(stream));
+			bool result;
 			try
 			{
 				using (StreamReader streamReader = new StreamReader(stream, Encoding.Default, true))
 				{
 					string strContext = streamReader.ReadToEnd();
 					streamReader.Close();
-					return this.LoadFrom(strContext, bindingObject);
+					result = this.LoadFrom(strContext, strSection, rowBindee);
 				}
 			}
-			catch (Exception var_2_45)
+			finally
 			{
+				if (fileStream != null)
+				{
+					((IDisposable)fileStream).Dispose();
+				}
 			}
-			return false;
+			return result;
 		}
 
-		public bool LoadFrom(Stream stream, string strSection, TsDataReader.IBindingRow bindingObject)
+		public bool LoadFromImmediate(byte[] bytes, string strSector, TsDataReader.RowDataCallback dataCallback)
+		{
+			bool result;
+			using (MemoryStream memoryStream = new MemoryStream(bytes))
+			{
+				this._clear();
+				try
+				{
+					using (StreamReader streamReader = new StreamReader(memoryStream, Encoding.Default, true))
+					{
+						string empty = string.Empty;
+						this.__parse_line_optimize_immediate(streamReader.ReadToEnd(), strSector, dataCallback);
+						streamReader.Close();
+					}
+					result = true;
+					return result;
+				}
+				catch (Exception var_3_54)
+				{
+				}
+				result = false;
+			}
+			return result;
+		}
+
+		public string GetFileString(string strFileName)
 		{
 			this._clear();
-			try
+			string text = string.Empty;
+			if (strFileName == null)
 			{
-				using (StreamReader streamReader = new StreamReader(stream, Encoding.Default, true))
+				return string.Empty;
+			}
+			this.FileName = strFileName;
+			this.MD5FileName = string.Empty;
+			if (!Path.IsPathRooted(strFileName))
+			{
+				strFileName = Path.GetFullPath(strFileName);
+			}
+			if (!File.Exists(strFileName))
+			{
+				if (this.UseMD5 && !TsDataReader.EditorMode)
 				{
-					string strContext = streamReader.ReadToEnd();
-					streamReader.Close();
-					return this.LoadFrom(strContext, strSection, bindingObject);
+					if (!Path.IsPathRooted(strFileName))
+					{
+						strFileName = Path.GetFullPath(strFileName);
+					}
+					string fileName = Path.GetFileName(strFileName);
+					string mD = TsDataReader.GetMD5(fileName);
+					FileInfo fileInfo = new FileInfo(strFileName);
+					strFileName = Path.Combine(fileInfo.DirectoryName, mD);
+					this.MD5FileName = strFileName;
+				}
+				if (!File.Exists(strFileName))
+				{
+					Console.WriteLine("{0} does not exist.", strFileName);
+					return string.Empty;
 				}
 			}
-			catch (Exception var_2_46)
+			string result;
+			using (Stream fileStream = this.GetFileStream(strFileName))
 			{
+				using (StreamReader streamReader = new StreamReader(fileStream, Encoding.Default, true))
+				{
+					text = streamReader.ReadToEnd();
+				}
+				result = text;
 			}
-			return false;
+			return result;
 		}
 
 		public bool Load(string strFileName)
@@ -788,17 +1586,61 @@ namespace TsLibs
 			{
 				return false;
 			}
-			if (!File.Exists(strFileName))
+			this.FileName = strFileName;
+			this.MD5FileName = string.Empty;
+			if (!Path.IsPathRooted(strFileName))
 			{
-				Console.WriteLine("{0} does not exist.", strFileName);
-				return false;
+				strFileName = Path.GetFullPath(strFileName);
+			}
+			if (NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL || NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL_MOBILE || NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_KORQA || NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_IOS_KORLOCAL || NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_USLOCAL)
+			{
+				if (!File.Exists(strFileName))
+				{
+					if (this.UseMD5 && !TsDataReader.EditorMode)
+					{
+						if (!Path.IsPathRooted(strFileName))
+						{
+							strFileName = Path.GetFullPath(strFileName);
+						}
+						string fileName = Path.GetFileName(strFileName);
+						string mD = TsDataReader.GetMD5(fileName);
+						FileInfo fileInfo = new FileInfo(strFileName);
+						strFileName = Path.Combine(fileInfo.DirectoryName, mD);
+						this.MD5FileName = strFileName;
+					}
+					if (!File.Exists(strFileName))
+					{
+						Console.WriteLine("{0} does not exist.", strFileName);
+						return false;
+					}
+				}
+			}
+			else
+			{
+				if (this.UseMD5 && !TsDataReader.EditorMode)
+				{
+					if (!Path.IsPathRooted(strFileName))
+					{
+						strFileName = Path.GetFullPath(strFileName);
+					}
+					string fileName2 = Path.GetFileName(strFileName);
+					string mD2 = TsDataReader.GetMD5(fileName2);
+					FileInfo fileInfo2 = new FileInfo(strFileName);
+					strFileName = Path.Combine(fileInfo2.DirectoryName, mD2);
+					this.MD5FileName = strFileName;
+				}
+				if (!File.Exists(strFileName))
+				{
+					Console.WriteLine("{0} does not exist.", strFileName);
+					return false;
+				}
 			}
 			bool result;
-			using (FileStream fileStream = new FileStream(strFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			using (Stream fileStream = this.GetFileStream(strFileName))
 			{
 				using (StreamReader streamReader = new StreamReader(fileStream, Encoding.Default, true))
 				{
-					this.m_kRowString.Capacity = 2000;
+					this.m_list_Rows.Capacity = 2000;
 					if (TsDataReader.UseOptimize)
 					{
 						string text;
@@ -816,14 +1658,58 @@ namespace TsLibs
 							this.__parse_row(text);
 						}
 					}
-					streamReader.Close();
 					result = true;
 				}
 			}
 			return result;
 		}
 
-		public bool Load(string strFileName, string strSection, TsDataReader.IBindingRow bindingObject)
+		public bool LoadImmediate(string strFileName, string strSection, TsDataReader.RowDataCallback dataCallback)
+		{
+			this._clear();
+			if (strFileName == null)
+			{
+				return false;
+			}
+			this.FileName = strFileName;
+			this.MD5FileName = string.Empty;
+			if (!Path.IsPathRooted(strFileName))
+			{
+				strFileName = Path.GetFullPath(strFileName);
+			}
+			if (!File.Exists(strFileName))
+			{
+				if (this.UseMD5 && !TsDataReader.EditorMode)
+				{
+					if (!Path.IsPathRooted(strFileName))
+					{
+						strFileName = Path.GetFullPath(strFileName);
+					}
+					string fileName = Path.GetFileName(strFileName);
+					string mD = TsDataReader.GetMD5(fileName);
+					FileInfo fileInfo = new FileInfo(strFileName);
+					strFileName = Path.Combine(fileInfo.DirectoryName, mD);
+					this.MD5FileName = strFileName;
+				}
+				if (!File.Exists(strFileName))
+				{
+					Console.WriteLine("{0} does not exist.", strFileName);
+					return false;
+				}
+			}
+			bool result;
+			using (Stream fileStream = this.GetFileStream(strFileName))
+			{
+				using (StreamReader streamReader = new StreamReader(fileStream, Encoding.Default, true))
+				{
+					this.LoadFromImmediate(streamReader.ReadToEnd(), strSection, dataCallback);
+					result = true;
+				}
+			}
+			return result;
+		}
+
+		public bool Load(string strFileName, string strSection, TsDataReader.IRowBindee rowBindee)
 		{
 			this._clear();
 			if (strFileName == null)
@@ -836,13 +1722,14 @@ namespace TsLibs
 				return false;
 			}
 			bool result;
-			using (FileStream fileStream = new FileStream(strFileName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+			using (Stream fileStream = this.GetFileStream(strFileName))
 			{
 				using (StreamReader streamReader = new StreamReader(fileStream, Encoding.Default, true))
 				{
 					string strContext = streamReader.ReadToEnd();
 					streamReader.Close();
-					result = this.LoadFrom(strContext, strSection, bindingObject);
+					this.FileName = strFileName;
+					result = this.LoadFrom(strContext, strSection, rowBindee);
 				}
 			}
 			return result;
@@ -850,18 +1737,32 @@ namespace TsLibs
 
 		private void _clear()
 		{
-			foreach (TsDataReader.Row current in this.m_kRowString)
-			{
-				current.Clear();
-			}
-			this.m_kRowString.Clear();
-			this.m_nCurrentRow = -1;
-			this.m_nCurSectionRow = -1;
+			this.m_list_Rows.Clear();
+			this._curSection.Clear();
 		}
 
 		public void Dispose()
 		{
 			this._clear();
+		}
+
+		private MemoryStream Decrypt(Stream _stream, uint _uiFileSize)
+		{
+			byte[] array = new byte[_uiFileSize];
+			NEncrypt.enc_args enc_args = new NEncrypt.enc_args(NEncrypt.enc_type.ENC_DEFAULT, array, (uint)array.Length, null, false);
+			BinaryReader binaryReader = new BinaryReader(_stream);
+			enc_args.pSrcBuf = binaryReader.ReadBytes(Convert.ToInt32(_uiFileSize));
+			enc_args.nSrcSize = _uiFileSize;
+			enc_args.uiSrcFileSize = _uiFileSize;
+			bool flag = NEncrypt.Decrypt(enc_args, ' ');
+			MemoryStream memoryStream = null;
+			if (flag)
+			{
+				memoryStream = new MemoryStream();
+				memoryStream.Write(enc_args.pOutBuf, 0, enc_args.pOutBuf.Length);
+				memoryStream.Position = 0L;
+			}
+			return memoryStream;
 		}
 
 		private bool __parse_row(string line)
@@ -870,7 +1771,7 @@ namespace TsLibs
 			{
 				return false;
 			}
-			TsDataReader.Row row = new TsDataReader.Row();
+			TsDataReader.Row row = new TsDataReader.Row(this);
 			string[] array = line.Split(this.ColumnSeperators);
 			for (int i = 0; i < array.Length; i++)
 			{
@@ -893,21 +1794,19 @@ namespace TsLibs
 			else if (column[0] == '[')
 			{
 				row.LineType = TsDataReader.Row.TYPE.LINE_SECTION;
-				row.Values[0] = row.Values[0].ToLower();
 			}
 			else if (column[0] == '<')
 			{
 				row.LineType = TsDataReader.Row.TYPE.LINE_SUBSECTION;
-				row.Values[0] = row.Values[0].ToLower();
 			}
 			else
 			{
 				row.LineType = TsDataReader.Row.TYPE.LINE_DATA;
 			}
-			this.m_kRowString.Add(row);
-			if (this.m_kRowString.Count == this.m_kRowString.Capacity)
+			this.m_list_Rows.Add(row);
+			if (this.m_list_Rows.Count == this.m_list_Rows.Capacity)
 			{
-				this.m_kRowString.Capacity += 500;
+				this.m_list_Rows.Capacity += 500;
 			}
 			return true;
 		}
@@ -917,20 +1816,20 @@ namespace TsLibs
 			return this.__parse_row_optimize(line, 0, 0, null);
 		}
 
-		private bool __parse_row_optimize(string line, int nStartLine, int nLineLength, TsDataReader.IBindingRow bindingRow)
+		private bool __parse_row_optimize(string line, int nStartLine, int nLineLength, TsDataReader.IRowBindee bindingRow)
 		{
 			if (nLineLength == 0 && nStartLine == 0)
 			{
 				nLineLength = line.Length;
 			}
-			TsDataReader.Row row = new TsDataReader.Row();
+			TsDataReader.Row row = new TsDataReader.Row(this);
 			row.__parse_from(line, nStartLine, nLineLength, this.ColumnSeperator);
 			if (bindingRow == null)
 			{
-				this.m_kRowString.Add(row);
-				if (this.m_kRowString.Count == this.m_kRowString.Capacity)
+				this.m_list_Rows.Add(row);
+				if (this.m_list_Rows.Count == this.m_list_Rows.Capacity)
 				{
-					this.m_kRowString.Capacity += 500;
+					this.m_list_Rows.Capacity += 500;
 				}
 			}
 			else if (row.LineType == TsDataReader.Row.TYPE.LINE_DATA)
@@ -944,278 +1843,205 @@ namespace TsLibs
 			return true;
 		}
 
-		public bool BeginSection(string strSection)
+		private bool __parse_row_optimize_immediate(string line, int nStartLine, int nLineLength, string strSection, TsDataReader.RowDataCallback dataCallback)
 		{
-			int num = 0;
-			foreach (TsDataReader.Row current in this.m_kRowString)
+			if (nLineLength == 0 && nStartLine == 0)
 			{
-				if (current.LineType == TsDataReader.Row.TYPE.LINE_SECTION && current.GetColumn(0).ToLower() == strSection.ToLower())
-				{
-					this.m_nCurrentRow = num + 1;
-					this.m_nCurSectionRow = num;
-					return true;
-				}
-				num++;
+				nLineLength = line.Length;
 			}
-			return false;
-		}
-
-		public bool ReadKeyData(string keyName, out int value)
-		{
-			value = 0;
-			string s;
-			return this.ReadKeyData(keyName, out s) && int.TryParse(s, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out uint value)
-		{
-			value = 0u;
-			string s;
-			return this.ReadKeyData(keyName, out s) && uint.TryParse(s, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out short value)
-		{
-			value = 0;
-			string s;
-			return this.ReadKeyData(keyName, out s) && short.TryParse(s, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out ushort value)
-		{
-			value = 0;
-			string s;
-			return this.ReadKeyData(keyName, out s) && ushort.TryParse(s, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out long value)
-		{
-			value = 0L;
-			string s;
-			return this.ReadKeyData(keyName, out s) && long.TryParse(s, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out ulong value)
-		{
-			value = 0uL;
-			string s;
-			return this.ReadKeyData(keyName, out s) && ulong.TryParse(s, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out float value)
-		{
-			value = 0f;
-			string s;
-			return this.ReadKeyData(keyName, out s) && float.TryParse(s, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out double value)
-		{
-			value = 0.0;
-			string empty = string.Empty;
-			return this.ReadKeyData(keyName, out empty) && double.TryParse(empty, out value);
-		}
-
-		public bool ReadKeyData(string keyName, out bool value)
-		{
-			value = false;
-			string text;
-			if (this.ReadKeyData(keyName, out text))
+			TsDataReader.Row row = new TsDataReader.Row();
+			row.__parse_from_immediate(line, nStartLine, nLineLength, this.ColumnSeperator);
+			if (row.LineType == TsDataReader.Row.TYPE.LINE_SECTION && row.ArrValues != null && 0 < row.ArrValues.Length)
 			{
-				text = text.ToLower();
-				if (text.Contains("true"))
+				this.m_strCurrentReadSection = row.ArrValues[0];
+				if (this.m_strCurrentReadSection.ToLower().CompareTo(strSection.ToLower()) == 0)
 				{
-					value = true;
-				}
-				else if (text.Contains("false"))
-				{
-					value = false;
+					this.m_bIsReadSection = true;
 				}
 				else
 				{
-					int num;
-					if (!int.TryParse(text, out num))
-					{
-						return false;
-					}
-					value = (num != 0);
+					this.m_bIsReadSection = false;
 				}
+			}
+			if (row.LineType != TsDataReader.Row.TYPE.LINE_DATA)
+			{
 				return true;
 			}
-			return false;
-		}
-
-		public bool ReadKeyData(string keyName, out string value)
-		{
-			value = string.Empty;
-			try
+			if (!this.m_bIsReadSection)
 			{
-				keyName.ToLower();
-				foreach (TsDataReader.Row row in this)
-				{
-					char[] separator = new char[]
-					{
-						'='
-					};
-					string[] array = row.GetToken(0).Split(separator, 2);
-					array[0].ToLower();
-					if (array[0].StartsWith(keyName))
-					{
-						value = array[1];
-						return true;
-					}
-				}
+				return true;
 			}
-			catch (Exception var_4_8F)
+			if (dataCallback != null)
 			{
-			}
-			return false;
-		}
-
-		public bool ReadKeyData<T>(string sectionName, string keyName, out T output_value)
-		{
-			output_value = default(T);
-			if (output_value == null)
-			{
-				output_value = (T)((object)string.Empty);
-			}
-			if (this.BeginSection(sectionName))
-			{
-				string text;
-				bool flag = this.ReadKeyData(keyName, out text);
-				if (flag)
-				{
-					if (output_value is string)
-					{
-						output_value = (T)((object)text);
-					}
-					else if (output_value is int)
-					{
-						output_value = (T)((object)int.Parse(text));
-					}
-					else if (output_value is double)
-					{
-						output_value = (T)((object)double.Parse(text));
-					}
-					else if (output_value is float)
-					{
-						output_value = (T)((object)float.Parse(text));
-					}
-					else if (output_value is uint)
-					{
-						output_value = (T)((object)uint.Parse(text));
-					}
-					else if (output_value is long)
-					{
-						output_value = (T)((object)long.Parse(text));
-					}
-					else if (output_value is ulong)
-					{
-						output_value = (T)((object)ulong.Parse(text));
-					}
-					else if (output_value is short)
-					{
-						output_value = (T)((object)short.Parse(text));
-					}
-					else
-					{
-						if (!(output_value is ushort))
-						{
-							return false;
-						}
-						output_value = (T)((object)ushort.Parse(text));
-					}
-				}
+				dataCallback(row);
 			}
 			return true;
 		}
 
-		public bool ReadTo(TsDataReader.IBinding bindingObject)
+		public bool BeginSection(string sectionName)
 		{
-			return bindingObject.ReadFrom(this);
+			return this._curSection.FindSection(sectionName);
 		}
 
-		public bool ReadToCurrentRow(TsDataReader.IBindingRow bindingObject)
+		public bool ReadFieldNames()
 		{
-			return bindingObject.ReadFrom(this.GetCurrentRow());
+			bool flag = false;
+			if (this.BeginSection("[FieldNames]"))
+			{
+				flag = true;
+			}
+			else if (this.BeginSection("[FiledNames]"))
+			{
+				flag = true;
+			}
+			if (flag)
+			{
+				IEnumerator enumerator = this.GetEnumerator();
+				try
+				{
+					if (enumerator.MoveNext())
+					{
+						TsDataReader.Row row = (TsDataReader.Row)enumerator.Current;
+						int num = 0;
+						this.m_dic_FieldIndex.Clear();
+						int num2 = 0;
+						foreach (string current in row.Values)
+						{
+							int num3 = 1;
+							string text = current;
+							while (this.m_dic_FieldIndex.TryGetValue(text.ToLower(), out num))
+							{
+								text = string.Format("{0}{1}", current, num3++);
+							}
+							if (text != current)
+							{
+								this._OutputDebug(string.Format("중복된 필드명!! 수정필요!! {0} (임의변경:{1})", current, text));
+							}
+							this.m_dic_FieldIndex.Add(text.ToLower(), num2++);
+						}
+					}
+				}
+				finally
+				{
+					IDisposable disposable = enumerator as IDisposable;
+					if (disposable != null)
+					{
+						disposable.Dispose();
+					}
+				}
+				return this.m_dic_FieldIndex.Count != 0;
+			}
+			return false;
+		}
+
+		public int GetFieldIndex(string fieldName)
+		{
+			int result = -1;
+			if (this.m_dic_FieldIndex.TryGetValue(fieldName.ToLower(), out result))
+			{
+				return result;
+			}
+			return -1;
+		}
+
+		public TsDataSection GetFirstSection()
+		{
+			this._curSection.Clear();
+			this.FirstLine();
+			return this.GetNextSection();
+		}
+
+		public TsDataSection GetNextSection()
+		{
+			StringBuilder stringBuilder = new StringBuilder(128);
+			while (!this.IsEOF())
+			{
+				if (this.CurrentRow.LineType == TsDataReader.Row.TYPE.LINE_SECTION)
+				{
+					stringBuilder.Length = 0;
+					stringBuilder.Append(this.CurrentRow.ToDataString());
+					stringBuilder = stringBuilder.Replace('[', ' ');
+					stringBuilder = stringBuilder.Replace(']', ' ');
+					stringBuilder = stringBuilder.Replace('<', ' ');
+					stringBuilder = stringBuilder.Replace('>', ' ');
+					this._curSection._beginRow = this._curSection._currentRow;
+					this._curSection._beginRowSub = -1;
+					this._curSection._sectionName = stringBuilder.ToString().Trim();
+					this.NextDataLine(false);
+					return this._curSection;
+				}
+				this._curSection.NextLine();
+			}
+			return null;
+		}
+
+		public bool ReadSection(string sectionName, out string output, string default_value = "")
+		{
+			output = default_value;
+			StringBuilder stringBuilder = new StringBuilder();
+			bool flag = this.ReadSection(sectionName, ref stringBuilder);
+			if (flag)
+			{
+				output = stringBuilder.ToString();
+			}
+			return flag;
+		}
+
+		public bool ReadSection(string sectionName, ref StringBuilder output)
+		{
+			TsDataSection tsDataSection = this[sectionName];
+			foreach (TsDataReader.Row row in tsDataSection)
+			{
+				output.AppendLine(row.ToDataString());
+			}
+			return true;
 		}
 
 		public TsDataReader.Row GetCurrentRow()
 		{
-			TsDataReader.Row result;
-			try
-			{
-				if (0 <= this.m_nCurrentRow && this.m_nCurrentRow < this.m_kRowString.Count)
-				{
-					result = this.m_kRowString[this.m_nCurrentRow];
-				}
-				else
-				{
-					result = TsDataReader.EMPTY_ROW;
-				}
-			}
-			catch (Exception var_0_49)
-			{
-				result = TsDataReader.EMPTY_ROW;
-			}
-			return result;
+			return this.CurrentRow;
 		}
 
-		public int GetRowCountAt(string strSectionName, string strSubSectionName)
+		public int GetRowCountAt(string sectionName, string strSubSectionName)
 		{
-			try
-			{
-				int num = 0;
-				if (this.BeginSection(strSectionName))
-				{
-					while (!this.IsEndOfSection())
-					{
-						TsDataReader.Row currentRow = this.GetCurrentRow();
-						if (currentRow.LineType == TsDataReader.Row.TYPE.LINE_DATA)
-						{
-							num++;
-						}
-						this.NextLine();
-					}
-					return num;
-				}
-			}
-			catch (Exception var_2_47)
-			{
-			}
-			return 0;
-		}
-
-		public void MoveCurrentSectionFirst()
-		{
-			this.m_nCurrentRow = this.m_nCurSectionRow;
+			TsDataSection tsDataSection = this[sectionName];
+			return tsDataSection.DataCount;
 		}
 
 		public void FirstLine()
 		{
-			this.m_nCurrentRow = 0;
-			this.m_nCurSectionRow = 0;
+			this._curSection.FirstLine(0);
 		}
 
-		public void NextLine()
+		public int NextLine()
 		{
-			this.m_nCurrentRow++;
+			return this._curSection.NextLine();
+		}
+
+		public int NextDataLine(bool bSubSection = false)
+		{
+			return this._curSection.NextDataLine(bSubSection);
 		}
 
 		public bool IsEOF()
 		{
-			return this.m_kRowString.Count < this.m_nCurrentRow;
+			return this.m_list_Rows.Count < this._curSection._currentRow;
 		}
 
 		public bool IsEndOfSection()
 		{
-			return this.IsEOF() || (this.GetCurrentRow().LineType == TsDataReader.Row.TYPE.LINE_SECTION && this.m_nCurrentRow != this.m_nCurSectionRow && this.m_nCurSectionRow != -1);
+			return this._curSection.IsEndOfSection;
+		}
+
+		public bool IsEndOfSubSection()
+		{
+			return this._curSection.IsEndOfSubSection;
 		}
 
 		[DebuggerHidden]
 		public IEnumerator GetEnumerator()
 		{
-			TsDataReader.<GetEnumerator>c__Iterator24 <GetEnumerator>c__Iterator = new TsDataReader.<GetEnumerator>c__Iterator24();
+			TsDataReader.<GetEnumerator>c__Iterator25 <GetEnumerator>c__Iterator = new TsDataReader.<GetEnumerator>c__Iterator25();
 			<GetEnumerator>c__Iterator.<>f__this = this;
 			return <GetEnumerator>c__Iterator;
 		}
@@ -1269,7 +2095,7 @@ namespace TsLibs
 			{
 				return 3;
 			}
-			encoding = Encoding.ASCII;
+			encoding = Encoding.Default;
 			return 0;
 		}
 

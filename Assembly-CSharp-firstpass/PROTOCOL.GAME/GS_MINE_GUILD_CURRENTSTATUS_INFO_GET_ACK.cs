@@ -9,5 +9,9 @@ namespace PROTOCOL.GAME
 		public int i32Page;
 
 		public int i32TotalCount;
+
+		public byte bType;
+
+		public long i64RemainderCounGiveTime;
 	}
 }

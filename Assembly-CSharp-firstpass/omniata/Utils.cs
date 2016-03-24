@@ -7,7 +7,7 @@ namespace omniata
 	{
 		private static string API = "api.omniata.com";
 
-		private static string TEST_API = "api.omniata.com";
+		private static string TEST_API = "api-test.omniata.com";
 
 		private static string GetProtocol(bool useSSL)
 		{

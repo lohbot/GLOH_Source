@@ -24,7 +24,7 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 
 	private short m_iAutoMoveBountyHuntUnique;
 
-	private short m_iWeek;
+	private short m_MaxPage;
 
 	public short AutoMoveBountyHuntUnique
 	{
@@ -38,20 +38,40 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 		}
 	}
 
-	public short Week
+	public short MaxPage
 	{
 		get
 		{
-			return this.m_iWeek;
+			return this.m_MaxPage;
 		}
 		set
 		{
-			this.m_iWeek = value;
+			this.m_MaxPage = value;
 		}
 	}
 
 	private BountyHuntManager()
 	{
+	}
+
+	public bool GetBountyInfoDataTime(short iBountyHuntUnique)
+	{
+		BountyInfoData bountyInfoDataFromUnique = this.GetBountyInfoDataFromUnique(iBountyHuntUnique);
+		if (bountyInfoDataFromUnique == null)
+		{
+			return false;
+		}
+		DateTime dueDate = PublicMethod.GetDueDate(PublicMethod.GetCurTime());
+		if ((short)dueDate.DayOfWeek == bountyInfoDataFromUnique.i16Week)
+		{
+			return dueDate.Hour >= (int)bountyInfoDataFromUnique.i16Hour;
+		}
+		short num = bountyInfoDataFromUnique.i16Week + 1;
+		if (num > 6)
+		{
+			num = 0;
+		}
+		return (short)dueDate.DayOfWeek == num && dueDate.Hour < (int)bountyInfoDataFromUnique.i16Hour;
 	}
 
 	public bool AddBountyInfoData(BountyInfoData Data)
@@ -65,6 +85,10 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 			}
 		}
 		this.m_BountyInfoDataList.Add(Data);
+		if (Data.i16Page > this.m_MaxPage)
+		{
+			this.m_MaxPage = Data.i16Page;
+		}
 		return true;
 	}
 
@@ -80,11 +104,11 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 		return null;
 	}
 
-	public BountyInfoData GetBountyInfoData(short iWeek, short iPage, short iEpisode)
+	public BountyInfoData GetBountyInfoData(short iPage, short iEpisode)
 	{
 		for (int i = 0; i < this.m_BountyInfoDataList.Count; i++)
 		{
-			if (iWeek == this.m_BountyInfoDataList[i].i16Week && iPage == this.m_BountyInfoDataList[i].i16Page && iEpisode == this.m_BountyInfoDataList[i].i16Episode)
+			if (iPage == this.m_BountyInfoDataList[i].i16Page && iEpisode == this.m_BountyInfoDataList[i].i16Episode && this.GetBountyInfoDataTime(this.m_BountyInfoDataList[i].i16Unique))
 			{
 				return this.m_BountyInfoDataList[i];
 			}
@@ -174,7 +198,7 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 			{
 				return null;
 			}
-			if (this.Week != bountyInfoDataFromUnique.i16Week)
+			if (!NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoDataTime(bountyInfoDataFromUnique.i16Unique))
 			{
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique = 0;
 				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ClearBountyHuntClearInfo();
@@ -358,16 +382,13 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 		return null;
 	}
 
-	public bool IsAllClear(short i16Week)
+	public bool IsAllClear()
 	{
 		for (int i = 0; i < this.m_BountyInfoDataList.Count; i++)
 		{
-			if (i16Week == this.m_BountyInfoDataList[i].i16Week)
+			if (this.GetBountyInfoDataTime(this.m_BountyInfoDataList[i].i16Unique) && !NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.IsBountyHuntClearUnique(this.m_BountyInfoDataList[i].i16Unique))
 			{
-				if (!NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.IsBountyHuntClearUnique(this.m_BountyInfoDataList[i].i16Unique))
-				{
-					return false;
-				}
+				return false;
 			}
 		}
 		return true;
@@ -380,7 +401,7 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 		{
 			return false;
 		}
-		if (bountyInfoDataFromUnique.i16Page == 1 && bountyInfoDataFromUnique.i16Episode == 1)
+		if (bountyInfoDataFromUnique.i16Episode == 1)
 		{
 			return true;
 		}
@@ -401,16 +422,13 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 		this.m_ClientNpcList.Clear();
 	}
 
-	public bool IsNextPage(short iWeek)
+	public bool IsNextPage()
 	{
 		for (int i = 0; i < this.m_BountyInfoDataList.Count; i++)
 		{
-			if (this.m_BountyInfoDataList[i].i16Week == iWeek)
+			if (this.GetBountyInfoDataTime(this.m_BountyInfoDataList[i].i16Unique) && 1 < this.m_BountyInfoDataList[i].i16Page)
 			{
-				if (1 < this.m_BountyInfoDataList[i].i16Page)
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 		return false;
@@ -439,6 +457,19 @@ public class BountyHuntManager : NrTSingleton<BountyHuntManager>
 				{
 					result = this.m_BountyInfoDataList[i].i16Unique;
 				}
+			}
+		}
+		return result;
+	}
+
+	public short GetPage(short iBountyHuntUnique)
+	{
+		short result = 0;
+		for (int i = 0; i < this.m_BountyInfoDataList.Count; i++)
+		{
+			if (this.m_BountyInfoDataList[i].i16Unique == iBountyHuntUnique)
+			{
+				result = this.m_BountyInfoDataList[i].i16Page;
 			}
 		}
 		return result;

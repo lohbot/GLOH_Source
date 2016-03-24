@@ -1,18 +1,12 @@
 using PROTOCOL.GAME;
 using StageHelper;
 using System;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
 public class Battle_ResultPlunderDlg : Form
 {
-	public enum eMODE
-	{
-		eMODE_PLUNDER,
-		eMODE_INFIBATTLE,
-		eMODE_MAX
-	}
-
 	private DrawTexture m_dtTotalBG;
 
 	private Label m_lbResult;
@@ -36,8 +30,6 @@ public class Battle_ResultPlunderDlg : Form
 	private bool m_bClearMiddleStage;
 
 	private bool m_bUpdate;
-
-	private Battle_ResultPlunderDlg.eMODE m_eMode;
 
 	public bool UpdateCheck
 	{
@@ -127,6 +119,26 @@ public class Battle_ResultPlunderDlg : Form
 		this.m_dtTotalBG.SetTexture(texture);
 	}
 
+	public void SetBG(WWWItem _item, object _param)
+	{
+		if (this == null)
+		{
+			return;
+		}
+		if (_item.isCanceled)
+		{
+			return;
+		}
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.m_dtTotalBG.SetTexture(texture2D);
+			}
+		}
+	}
+
 	public void ResizeDlg()
 	{
 		base.SetLocation(0f, 0f);
@@ -155,16 +167,8 @@ public class Battle_ResultPlunderDlg : Form
 
 	public void LinkData()
 	{
-		if (this.m_eMode == Battle_ResultPlunderDlg.eMODE.eMODE_PLUNDER)
-		{
-			this.m_ChildDlg._LinkBasicData();
-			this.m_ChildDlg.LinkData();
-		}
-		else
-		{
-			this.m_ChildDlg._LinkBasicDataInfiBattle();
-			this.m_ChildDlg._LinkSolDataInfiBattle();
-		}
+		this.m_ChildDlg._LinkBasicDataInfiBattle();
+		this.m_ChildDlg._LinkSolDataInfiBattle();
 		this.m_lbResult.SetText(this.m_ChildDlg.m_strWin);
 		this.m_lbBattleTime.SetText(this.m_ChildDlg.m_strBattleTime);
 		this.ShowResultFx();
@@ -229,35 +233,14 @@ public class Battle_ResultPlunderDlg : Form
 		}
 	}
 
-	public void SetMode(Battle_ResultPlunderDlg.eMODE eMode)
-	{
-		this.m_eMode = eMode;
-		this.m_ChildDlg.SetMode((Battle_ResultPlunderDlg_Content.eMODE)eMode);
-		this.ShowMode();
-	}
-
 	public void ShowMode()
 	{
-		Battle_ResultPlunderDlg.eMODE eMode = this.m_eMode;
-		if (eMode != Battle_ResultPlunderDlg.eMODE.eMODE_PLUNDER)
-		{
-			if (eMode == Battle_ResultPlunderDlg.eMODE.eMODE_INFIBATTLE)
-			{
-				this.ShowInfiBattle();
-			}
-		}
-		else
-		{
-			this.ShowPlunder();
-		}
-	}
-
-	public void ShowPlunder()
-	{
+		this.ShowInfiBattle();
 	}
 
 	public void ShowInfiBattle()
 	{
+		this.m_ChildDlg.SetMode();
 	}
 
 	public void SetInfiBattleInfo(GS_INFIBATTLE_RESULT_ACK ACK)

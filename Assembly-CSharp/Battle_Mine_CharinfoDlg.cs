@@ -173,6 +173,33 @@ public class Battle_Mine_CharinfoDlg : Form
 		this.m_nPersonID[nAlly][num] = pkInfo.nPersonID;
 	}
 
+	public void HiddenName()
+	{
+		if (!NrTSingleton<NkBattleReplayManager>.Instance.m_bHiddenEnemyName)
+		{
+			return;
+		}
+		int num = (Battle.BATTLE.MyAlly != eBATTLE_ALLY.eBATTLE_ALLY_0) ? 0 : 1;
+		for (int i = 0; i < this.m_lbCharName[num].Length; i++)
+		{
+			if (this.m_lbCharName[num][i].GetText() != string.Empty && this.m_lbCharName[num][i].GetText() != string.Empty)
+			{
+				this.m_lbCharName[num][i].SetText("????");
+			}
+		}
+		if (Battle.BATTLE.MyAlly == eBATTLE_ALLY.eBATTLE_ALLY_INVALID)
+		{
+			int num2 = (num != 0) ? 0 : 1;
+			for (int j = 0; j < this.m_lbCharName[num2].Length; j++)
+			{
+				if (this.m_lbCharName[num2][j].GetText() != string.Empty && this.m_lbCharName[num2][j].GetText() != string.Empty)
+				{
+					this.m_lbCharName[num2][j].SetText("????");
+				}
+			}
+		}
+	}
+
 	private void ChangeMyCharHPColor()
 	{
 	}

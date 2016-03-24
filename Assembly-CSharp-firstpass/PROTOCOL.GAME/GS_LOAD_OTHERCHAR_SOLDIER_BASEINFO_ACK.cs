@@ -10,8 +10,6 @@ namespace PROTOCOL.GAME
 
 		public short i16SoldierCnt;
 
-		public byte NumBattleSkill;
-
 		public byte NumSolSubData;
 	}
 }

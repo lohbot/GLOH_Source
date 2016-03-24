@@ -6,7 +6,7 @@ namespace PROTOCOL
 	{
 		public short i16TryCount;
 
-		public int[] i32NeedNum = new int[6];
+		public int[] i32NeedNum = new int[10];
 
 		public int i32RingSlotRate;
 

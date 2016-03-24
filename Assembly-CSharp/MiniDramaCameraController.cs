@@ -66,7 +66,7 @@ public class MiniDramaCameraController : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator Recervy(Action Func)
 	{
-		MiniDramaCameraController.<Recervy>c__Iterator0 <Recervy>c__Iterator = new MiniDramaCameraController.<Recervy>c__Iterator0();
+		MiniDramaCameraController.<Recervy>c__Iterator2 <Recervy>c__Iterator = new MiniDramaCameraController.<Recervy>c__Iterator2();
 		<Recervy>c__Iterator.Func = Func;
 		<Recervy>c__Iterator.<$>Func = Func;
 		<Recervy>c__Iterator.<>f__this = this;

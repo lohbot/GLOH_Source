@@ -54,6 +54,10 @@ public class NrLinkTextProcessor
 		{
 			NrLinkTextProcessor.TreasureBoxFunc(strText);
 		}
+		else if (linkTextType == LinkText.TYPE.GUILD)
+		{
+			NrLinkTextProcessor.ShowGuildInfo(strText);
+		}
 	}
 
 	public static void LinkTextProcessorRightClick(LinkText.TYPE linkTextType, string strText, string strTextKey, object objData)
@@ -86,7 +90,7 @@ public class NrLinkTextProcessor
 			{
 				return;
 			}
-			NrTSingleton<CRightClickMenu>.Instance.CreateUI(0L, 0, text, CRightClickMenu.KIND.CHAT_USER_LINK_TEXT, CRightClickMenu.TYPE.NAME_SECTION_2);
+			NrTSingleton<CRightClickMenu>.Instance.CreateUI(0L, 0, text, CRightClickMenu.KIND.CHAT_USER_LINK_TEXT, CRightClickMenu.TYPE.NAME_SECTION_2, false);
 		}
 	}
 
@@ -147,7 +151,7 @@ public class NrLinkTextProcessor
 		}
 		if (TsPlatform.IsMobile)
 		{
-			NrTSingleton<CRightClickMenu>.Instance.CreateUI(0L, 0, text, CRightClickMenu.KIND.CHAT_USER_LINK_TEXT, CRightClickMenu.TYPE.NAME_SECTION_2);
+			NrTSingleton<CRightClickMenu>.Instance.CreateUI(0L, 0, text, CRightClickMenu.KIND.CHAT_USER_LINK_TEXT, CRightClickMenu.TYPE.NAME_SECTION_2, false);
 		}
 		else
 		{
@@ -311,6 +315,26 @@ public class NrLinkTextProcessor
 			gS_TREASUREBOX_MOVE_REQ.i32Day = i32Day;
 		}
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_TREASUREBOX_MOVE_REQ, gS_TREASUREBOX_MOVE_REQ);
+	}
+
+	private static void ShowGuildInfo(string strText)
+	{
+		if (strText.Contains("[#"))
+		{
+			strText = strText.Remove(0, 11);
+		}
+		if (strText.Contains("["))
+		{
+			strText = strText.Replace("[", string.Empty);
+		}
+		if (strText.Contains("]"))
+		{
+			strText = strText.Replace("]", string.Empty);
+		}
+		GS_NEWGUILD_DETAILINFO_REQ gS_NEWGUILD_DETAILINFO_REQ = new GS_NEWGUILD_DETAILINFO_REQ();
+		gS_NEWGUILD_DETAILINFO_REQ.i64GuildID = 0L;
+		TKString.StringChar(strText, ref gS_NEWGUILD_DETAILINFO_REQ.strGuildName);
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_NEWGUILD_DETAILINFO_REQ, gS_NEWGUILD_DETAILINFO_REQ);
 	}
 
 	private static bool TreasureRewardTimeCheck(string strText, ref int iDay)

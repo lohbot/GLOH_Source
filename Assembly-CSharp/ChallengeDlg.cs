@@ -1,6 +1,7 @@
 using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
+using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
 using TsBundle;
@@ -19,6 +20,8 @@ public class ChallengeDlg : Form
 	private Box m_Notice3;
 
 	private Box m_Percent;
+
+	private Button m_btBack;
 
 	private float m_fOldSize;
 
@@ -49,16 +52,18 @@ public class ChallengeDlg : Form
 		string[] array = new string[]
 		{
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("425"),
-			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("431")
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("431"),
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("433")
 		};
 		for (int i = 0; i < this.m_kToolbar.Count; i++)
 		{
 			this.m_kToolbar.Control_Tab[i].Text = NrTSingleton<UIDataManager>.Instance.GetString(NrTSingleton<CTextParser>.Instance.GetTextColor("1002"), array[i]);
-			UIPanelTab expr_83 = this.m_kToolbar.Control_Tab[i];
-			expr_83.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_83.ButtonClick, new EZValueChangedDelegate(this.ClickToolBar));
+			UIPanelTab expr_95 = this.m_kToolbar.Control_Tab[i];
+			expr_95.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_95.ButtonClick, new EZValueChangedDelegate(this.ClickToolBar));
 		}
 		this.m_kToolbar.Control_Tab[0].Data = ChallengeManager.TYPE.ONEDAY;
 		this.m_kToolbar.Control_Tab[1].Data = ChallengeManager.TYPE.CONTINUE;
+		this.m_kToolbar.Control_Tab[2].Data = ChallengeManager.TYPE.EVENT;
 		this.m_kListBox = (base.GetControl("NLB_Mission") as NewListBox);
 		this.m_Notice1 = (base.GetControl("DT_Notice1") as Box);
 		this.m_Notice1.SetLocation(this.m_Notice1.GetLocationX(), this.m_Notice1.GetLocationY(), this.m_kToolbar.GetLocation().z - 0.1f);
@@ -71,10 +76,16 @@ public class ChallengeDlg : Form
 		this.m_Notice3.Visible = false;
 		this.m_Percent = (base.GetControl("DT_GageBar") as Box);
 		this.m_fOldSize = this.m_Percent.GetSize().x;
+		this.m_btBack = (base.GetControl("BT_back") as Button);
+		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBack));
 		this.m_nSelectType = ChallengeManager.TYPE.ONEDAY;
 		this.SetChallengeInfo(this.m_nSelectType);
 		base.SetScreenCenter();
 		base.ShowLayer((int)this.m_nSelectType);
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsChallenge())
+		{
+			this.m_kToolbar.Control_Tab[2].Visible = false;
+		}
 	}
 
 	private void ClickList(IUIObject obj)
@@ -101,8 +112,39 @@ public class ChallengeDlg : Form
 		{
 			return;
 		}
-		ChallengeManager.TYPE nSelectType = (ChallengeManager.TYPE)((int)obj.Data);
-		this.m_nSelectType = nSelectType;
+		ChallengeManager.TYPE tYPE = (ChallengeManager.TYPE)((int)obj.Data);
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsChallenge() && tYPE == ChallengeManager.TYPE.EVENT)
+		{
+			return;
+		}
+		this.m_nSelectType = tYPE;
+		this.SetChallengeInfo(this.m_nSelectType);
+		base.ShowLayer((int)this.m_nSelectType);
+	}
+
+	public int GetToolbarIndex(ChallengeManager.TYPE nType)
+	{
+		int result = -1;
+		for (int i = 0; i < this.m_kToolbar.Count; i++)
+		{
+			if ((int)this.m_kToolbar.Control_Tab[i].Data == (int)nType)
+			{
+				result = i;
+				break;
+			}
+		}
+		return result;
+	}
+
+	public void SetEventTab()
+	{
+		int toolbarIndex = this.GetToolbarIndex(ChallengeManager.TYPE.EVENT);
+		if (toolbarIndex == -1)
+		{
+			return;
+		}
+		this.m_kToolbar.SetSelectTabIndex(toolbarIndex);
+		this.m_nSelectType = ChallengeManager.TYPE.EVENT;
 		this.SetChallengeInfo(this.m_nSelectType);
 		base.ShowLayer((int)this.m_nSelectType);
 	}
@@ -174,22 +216,30 @@ public class ChallengeDlg : Form
 		}
 		else
 		{
+			if (table.m_szOpenUI != "0")
+			{
+				item.SetListItemEnable(9, true);
+				item.SetEnable(true);
+			}
+			else
+			{
+				item.SetListItemEnable(9, false);
+				item.SetEnable(false);
+			}
 			value = num;
-			item.SetListItemEnable(8, false);
-			item.SetEnable(false);
 			complete = false;
 		}
 		long charDetail = charInfo.GetCharDetail(12);
 		if (1L <= (charDetail & table.m_nCheckRewardValue))
 		{
-			item.SetListItemEnable(8, false);
+			item.SetListItemEnable(9, false);
 			item.SetEnable(false);
 			value = (long)table.m_kRewardInfo[index].m_nConditionCount;
 			complete = false;
 		}
 		else
 		{
-			item.SetListItemData(9, false);
+			item.SetListItemData(8, false);
 		}
 	}
 
@@ -208,9 +258,10 @@ public class ChallengeDlg : Form
 				string empty = string.Empty;
 				long num = 0L;
 				int num2 = -1;
-				NewListItem newListItem = new NewListItem(this.m_kListBox.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_kListBox.ColumnNum, true, string.Empty);
 				newListItem.SetListItemData(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current.m_szTitleTextKey), null, null, null);
-				newListItem.SetListItemData(8, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493"), current.m_nUnique, new EZValueChangedDelegate(this.ClickList), null);
+				newListItem.SetListItemData(10, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493"), current.m_nUnique, new EZValueChangedDelegate(this.ClickList), null);
+				newListItem.SetListItemData(9, false);
 				for (int i = 0; i < current.m_kRewardInfo.Count; i++)
 				{
 					if (charInfo.GetLevel() < current.m_kRewardInfo[i].m_nConditionLevel)
@@ -295,6 +346,19 @@ public class ChallengeDlg : Form
 						}
 						list.Add(current.m_nUnique);
 					}
+					else if (current.m_nUnique == 1301 || current.m_nUnique == 1302 || current.m_nUnique == 1303)
+					{
+						if (!NrTSingleton<ContentsLimitManager>.Instance.IsTimeShop())
+						{
+							continue;
+						}
+						this.CheckDayChallenge(ref newListItem, charInfo, current, num2, ref empty, ref num, ref flag5);
+						if (!flag5)
+						{
+							continue;
+						}
+						list.Add(current.m_nUnique);
+					}
 					else
 					{
 						this.CheckDayChallenge(ref newListItem, charInfo, current, num2, ref empty, ref num, ref flag5);
@@ -369,9 +433,10 @@ public class ChallengeDlg : Form
 					string empty2 = string.Empty;
 					long num3 = 0L;
 					int num4 = -1;
-					NewListItem newListItem2 = new NewListItem(this.m_kListBox.ColumnNum, true);
+					NewListItem newListItem2 = new NewListItem(this.m_kListBox.ColumnNum, true, string.Empty);
 					newListItem2.SetListItemData(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current2.m_szTitleTextKey), null, null, null);
-					newListItem2.SetListItemData(8, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493"), current2.m_nUnique, new EZValueChangedDelegate(this.ClickList), null);
+					newListItem2.SetListItemData(9, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"), current2.m_nUnique, new EZValueChangedDelegate(this.ClickOpenUi), null);
+					newListItem2.SetListItemData(10, false);
 					for (int j = 0; j < current2.m_kRewardInfo.Count; j++)
 					{
 						if (charInfo.GetLevel() < current2.m_kRewardInfo[j].m_nConditionLevel)
@@ -436,10 +501,15 @@ public class ChallengeDlg : Form
 							this.CheckDayChallenge(ref newListItem2, charInfo, current2, num4, ref empty2, ref num3, ref flag10);
 							flag9 = true;
 						}
-						else
+						else if (current2.m_nUnique == 1301 || current2.m_nUnique == 1302 || current2.m_nUnique == 1303)
 						{
+							if (!NrTSingleton<ContentsLimitManager>.Instance.IsTimeShop())
+							{
+								continue;
+							}
 							this.CheckDayChallenge(ref newListItem2, charInfo, current2, num4, ref empty2, ref num3, ref flag10);
 						}
+						this.CheckDayChallenge(ref newListItem2, charInfo, current2, num4, ref empty2, ref num3, ref flag10);
 						newListItem2.SetListItemData(1, NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(current2.m_szIconKey), null, null, null);
 						string str2 = string.Empty;
 						string text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current2.m_kRewardInfo[num4].m_szConditionTextKey);
@@ -507,7 +577,7 @@ public class ChallengeDlg : Form
 				string empty = string.Empty;
 				long num = 0L;
 				int index = 0;
-				NewListItem newListItem = new NewListItem(this.m_kListBox.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_kListBox.ColumnNum, true, string.Empty);
 				newListItem.SetListItemData(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current.m_szTitleTextKey), null, null, null);
 				for (int i = 0; i < current.m_kRewardInfo.Count; i++)
 				{
@@ -583,14 +653,15 @@ public class ChallengeDlg : Form
 				long num = 0L;
 				bool flag = true;
 				int num2 = -1;
-				NewListItem newListItem = new NewListItem(this.m_kListBox.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_kListBox.ColumnNum, true, string.Empty);
 				newListItem.SetListItemData(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current.m_szTitleTextKey), null, null, null);
-				newListItem.SetListItemData(8, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493"), current.m_nUnique, new EZValueChangedDelegate(this.ClickList), null);
+				newListItem.SetListItemData(10, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493"), current.m_nUnique, new EZValueChangedDelegate(this.ClickList), null);
 				newListItem.SetListItemData(9, false);
+				newListItem.SetListItemData(8, false);
 				Challenge_Info userChallengeInfo = userChalengeInfo.GetUserChallengeInfo(current.m_nUnique);
 				if (userChallengeInfo == null)
 				{
-					newListItem.SetListItemEnable(8, false);
+					newListItem.SetListItemEnable(10, false);
 					newListItem.SetEnable(false);
 					num2 = 0;
 					flag = false;
@@ -641,7 +712,7 @@ public class ChallengeDlg : Form
 							i++;
 						}
 					}
-					if (i == 64)
+					if (i == 40)
 					{
 						flag = false;
 					}
@@ -723,14 +794,15 @@ public class ChallengeDlg : Form
 					long num6 = 0L;
 					bool flag3 = true;
 					int num7 = -1;
-					NewListItem newListItem2 = new NewListItem(this.m_kListBox.ColumnNum, true);
+					NewListItem newListItem2 = new NewListItem(this.m_kListBox.ColumnNum, true, string.Empty);
 					newListItem2.SetListItemData(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current2.m_szTitleTextKey), null, null, null);
-					newListItem2.SetListItemData(8, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493"), current2.m_nUnique, new EZValueChangedDelegate(this.ClickList), null);
-					newListItem2.SetListItemData(9, false);
+					newListItem2.SetListItemData(9, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"), current2.m_nUnique, new EZValueChangedDelegate(this.ClickOpenUi), null);
+					newListItem2.SetListItemData(10, false);
+					newListItem2.SetListItemData(8, false);
 					Challenge_Info userChallengeInfo2 = userChalengeInfo.GetUserChallengeInfo(current2.m_nUnique);
 					if (userChallengeInfo2 == null)
 					{
-						newListItem2.SetListItemEnable(8, false);
+						newListItem2.SetListItemEnable(9, false);
 						newListItem2.SetEnable(false);
 						num7 = 0;
 					}
@@ -769,9 +841,14 @@ public class ChallengeDlg : Form
 								{
 									str3 = NrTSingleton<CTextParser>.Instance.GetTextColor("1105");
 								}
+								else if (current2.m_szOpenUI != "0")
+								{
+									newListItem2.SetListItemEnable(9, true);
+									newListItem2.SetEnable(true);
+								}
 								else
 								{
-									newListItem2.SetListItemEnable(8, false);
+									newListItem2.SetListItemEnable(9, false);
 									newListItem2.SetEnable(false);
 								}
 								num6 = userChallengeInfo2.m_nValue;
@@ -782,7 +859,7 @@ public class ChallengeDlg : Form
 								j++;
 							}
 						}
-						if (j == 64)
+						if (j == 40)
 						{
 							flag3 = false;
 						}
@@ -856,6 +933,154 @@ public class ChallengeDlg : Form
 		this.m_Percent.SetSize(this.m_fOldSize * (float)num11 / 100f, this.m_Percent.GetSize().y);
 	}
 
+	private void MakeEventList(NrMyCharInfo charInfo, UserChallengeInfo userChalengeInfo, Dictionary<short, ChallengeTable> challengeInfo)
+	{
+		this.m_kListBox.Clear();
+		List<short> list = new List<short>();
+		short num = 0;
+		ITEM item = NkUserInventory.instance.GetItem(50902);
+		foreach (ChallengeTable current in challengeInfo.Values)
+		{
+			if (!list.Contains(current.m_nUnique))
+			{
+				if ((int)current.m_nLevel <= charInfo.GetLevel())
+				{
+					string empty = string.Empty;
+					long num2 = 0L;
+					int index = 0;
+					NewListItem newListItem = new NewListItem(this.m_kListBox.ColumnNum, true, string.Empty);
+					newListItem.SetListItemData(1, NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(current.m_szIconKey), null, null, null);
+					newListItem.SetListItemData(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current.m_szTitleTextKey), null, null, null);
+					newListItem.SetListItemData(10, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("493"), current.m_nUnique, new EZValueChangedDelegate(this.ClickEventReward), null);
+					newListItem.SetListItemData(9, false);
+					newListItem.SetListItemData(8, false);
+					string str = string.Empty;
+					string text = NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(current.m_kRewardInfo[index].m_szConditionTextKey);
+					if (text.Contains("count"))
+					{
+						if (item != null)
+						{
+							if (item.m_nItemNum <= current.m_kRewardInfo[index].m_nConditionCount)
+							{
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref str, new object[]
+								{
+									text,
+									"count",
+									current.m_kRewardInfo[index].m_nConditionCount,
+									"count1",
+									item.m_nItemNum,
+									"count2",
+									current.m_kRewardInfo[index].m_nConditionCount
+								});
+							}
+							else
+							{
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref str, new object[]
+								{
+									text,
+									"count",
+									current.m_kRewardInfo[index].m_nConditionCount,
+									"count1",
+									current.m_kRewardInfo[index].m_nConditionCount,
+									"count2",
+									current.m_kRewardInfo[index].m_nConditionCount
+								});
+							}
+						}
+						else
+						{
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref str, new object[]
+							{
+								text,
+								"count",
+								current.m_kRewardInfo[index].m_nConditionCount,
+								"count1",
+								num2,
+								"count2",
+								current.m_kRewardInfo[index].m_nConditionCount
+							});
+						}
+					}
+					else
+					{
+						str = text;
+					}
+					newListItem.SetListItemData(3, empty + str, null, null, null);
+					if (0L < current.m_kRewardInfo[index].m_nMoney)
+					{
+						newListItem.SetListItemData(5, NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Main_I_ExtraI01"), null, null, null);
+						text = string.Empty;
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+						{
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1119"),
+							"count",
+							current.m_kRewardInfo[index].m_nMoney
+						});
+						newListItem.SetListItemData(6, text, null, null, null);
+					}
+					else if (0 < current.m_kRewardInfo[index].m_nItemUnique)
+					{
+						newListItem.SetListItemData(5, NrTSingleton<ItemManager>.Instance.GetItemTexture(current.m_kRewardInfo[index].m_nItemUnique), null, null, null);
+						text = string.Empty;
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+						{
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1697"),
+							"itemname",
+							NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(current.m_kRewardInfo[index].m_nItemUnique),
+							"count",
+							current.m_kRewardInfo[index].m_nItemNum
+						});
+						newListItem.SetListItemData(6, text, null, null, null);
+					}
+					if (item != null)
+					{
+						if (item.m_nItemNum > 0)
+						{
+							if (item.m_nItemNum >= current.m_kRewardInfo[index].m_nConditionCount)
+							{
+								if (!NrTSingleton<ChallengeManager>.Instance.GetChallengeEventRewardInfo(current.m_nUnique))
+								{
+									newListItem.SetListItemEnable(10, true);
+									newListItem.SetListItemData(8, false);
+									num += 1;
+								}
+								else
+								{
+									newListItem.SetListItemEnable(10, false);
+									newListItem.SetListItemData(8, true);
+								}
+							}
+							else
+							{
+								newListItem.SetListItemEnable(10, false);
+								newListItem.SetListItemData(8, false);
+							}
+						}
+					}
+					else
+					{
+						newListItem.SetListItemEnable(10, false);
+						newListItem.SetListItemData(8, false);
+					}
+					newListItem.Data = current.m_nUnique;
+					this.m_kListBox.Add(newListItem);
+				}
+			}
+		}
+		this.m_kListBox.RepositionItems();
+		list.Clear();
+		string empty2 = string.Empty;
+		int num3 = NrTSingleton<ChallengeManager>.Instance.CalcTotalPercent();
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("672"),
+			"Count",
+			NrTSingleton<ChallengeManager>.Instance.CalcTotalPercent()
+		});
+		this.m_Percent.Text = empty2;
+		this.m_Percent.SetSize(this.m_fOldSize * (float)num3 / 100f, this.m_Percent.GetSize().y);
+	}
+
 	public void SetChallengeInfo(ChallengeManager.TYPE type)
 	{
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
@@ -888,8 +1113,36 @@ public class ChallengeDlg : Form
 		}
 		else if (type == ChallengeManager.TYPE.EVENT)
 		{
-			this.MakeContinueList(kMyCharInfo, userChallengeInfo, challengeType);
+			this.MakeEventList(kMyCharInfo, userChallengeInfo, challengeType);
 		}
 		this.m_bRequest = false;
+	}
+
+	public void OnClickBack(object a_oObject)
+	{
+		this.Close();
+		NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.MAINMENU_DLG);
+	}
+
+	public void ClickEventReward(IUIObject obj)
+	{
+		if (obj == null)
+		{
+			return;
+		}
+		GS_CHAR_CHALLENGE_EVENT_REQ gS_CHAR_CHALLENGE_EVENT_REQ = new GS_CHAR_CHALLENGE_EVENT_REQ();
+		gS_CHAR_CHALLENGE_EVENT_REQ.i16Challenge_Unique = (short)obj.Data;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_CHAR_CHALLENGE_EVENT_REQ, gS_CHAR_CHALLENGE_EVENT_REQ);
+		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "REPUTATION", "REWARD", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+	}
+
+	public void ClickOpenUi(IUIObject obj)
+	{
+		if (!NrTSingleton<NkClientLogic>.Instance.ShowDownLoadUI(0, 0))
+		{
+			return;
+		}
+		ChallengeTable challengeTable = NrTSingleton<ChallengeManager>.Instance.GetChallengeTable((short)obj.Data);
+		NrTSingleton<ChallengeManager>.Instance.GetChallengeOpenUi(challengeTable.m_szOpenUI, challengeTable.m_nUnique);
 	}
 }

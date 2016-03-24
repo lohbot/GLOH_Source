@@ -17,7 +17,7 @@ public class BASE_SOLGRADEINFO : NrTableData
 
 	public CHARKIND_SOLINCSTATINFO kSolIncStatInfo = new CHARKIND_SOLINCSTATINFO();
 
-	public int[] nGainRate = new int[20];
+	public int[] nGainRate = new int[23];
 
 	public long ComposeExp;
 
@@ -51,7 +51,7 @@ public class BASE_SOLGRADEINFO : NrTableData
 		this.MaxLevel = 0;
 		this.kSolStatInfo.Init();
 		this.kSolIncStatInfo.Init();
-		for (int i = 0; i < 20; i++)
+		for (int i = 0; i < 23; i++)
 		{
 			this.nGainRate[i] = 0;
 		}
@@ -75,7 +75,7 @@ public class BASE_SOLGRADEINFO : NrTableData
 		this.MaxLevel = pkInfo.MaxLevel;
 		this.kSolStatInfo.Set(ref pkInfo.kSolStatInfo);
 		this.kSolIncStatInfo.Set(ref pkInfo.kSolIncStatInfo);
-		for (int i = 0; i < 20; i++)
+		for (int i = 0; i < 23; i++)
 		{
 			this.nGainRate[i] = pkInfo.nGainRate[i];
 		}

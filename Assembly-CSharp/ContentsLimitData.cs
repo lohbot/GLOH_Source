@@ -243,6 +243,24 @@ public class ContentsLimitData
 		return false;
 	}
 
+	public bool IsSoldierRecruit(int i32CharKind)
+	{
+		for (int i = 0; i < this.m_LimitDataList.Count; i++)
+		{
+			for (int j = 0; j < 10; j++)
+			{
+				if (0L < this.m_LimitDataList[i].i64Param[j])
+				{
+					if ((long)i32CharKind == this.m_LimitDataList[i].i64Param[j])
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
 	public bool IsGuildBoss()
 	{
 		return this.m_LimitDataList.Count <= 0 || this.m_LimitDataList[0].i64Param[0] <= 0L;
@@ -599,6 +617,11 @@ public class ContentsLimitData
 		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[1] == 1L;
 	}
 
+	public bool IsGuildWarExchangeLimit()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[2] != 1L;
+	}
+
 	public bool IsExchangeJewelry()
 	{
 		for (int i = 0; i < this.m_LimitDataList.Count; i++)
@@ -701,6 +724,120 @@ public class ContentsLimitData
 	}
 
 	public bool IsExtract()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] == 1L;
+	}
+
+	public bool IsQuestTalkSkip()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] != 1L;
+	}
+
+	public bool IsLineFriendInviteButton()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] != 1L;
+	}
+
+	public bool IsMythRaidOn()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] != 1L;
+	}
+
+	public bool IsRateUrl()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] != 1L;
+	}
+
+	public bool IsChallenge()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] != 1L;
+	}
+
+	public bool IsTimeShop()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] != 1L;
+	}
+
+	public bool IsAttend()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] != 1L;
+	}
+
+	public short Attend_LastGroup(int a_nParam)
+	{
+		if (this.m_LimitDataList.Count > 0 && this.m_LimitDataList[0].i64Param[a_nParam] > 0L)
+		{
+			return (short)this.m_LimitDataList[0].i64Param[a_nParam];
+		}
+		return 0;
+	}
+
+	public bool IsItemNormalSkillBlock()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] == 1L;
+	}
+
+	public bool IsItemLevelCheckBlock()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[1] == 1L;
+	}
+
+	public bool IsItemEvolution(bool ExMode = false)
+	{
+		if (0 >= this.m_LimitDataList.Count)
+		{
+			return false;
+		}
+		if (ExMode)
+		{
+			if (this.m_LimitDataList[0].i64Param[1] == 1L)
+			{
+				return false;
+			}
+		}
+		else if (this.m_LimitDataList[0].i64Param[0] == 1L)
+		{
+			return false;
+		}
+		return true;
+	}
+
+	public bool IsNewExplorationLimit()
+	{
+		return this.m_LimitDataList[0].i64Param[0] >= 1L;
+	}
+
+	public short NewExplorationLimitLevel()
+	{
+		return (short)this.m_LimitDataList[0].i64Param[1];
+	}
+
+	public bool IsUseWillSpend()
+	{
+		return this.m_LimitDataList[0].i64Param[0] == 0L;
+	}
+
+	public bool IsDailyDungeonLimit()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] == 1L;
+	}
+
+	public bool IsCostumeLimit()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] == 1L;
+	}
+
+	public bool IsBattleStopLimit()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] == 1L;
+	}
+
+	public bool IsMineLimit()
+	{
+		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[2] == 1L;
+	}
+
+	public bool IsMythEvolutionLimit()
 	{
 		return 0 < this.m_LimitDataList.Count && this.m_LimitDataList[0].i64Param[0] == 1L;
 	}

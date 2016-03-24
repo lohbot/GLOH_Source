@@ -1,9 +1,11 @@
+using GAME;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Xml;
 using TsBundle;
+using TsLibs;
 using UnityEngine;
 
 public class NkCutScene_Camera_Manager
@@ -14,13 +16,19 @@ public class NkCutScene_Camera_Manager
 
 	public float Duration;
 
-	private int _currentIndex_Camera;
-
-	private float _currentStepTime_Camera;
-
 	private float fStartTime;
 
 	private TsWeakReference<maxCamera> m_TargetCamera;
+
+	private int nReservationCharKind;
+
+	private eCharAnimationType eReservationAni = eCharAnimationType.None;
+
+	private bool bLoadComplete;
+
+	private bool bHide;
+
+	private int nHideAlly = -1;
 
 	public static NkCutScene_Camera_Manager Instance
 	{
@@ -35,12 +43,38 @@ public class NkCutScene_Camera_Manager
 		}
 	}
 
+	public int ReservationCharKind
+	{
+		get
+		{
+			return this.nReservationCharKind;
+		}
+		set
+		{
+			this.nReservationCharKind = value;
+		}
+	}
+
+	public eCharAnimationType ReservationAni
+	{
+		get
+		{
+			return this.eReservationAni;
+		}
+	}
+
+	public bool LoadComplete
+	{
+		get
+		{
+			return this.bLoadComplete;
+		}
+	}
+
 	public void Clear()
 	{
 		this._listCamera.Clear();
 		this.Duration = 0f;
-		this._currentIndex_Camera = 0;
-		this._currentStepTime_Camera = 0f;
 		this.fStartTime = 0f;
 		if (this.m_TargetCamera != null && this.m_TargetCamera.CastedTarget != null)
 		{
@@ -48,6 +82,25 @@ public class NkCutScene_Camera_Manager
 			this.m_TargetCamera.CastedTarget.RestoreCameraInfo();
 		}
 		this.m_TargetCamera = null;
+		this.nReservationCharKind = 0;
+		this.eReservationAni = eCharAnimationType.None;
+		this.bLoadComplete = false;
+		Battle.BATTLE.GRID_MANAGER.ShowHideGrid(true);
+		GameObject gameObject = GameObject.Find("UI Camera");
+		if (gameObject != null)
+		{
+			Camera componentInChildren = gameObject.GetComponentInChildren<Camera>();
+			if (componentInChildren != null)
+			{
+				componentInChildren.enabled = true;
+			}
+		}
+		if (this.bHide)
+		{
+			NrTSingleton<NkBattleCharManager>.Instance.ChangeCharLayer((eBATTLE_ALLY)this.nHideAlly, -1, true, true);
+			this.bHide = false;
+			this.nHideAlly = -1;
+		}
 	}
 
 	public void Update()
@@ -77,8 +130,6 @@ public class NkCutScene_Camera_Manager
 
 	public void StartCutScene()
 	{
-		this._currentIndex_Camera = 0;
-		this._currentStepTime_Camera = 0f;
 		this.fStartTime = Time.realtimeSinceStartup;
 		maxCamera component = Camera.main.GetComponent<maxCamera>();
 		if (component != null)
@@ -87,38 +138,77 @@ public class NkCutScene_Camera_Manager
 			this.m_TargetCamera.CastedTarget.BackUpCameraInfo();
 			this.m_TargetCamera.CastedTarget.enabled = false;
 		}
+		if (this.bHide)
+		{
+			NrTSingleton<NkBattleCharManager>.Instance.ChangeCharLayer((eBATTLE_ALLY)this.nHideAlly, -1, false, true);
+		}
+		NrTSingleton<NkBattleCharManager>.Instance.AllCharNameHide(false);
+		Battle.BATTLE.GRID_MANAGER.ShowHideGrid(false);
+		GameObject gameObject = GameObject.Find("UI Camera");
+		if (gameObject != null)
+		{
+			Camera componentInChildren = gameObject.GetComponentInChildren<Camera>();
+			if (componentInChildren != null)
+			{
+				componentInChildren.enabled = false;
+			}
+		}
 	}
 
 	public void SortCameraTimeLine()
 	{
-		this._listCamera.Sort((CutScene_Camera left, CutScene_Camera right) => (left._fFireTime >= right._fFireTime) ? -1 : 1);
+		this._listCamera.Sort(new Comparison<CutScene_Camera>(this.CompareToFileTime));
 	}
 
-	public bool ReadCutScneData(string fileName)
+	private int CompareToFileTime(CutScene_Camera left, CutScene_Camera right)
 	{
-		string key = string.Empty;
-		ItemType itemType;
-		if (!NrTSingleton<NrGlobalReference>.Instance.useCache)
+		return right._fFireTime.CompareTo(left._fFireTime);
+	}
+
+	public bool ReadCutScneData(string fileName, int nCharKind, eCharAnimationType eAni, int nHide, int nAlly)
+	{
+		this.Clear();
+		string text = string.Empty;
+		if (!NrTSingleton<NrGlobalReference>.Instance.isLoadWWW)
 		{
-			key = string.Format("{0}{1}.xml", CDefinePath.XMLPath(), fileName);
-			itemType = ItemType.USER_STRING;
+			string text2 = Option.GetProtocolRootPath(Protocol.FILE);
+			text2 = text2.Substring("file:///".Length, text2.Length - "file:///".Length);
+			text = string.Format("{0}{1}{2}.xml", text2, CDefinePath.XMLPath(), fileName);
+			this.ReadXML(text, null);
 		}
 		else
 		{
-			if (TsPlatform.IsMobile)
+			ItemType itemType;
+			if (!NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
-				key = string.Format("{0}{1}_mobile{2}", CDefinePath.XMLBundlePath(), fileName, Option.extAsset);
+				text = string.Format("{0}{1}.xml", CDefinePath.XMLPath(), fileName);
+				itemType = ItemType.USER_STRING;
 			}
 			else
 			{
-				key = string.Format("{0}{1}{2}", CDefinePath.XMLBundlePath(), fileName, Option.extAsset);
+				if (TsPlatform.IsMobile)
+				{
+					text = string.Format("{0}{1}_mobile{2}", CDefinePath.XMLBundlePath(), fileName, Option.extAsset);
+				}
+				else
+				{
+					text = string.Format("{0}{1}{2}", CDefinePath.XMLBundlePath(), fileName, Option.extAsset);
+				}
+				itemType = ItemType.USER_ASSETB;
 			}
-			itemType = ItemType.USER_ASSETB;
+			WWWItem wWWItem = Holder.TryGetOrCreateBundle(text, null);
+			wWWItem.SetItemType(itemType);
+			wWWItem.SetCallback(new PostProcPerItem(this.ReadXML), null);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
 		}
-		WWWItem wWWItem = Holder.TryGetOrCreateBundle(key, null);
-		wWWItem.SetItemType(itemType);
-		wWWItem.SetCallback(new PostProcPerItem(this.ReadXML), null);
-		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+		this.bLoadComplete = false;
+		this.nReservationCharKind = nCharKind;
+		this.eReservationAni = eAni;
+		if (nHide != 0)
+		{
+			this.bHide = true;
+			this.nHideAlly = nAlly;
+		}
 		return true;
 	}
 
@@ -156,6 +246,16 @@ public class NkCutScene_Camera_Manager
 					{
 						CutScene_Camera cutScene_Camera = new CutScene_Camera();
 						cutScene_Camera.CameraName = xmlReader.GetAttribute("Name");
+						int fov = 35;
+						if (int.TryParse(xmlReader.GetAttribute("FOV"), out fov))
+						{
+							cutScene_Camera._fov = fov;
+						}
+						else
+						{
+							cutScene_Camera._fov = 35;
+							Debug.LogError("Cannot find XML Setting : FOV Default Settings -> 35");
+						}
 						this.ReadCamera(xmlReader, ref cutScene_Camera);
 						this._listCamera.Add(cutScene_Camera);
 					}
@@ -173,7 +273,66 @@ public class NkCutScene_Camera_Manager
 			TsLog.LogError(ex.Message + " " + ex.StackTrace, new object[0]);
 			return;
 		}
-		this.StartCutScene();
+		if (this.nReservationCharKind == 0 && this.eReservationAni == eCharAnimationType.None)
+		{
+			this.StartCutScene();
+		}
+		this.bLoadComplete = true;
+	}
+
+	public void ReadXML(string path, object kParmObj)
+	{
+		string fileString = new TsDataReader
+		{
+			UseMD5 = true
+		}.GetFileString(path);
+		MemoryStream stream = new MemoryStream(NrXmlSerializer.StringToUTF8ByteArray(fileString));
+		XmlReader xmlReader = XmlReader.Create(stream);
+		if (xmlReader == null)
+		{
+			return;
+		}
+		try
+		{
+			while (xmlReader.Read())
+			{
+				if (xmlReader.NodeType == XmlNodeType.Element && !xmlReader.IsEmptyElement)
+				{
+					if (xmlReader.Name == typeof(Camera).Name)
+					{
+						CutScene_Camera cutScene_Camera = new CutScene_Camera();
+						cutScene_Camera.CameraName = xmlReader.GetAttribute("Name");
+						int fov = 35;
+						if (int.TryParse(xmlReader.GetAttribute("FOV"), out fov))
+						{
+							cutScene_Camera._fov = fov;
+						}
+						else
+						{
+							cutScene_Camera._fov = 35;
+							Debug.LogError("Cannot find XML Setting : FOV Default Settings -> 35");
+						}
+						this.ReadCamera(xmlReader, ref cutScene_Camera);
+						this._listCamera.Add(cutScene_Camera);
+					}
+					else if (xmlReader.Name == "USequenceData")
+					{
+						string attribute = xmlReader.GetAttribute("Duration");
+						this.Duration = float.Parse(attribute);
+					}
+				}
+			}
+			this.SortCameraTimeLine();
+		}
+		catch (Exception ex)
+		{
+			TsLog.LogError(ex.Message + " " + ex.StackTrace, new object[0]);
+			return;
+		}
+		if (this.nReservationCharKind != 0 || this.eReservationAni == eCharAnimationType.None)
+		{
+		}
+		this.bLoadComplete = true;
 	}
 
 	public bool ReadCamera(XmlReader reader, ref CutScene_Camera camera)

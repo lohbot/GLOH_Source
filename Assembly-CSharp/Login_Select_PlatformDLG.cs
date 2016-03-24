@@ -133,7 +133,7 @@ public class Login_Select_PlatformDLG : Form
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 		if (msgBoxUI != null)
 		{
-			msgBoxUI.SetMsg(new YesDelegate(this.ClickGuest), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("2"), NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("36"), eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.ClickGuest), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("2"), NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("36"), eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 

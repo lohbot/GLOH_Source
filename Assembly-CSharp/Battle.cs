@@ -23,6 +23,8 @@ public class Battle : IDisposable
 
 	private static int m_nBabelPartyCount = 0;
 
+	private static bool m_bLeader = false;
+
 	private Queue<PacketClientOrder> m_PacketQueue;
 
 	private stBattleInfo m_stBattleInfo;
@@ -75,9 +77,17 @@ public class Battle : IDisposable
 
 	private int m_nChangeSolCount;
 
+	private bool m_bUseEmergencyHelpByThisRound;
+
+	private bool m_bUseEmergencyHelpByThisTurn;
+
 	public bool m_bShowColosseumSummonEffect;
 
 	private int m_nDieSolCount;
+
+	private long bossMaxHP;
+
+	private long bossCurrentHP;
 
 	public GS_BF_TURN_ACTIVE_POWER[] m_TurnActivePower;
 
@@ -169,6 +179,8 @@ public class Battle : IDisposable
 
 	private List<int> m_lsBabelCharKind;
 
+	private List<long> m_babelBattleSolList;
+
 	private bool m_bRelogin;
 
 	private ArrayList m_arDamageExpension;
@@ -176,6 +188,8 @@ public class Battle : IDisposable
 	private NkBattleDamage[] m_arDamage;
 
 	private static float m_fPlayAddRate = 0f;
+
+	private bool m_bSolCombinationDirectionIsEnd;
 
 	private eBATTLE_ORDER m_eRequestOrder;
 
@@ -218,6 +232,18 @@ public class Battle : IDisposable
 		set
 		{
 			Battle.m_nBabelPartyCount = value;
+		}
+	}
+
+	public static bool isLeader
+	{
+		get
+		{
+			return Battle.m_bLeader;
+		}
+		set
+		{
+			Battle.m_bLeader = value;
 		}
 	}
 
@@ -307,6 +333,10 @@ public class Battle : IDisposable
 		{
 			return this.m_eMyAlly;
 		}
+		set
+		{
+			this.m_eMyAlly = value;
+		}
 	}
 
 	public short MyStartPosIndex
@@ -333,6 +363,30 @@ public class Battle : IDisposable
 		}
 	}
 
+	public bool UseEmergencyHelpByThisRound
+	{
+		get
+		{
+			return this.m_bUseEmergencyHelpByThisRound;
+		}
+		set
+		{
+			this.m_bUseEmergencyHelpByThisRound = value;
+		}
+	}
+
+	public bool UseEmergencyHelpByThisTurn
+	{
+		get
+		{
+			return this.m_bUseEmergencyHelpByThisTurn;
+		}
+		set
+		{
+			this.m_bUseEmergencyHelpByThisTurn = value;
+		}
+	}
+
 	public bool ShowColosseumSummonEffect
 	{
 		get
@@ -342,6 +396,47 @@ public class Battle : IDisposable
 		set
 		{
 			this.m_bShowColosseumSummonEffect = value;
+		}
+	}
+
+	public int DieSolCount
+	{
+		get
+		{
+			return this.m_nDieSolCount;
+		}
+		set
+		{
+			this.m_nDieSolCount = value;
+		}
+	}
+
+	public long BossMaxHP
+	{
+		get
+		{
+			return this.bossMaxHP;
+		}
+		set
+		{
+			this.bossMaxHP = value;
+			this.BossCurrentHP = value;
+		}
+	}
+
+	public long BossCurrentHP
+	{
+		get
+		{
+			return this.bossCurrentHP;
+		}
+		set
+		{
+			this.bossCurrentHP = value;
+			if (this.bossCurrentHP <= 0L)
+			{
+				this.bossCurrentHP = 0L;
+			}
 		}
 	}
 
@@ -687,6 +782,14 @@ public class Battle : IDisposable
 		}
 	}
 
+	public List<long> BabelBattleSolList
+	{
+		get
+		{
+			return this.m_babelBattleSolList;
+		}
+	}
+
 	public static float PlayAddRate
 	{
 		get
@@ -821,6 +924,9 @@ public class Battle : IDisposable
 		{
 			this.m_arDamage[i] = new NkBattleDamage();
 		}
+		this.m_bSolCombinationDirectionIsEnd = false;
+		this.m_bUseEmergencyHelpByThisRound = false;
+		this.m_bUseEmergencyHelpByThisTurn = false;
 	}
 
 	public void SetCameraRotate(bool bRotate)
@@ -966,7 +1072,7 @@ public class Battle : IDisposable
 		{
 			return false;
 		}
-		if (!this.m_bObserver && !Battle.Replay && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PLUNDER && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY)
+		if (!this.m_bObserver && !Battle.Replay && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PLUNDER && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
 		{
 			Vector3 vector = Vector3.zero;
 			Vector3 vector2 = Vector3.zero;
@@ -1000,7 +1106,10 @@ public class Battle : IDisposable
 		}
 		else
 		{
-			this.m_eMyAlly = eBATTLE_ALLY.eBATTLE_ALLY_0;
+			if (!NrTSingleton<NkBattleReplayManager>.Instance.m_bHiddenEnemyName)
+			{
+				this.m_eMyAlly = eBATTLE_ALLY.eBATTLE_ALLY_0;
+			}
 			Vector3 a = Vector3.zero;
 			Vector3 b = Vector3.zero;
 			if (this.GetBattleGrid(eBATTLE_ALLY.eBATTLE_ALLY_0) != null)
@@ -1113,6 +1222,10 @@ public class Battle : IDisposable
 
 	public bool IsAllOrderComplete()
 	{
+		if (this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+		{
+			return true;
+		}
 		NkBattleChar[] charArray = NrTSingleton<NkBattleCharManager>.Instance.GetCharArray();
 		NkBattleChar[] array = charArray;
 		for (int i = 0; i < array.Length; i++)
@@ -1124,6 +1237,32 @@ public class Battle : IDisposable
 			}
 		}
 		return true;
+	}
+
+	public List<int> GetBattleCharOwnKindList()
+	{
+		NkBattleChar[] charArray = NrTSingleton<NkBattleCharManager>.Instance.GetCharArray();
+		if (charArray == null)
+		{
+			return null;
+		}
+		List<int> list = new List<int>();
+		NkBattleChar[] array = charArray;
+		for (int i = 0; i < array.Length; i++)
+		{
+			NkBattleChar nkBattleChar = array[i];
+			if (nkBattleChar != null)
+			{
+				if (nkBattleChar.GetCharKindType() == eCharKindType.CKT_USER || nkBattleChar.GetCharKindType() == eCharKindType.CKT_SOLDIER)
+				{
+					if (nkBattleChar.Ally == eBATTLE_ALLY.eBATTLE_ALLY_0)
+					{
+						list.Add(nkBattleChar.GetCharKindInfo().GetCharKind());
+					}
+				}
+			}
+		}
+		return list;
 	}
 
 	public void IsShowFirstTurnEffectFinish()
@@ -1201,6 +1340,11 @@ public class Battle : IDisposable
 		nkBattleChar = NrTSingleton<NkBattleCharManager>.Instance.GetChar(id);
 		if (nkBattleChar != null)
 		{
+			if (NkCutScene_Camera_Manager.Instance.ReservationCharKind != 0 && _Info.CharKind == NkCutScene_Camera_Manager.Instance.ReservationCharKind)
+			{
+				nkBattleChar.ReservationCurSceneCamera = true;
+				NkCutScene_Camera_Manager.Instance.ReservationCharKind = 0;
+			}
 			float battleMapHeight = this.m_BattleMap.GetBattleMapHeight(new Vector3(_Info.CharPos.x, 0f, _Info.CharPos.z));
 			nkBattleChar.GetPersonInfo().SetCharPos(_Info.CharPos.x, battleMapHeight + 0.3f, _Info.CharPos.z);
 			nkBattleChar.Ally = (eBATTLE_ALLY)_Info.Ally;
@@ -1212,7 +1356,7 @@ public class Battle : IDisposable
 				{
 					bATTLE_POS_GRID = new BATTLE_POS_GRID();
 					BATTLE_POS_GRID info = BASE_BATTLE_POS_Manager.GetInstance().GetInfo((int)_Info.nGridID);
-					bATTLE_POS_GRID.Set(info, _Info.nGridRotate);
+					bATTLE_POS_GRID.Set(info, _Info.nGridRotate, this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY);
 					bATTLE_POS_GRID.SetCenter(new Vector3(_Info.GridStartPos.x, battleMapHeight + 0.3f, _Info.GridStartPos.z));
 					bATTLE_POS_GRID.nCharUnique = _Info.CharUnique;
 					battleGrid.Add((int)_Info.nStartPosIndex, bATTLE_POS_GRID);
@@ -1222,7 +1366,7 @@ public class Battle : IDisposable
 					battleGrid.Remove((int)_Info.nStartPosIndex);
 					bATTLE_POS_GRID = new BATTLE_POS_GRID();
 					BATTLE_POS_GRID info2 = BASE_BATTLE_POS_Manager.GetInstance().GetInfo((int)_Info.nGridID);
-					bATTLE_POS_GRID.Set(info2, _Info.nGridRotate);
+					bATTLE_POS_GRID.Set(info2, _Info.nGridRotate, this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY);
 					bATTLE_POS_GRID.SetCenter(new Vector3(_Info.GridStartPos.x, battleMapHeight + 0.3f, _Info.GridStartPos.z));
 					bATTLE_POS_GRID.nCharUnique = _Info.CharUnique;
 					battleGrid.Add((int)_Info.nStartPosIndex, bATTLE_POS_GRID);
@@ -1306,15 +1450,26 @@ public class Battle : IDisposable
 					plunderGoldDlg.Show();
 				}
 			}
-			if (this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+			if (this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT || this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID || this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_DAILYDUNGEON)
 			{
 				if (this.m_lsBabelCharKind == null)
 				{
 					this.m_lsBabelCharKind = new List<int>();
 				}
-				if (nkBattleChar.Ally == eBATTLE_ALLY.eBATTLE_ALLY_0 && !this.m_lsBabelCharKind.Contains(nkBattleChar.GetCharKindInfo().GetCharKind()))
+				if (this.m_babelBattleSolList == null)
 				{
-					this.m_lsBabelCharKind.Add(nkBattleChar.GetCharKindInfo().GetCharKind());
+					this.m_babelBattleSolList = new List<long>();
+				}
+				if (nkBattleChar.Ally == eBATTLE_ALLY.eBATTLE_ALLY_0)
+				{
+					if (!this.m_lsBabelCharKind.Contains(nkBattleChar.GetCharKindInfo().GetCharKind()))
+					{
+						this.m_lsBabelCharKind.Add(nkBattleChar.GetCharKindInfo().GetCharKind());
+					}
+					if (!this.m_babelBattleSolList.Contains(nkBattleChar.GetSolID()))
+					{
+						this.m_babelBattleSolList.Add(nkBattleChar.GetSolID());
+					}
 				}
 			}
 			NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
@@ -1339,20 +1494,30 @@ public class Battle : IDisposable
 				{
 					nkBattleChar.GetSoldierInfo().SetHP(_Info.HP, nkBattleChar.AddHP);
 				}
-				if (nkBattleChar.IsChangeSoldier)
+				if (nkBattleChar.IsChangeSoldier && !flag)
 				{
 					if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG))
 					{
 						NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
 					}
 					this.m_nChangeSolCount++;
+					this.m_bUseEmergencyHelpByThisRound = true;
+					this.m_bUseEmergencyHelpByThisTurn = true;
 				}
 				if (nkBattleChar.IsReviveChar)
 				{
 					Battle_SkilldescDlg battle_SkilldescDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_SKILLDESC_DLG) as Battle_SkilldescDlg;
-					if (battle_SkilldescDlg != null)
+					if (battle_SkilldescDlg != null && nkBattleChar != null)
 					{
 						battle_SkilldescDlg.AddReviveCount(nkBattleChar.GetSolID());
+						if (nkBattleChar.GetCharObject() != null)
+						{
+							Transform child = NkUtil.GetChild(nkBattleChar.GetCharObject().transform, "actioncam");
+							if (null != child)
+							{
+								child.gameObject.SetActive(false);
+							}
+						}
 					}
 				}
 			}
@@ -1405,7 +1570,7 @@ public class Battle : IDisposable
 	[DebuggerHidden]
 	public static IEnumerator DownloadBattleMap(AStage stage, BATTLE_MAP BASEMAP, TsSceneSwitcher.ESceneType eSceneType)
 	{
-		Battle.<DownloadBattleMap>c__Iterator1 <DownloadBattleMap>c__Iterator = new Battle.<DownloadBattleMap>c__Iterator1();
+		Battle.<DownloadBattleMap>c__Iterator3 <DownloadBattleMap>c__Iterator = new Battle.<DownloadBattleMap>c__Iterator3();
 		<DownloadBattleMap>c__Iterator.BASEMAP = BASEMAP;
 		<DownloadBattleMap>c__Iterator.<$>BASEMAP = BASEMAP;
 		return <DownloadBattleMap>c__Iterator;
@@ -1464,7 +1629,7 @@ public class Battle : IDisposable
 		{
 			this.m_bObserver = true;
 		}
-		if (this.m_bObserver)
+		if (this.m_bObserver || this.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
 		{
 			NrTSingleton<NkClientLogic>.Instance.SetClearMiddleStage();
 		}
@@ -1479,6 +1644,7 @@ public class Battle : IDisposable
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_SKILLDESC_DLG);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BABELTOWER_REPEAT_DLG);
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWEXPLORATION_REPEAT_DLG);
 		if (!this.m_bObserver)
 		{
 			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
@@ -1810,7 +1976,7 @@ public class Battle : IDisposable
 
 	public void ExitUser(short nCharUnique)
 	{
-		if (this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+		if (this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
 		{
 			this.InitBattleGrid(nCharUnique);
 		}
@@ -1854,7 +2020,7 @@ public class Battle : IDisposable
 				if (nkBattleChar3 != null && nkBattleChar3.GetIDInfo().m_nCharUnique == nCharUnique)
 				{
 					list.Add(nkBattleChar3.GetID());
-					if (this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+					if (this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT || this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
 					{
 						BATTLE_POS_GRID battleGrid = this.GetBattleGrid(nkBattleChar3.Ally, nkBattleChar3.GetStartPosIndex());
 						battleGrid.RemoveBUID(nkBattleChar3.GetBUID());
@@ -1934,6 +2100,15 @@ public class Battle : IDisposable
 				this.m_BGMAudio.Stop();
 				this.m_BGMAudio.PlayByManual(bundleInfoCount - 1);
 			}
+		}
+	}
+
+	public void PlayTutorialEndBGM()
+	{
+		if (this.m_BGMAudio != null)
+		{
+			this.m_BGMAudio.Stop();
+			this.m_BGMAudio.PlayByManual(1);
 		}
 	}
 
@@ -2059,6 +2234,55 @@ public class Battle : IDisposable
 				break;
 			}
 		}
+	}
+
+	public void ShowSolCombinationDirection()
+	{
+		if (this.IsSkip_SolCombinationDirection())
+		{
+			this.SolCombinationIsEnd();
+			return;
+		}
+		SolCombinationDirection_Dlg solCombinationDirection_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMBINATION_DIRECTION_DLG) as SolCombinationDirection_Dlg;
+		if (solCombinationDirection_Dlg == null)
+		{
+			UnityEngine.Debug.LogError("ERROR, Battle.cs, ShowSolCombinationDirection(), SolCombinationDirection_Dlg is Null");
+			return;
+		}
+		solCombinationDirection_Dlg.SetDirectionEndCallback(new SolCombinationDirection_Dlg.DirectionEndCallback(this.SolCombinationIsEnd));
+	}
+
+	public bool IsSolCombinationDirectionEnd()
+	{
+		return this.m_bSolCombinationDirectionIsEnd;
+	}
+
+	public void SolCombinationIsEnd()
+	{
+		this.m_bSolCombinationDirectionIsEnd = true;
+	}
+
+	private bool IsSkip_SolCombinationDirection()
+	{
+		return Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MINE || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_EXPEDITION;
+	}
+
+	private void MythRaidEmergencyHelpUICheck()
+	{
+		if (Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			return;
+		}
+		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG))
+		{
+			return;
+		}
+		Form form = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
+		if (form == null)
+		{
+			return;
+		}
+		form.Show();
 	}
 
 	public NkBattleChar SelectBattleSkillChar()
@@ -2299,10 +2523,6 @@ public class Battle : IDisposable
 		if (0 < this.m_PacketQueue.Count)
 		{
 			PacketClientOrder packetClientOrder = this.m_PacketQueue.Dequeue();
-			if (NrTSingleton<NrGlobalReference>.Instance.IsEnableLog)
-			{
-				UnityEngine.Debug.LogWarning("Order.FuncName::" + packetClientOrder.DEBUG_FUNC_NAME);
-			}
 			MethodInfo method = packetClientOrder.Method;
 			if (method != null)
 			{
@@ -2352,6 +2572,17 @@ public class Battle : IDisposable
 			{
 				this.ColosseumObserver = false;
 			}
+		}
+		else if (this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			this.m_stBattleInfo.m_MAXCHANGESOLDIERNUM = (int)BATTLE_CONSTANT_Manager.GetInstance().GetValue(eBATTLE_CONSTANT.eBATTLE_CONSTANT_MYTHRAID_EMERGENCY_COUNT);
+			MYTHRAIDINFO_DATA mythRaidInfoData = NrTSingleton<NrBaseTableManager>.Instance.GetMythRaidInfoData(NrTSingleton<MythRaidManager>.Instance.GetMyInfo().nRaidSeason.ToString() + NrTSingleton<MythRaidManager>.Instance.GetMyInfo().nRaidType.ToString());
+			if (mythRaidInfoData == null)
+			{
+				UnityEngine.Debug.LogError("raid_info.ndt error");
+				return;
+			}
+			this.BossMaxHP = mythRaidInfoData.i64BossHP;
 		}
 		else
 		{
@@ -2532,6 +2763,9 @@ public class Battle : IDisposable
 				case 17:
 					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("353");
 					break;
+				case 18:
+					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("404");
+					break;
 				}
 				if (text != string.Empty)
 				{
@@ -2556,10 +2790,6 @@ public class Battle : IDisposable
 
 	public void GS_BF_CHARINFO_NFY(GS_BF_CHARINFO_NFY[] _CharInfoACKArray)
 	{
-		if (NrTSingleton<NrGlobalReference>.Instance.IsEnableLog)
-		{
-			UnityEngine.Debug.LogWarning("GS_BF_CHARINFO_NFY");
-		}
 		if (0 < _CharInfoACKArray.Length)
 		{
 			int iOrderUnique = _CharInfoACKArray[0].cBFOrderUnique.iOrderUnique;
@@ -2588,7 +2818,7 @@ public class Battle : IDisposable
 			if ((int)_OrderACK.iBFOrderType == 3)
 			{
 				int num = _OrderACK.iPara[2];
-				if (num >= 0)
+				if (num >= 0 && charByBUID.isUpdateAngerlyPoint())
 				{
 					if (!this.ColosseumObserver)
 					{
@@ -2714,6 +2944,20 @@ public class Battle : IDisposable
 	{
 		this.m_eCurrentTurnAlly = (eBATTLE_ALLY)_NFY.m_iCurTurnAlly;
 		bool flag = this.MyAlly == this.m_eCurrentTurnAlly;
+		if (flag)
+		{
+			Battle.BATTLE.UseEmergencyHelpByThisTurn = false;
+			this.MythRaidEmergencyHelpUICheck();
+		}
+		NkBattleChar[] charArray = NrTSingleton<NkBattleCharManager>.Instance.GetCharArray();
+		for (int i = 0; i < charArray.Length; i++)
+		{
+			NkBattleChar nkBattleChar = charArray[i];
+			if (nkBattleChar != null && nkBattleChar.m_DCharEffect != null)
+			{
+				nkBattleChar.m_DCharEffect.Clear();
+			}
+		}
 		this.m_fTurnTime = _NFY.m_fTurnTime;
 		this.m_nTurnCount = (int)_NFY.m_iTurnNum;
 		if (!Battle.m_bReplay)
@@ -2735,6 +2979,32 @@ public class Battle : IDisposable
 				{
 					NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABELTOWER_REPEAT_DLG);
 				}
+				if (NrTSingleton<NewExplorationManager>.Instance.AutoBattle)
+				{
+					NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABELTOWER_REPEAT_DLG);
+				}
+				if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.MYTHRAID_BATTLEINFO_DLG) && Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+				{
+					Battle_MythRaidBattleInfo_DLG battle_MythRaidBattleInfo_DLG = (Battle_MythRaidBattleInfo_DLG)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTHRAID_BATTLEINFO_DLG);
+					if (battle_MythRaidBattleInfo_DLG != null)
+					{
+						battle_MythRaidBattleInfo_DLG.UpdateRoundInfo(-1);
+						battle_MythRaidBattleInfo_DLG.UpdateDamageInfo(0L);
+					}
+				}
+				if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+				{
+					Battle_GuildBossBattleInfo_DLG battle_GuildBossBattleInfo_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDBOSS_BATTLEINFO_DLG) as Battle_GuildBossBattleInfo_DLG;
+					if (battle_GuildBossBattleInfo_DLG == null)
+					{
+						battle_GuildBossBattleInfo_DLG = (NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GUILDBOSS_BATTLEINFO_DLG) as Battle_GuildBossBattleInfo_DLG);
+					}
+					else
+					{
+						battle_GuildBossBattleInfo_DLG.UpdateRoundInfo((int)_NFY.m_iTurnNum);
+						battle_GuildBossBattleInfo_DLG.UpdateDamageInfo(0L);
+					}
+				}
 			}
 		}
 		bool flag2 = false;
@@ -2743,19 +3013,19 @@ public class Battle : IDisposable
 			false,
 			false
 		};
-		for (int i = 0; i < this.m_TurnActivePower.Length; i++)
+		for (int j = 0; j < this.m_TurnActivePower.Length; j++)
 		{
-			NkBattleChar charByBUID = NrTSingleton<NkBattleCharManager>.Instance.GetCharByBUID(this.m_TurnActivePower[i].m_nBUID);
+			NkBattleChar charByBUID = NrTSingleton<NkBattleCharManager>.Instance.GetCharByBUID(this.m_TurnActivePower[j].m_nBUID);
 			if (charByBUID != null)
 			{
-				charByBUID.SetBattleSkillCharATB(this.m_TurnActivePower[i].m_nBattleSkillCharATB);
+				charByBUID.SetBattleSkillCharATB(this.m_TurnActivePower[j].m_nBattleSkillCharATB);
 			}
 			if (this.ColosseumObserver)
 			{
 				ColosseumObserverControlDlg colosseumObserverControlDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COLOSSEUM_OBSERVER_CONTROL_DLG) as ColosseumObserverControlDlg;
 				if (colosseumObserverControlDlg != null && !array[(int)charByBUID.Ally])
 				{
-					colosseumObserverControlDlg.SetAngerPoint(charByBUID.Ally, (int)this.m_TurnActivePower[i].m_nTemp);
+					colosseumObserverControlDlg.SetAngerPoint(charByBUID.Ally, (int)this.m_TurnActivePower[j].m_nTemp);
 					array[(int)charByBUID.Ally] = true;
 				}
 			}
@@ -2764,7 +3034,7 @@ public class Battle : IDisposable
 				Battle_Control_Dlg battle_Control_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
 				if (battle_Control_Dlg != null && charByBUID.GetStartPosIndex() == 0 && charByBUID.Ally == this.CurrentTurnAlly)
 				{
-					battle_Control_Dlg.SetAngerlyPoint((int)this.m_TurnActivePower[i].m_nTemp);
+					battle_Control_Dlg.SetAngerlyPoint((int)this.m_TurnActivePower[j].m_nTemp);
 					battle_Control_Dlg.UpdateBattleSkillData();
 					flag2 = true;
 				}
@@ -2828,6 +3098,14 @@ public class Battle : IDisposable
 			{
 				battle_Mine_CharinfoDlg.Show();
 				battle_Mine_CharinfoDlg.UPdateTurnInfo();
+			}
+		}
+		else if (this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			Battle_Control_Dlg battle_Control_Dlg3 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+			if (battle_Control_Dlg3 != null)
+			{
+				battle_Control_Dlg3.UpdateAngelSkillData(flag);
 			}
 		}
 		Battle_Plunder_TurnCountDlg battle_Plunder_TurnCountDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_PLUNDER_TURNCOUNT_DLG) as Battle_Plunder_TurnCountDlg;
@@ -2894,6 +3172,8 @@ public class Battle : IDisposable
 
 	public void GS_BATTLE_RESTART_NFY(GS_BATTLE_RESTART_NFY _NFY)
 	{
+		Battle.BATTLE.UseEmergencyHelpByThisRound = false;
+		this.MythRaidEmergencyHelpUICheck();
 		this.InitBattleGrid();
 		this.m_GridMgr.Init();
 		this.m_MyCharBUID.Clear();
@@ -2911,6 +3191,14 @@ public class Battle : IDisposable
 		if (battle_CountDlg != null)
 		{
 			battle_CountDlg.SetChallengeCount(nCount, _NFY.bBoss, _NFY.nMonsterKind);
+		}
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			Battle_MythRaidBattleInfo_DLG battle_MythRaidBattleInfo_DLG = (Battle_MythRaidBattleInfo_DLG)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTHRAID_BATTLEINFO_DLG);
+			if (battle_MythRaidBattleInfo_DLG != null)
+			{
+				battle_MythRaidBattleInfo_DLG.UpdateRoundInfo((int)_NFY.nContinueCount);
+			}
 		}
 		NrTSingleton<NrMainSystem>.Instance.MemoryCleanUP();
 	}
@@ -3013,12 +3301,13 @@ public class Battle : IDisposable
 					battle_HeadUpTalk.Set(nkBattleChar, strName, (float)num, nTextIndex);
 				}
 			}
-			else if (num3 == 2)
+			else if (num3 == 2 || num3 == 4)
 			{
 				Battle_TalkDlg battle_TalkDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_TALK_DLG) as Battle_TalkDlg;
 				if (battle_TalkDlg != null && nkBattleChar != null)
 				{
-					battle_TalkDlg.Set(nkBattleChar, strName, (float)num, nTextIndex);
+					bool bSkip = num3 == 2;
+					battle_TalkDlg.Set(nkBattleChar, strName, (float)num, nTextIndex, bSkip);
 				}
 			}
 			else if (num3 == 3)
@@ -3159,18 +3448,18 @@ public class Battle : IDisposable
 				{
 					if (num12 == 9999)
 					{
-						if (NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(nkBattleChar2.GetCharKindInfo().GetCharKind()))
+						if (!NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(nkBattleChar2.GetCharKindInfo().GetCharKind()))
 						{
-							goto IL_388;
+							goto IL_3AF;
 						}
 					}
 					else if (nkBattleChar2.GetCharKindInfo().GetCharKind() != num12)
 					{
-						goto IL_388;
+						goto IL_3AF;
 					}
 					this.BattleCamera.SetTriggerAction(nkBattleChar2.GetCharPos(), (float)num14, (float)num13);
 				}
-				IL_388:;
+				IL_3AF:;
 			}
 			break;
 		}
@@ -3208,20 +3497,20 @@ public class Battle : IDisposable
 					{
 						if (num17 == 9999)
 						{
-							if (NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(nkBattleChar3.GetCharKindInfo().GetCharKind()))
+							if (!NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(nkBattleChar3.GetCharKindInfo().GetCharKind()))
 							{
-								goto IL_490;
+								goto IL_4B7;
 							}
 						}
 						else if (nkBattleChar3.GetCharKindInfo().GetCharKind() != num17)
 						{
-							goto IL_490;
+							goto IL_4B7;
 						}
 						nkBattleChar3.InitBattleCharATB();
 						nkBattleChar3.SetBattleCharATB(battleCharATB);
 					}
 				}
-				IL_490:;
+				IL_4B7:;
 			}
 			break;
 		}
@@ -3289,6 +3578,23 @@ public class Battle : IDisposable
 			}
 			break;
 		}
+		case ACTIONKIND.ACTIONKIND_MOVIESTART:
+			UnityEngine.Debug.Log("BattleTrigger ACtion : ACTIONKIND_MOVIESTART");
+			if (i32Params == null)
+			{
+				UnityEngine.Debug.LogError("ACTIONKIND_MOVIESTART i32Params is Null");
+			}
+			else
+			{
+				int movieUnique = i32Params[0];
+				string text = NrTSingleton<NrTableMovieUrlManager>.Instance.GetMovieUrl(movieUnique);
+				text = text.ToLower();
+				UnityEngine.Debug.Log("BattleTrigger ACtion : ACTIONKIND_MOVIESTART szFilePath : " + text);
+				string text2 = string.Format("{0}/{1}", NrTSingleton<NrGlobalReference>.Instance.basePath, text);
+				UnityEngine.Debug.Log("BattleTrigger ACtion : ACTIONKIND_MOVIESTART path : " + text2);
+				NrTSingleton<NrUserDeviceInfo>.Instance.PlayMovieURL(text2, Color.black, false, 1f, true);
+			}
+			break;
 		}
 	}
 
@@ -3319,7 +3625,7 @@ public class Battle : IDisposable
 						{
 							if (_Nfy.nCharKind == 9999)
 							{
-								if (NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(charByBUID.GetCharKindInfo().GetCharKind()))
+								if (!NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(charByBUID.GetCharKindInfo().GetCharKind()))
 								{
 									goto IL_10E;
 								}
@@ -3353,10 +3659,14 @@ public class Battle : IDisposable
 							if (num > 0u)
 							{
 								NkEffectUnit effectUnit = NrTSingleton<NkEffectManager>.Instance.GetEffectUnit(num);
-								float num2 = 0f;
-								if (_Nfy.nType == 1)
+								float num2 = 3f;
+								if (_Nfy.nType == 2)
 								{
 									num2 = float.PositiveInfinity;
+								}
+								else if (effectUnit != null && NrTSingleton<NkEffectManager>.Instance.GetEffectInfo(effectUnit.EffectName) != null)
+								{
+									num2 = NrTSingleton<NkEffectManager>.Instance.GetEffectInfo(effectUnit.EffectName).LIFE_TIME;
 								}
 								if (effectUnit == null)
 								{
@@ -3365,7 +3675,7 @@ public class Battle : IDisposable
 								else
 								{
 									effectUnit.EffectName = TKString.NEWString(_Nfy.szEffectName);
-									if (_Nfy.nType == 1)
+									if (_Nfy.nType != 2)
 									{
 										effectUnit.LifeTime = num2;
 									}
@@ -3418,13 +3728,51 @@ public class Battle : IDisposable
 		{
 			return;
 		}
-		NkBattleChar charByCharKind = NrTSingleton<NkBattleCharManager>.Instance.GetCharByCharKind(_Nfy.nCharKind);
-		if (charByCharKind != null)
+		NkBattleChar nkBattleChar;
+		if (_Nfy.nCharKind == 9999)
+		{
+			nkBattleChar = this.GetMyFirstBattleChar();
+		}
+		else
+		{
+			nkBattleChar = NrTSingleton<NkBattleCharManager>.Instance.GetCharByCharKind(_Nfy.nCharKind);
+		}
+		if (nkBattleChar != null)
 		{
 			string aniType = TKString.NEWString(_Nfy.szAnimationType);
 			eCharAnimationType charAniTypeForString = (eCharAnimationType)NrTSingleton<NrCharKindInfoManager>.Instance.GetCharDataCodeInfo().GetCharAniTypeForString(aniType);
-			charByCharKind.SetAnimation(charAniTypeForString);
+			nkBattleChar.SetAnimation(charAniTypeForString);
 		}
+	}
+
+	public void GS_BATTLE_EVENT_ACTION_CUTSCENE_CAMERA_NFY(GS_BATTLE_EVENT_ACTION_CUTSCENE_CAMERA_NFY _Nfy)
+	{
+		if (_Nfy == null)
+		{
+			return;
+		}
+		eCharAnimationType eAni = eCharAnimationType.None;
+		int nCharKind = _Nfy.nCharKind;
+		if (_Nfy.nCharKind != 0)
+		{
+			NkBattleChar nkBattleChar;
+			if (_Nfy.nCharKind == 9999)
+			{
+				nkBattleChar = this.GetMyFirstBattleChar();
+			}
+			else
+			{
+				nkBattleChar = NrTSingleton<NkBattleCharManager>.Instance.GetCharByCharKind(_Nfy.nCharKind);
+			}
+			if (nkBattleChar != null)
+			{
+				nkBattleChar.ReservationCurSceneCamera = true;
+				nCharKind = 0;
+			}
+			string aniType = TKString.NEWString(_Nfy.szAnimationType);
+			eAni = (eCharAnimationType)NrTSingleton<NrCharKindInfoManager>.Instance.GetCharDataCodeInfo().GetCharAniTypeForString(aniType);
+		}
+		NkCutScene_Camera_Manager.Instance.ReadCutScneData(TKString.NEWString(_Nfy.szCurSceneCamera), nCharKind, eAni, _Nfy.nHide, _Nfy.nAlly);
 	}
 
 	public void Send_GS_BATTLE_READY_NFY(byte Start)
@@ -3497,20 +3845,25 @@ public class Battle : IDisposable
 		}
 	}
 
-	public void Send_GS_BATTLE_AUTO_REQ()
+	public void ChangeBattleAuto()
 	{
 		if (this.Observer)
-		{
-			return;
-		}
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
 		{
 			return;
 		}
 		if (this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM || this.m_eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("156"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return;
+		}
+		Battle.Send_GS_BATTLE_AUTO_REQ();
+	}
+
+	public static void Send_GS_BATTLE_AUTO_REQ()
+	{
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo == null)
+		{
 			return;
 		}
 		int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_AUTO_BATTLE_LV);
@@ -3674,6 +4027,11 @@ public class Battle : IDisposable
 		SendPacket.GetInstance().SendIDType(217);
 	}
 
+	public void Send_GS_BATTLE_TRIGGER_SKIP_REQ()
+	{
+		SendPacket.GetInstance().SendIDType(281);
+	}
+
 	public void Send_GS_BATTLE_PLUNDER_AGGROADD_REQ(short nBUID)
 	{
 		if (nBUID < 0)
@@ -3791,6 +4149,10 @@ public class Battle : IDisposable
 			this.m_fContinueBattleWaitTime = 0f;
 			this.m_bRelogin = false;
 		}
+		if (!NrTSingleton<NkBattleCharManager>.Instance.MyCharExist() && NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG))
+		{
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
+		}
 	}
 
 	public void FixedUpdate()
@@ -3879,7 +4241,7 @@ public class Battle : IDisposable
 			{
 				pkFromChar = NrTSingleton<NkBattleCharManager>.Instance.GetCharByBUID((short)num2);
 			}
-			if (num8 != 0)
+			if (num8 != 0 && charByBUID.isUpdateAngerlyPoint())
 			{
 				if (!this.ColosseumObserver)
 				{
@@ -3988,19 +4350,19 @@ public class Battle : IDisposable
 				{
 					if (num < 0)
 					{
-						charByBUID.SetHitBattleSkill(battleSkillBase, battleSkillDetail, num7, bEndureDamage);
+						charByBUID.SetHitBattleSkill(pkFromChar, battleSkillBase, battleSkillDetail, num7, bEndureDamage);
 					}
 				}
 				else if (flag)
 				{
 					if (num != 0)
 					{
-						charByBUID.SetHitBattleSkill(battleSkillBase, battleSkillDetail, num7, bEndureDamage);
+						charByBUID.SetHitBattleSkill(pkFromChar, battleSkillBase, battleSkillDetail, num7, bEndureDamage);
 					}
 				}
 				else
 				{
-					charByBUID.SetHitBattleSkill(battleSkillBase, battleSkillDetail, num7, bEndureDamage);
+					charByBUID.SetHitBattleSkill(pkFromChar, battleSkillBase, battleSkillDetail, num7, bEndureDamage);
 				}
 				if (num7 > -1 && !charByBUID.m_bDeadReaservation && battleSkillDetail.GetSkillDetalParamValue(87) > 0)
 				{
@@ -4050,7 +4412,7 @@ public class Battle : IDisposable
 				charByBUID.SetNextOrderTarget(-1);
 				charByBUID.SetDead();
 				this.GRID_MANAGER.ActiveAttackGridCanTarget();
-				if (charByBUID.MyChar)
+				if (charByBUID.MyChar && this.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
 				{
 					string empty = string.Empty;
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
@@ -4108,10 +4470,6 @@ public class Battle : IDisposable
 					battle_Colossum_CharinfoDlg.SetDeadCount(charByBUID.Ally);
 				}
 			}
-			if (this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL && charByBUID.MyChar && this.m_nChangeSolCount < this.m_stBattleInfo.m_MAXCHANGESOLDIERNUM && !NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG))
-			{
-				NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
-			}
 			if (charByBUID.MyChar)
 			{
 				this.m_nDieSolCount++;
@@ -4121,6 +4479,10 @@ public class Battle : IDisposable
 					battle_SkilldescDlg2.SetDeadSol(charByBUID.GetSolID());
 				}
 				NrTSingleton<FiveRocksEventManager>.Instance.Placement("battle_diesol_" + this.m_nDieSolCount.ToString());
+			}
+			if (this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL && this.m_eBattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION && charByBUID.MyChar && this.m_nChangeSolCount < this.m_stBattleInfo.m_MAXCHANGESOLDIERNUM && !NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMERGENCY_CALL_DLG))
+			{
+				NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BATTLE_EMERGENCY_CALL_DLG);
 			}
 			break;
 		case eBATTLE_CHARINFO_REASON.eBATTLE_CHARINFO_REASON_SETBUFFSKILL:
@@ -4137,19 +4499,17 @@ public class Battle : IDisposable
 				{
 					return;
 				}
-				bool flag2 = false;
 				if ((battleSkillDetail2.m_nSkillDurationTurn > 0 && num11 > -1) || num11 == -100)
-				{
-					flag2 = true;
-				}
-				charByBUID.CheckBattleSkillDetail(battleSkillBase2, battleSkillDetail2);
-				if (flag2)
 				{
 					if (battleSkillDetail2.GetSkillDetalParamValue(98) != 0 || battleSkillDetail2.GetSkillDetalParamValue(99) != 0)
 					{
 						charByBUID.InitBattleSkillCharATB();
 					}
 					charByBUID.SetBattleSkillBuf(battleSkillBase2.m_nSkillUnique, num11, skillLevel2, addUseAngerlypoint);
+				}
+				else
+				{
+					charByBUID.CheckBattleSkillDetail(battleSkillBase2, battleSkillDetail2);
 				}
 			}
 			break;

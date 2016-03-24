@@ -12,6 +12,8 @@ public class Battle_Emergency_SelectDlg : Form
 
 	private NewListBox m_nlSelectSoldierList;
 
+	private Button m_btClose;
+
 	private List<NkSoldierInfo> m_kSolList = new List<NkSoldierInfo>();
 
 	public override void InitializeComponent()
@@ -28,6 +30,8 @@ public class Battle_Emergency_SelectDlg : Form
 		Button expr_1C = this.m_btRequetEmergency;
 		expr_1C.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C.Click, new EZValueChangedDelegate(this.OnClickRequestEmergency));
 		this.m_nlSelectSoldierList = (base.GetControl("NewListBox_soldierlist") as NewListBox);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.SetSolList();
 		this._SetDialogPos();
 	}
@@ -162,7 +166,7 @@ public class Battle_Emergency_SelectDlg : Form
 				}
 			}
 		}
-		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_DAILYDUNGEON)
 		{
 			List<int> babelCharKind = Battle.BATTLE.BabelCharKind;
 			if (babelCharKind == null)
@@ -191,11 +195,47 @@ public class Battle_Emergency_SelectDlg : Form
 				{
 					if (!list.Contains(current4.GetCharKind()))
 					{
-						if (current4.GetSolPosType() != 2)
+						if (current4.GetSolPosType() != 6)
 						{
-							if (current4.GetSolPosType() != 6)
+							this.m_kSolList.Add(current4);
+						}
+					}
+				}
+			}
+		}
+		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			List<long> babelBattleSolList = Battle.BATTLE.BabelBattleSolList;
+			if (babelBattleSolList == null)
+			{
+				return;
+			}
+			NkSoldierInfo[] kSolInfo4 = soldierList.m_kSolInfo;
+			for (int l = 0; l < kSolInfo4.Length; l++)
+			{
+				NkSoldierInfo nkSoldierInfo4 = kSolInfo4[l];
+				if (nkSoldierInfo4.GetSolID() > 0L)
+				{
+					if (!babelBattleSolList.Contains(nkSoldierInfo4.GetSolID()))
+					{
+						if (!NrTSingleton<NkBattleCharManager>.Instance.IsSameKindSolInBattle(nkSoldierInfo4.GetCharKind()))
+						{
+							this.m_kSolList.Add(nkSoldierInfo4);
+						}
+					}
+				}
+			}
+			foreach (NkSoldierInfo current5 in readySolList.GetList().Values)
+			{
+				if (current5.GetSolID() > 0L)
+				{
+					if (!babelBattleSolList.Contains(current5.GetSolID()))
+					{
+						if (!NrTSingleton<NkBattleCharManager>.Instance.IsSameKindSolInBattle(current5.GetCharKind()))
+						{
+							if (current5.GetSolPosType() != 6)
 							{
-								this.m_kSolList.Add(current4);
+								this.m_kSolList.Add(current5);
 							}
 						}
 					}
@@ -204,29 +244,26 @@ public class Battle_Emergency_SelectDlg : Form
 		}
 		else
 		{
-			NkSoldierInfo[] kSolInfo4 = soldierList.m_kSolInfo;
-			for (int l = 0; l < kSolInfo4.Length; l++)
+			NkSoldierInfo[] kSolInfo5 = soldierList.m_kSolInfo;
+			for (int m = 0; m < kSolInfo5.Length; m++)
 			{
-				NkSoldierInfo nkSoldierInfo4 = kSolInfo4[l];
-				if (nkSoldierInfo4.GetSolID() > 0L)
+				NkSoldierInfo nkSoldierInfo5 = kSolInfo5[m];
+				if (nkSoldierInfo5.GetSolID() > 0L)
 				{
-					list.Add(nkSoldierInfo4.GetCharKind());
+					list.Add(nkSoldierInfo5.GetCharKind());
 				}
 			}
-			foreach (NkSoldierInfo current5 in readySolList.GetList().Values)
+			foreach (NkSoldierInfo current6 in readySolList.GetList().Values)
 			{
-				if (!current5.IsInjuryStatus())
+				if (!current6.IsInjuryStatus())
 				{
-					if (current5.GetSolID() > 0L)
+					if (current6.GetSolID() > 0L)
 					{
-						if (current5.GetSolPosType() != 2)
+						if (current6.GetSolPosType() != 6)
 						{
-							if (current5.GetSolPosType() != 6)
+							if (!list.Contains(current6.GetCharKind()))
 							{
-								if (!list.Contains(current5.GetCharKind()))
-								{
-									this.m_kSolList.Add(current5);
-								}
+								this.m_kSolList.Add(current6);
 							}
 						}
 					}
@@ -234,59 +271,63 @@ public class Battle_Emergency_SelectDlg : Form
 			}
 		}
 		this.m_kSolList.Sort(new Comparison<NkSoldierInfo>(this.CompareCombatPower));
-		foreach (NkSoldierInfo current6 in this.m_kSolList)
+		foreach (NkSoldierInfo current7 in this.m_kSolList)
 		{
-			if (!current6.IsInjuryStatus())
+			if (!current7.IsInjuryStatus())
 			{
-				if (current6.GetSolID() > 0L)
+				if (current7.GetSolID() > 0L)
 				{
-					if (!current6.IsSolStatus(4))
+					if (!this.IsMyMainHeroKind(current7.GetCharKind()))
 					{
-						NewListItem newListItem = new NewListItem(this.m_nlSelectSoldierList.ColumnNum, true);
-						newListItem.Data = current6.GetSolID();
-						NkListSolInfo nkListSolInfo = new NkListSolInfo();
-						nkListSolInfo.SolCharKind = current6.GetCharKind();
-						nkListSolInfo.SolGrade = (int)current6.GetGrade();
-						nkListSolInfo.SolLevel = current6.GetLevel();
-						nkListSolInfo.FightPower = current6.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_FIGHTINGPOWER);
-						nkListSolInfo.ShowLevel = false;
-						if (NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(current6.GetCharKind()) != null)
+						if (!current7.IsSolStatus(4) || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
 						{
-							nkListSolInfo.ShowCombat = true;
-							EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(current6.GetCharKind(), current6.GetGrade());
-							if (eventHeroCharCode != null)
+							NewListItem newListItem = new NewListItem(this.m_nlSelectSoldierList.ColumnNum, true, string.Empty);
+							newListItem.Data = current7.GetSolID();
+							NkListSolInfo nkListSolInfo = new NkListSolInfo();
+							nkListSolInfo.SolCharKind = current7.GetCharKind();
+							nkListSolInfo.SolGrade = (int)current7.GetGrade();
+							nkListSolInfo.SolLevel = current7.GetLevel();
+							nkListSolInfo.FightPower = current7.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_FIGHTINGPOWER);
+							nkListSolInfo.ShowLevel = false;
+							nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(current7);
+							if (NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(current7.GetCharKind()) != null)
 							{
-								newListItem.SetListItemData(0, "Win_I_EventSol", null, null, null);
-							}
-							else
-							{
-								UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(current6.GetCharKind(), (int)current6.GetGrade());
-								if (legendFrame != null)
+								nkListSolInfo.ShowCombat = true;
+								EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(current7.GetCharKind(), current7.GetGrade());
+								if (eventHeroCharCode != null)
 								{
-									newListItem.SetListItemData(0, legendFrame, null, null, null);
+									newListItem.SetListItemData(0, "Win_I_EventSol", null, null, null);
 								}
 								else
 								{
-									newListItem.SetListItemData(0, true);
+									UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(current7.GetCharKind(), (int)current7.GetGrade());
+									if (legendFrame != null)
+									{
+										newListItem.SetListItemData(0, legendFrame, null, null, null);
+									}
+									else
+									{
+										newListItem.SetListItemData(0, true);
+									}
 								}
+								newListItem.SetListItemData(1, nkListSolInfo, current7, null, null);
+								string empty = string.Empty;
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+								{
+									NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1435"),
+									"charname",
+									current7.GetName()
+								});
+								newListItem.SetListItemData(2, empty, null, null, null);
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+								{
+									NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1031"),
+									"count",
+									current7.GetLevel()
+								});
+								newListItem.SetListItemData(3, empty, null, null, null);
+								this.m_nlSelectSoldierList.Add(newListItem);
 							}
-							newListItem.SetListItemData(1, nkListSolInfo, current6, null, null);
-							string empty = string.Empty;
-							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-							{
-								NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1435"),
-								"charname",
-								current6.GetName()
-							});
-							newListItem.SetListItemData(2, empty, null, null, null);
-							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-							{
-								NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1031"),
-								"count",
-								current6.GetLevel()
-							});
-							newListItem.SetListItemData(3, empty, null, null, null);
-							this.m_nlSelectSoldierList.Add(newListItem);
 						}
 					}
 				}
@@ -303,5 +344,10 @@ public class Battle_Emergency_SelectDlg : Form
 	private int CompareCombatPower(NkSoldierInfo a, NkSoldierInfo b)
 	{
 		return b.GetCombatPower().CompareTo(a.GetCombatPower());
+	}
+
+	private bool IsMyMainHeroKind(int charKind)
+	{
+		return NrTSingleton<NkCharManager>.Instance != null && NrTSingleton<NkCharManager>.Instance.GetChar(1) != null && NrTSingleton<NkCharManager>.Instance.GetChar(1).GetCharKind() == charKind;
 	}
 }

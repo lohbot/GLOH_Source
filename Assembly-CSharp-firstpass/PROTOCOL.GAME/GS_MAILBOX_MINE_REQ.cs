@@ -16,6 +16,8 @@ namespace PROTOCOL.GAME
 
 		public long nLastMailID;
 
+		public byte i8MailType;
+
 		public bool bNextRequest;
 	}
 }

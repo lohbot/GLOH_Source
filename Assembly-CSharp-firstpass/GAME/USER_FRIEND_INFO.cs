@@ -34,11 +34,13 @@ namespace GAME
 
 		public long i64LogoutTIme;
 
-		public char[] szGuildName = new char[11];
+		public char[] szGuildName = new char[13];
 
 		public short i16ColosseumGrade;
 
 		public byte ui8UserPortrait;
+
+		public int i32FaceCharCostumeUnique;
 
 		public void Update(USER_FRIEND_INFO _user_friend_info)
 		{
@@ -55,6 +57,11 @@ namespace GAME
 			this.i64LogoutTIme = _user_friend_info.i64LogoutTIme;
 			this.szGuildName = _user_friend_info.szGuildName;
 			this.i16ColosseumGrade = _user_friend_info.i16ColosseumGrade;
+			if (_user_friend_info.FriendHelpSolInfo != null)
+			{
+				this.FriendHelpSolInfo = _user_friend_info.FriendHelpSolInfo;
+			}
+			this.i32FaceCharCostumeUnique = _user_friend_info.i32FaceCharCostumeUnique;
 		}
 	}
 }

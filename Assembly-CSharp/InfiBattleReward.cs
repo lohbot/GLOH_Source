@@ -1,4 +1,3 @@
-using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using System;
@@ -6,17 +5,9 @@ using UnityForms;
 
 public class InfiBattleReward : Form
 {
-	private DrawTexture m_DrawTexture_Main_BG;
+	private NewListBox m_ListBoxReward;
 
-	private Label[] m_LabelLBReward = new Label[9];
-
-	private Label m_LabelLastWeekRank;
-
-	private Button m_ButtonRewardGet;
-
-	private Button m_ButtonClose;
-
-	private NewListBox m_NewlistBox;
+	private Button m_ButtonHallofFame;
 
 	public override void InitializeComponent()
 	{
@@ -27,145 +18,117 @@ public class InfiBattleReward : Form
 
 	public override void SetComponent()
 	{
-		for (int i = 0; i < 9; i++)
-		{
-			int num = i + 1;
-			this.m_LabelLBReward[i] = (base.GetControl("LB_Reward" + num) as Label);
-		}
-		this.m_LabelLastWeekRank = (base.GetControl("LB_LastweekRank2") as Label);
-		this.m_ButtonRewardGet = (base.GetControl("BT_RewardGet") as Button);
-		this.m_ButtonRewardGet.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_ClickRewardGet));
-		this.m_ButtonClose = (base.GetControl("BT_Close") as Button);
-		this.m_ButtonClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_ClickClose));
-		this.m_NewlistBox = (base.GetControl("NewListBox_recentrank") as NewListBox);
-		this.m_NewlistBox.Reserve = false;
-		this.m_ButtonRewardGet.Visible = false;
-		this.m_DrawTexture_Main_BG = (base.GetControl("DrawTexture_BGIMG") as DrawTexture);
-		this.m_DrawTexture_Main_BG.SetTextureFromBundle("UI/PvP/infibattle_reward");
-		this.InitGUI();
+		this.m_ButtonHallofFame = (base.GetControl("BT_HallofFame") as Button);
+		this.m_ButtonHallofFame.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_ClickHallofFame));
+		this.m_ListBoxReward = (base.GetControl("NLB_InfiRewardInfo") as NewListBox);
+		this.m_ListBoxReward.touchScroll = false;
+		base.SetLayerZ(3, -0.14f);
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
 	}
 
-	public void InitGUI()
+	public void On_ClickHallofFame(IUIObject a_cObject)
 	{
-		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
-		for (int i = 0; i < 9; i++)
-		{
-			this.m_LabelLBReward[i].SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2225"));
-		}
-		string text = string.Empty;
-		string text2 = string.Empty;
-		COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
-		if (instance != null)
-		{
-			int value = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_INFIBATTLE_RANKLIMIT);
-			if (value < myCharInfo.InfinityBattle_OldRank || 0 >= myCharInfo.InfinityBattle_OldRank)
-			{
-				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2225");
-			}
-			else
-			{
-				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2509");
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
-				{
-					text,
-					"rank",
-					myCharInfo.InfinityBattle_Rank
-				});
-			}
-			this.m_LabelLastWeekRank.SetText(text2);
-		}
+		GS_INFIBATTLE_REWARDINFO_REQ gS_INFIBATTLE_REWARDINFO_REQ = new GS_INFIBATTLE_REWARDINFO_REQ();
+		gS_INFIBATTLE_REWARDINFO_REQ.i64PersonID = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().m_PersonID;
+		SendPacket.GetInstance().SendObject(2011, gS_INFIBATTLE_REWARDINFO_REQ);
 	}
 
-	public void On_ClickRewardGet(IUIObject a_cObject)
-	{
-		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
-		if (myCharInfo != null)
-		{
-			InfiBattleReward infiBattleReward = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.INFIBATTLE_REWARD_DLG) as InfiBattleReward;
-			if (infiBattleReward != null)
-			{
-				GS_INFIBATTLE_GETREWARD_REQ gS_INFIBATTLE_GETREWARD_REQ = new GS_INFIBATTLE_GETREWARD_REQ();
-				gS_INFIBATTLE_GETREWARD_REQ.i64PersonID = myCharInfo.m_PersonID;
-				SendPacket.GetInstance().SendObject(2013, gS_INFIBATTLE_GETREWARD_REQ);
-			}
-		}
-	}
-
-	public void On_ClickClose(IUIObject a_cObject)
-	{
-		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.INFIBATTLE_REWARD_DLG);
-	}
-
-	public void SetRewardInfo(GS_INFIBATTLE_REWARDINFO_ACK ACK)
+	public void SetRewardInfo(GS_INFIBATTLE_GET_REWARDINFO_ACK ACK)
 	{
 		string text = string.Empty;
 		string text2 = string.Empty;
+		string text3 = string.Empty;
+		this.m_ListBoxReward.Clear();
 		for (int i = 0; i < 9; i++)
 		{
-			if (0 >= ACK.i32Rank[i] || 0 >= ACK.i32RewardUnique[i])
+			NewListItem newListItem = new NewListItem(this.m_ListBoxReward.ColumnNum, true, string.Empty);
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.GetRankText(i).ToString());
+			if (i == 0)
 			{
-				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2225");
+				text = NrTSingleton<CTextParser>.Instance.GetTextColor("1403") + text;
 			}
-			else
+			else if (i == 1)
 			{
-				string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(ACK.i32RewardUnique[i]);
-				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1697");
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
-				{
-					text,
-					"itemname",
-					itemNameByItemUnique,
-					"count",
-					ACK.i16RewardNum[i]
-				});
+				text = NrTSingleton<CTextParser>.Instance.GetTextColor("1107") + text;
 			}
-			this.m_LabelLBReward[i].SetText(text2);
-		}
-		if (ACK.i32Result == 0)
-		{
-			this.m_LabelLastWeekRank.SetText(ACK.i32OldRank.ToString());
-			this.m_ButtonRewardGet.Visible = true;
-		}
-		else
-		{
-			TsLog.LogWarning("!!!! GS_INFIBATTLE_REWARDINFO_ACK :{0}", new object[]
+			newListItem.SetListItemData(1, text, null, null, null);
+			text3 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(ACK.i32RewardUnique[i]);
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1697");
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 			{
-				ACK.i32Result
+				text,
+				"itemname",
+				text3,
+				"count",
+				ACK.i16RewardNum[i]
 			});
-			this.m_ButtonRewardGet.Visible = false;
+			if (i == 0)
+			{
+				text2 = NrTSingleton<CTextParser>.Instance.GetTextColor("1403") + text2;
+			}
+			else if (i == 1)
+			{
+				text2 = NrTSingleton<CTextParser>.Instance.GetTextColor("1107") + text2;
+			}
+			newListItem.SetListItemData(2, text2, null, null, null);
+			text3 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(ACK.i32WinRewardUnique[i]);
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1697");
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+			{
+				text,
+				"itemname",
+				text3,
+				"count",
+				ACK.i16WinRewardNum[i]
+			});
+			if (i == 0)
+			{
+				text2 = NrTSingleton<CTextParser>.Instance.GetTextColor("1403") + text2;
+			}
+			else if (i == 1)
+			{
+				text2 = NrTSingleton<CTextParser>.Instance.GetTextColor("1107") + text2;
+			}
+			newListItem.SetListItemData(3, text2, null, null, null);
+			this.m_ListBoxReward.Add(newListItem);
 		}
+		this.m_ListBoxReward.RepositionItems();
 	}
 
-	public void SetTopRankStart()
+	public int GetRankText(int iCount)
 	{
-		this.m_NewlistBox.Clear();
-	}
-
-	public void SetTopRankEnd()
-	{
-		this.m_NewlistBox.RepositionItems();
-	}
-
-	public void SetTopRank(int iCount, int i32Rank, string szCharName)
-	{
-		string empty = string.Empty;
-		NewListItem newListItem = new NewListItem(this.m_NewlistBox.ColumnNum, true);
-		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		int result = 0;
+		switch (iCount)
 		{
-			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1435"),
-			"charname",
-			szCharName
-		});
-		newListItem.SetListItemData(0, empty, null, null, null);
-		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-		{
-			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2509"),
-			"rank",
-			i32Rank
-		});
-		newListItem.SetListItemData(1, empty, null, null, null);
-		this.m_NewlistBox.InsertAdd(iCount, newListItem);
+		case 0:
+			result = 2501;
+			break;
+		case 1:
+			result = 2502;
+			break;
+		case 2:
+			result = 2503;
+			break;
+		case 3:
+			result = 2504;
+			break;
+		case 4:
+			result = 2475;
+			break;
+		case 5:
+			result = 2505;
+			break;
+		case 6:
+			result = 2476;
+			break;
+		case 7:
+			result = 2477;
+			break;
+		case 8:
+			result = 2506;
+			break;
+		}
+		return result;
 	}
 }

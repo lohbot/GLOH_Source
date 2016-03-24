@@ -336,7 +336,7 @@ public class TsAudioBGM : TsAudio
 	[DebuggerHidden]
 	private IEnumerator _FadeOut()
 	{
-		TsAudioBGM.<_FadeOut>c__Iterator64 <_FadeOut>c__Iterator = new TsAudioBGM.<_FadeOut>c__Iterator64();
+		TsAudioBGM.<_FadeOut>c__Iterator68 <_FadeOut>c__Iterator = new TsAudioBGM.<_FadeOut>c__Iterator68();
 		<_FadeOut>c__Iterator.<>f__this = this;
 		return <_FadeOut>c__Iterator;
 	}
@@ -353,7 +353,7 @@ public class TsAudioBGM : TsAudio
 	[DebuggerHidden]
 	private IEnumerator _FadeIn()
 	{
-		TsAudioBGM.<_FadeIn>c__Iterator65 <_FadeIn>c__Iterator = new TsAudioBGM.<_FadeIn>c__Iterator65();
+		TsAudioBGM.<_FadeIn>c__Iterator69 <_FadeIn>c__Iterator = new TsAudioBGM.<_FadeIn>c__Iterator69();
 		<_FadeIn>c__Iterator.<>f__this = this;
 		return <_FadeIn>c__Iterator;
 	}

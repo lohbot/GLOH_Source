@@ -92,6 +92,8 @@ public class ItemGiftTargetDlg : Form
 
 	private DrawTexture m_dtNPCFace;
 
+	private Button m_btClose;
+
 	private ItemGiftTargetDlg.eTAB m_eTab;
 
 	private List<ItemGiftTargetDlg.TARGET_INFO> m_TargetInfoList = new List<ItemGiftTargetDlg.TARGET_INFO>();
@@ -102,10 +104,13 @@ public class ItemGiftTargetDlg : Form
 
 	private float m_fCheckTime;
 
+	private CharCostumeInfo_Data m_giftCostumeData;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
+		form.TopMost = true;
 		instance.LoadFileAll(ref form, "Item/dlg_gift_target", G_ID.ITEMGIFTTARGET_DLG, true);
 	}
 
@@ -125,6 +130,8 @@ public class ItemGiftTargetDlg : Form
 		this.m_nlbGiftTarget.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickGiftTargetList));
 		this.m_dtNPCFace = (base.GetControl("DT_NPCIMG") as DrawTexture);
 		this.m_dtNPCFace.SetTextureFromUISoldierBundle(eCharImageType.LARGE, "mine");
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.SelectTab(this.m_eTab);
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
@@ -137,6 +144,11 @@ public class ItemGiftTargetDlg : Form
 			this.m_fCheckTime = 0f;
 			this.SetEnable(true);
 		}
+	}
+
+	public override void OnClose()
+	{
+		this.CostumeCharSetting();
 	}
 
 	public void OnClickTab(IUIObject obj)
@@ -238,12 +250,13 @@ public class ItemGiftTargetDlg : Form
 		if (itemGiftInputNameDlg != null)
 		{
 			itemGiftInputNameDlg.SetTradeItem(this.m_SelectItem, this.m_eSellType);
+			itemGiftInputNameDlg.SetGiftCostumeData(this.m_giftCostumeData);
 		}
 	}
 
 	public NewListItem GetNewListItem(ItemGiftTargetDlg.TARGET_INFO Info)
 	{
-		NewListItem newListItem = new NewListItem(this.m_nlbGiftTarget.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbGiftTarget.ColumnNum, true, string.Empty);
 		newListItem.SetListItemData(0, true);
 		newListItem.SetListItemData(1, Info.CharKind, null, null, null);
 		newListItem.SetListItemData(2, Info.Name, null, null, null);
@@ -285,15 +298,30 @@ public class ItemGiftTargetDlg : Form
 				if (msgBoxUI != null)
 				{
 					string empty = string.Empty;
-					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					if (this.m_giftCostumeData != null)
 					{
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("327"),
-						"Product",
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromItem(this.m_SelectItem.m_strTextKey),
-						"targetname",
-						this.m_TargetInfoList[i].Name
-					});
-					msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKEvent), this.m_TargetInfoList[i].Name, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), empty, eMsgType.MB_OK_CANCEL);
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+						{
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("327"),
+							"Product",
+							NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeName(this.m_giftCostumeData.m_costumeUnique),
+							"targetname",
+							this.m_TargetInfoList[i].Name
+						});
+						msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKCostume), this.m_TargetInfoList[i].Name, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), empty, eMsgType.MB_OK_CANCEL);
+					}
+					else
+					{
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+						{
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("327"),
+							"Product",
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromItem(this.m_SelectItem.m_strTextKey),
+							"targetname",
+							this.m_TargetInfoList[i].Name
+						});
+						msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKEvent), this.m_TargetInfoList[i].Name, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), empty, eMsgType.MB_OK_CANCEL);
+					}
 				}
 				return;
 			}
@@ -315,6 +343,16 @@ public class ItemGiftTargetDlg : Form
 		}
 	}
 
+	public void MsgBoxOKCostume(object eventObject)
+	{
+		string text = (string)eventObject;
+		if (string.IsNullOrEmpty(text) || this.m_giftCostumeData == null)
+		{
+			return;
+		}
+		NrTSingleton<CostumeBuyManager>.Instance.BuyCostume(this.m_giftCostumeData, text);
+	}
+
 	public void SetTradeItem(ITEM_MALL_ITEM SelectItem, ItemMallItemManager.eItemMall_SellType eSellType)
 	{
 		this.m_SelectItem = SelectItem;
@@ -324,5 +362,24 @@ public class ItemGiftTargetDlg : Form
 	public void SetEnable(bool bEnable)
 	{
 		this.m_nlbGiftTarget.controlIsEnabled = bEnable;
+	}
+
+	public void SetGiftCostumeData(CharCostumeInfo_Data costumeData)
+	{
+		this.m_giftCostumeData = costumeData;
+	}
+
+	private void CostumeCharSetting()
+	{
+		CostumeRoom_Dlg costumeRoom_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COSTUMEROOM_DLG) as CostumeRoom_Dlg;
+		if (costumeRoom_Dlg == null)
+		{
+			return;
+		}
+		if (costumeRoom_Dlg._costumeViewerSetter == null || costumeRoom_Dlg._costumeViewerSetter._costumeCharSetter == null)
+		{
+			return;
+		}
+		costumeRoom_Dlg._costumeViewerSetter._costumeCharSetter.VisibleChar(true);
 	}
 }

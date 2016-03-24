@@ -130,33 +130,33 @@ public class StagePreDownloadMobile : AStage
 	[DebuggerHidden]
 	private IEnumerator _CheckRePredownload(int retryCnt)
 	{
-		StagePreDownloadMobile.<_CheckRePredownload>c__Iterator3D <_CheckRePredownload>c__Iterator3D = new StagePreDownloadMobile.<_CheckRePredownload>c__Iterator3D();
-		<_CheckRePredownload>c__Iterator3D.retryCnt = retryCnt;
-		<_CheckRePredownload>c__Iterator3D.<$>retryCnt = retryCnt;
-		<_CheckRePredownload>c__Iterator3D.<>f__this = this;
-		return <_CheckRePredownload>c__Iterator3D;
+		StagePreDownloadMobile.<_CheckRePredownload>c__Iterator40 <_CheckRePredownload>c__Iterator = new StagePreDownloadMobile.<_CheckRePredownload>c__Iterator40();
+		<_CheckRePredownload>c__Iterator.retryCnt = retryCnt;
+		<_CheckRePredownload>c__Iterator.<$>retryCnt = retryCnt;
+		<_CheckRePredownload>c__Iterator.<>f__this = this;
+		return <_CheckRePredownload>c__Iterator;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _RequestPredownloadTables()
 	{
-		StagePreDownloadMobile.<_RequestPredownloadTables>c__Iterator3E <_RequestPredownloadTables>c__Iterator3E = new StagePreDownloadMobile.<_RequestPredownloadTables>c__Iterator3E();
-		<_RequestPredownloadTables>c__Iterator3E.<>f__this = this;
-		return <_RequestPredownloadTables>c__Iterator3E;
+		StagePreDownloadMobile.<_RequestPredownloadTables>c__Iterator41 <_RequestPredownloadTables>c__Iterator = new StagePreDownloadMobile.<_RequestPredownloadTables>c__Iterator41();
+		<_RequestPredownloadTables>c__Iterator.<>f__this = this;
+		return <_RequestPredownloadTables>c__Iterator;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _DownloadAssetBundles()
 	{
-		StagePreDownloadMobile.<_DownloadAssetBundles>c__Iterator3F <_DownloadAssetBundles>c__Iterator3F = new StagePreDownloadMobile.<_DownloadAssetBundles>c__Iterator3F();
-		<_DownloadAssetBundles>c__Iterator3F.<>f__this = this;
-		return <_DownloadAssetBundles>c__Iterator3F;
+		StagePreDownloadMobile.<_DownloadAssetBundles>c__Iterator42 <_DownloadAssetBundles>c__Iterator = new StagePreDownloadMobile.<_DownloadAssetBundles>c__Iterator42();
+		<_DownloadAssetBundles>c__Iterator.<>f__this = this;
+		return <_DownloadAssetBundles>c__Iterator;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _PredownloadProgressUpdate()
 	{
-		StagePreDownloadMobile.<_PredownloadProgressUpdate>c__Iterator40 <_PredownloadProgressUpdate>c__Iterator = new StagePreDownloadMobile.<_PredownloadProgressUpdate>c__Iterator40();
+		StagePreDownloadMobile.<_PredownloadProgressUpdate>c__Iterator43 <_PredownloadProgressUpdate>c__Iterator = new StagePreDownloadMobile.<_PredownloadProgressUpdate>c__Iterator43();
 		<_PredownloadProgressUpdate>c__Iterator.<>f__this = this;
 		return <_PredownloadProgressUpdate>c__Iterator;
 	}
@@ -175,7 +175,7 @@ public class StagePreDownloadMobile : AStage
 		}
 		else if (TsPlatform.IsAndroid)
 		{
-			text2 = string.Format("{0}/cacheroot/", TsPlatform.Operator.GetFileDir());
+			text2 = string.Format("{0}/at2/cacheroot/", TsPlatform.Operator.GetFileDir());
 		}
 		else
 		{
@@ -221,7 +221,7 @@ public class StagePreDownloadMobile : AStage
 					int num = -1;
 					string empty = string.Empty;
 					tsDataReader.ReadKeyData("PatchVersion", out this.m_nServerVersion);
-					tsDataReader.ReadKeyData("AppVersion", out empty);
+					tsDataReader.ReadKeyData("AppVersion", out empty, string.Empty);
 					char[] separator = new char[]
 					{
 						'.'
@@ -256,7 +256,7 @@ public class StagePreDownloadMobile : AStage
 						MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 						string textFromPreloadText = NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("2");
 						string textFromPreloadText2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("1");
-						msgBoxUI.SetMsg(new YesDelegate(StagePreDownloadMobile.On_OK_URL), null, textFromPreloadText, textFromPreloadText2, eMsgType.MB_OK);
+						msgBoxUI.SetMsg(new YesDelegate(StagePreDownloadMobile.On_OK_URL), null, textFromPreloadText, textFromPreloadText2, eMsgType.MB_OK, 2);
 						int num2 = (int)(GUICamera.width / 2f - msgBoxUI.GetSize().x / 2f);
 						int num3 = (int)(GUICamera.height / 2f - msgBoxUI.GetSize().y / 2f);
 						msgBoxUI.SetLocation((float)num2, (float)num3, 50f);
@@ -340,7 +340,7 @@ public class StagePreDownloadMobile : AStage
 									if (!text.ToLower().Contains(".unity3d"))
 									{
 										int nVersion = 0;
-										int.TryParse(currentRow.GetToken(1), out nVersion);
+										int.TryParse(currentRow.GetColumn(1), out nVersion);
 										CustomCaching.AddCacheList(text, nVersion);
 									}
 								}
@@ -579,7 +579,7 @@ public class StagePreDownloadMobile : AStage
 
 	private void _OnMessageBoxCancel(IntroMsgBoxDlg a_cthis, object a_oObject)
 	{
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 
 	private void _OnMessageBoxZipOk(IntroMsgBoxDlg a_cthis, object a_oObject)
@@ -597,31 +597,31 @@ public class StagePreDownloadMobile : AStage
 				while (!tsDataReader.IsEndOfSection())
 				{
 					TsDataReader.Row currentRow = tsDataReader.GetCurrentRow();
-					string token = currentRow.GetToken(0);
-					if (!token.Contains("null") && token.Length > 0)
+					string column = currentRow.GetColumn(0);
+					if (!column.Contains("null") && column.Length > 0)
 					{
-						string token2 = currentRow.GetToken(1);
-						int num = Convert.ToInt32(token2);
-						string token3 = currentRow.GetToken(2);
+						string column2 = currentRow.GetColumn(1);
+						int num = Convert.ToInt32(column2);
+						string column3 = currentRow.GetColumn(2);
 						bool flag = true;
 						for (int i = 0; i < this.m_CompleteCompressionFileInfo.Count; i++)
 						{
-							if (this.m_CompleteCompressionFileInfo[i].fileName == token && this.m_CompleteCompressionFileInfo[i].fileSize == num && this.m_CompleteCompressionFileInfo[i].szMD5 == token3)
+							if (this.m_CompleteCompressionFileInfo[i].fileName == column && this.m_CompleteCompressionFileInfo[i].fileSize == num && this.m_CompleteCompressionFileInfo[i].szMD5 == column3)
 							{
 								flag = false;
-								TsPlatform.FileLog("Pass Zip File : " + token);
+								TsPlatform.FileLog("Pass Zip File : " + column);
 								break;
 							}
 						}
 						if (flag)
 						{
 							StagePreDownloadMobile.ZipFileInfo zipFileInfo = new StagePreDownloadMobile.ZipFileInfo();
-							zipFileInfo.fileName = token;
+							zipFileInfo.fileName = column;
 							zipFileInfo.fileSize = num;
-							zipFileInfo.szMD5 = token3;
+							zipFileInfo.szMD5 = column3;
 							this._DownloadZipFileTotalSize += num;
 							this.m_CompressionFileInfo.Add(zipFileInfo);
-							TsPlatform.FileLog("Add Zip File : " + token);
+							TsPlatform.FileLog("Add Zip File : " + column);
 						}
 					}
 					tsDataReader.NextLine();

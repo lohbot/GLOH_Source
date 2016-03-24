@@ -48,7 +48,7 @@ public class Battle_ReplayListDlg : Form
 		string[] files = Directory.GetFiles(directory, "*.dat");
 		for (int i = 0; i < files.Length; i++)
 		{
-			NewListItem newListItem = new NewListItem(this.m_nlbFileList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_nlbFileList.ColumnNum, true, string.Empty);
 			string text = files[i].Replace(directory, string.Empty);
 			newListItem.SetListItemData(0, text, null, null, null);
 			newListItem.Data = text;

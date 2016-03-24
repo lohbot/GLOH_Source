@@ -122,7 +122,7 @@ public class ScrollLabel : UIScrollList
 			flashLabel.SetFlashLabel(array[i]);
 			base.InsertItemDonotPosionUpdate(flashLabel, i, null, true);
 		}
-		base.RepositionItems();
+		this.RepositionItems();
 		this.clipWhenMoving = true;
 	}
 }

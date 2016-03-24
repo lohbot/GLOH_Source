@@ -34,20 +34,6 @@ namespace PROTOCOL.GAME
 
 		public short i16BossBattlePlayLimitEnd;
 
-		public short i16GuildWarJoinCount;
-
-		public short i16GuildWarRound;
-
-		public long i64GuildWarGuildID;
-
-		public long i64GuildWarStartTime;
-
-		public char[] strGuildWarGuildName = new char[11];
-
-		public short i16GuildWarApplyLevel;
-
-		public short i16GuildWarApplySolLevel;
-
 		public short i16AgitLevel;
 
 		public long i64AgitExp;
@@ -55,6 +41,10 @@ namespace PROTOCOL.GAME
 		public int i32FundExchangeRate;
 
 		public int i32FundDonation;
+
+		public char[] strGuildWarEnemyName = new char[11];
+
+		public bool bCanGetGuildWarReward;
 
 		public short i16LoadInfoType;
 	}

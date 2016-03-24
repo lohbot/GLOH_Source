@@ -73,6 +73,12 @@ namespace NPatch
 			set;
 		}
 
+		public bool bUsePrepack
+		{
+			get;
+			set;
+		}
+
 		public bool bUseCustomCache
 		{
 			get;
@@ -88,6 +94,7 @@ namespace NPatch
 			this.bUseCustomCache = false;
 			this.PatchLevel = -1;
 			this.LangCode = -1;
+			this.bUsePrepack = false;
 		}
 
 		public override string ToString()
@@ -140,6 +147,12 @@ namespace NPatch
 					int langCode = 0;
 					int.TryParse(row[owner._idx_LangCode], out langCode);
 					this.LangCode = langCode;
+				}
+				if (owner._idx_Prepack != -1)
+				{
+					bool bUsePrepack = false;
+					bool.TryParse(row[owner._idx_Prepack], out bUsePrepack);
+					this.bUsePrepack = bUsePrepack;
 				}
 			}
 		}

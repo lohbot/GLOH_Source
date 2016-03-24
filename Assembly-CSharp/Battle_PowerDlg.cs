@@ -13,7 +13,7 @@ public class Battle_PowerDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		instance.LoadFileAll(ref form, "Battle/DLG_Battle_Power", G_ID.BATTLE_POWER_GROUP_DLG, false);
-		base.DonotDepthChange(1000f);
+		base.DonotDepthChange(1010f);
 		this.Hide();
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
 	}

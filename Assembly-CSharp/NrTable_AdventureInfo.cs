@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_AdventureInfo : NrTableBase
 {
-	public NrTable_AdventureInfo() : base(CDefinePath.ADVENTURE_INFO_URL, true)
+	public NrTable_AdventureInfo() : base(CDefinePath.ADVENTURE_INFO_URL)
 	{
 	}
 

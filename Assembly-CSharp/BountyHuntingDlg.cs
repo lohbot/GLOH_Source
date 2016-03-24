@@ -5,11 +5,9 @@ using UnityForms;
 
 public class BountyHuntingDlg : Form
 {
-	private const int MAX_EPISODE = 4;
+	private const short BOUNTYHUNT_MAX = 4;
 
-	private const int MAX_PAGE = 3;
-
-	private const int CANPLAY_EPISODE = 2;
+	private short MAX_PAGE;
 
 	private DrawTexture m_dtBG;
 
@@ -28,8 +26,6 @@ public class BountyHuntingDlg : Form
 	private Button m_btPrev;
 
 	private Button m_btNext;
-
-	private DrawTexture[] m_dtLine = new DrawTexture[3];
 
 	private Label m_lbBaloonText;
 
@@ -77,15 +73,12 @@ public class BountyHuntingDlg : Form
 		this.m_btPrev.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickPrev));
 		this.m_btNext = (base.GetControl("Button_NextPageBtn01") as Button);
 		this.m_btNext.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickNext));
-		this.m_btNext.Visible = false;
-		for (int j = 0; j < 3; j++)
-		{
-			this.m_strText = string.Format("{0}{1}", "DrawTexture_line", j + 1);
-			this.m_dtLine[j] = (base.GetControl(this.m_strText) as DrawTexture);
-		}
+		this.m_btPrev.EffectAni = false;
+		this.m_btNext.EffectAni = false;
 		this.m_lbBaloonText = (base.GetControl("BaloonText") as Label);
 		this.m_dtNPCFace = (base.GetControl("NPC_Face") as DrawTexture);
 		this.m_dtNPCFace.SetTextureFromUISoldierBundle(eCharImageType.LARGE, "mine");
+		this.MAX_PAGE = NrTSingleton<BountyHuntManager>.Instance.MaxPage + 1;
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
 	}
@@ -98,7 +91,12 @@ public class BountyHuntingDlg : Form
 		if (b <= babelSubFloorRankInfo)
 		{
 			base.ShowLayer(2);
-			this.ShowEpisod(1);
+			short num2 = NrTSingleton<BountyHuntManager>.Instance.GetPage(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique);
+			if (num2 < 1)
+			{
+				num2 = 1;
+			}
+			this.ShowEpisod(num2);
 		}
 		else
 		{
@@ -121,39 +119,43 @@ public class BountyHuntingDlg : Form
 		this.m_iPage = iPage;
 		short bountyHuntUnique = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique;
 		BountyInfoData bountyInfoData = NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoDataFromUnique(bountyHuntUnique);
-		if (bountyInfoData != null && NrTSingleton<BountyHuntManager>.Instance.Week != bountyInfoData.i16Week)
+		if (bountyInfoData != null && !NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoDataTime(bountyHuntUnique))
 		{
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.BountyHuntUnique = 0;
 			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.ClearBountyHuntClearInfo();
 		}
-		for (int i = 0; i < 2; i++)
+		for (int i = 0; i < 4; i++)
 		{
 			this.m_dtDisableBG[i].SetTexture(this.m_strBGTextureKey);
 			this.m_dtDisableMark[i].SetTexture(this.m_strNoneTextureKey);
 			this.m_dtDisableMark[i].Visible = true;
 			this.m_dtDisableRank[i].Visible = false;
 			this.m_dtDisableRankBG[i].Visible = false;
-			bountyInfoData = NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoData(NrTSingleton<BountyHuntManager>.Instance.Week, iPage, (short)(i + 1));
+			bountyInfoData = NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoData(iPage, (short)(i + 1));
 			if (bountyInfoData != null)
 			{
 				if (NrTSingleton<BountyHuntManager>.Instance.GetBountyEcoData(bountyInfoData.i16EcoIndex) != null)
 				{
 					if (i == 0)
 					{
-						this.m_lbTitle.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromMap(bountyInfoData.i32WeekTitleKey.ToString()));
+						this.m_lbTitle.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(bountyInfoData.i32WeekTitleKey.ToString()));
 						this.m_strText = string.Format("UI/adventure/{0}", bountyInfoData.strWeekBG);
 						this.m_dtBG.SetTextureFromBundle(this.m_strText);
 					}
 					switch (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetBountyHuntClearState(bountyInfoData.i16Unique))
 					{
+					case eBOUNTYHUNTCLEAR_STATE.eBOUNTYHUNTCLEAR_STATE_NONE:
+						this.m_dtDisableBG[i].SetTexture(this.m_strBGTextureKey);
+						this.m_dtDisableMark[i].SetTexture(this.m_strNoneTextureKey);
+						break;
 					case eBOUNTYHUNTCLEAR_STATE.eBOUNTYHUNTCLEAR_STATE_ACCEPT:
-						this.m_dtDisableBG[i].SetTexture(eCharImageType.SMALL, bountyInfoData.i32NPCCharKind, 0);
+						this.m_dtDisableBG[i].SetTexture(eCharImageType.SMALL, bountyInfoData.i32NPCCharKind, 0, string.Empty);
 						this.m_dtDisableMark[i].SetTexture(bountyInfoData.strMonBG);
 						break;
 					case eBOUNTYHUNTCLEAR_STATE.eBOUNTYHUNTCLEAR_STATE_CLEAR:
 					{
 						byte bountyHuntClearRank = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetBountyHuntClearRank(bountyInfoData.i16Unique);
-						this.m_dtDisableBG[i].SetTexture(eCharImageType.SMALL, bountyInfoData.i32NPCCharKind, 0);
+						this.m_dtDisableBG[i].SetTexture(eCharImageType.SMALL, bountyInfoData.i32NPCCharKind, 0, string.Empty);
 						this.m_dtDisableMark[i].Visible = false;
 						UIBaseInfoLoader texture = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(NrTSingleton<BountyHuntManager>.Instance.GetBountyRankImgText(bountyHuntClearRank));
 						this.m_dtDisableRank[i].SetTexture(texture);
@@ -171,27 +173,15 @@ public class BountyHuntingDlg : Form
 				}
 			}
 		}
-		for (int j = 2; j < 4; j++)
-		{
-			this.m_btEpisode[j].Visible = false;
-			this.m_dtDisableBG[j].Visible = false;
-			this.m_dtDisableMark[j].Visible = false;
-			this.m_dtDisableRank[j].Visible = false;
-			this.m_dtDisableRankBG[j].Visible = false;
-		}
-		for (int k = 1; k < 3; k++)
-		{
-			this.m_dtLine[k].Visible = false;
-		}
-		this.m_btNext.Visible = false;
-		this.CheckPageButton((int)iPage, NrTSingleton<BountyHuntManager>.Instance.Week);
+		this.CheckPageButton((int)iPage);
 	}
 
-	public void CheckPageButton(int iPage, short iWeek)
+	public void CheckPageButton(int iPage)
 	{
-		if (!NrTSingleton<BountyHuntManager>.Instance.IsNextPage(iWeek))
+		if (!NrTSingleton<BountyHuntManager>.Instance.IsNextPage())
 		{
 			this.m_btPrev.Visible = false;
+			this.m_btNext.Visible = false;
 			return;
 		}
 		if (iPage == 1)
@@ -202,9 +192,13 @@ public class BountyHuntingDlg : Form
 		{
 			this.m_btPrev.Visible = true;
 		}
-		if (iPage == 2)
+		if ((int)(this.MAX_PAGE - 1) == iPage)
 		{
 			this.m_btNext.Visible = false;
+		}
+		else
+		{
+			this.m_btNext.Visible = true;
 		}
 	}
 
@@ -218,7 +212,7 @@ public class BountyHuntingDlg : Form
 		BountyCheckDlg bountyCheckDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BOUNTYCHECK_DLG) as BountyCheckDlg;
 		if (bountyCheckDlg != null)
 		{
-			BountyInfoData bountyInfoData = NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoData(NrTSingleton<BountyHuntManager>.Instance.Week, this.m_iPage, (short)button.TabIndex);
+			BountyInfoData bountyInfoData = NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoData(this.m_iPage, (short)button.TabIndex);
 			if (bountyInfoData != null)
 			{
 				bountyCheckDlg.SetEpisode(bountyInfoData);
@@ -235,14 +229,14 @@ public class BountyHuntingDlg : Form
 		}
 		else
 		{
-			this.m_iPage = 2;
+			this.m_iPage = this.MAX_PAGE - 1;
 		}
 		this.ShowEpisod(this.m_iPage);
 	}
 
 	public void ClickNext(IUIObject obj)
 	{
-		if (this.m_iPage + 1 < 3)
+		if (this.m_iPage + 1 < this.MAX_PAGE)
 		{
 			this.m_iPage += 1;
 		}
@@ -286,6 +280,7 @@ public class BountyHuntingDlg : Form
 		{
 			UnityEngine.Object.DestroyImmediate(this.m_gbCurEffect);
 		}
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.CHALLENGE_DLG);
 	}
 
 	public void SetCurEffect(bool bActive)

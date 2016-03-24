@@ -120,12 +120,12 @@ public class NewGuildAgit
 				break;
 			}
 		}
-		for (int i = 0; i < this.m_NPCInfoList.Count; i++)
+		for (int j = 0; j < this.m_NPCInfoList.Count; j++)
 		{
-			if (this.m_NPCInfoList[i].GetNPCType() == ui8NPCType)
+			if (this.m_NPCInfoList[j].GetNPCType() == ui8NPCType)
 			{
-				NrTSingleton<NkCharManager>.Instance.DeleteChar(this.m_NPCInfoList[i].GetCharID());
-				this.m_NPCInfoList.RemoveAt(i);
+				NrTSingleton<NkCharManager>.Instance.DeleteChar(this.m_NPCInfoList[j].GetCharID());
+				this.m_NPCInfoList.RemoveAt(j);
 				break;
 			}
 		}

@@ -17,5 +17,17 @@ namespace PROTOCOL.GAME
 		public long i64ItemID;
 
 		public long i64DateVary_End;
+
+		public int i32ItemUnique;
+
+		public int i32ItemNum;
+
+		public long i64SolID;
+
+		public int i32CharKind;
+
+		public byte i8Grade;
+
+		public short i16Level;
 	}
 }

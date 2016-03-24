@@ -16,6 +16,8 @@ public class ConvertPlatformIDDlg : Form
 
 	private Button m_kConvert4;
 
+	private Label lb_Link2;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -40,6 +42,8 @@ public class ConvertPlatformIDDlg : Form
 		if (TsPlatform.IsIPhone)
 		{
 			this.m_kConvert2.Visible = false;
+			this.lb_Link2 = (base.GetControl("Label_Link2") as Label);
+			this.lb_Link2.Visible = false;
 		}
 		base.SetScreenCenter();
 	}
@@ -96,7 +100,7 @@ public class ConvertPlatformIDDlg : Form
 
 	private void ClickConvert4(IUIObject obj)
 	{
-		if (NrTSingleton<NkClientLogic>.Instance.GetAuthPlatformType() == 1)
+		if (NrTSingleton<NkClientLogic>.Instance.GetAuthPlatformType() == 1 && !NrTSingleton<NkClientLogic>.Instance.IsGuestLogin())
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("720"));
 			return;

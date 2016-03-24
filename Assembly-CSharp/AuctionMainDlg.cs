@@ -29,6 +29,8 @@ public class AuctionMainDlg : Form
 
 	private Button m_btRefresh;
 
+	private Button m_btBack;
+
 	private Button m_btOption;
 
 	private Button m_btCost;
@@ -238,6 +240,8 @@ public class AuctionMainDlg : Form
 		this.m_lbSellListItemNum = (base.GetControl("Label_SellList_ItemNum") as Label);
 		this.m_nlbSellList = (base.GetControl("NewListBox_AuctionSellList") as NewListBox);
 		this.m_nlbSellList.touchScroll = false;
+		this.m_btBack = (base.GetControl("BT_back") as Button);
+		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBack));
 		this.InitControl();
 		this.SelectTab(this.m_eTab);
 		base.SetScreenCenter();
@@ -458,12 +462,12 @@ public class AuctionMainDlg : Form
 
 	public void ClickDirectPurchase(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbPurchaseList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbPurchaseList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
@@ -484,14 +488,14 @@ public class AuctionMainDlg : Form
 		{
 		case AuctionMainDlg.eTAB.eTAB_PURCHASE:
 		{
-			AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = uIListItemContainer.Data as AUCTION_REGISTER_ITEM;
+			AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = selectItem.Data as AUCTION_REGISTER_ITEM;
 			if (aUCTION_REGISTER_ITEM != null)
 			{
 				this.SelectDirectPurchasekListItem(aUCTION_REGISTER_ITEM);
 			}
 			else
 			{
-				AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = uIListItemContainer.Data as AUCTION_REGISTER_SOL_TOTAL;
+				AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = selectItem.Data as AUCTION_REGISTER_SOL_TOTAL;
 				if (aUCTION_REGISTER_SOL_TOTAL != null)
 				{
 					this.SelectDirectPurchasekListSol(aUCTION_REGISTER_SOL_TOTAL);
@@ -501,14 +505,14 @@ public class AuctionMainDlg : Form
 		}
 		case AuctionMainDlg.eTAB.eTAB_TENDER:
 		{
-			AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM2 = uIListItemContainer.Data as AUCTION_REGISTER_ITEM;
+			AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM2 = selectItem.Data as AUCTION_REGISTER_ITEM;
 			if (aUCTION_REGISTER_ITEM2 != null)
 			{
 				this.SelectDirectPurchasekListItem(aUCTION_REGISTER_ITEM2);
 			}
 			else
 			{
-				AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL2 = uIListItemContainer.Data as AUCTION_REGISTER_SOL_TOTAL;
+				AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL2 = selectItem.Data as AUCTION_REGISTER_SOL_TOTAL;
 				if (aUCTION_REGISTER_SOL_TOTAL2 != null)
 				{
 					this.SelectDirectPurchasekListSol(aUCTION_REGISTER_SOL_TOTAL2);
@@ -636,7 +640,7 @@ public class AuctionMainDlg : Form
 				{
 					return;
 				}
-				msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKUnsetSolHelp), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("156"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("155"), eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKUnsetSolHelp), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("156"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("155"), eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI.Show();
 				return;
 			}
@@ -926,7 +930,7 @@ public class AuctionMainDlg : Form
 
 	public void SetAddListItem(NewListBox nlb, AUCTION_REGISTER_ITEM RegisterItem)
 	{
-		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true, string.Empty);
 		string rankColorName = NrTSingleton<ItemManager>.Instance.GetRankColorName(RegisterItem.Item);
 		newListItem.SetListItemData(0, true);
 		newListItem.SetListItemData(1, RegisterItem.Item, null, null, null);
@@ -966,12 +970,11 @@ public class AuctionMainDlg : Form
 	public void SetPyrchaseListRegisterInfo(NewListItem NListItem, AUCTION_REGISTER_INFO RegisterInfo)
 	{
 		DateTime dueDate = PublicMethod.GetDueDate(RegisterInfo.tmExpireTime);
-		DateTime d = default(DateTime);
-		d = DateTime.Now;
-		int num = d.CompareTo(dueDate);
+		DateTime dueDate2 = PublicMethod.GetDueDate(PublicMethod.GetCurTime());
+		int num = dueDate2.CompareTo(dueDate);
 		if (0 > num)
 		{
-			TimeSpan timeSpan = dueDate - d;
+			TimeSpan timeSpan = dueDate - dueDate2;
 			if (0 < timeSpan.Days)
 			{
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strExpireTime, new object[]
@@ -1094,11 +1097,11 @@ public class AuctionMainDlg : Form
 			}
 			nkSoldierInfo.m_kBattleSkill.BattleSkillData[i] = RegisterSol.BattleSkillData[i];
 		}
-		for (int i = 0; i < 14; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			nkSoldierInfo.m_nSolSubData[i] = RegisterSol.SolSubData[i];
 		}
-		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true, string.Empty);
 		newListItem.SetListItemData(0, true);
 		newListItem.SetListItemData(1, nkSoldierInfo.GetListSolInfo(true), null, null, null);
 		string text = nkSoldierInfo.GetName();
@@ -1242,16 +1245,16 @@ public class AuctionMainDlg : Form
 
 	public void ClickPurchasekList(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbPurchaseList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbPurchaseList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
-		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = uIListItemContainer.Data as AUCTION_REGISTER_ITEM;
+		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = selectItem.Data as AUCTION_REGISTER_ITEM;
 		if (aUCTION_REGISTER_ITEM != null)
 		{
 			if (0L >= aUCTION_REGISTER_ITEM.RegisterInfo.i64DirectCostMoney && 0 >= aUCTION_REGISTER_ITEM.RegisterInfo.i32DirectCostHearts)
@@ -1265,7 +1268,7 @@ public class AuctionMainDlg : Form
 		}
 		else
 		{
-			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = uIListItemContainer.Data as AUCTION_REGISTER_SOL_TOTAL;
+			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = selectItem.Data as AUCTION_REGISTER_SOL_TOTAL;
 			if (aUCTION_REGISTER_SOL_TOTAL != null)
 			{
 				if (0L >= aUCTION_REGISTER_SOL_TOTAL.RegisterInfo.i64DirectCostMoney && 0 >= aUCTION_REGISTER_SOL_TOTAL.RegisterInfo.i32DirectCostHearts)
@@ -1514,7 +1517,7 @@ public class AuctionMainDlg : Form
 
 	public void SetAddSellListItem(NewListBox nlb, AUCTION_REGISTER_ITEM RegisterItem)
 	{
-		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true, string.Empty);
 		string rankColorName = NrTSingleton<ItemManager>.Instance.GetRankColorName(RegisterItem.Item);
 		newListItem.SetListItemData(0, true);
 		newListItem.SetListItemData(1, RegisterItem.Item, null, null, null);
@@ -1539,11 +1542,11 @@ public class AuctionMainDlg : Form
 		{
 			nkSoldierInfo.m_kBattleSkill.BattleSkillData[i] = RegisterSol.BattleSkillData[i];
 		}
-		for (int i = 0; i < 14; i++)
+		for (int i = 0; i < 16; i++)
 		{
 			nkSoldierInfo.m_nSolSubData[i] = RegisterSol.SolSubData[i];
 		}
-		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(nlb.ColumnNum, true, string.Empty);
 		newListItem.SetListItemData(0, true);
 		newListItem.SetListItemData(1, nkSoldierInfo.GetListSolInfo(true), null, null, null);
 		string text = nkSoldierInfo.GetName();
@@ -1606,17 +1609,17 @@ public class AuctionMainDlg : Form
 
 	public void ClickRegisterCancel(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbSellList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbSellList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
 		long num = 0L;
-		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = uIListItemContainer.Data as AUCTION_REGISTER_ITEM;
+		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = selectItem.Data as AUCTION_REGISTER_ITEM;
 		if (aUCTION_REGISTER_ITEM != null)
 		{
 			num = aUCTION_REGISTER_ITEM.RegisterInfo.i64AuctionID;
@@ -1628,7 +1631,7 @@ public class AuctionMainDlg : Form
 		}
 		else
 		{
-			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = uIListItemContainer.Data as AUCTION_REGISTER_SOL_TOTAL;
+			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = selectItem.Data as AUCTION_REGISTER_SOL_TOTAL;
 			if (aUCTION_REGISTER_SOL_TOTAL != null)
 			{
 				num = aUCTION_REGISTER_SOL_TOTAL.RegisterInfo.i64AuctionID;
@@ -1714,23 +1717,23 @@ public class AuctionMainDlg : Form
 
 	public void ClickDetailInfo(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbPurchaseList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbPurchaseList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
-		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = uIListItemContainer.data as AUCTION_REGISTER_ITEM;
+		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = selectItem.data as AUCTION_REGISTER_ITEM;
 		if (aUCTION_REGISTER_ITEM != null)
 		{
 			AuctionMainDlg.ShowItemDetailInfo(aUCTION_REGISTER_ITEM.Item, (G_ID)base.WindowID);
 		}
 		else
 		{
-			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = uIListItemContainer.data as AUCTION_REGISTER_SOL_TOTAL;
+			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = selectItem.data as AUCTION_REGISTER_SOL_TOTAL;
 			if (aUCTION_REGISTER_SOL_TOTAL != null)
 			{
 				AuctionMainDlg.ShowSolDetailInfo(aUCTION_REGISTER_SOL_TOTAL, this);
@@ -1740,23 +1743,23 @@ public class AuctionMainDlg : Form
 
 	public void ClickDetailInfoSellList(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbSellList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbSellList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
-		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = uIListItemContainer.data as AUCTION_REGISTER_ITEM;
+		AUCTION_REGISTER_ITEM aUCTION_REGISTER_ITEM = selectItem.data as AUCTION_REGISTER_ITEM;
 		if (aUCTION_REGISTER_ITEM != null)
 		{
 			AuctionMainDlg.ShowItemDetailInfo(aUCTION_REGISTER_ITEM.Item, (G_ID)base.WindowID);
 		}
 		else
 		{
-			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = uIListItemContainer.data as AUCTION_REGISTER_SOL_TOTAL;
+			AUCTION_REGISTER_SOL_TOTAL aUCTION_REGISTER_SOL_TOTAL = selectItem.data as AUCTION_REGISTER_SOL_TOTAL;
 			if (aUCTION_REGISTER_SOL_TOTAL != null)
 			{
 				AuctionMainDlg.ShowSolDetailInfo(aUCTION_REGISTER_SOL_TOTAL, this);
@@ -1960,5 +1963,11 @@ public class AuctionMainDlg : Form
 			AuctionMainDlg.SetChangePayTexture(this.m_dtCostIcon1, this.m_dtCostIcon2, this.m_ePayType);
 		}
 		this.CheckHeartsAnGoldUse();
+	}
+
+	public void OnClickBack(object a_oObject)
+	{
+		this.Close();
+		NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.MAINMENU_DLG);
 	}
 }

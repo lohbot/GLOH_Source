@@ -18,7 +18,7 @@ public class ColosseumRewardExplainDlg : Form
 
 	public const int MAX_SHOW_ITEM_COUNT = 2;
 
-	public Label m_laRewarCount;
+	private Button m_BT_Rankinfo;
 
 	private ColosseumRewardExplainDlg.UI_RewardControl[] m_UIRewardControl = new ColosseumRewardExplainDlg.UI_RewardControl[6];
 
@@ -34,7 +34,6 @@ public class ColosseumRewardExplainDlg : Form
 
 	public override void SetComponent()
 	{
-		this.m_laRewarCount = (base.GetControl("LB_RewardCount") as Label);
 		for (int i = 0; i < 6; i++)
 		{
 			this.m_UIRewardControl[i] = new ColosseumRewardExplainDlg.UI_RewardControl();
@@ -47,7 +46,19 @@ public class ColosseumRewardExplainDlg : Form
 				}
 			}
 		}
+		this.m_BT_Rankinfo = (base.GetControl("BT_Rankinfo") as Button);
+		this.m_BT_Rankinfo.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickRankInfo));
 		base.SetScreenCenter();
+	}
+
+	public void OnClickRankInfo(IUIObject obj)
+	{
+		this.Close();
+		ColosseumRankInfoDlg colosseumRankInfoDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.COLOSSEUMRANKINFO_DLG) as ColosseumRankInfoDlg;
+		if (colosseumRankInfoDlg != null)
+		{
+			colosseumRankInfoDlg.ShowInfo(eCOLOSSEUMRANK_SHOWTYPE.eCOLOSSEUMRANK_SHOWTYPE_MYLEAGUERANK, 0);
+		}
 	}
 
 	public void ShowColosseumRewardExplain()
@@ -100,16 +111,5 @@ public class ColosseumRewardExplainDlg : Form
 				}
 			}
 		}
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		int value = COLOSSEUM_CONSTANT_Manager.GetInstance().GetValue(eCOLOSSEUM_CONSTANT.eCOLOSSEUM_CONSTANT_ONEDAY_GIVEITEM_LIMITCOUNT);
-		short charDetailFromUnion = kMyCharInfo.GetCharDetailFromUnion(eCHAR_DETAIL_INFO.eCHAR_DETAIL_INFO_LIMIT_COUNT, 3);
-		textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2472");
-		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-		{
-			textFromInterface,
-			"count",
-			value - (int)charDetailFromUnion
-		});
-		this.m_laRewarCount.Text = empty;
 	}
 }

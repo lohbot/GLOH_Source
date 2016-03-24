@@ -14,13 +14,13 @@ public class ExplorationDlg : Form
 
 	private Label m_lbActivityTime;
 
-	private Label m_lb_WillNum;
-
 	private long m_nMaxActivity;
 
-	private long m_nCurrentActivity;
-
 	private float m_fActivityUpdateTime;
+
+	private Label m_lb_WillNum;
+
+	private long m_nCurrentActivity;
 
 	private Button btWillCharge1;
 
@@ -45,8 +45,8 @@ public class ExplorationDlg : Form
 		this.m_kSolList = (base.GetControl("Member_NewList") as NewListBox);
 		this.m_kSolList.touchScroll = false;
 		this.m_kSolList.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickSoldierView));
-		this.m_lb_WillNum = (base.GetControl("Label_WillNum") as Label);
 		this.m_lbActivityTime = (base.GetControl("Will_Time_Label") as Label);
+		this.m_lb_WillNum = (base.GetControl("Label_WillNum") as Label);
 		this.btWillCharge1 = (base.GetControl("Button_WillCharge1") as Button);
 		this.btWillCharge1.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickWillCharge));
 		this.btStart = (base.GetControl("Start_Btn") as Button);
@@ -76,7 +76,7 @@ public class ExplorationDlg : Form
 		{
 			return;
 		}
-		if (0L >= kMyCharInfo.m_nActivityPoint)
+		if (0L >= kMyCharInfo.m_nActivityPoint && NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("385"));
 			return;
@@ -318,7 +318,7 @@ public class ExplorationDlg : Form
 				}
 				if (nkSoldierInfo != null)
 				{
-					NewListItem item = new NewListItem(this.m_kSolList.ColumnNum, true);
+					NewListItem item = new NewListItem(this.m_kSolList.ColumnNum, true, string.Empty);
 					this.MakeSolListItem(ref item, nkSoldierInfo);
 					this.m_kSolList.Add(item);
 				}
@@ -326,7 +326,7 @@ public class ExplorationDlg : Form
 		}
 		for (int j = solInfo.Count; j < 6; j++)
 		{
-			NewListItem item2 = new NewListItem(this.m_kSolList.ColumnNum, true);
+			NewListItem item2 = new NewListItem(this.m_kSolList.ColumnNum, true, string.Empty);
 			this.MakeSolListItem(ref item2, null);
 			this.m_kSolList.Add(item2);
 		}
@@ -425,6 +425,10 @@ public class ExplorationDlg : Form
 
 	public override void Update()
 	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return;
+		}
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		if (kMyCharInfo == null)
 		{

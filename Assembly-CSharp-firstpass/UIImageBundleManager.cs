@@ -54,6 +54,20 @@ public class UIImageBundleManager : NrTSingleton<UIImageBundleManager>
 		list.Clear();
 	}
 
+	public void DeleteTexture(string key)
+	{
+		if (string.IsNullOrEmpty(key))
+		{
+			return;
+		}
+		if (!this.m_mapUIImage.ContainsKey(key))
+		{
+			return;
+		}
+		Resources.UnloadAsset(this.m_mapUIImage[key]);
+		this.m_mapUIImage.Remove(key);
+	}
+
 	private string _ImagePath(eCharImageType type)
 	{
 		string result = string.Empty;
@@ -106,6 +120,15 @@ public class UIImageBundleManager : NrTSingleton<UIImageBundleManager>
 		wWWItem.SetItemType(ItemType.USER_ASSETB);
 		wWWItem.SetCallback(callbackDelegate, bundlepath);
 		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+	}
+
+	public void RequestBundleImage(string bundlepath, PostProcPerItem callbackDelegate, object callBackParam, bool unloadAfterPostProcess = true)
+	{
+		string str = string.Format("{0}{1}", bundlepath, NrTSingleton<UIDataManager>.Instance.AddFilePath);
+		WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, MsgHandler.HandleReturn<string>("UIBundleStackName", new object[0]));
+		wWWItem.SetItemType(ItemType.USER_ASSETB);
+		wWWItem.SetCallback(callbackDelegate, callBackParam);
+		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, unloadAfterPostProcess);
 	}
 
 	public void SetCharImage(WWWItem _item, object _param)

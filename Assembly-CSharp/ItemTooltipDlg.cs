@@ -3,6 +3,7 @@ using Ndoors.Framework.Stage;
 using System;
 using System.Collections.Generic;
 using System.Text;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
@@ -44,11 +45,19 @@ public class ItemTooltipDlg : Form
 
 	private DrawTexture m_txLine;
 
+	private DrawTexture m_txSetItemView_01;
+
+	private DrawTexture m_txSetItemView_02;
+
+	private DrawTexture m_txSetItemView_03;
+
 	private Button m_btnSell;
 
 	private Button m_btnEquip;
 
 	private Button m_btnUpgrade;
+
+	private Button m_btnSetItemView;
 
 	private bool bText;
 
@@ -67,6 +76,16 @@ public class ItemTooltipDlg : Form
 	public static Vector3 MOBILE_TOOLTIP_POS = new Vector3(0f, 0f, 0f);
 
 	private NkSoldierInfo m_SolInfo;
+
+	private UIButton _GuideItem;
+
+	private float _ButtonZ;
+
+	private GameObject m_gbEffect_Set;
+
+	private ItemSetTooltip_Dlg pSetItemTooltipDlg;
+
+	private int m_nWinID;
 
 	public ITEM Item
 	{
@@ -150,7 +169,49 @@ public class ItemTooltipDlg : Form
 		this.m_btnEquip = (base.GetControl("Button_Button02") as Button);
 		this.m_btnUpgrade = (base.GetControl("Button_Button03") as Button);
 		this.m_btnSell = (base.GetControl("Button_Button01") as Button);
+		this.m_txSetItemView_01 = (base.GetControl("DT_GRA") as DrawTexture);
+		this.m_txSetItemView_02 = (base.GetControl("DT_SETICON") as DrawTexture);
+		this.m_txSetItemView_03 = (base.GetControl("DT_SetText") as DrawTexture);
+		this.m_btnSetItemView = (base.GetControl("BT_SET") as Button);
+		this.m_btnSetItemView.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSetItemView));
+		this.SetItemView(false);
 		this.m_txLine = (base.GetControl("DrawTexture_MainBorder") as DrawTexture);
+	}
+
+	public void LoadEffect()
+	{
+		string str = string.Format("{0}{1}", "Effect/Instant/fx_setbuuton_ui", NrTSingleton<UIDataManager>.Instance.AddFilePath);
+		WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+		wWWItem.SetItemType(ItemType.USER_ASSETB);
+		wWWItem.SetCallback(new PostProcPerItem(this.Effect_Set), this.m_btnSetItemView);
+		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+	}
+
+	private void Effect_Set(WWWItem _item, object _param)
+	{
+		Button button = _param as Button;
+		if (null != _item.GetSafeBundle() && button != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.m_gbEffect_Set = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				if (this == null)
+				{
+					UnityEngine.Object.DestroyImmediate(this.m_gbEffect_Set);
+					return;
+				}
+				Vector2 size = button.GetSize();
+				this.m_gbEffect_Set.transform.parent = button.gameObject.transform;
+				this.m_gbEffect_Set.transform.localPosition = new Vector3(size.x / 2f, -size.y / 2f, button.gameObject.transform.localPosition.z + 1.05f);
+				NkUtil.SetAllChildLayer(this.m_gbEffect_Set, GUICamera.UILayer);
+				this.m_gbEffect_Set.SetActive(true);
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_gbEffect_Set);
+				}
+			}
+		}
 	}
 
 	public void SetRectUpdate(bool bUpdate)
@@ -166,9 +227,13 @@ public class ItemTooltipDlg : Form
 	{
 		this.m_eParentWindowID = a_eWidowID;
 		this.m_cItem = pkItem;
-		this.Item_Tooltip(this, this.m_cItem, pkEquipedItem, this.m_eParentWindowID, bEquiped);
+		this.Item_Tooltip(this, this.m_cItem, pkEquipedItem, this.m_eParentWindowID, bEquiped, this.m_eParentWindowID);
 		this.Tooltip_Rect(this, showPosition);
 		this.Show();
+		if (this.m_eParentWindowID == G_ID.SOLEQUIPITEMSELECT_DLG)
+		{
+			this.m_btnSell.Visible = false;
+		}
 	}
 
 	public void Set_Tooltip(G_ID eWidowID, ITEM pkItem, ITEM pkEquipedItem = null, bool bEquiped = false)
@@ -184,7 +249,7 @@ public class ItemTooltipDlg : Form
 	public void Set_Tooltip(ITEM pkItem)
 	{
 		this.m_cItem = pkItem;
-		this.Item_Tooltip(this, this.m_cItem, null, G_ID.NONE, false);
+		this.Item_Tooltip(this, this.m_cItem, null, G_ID.NONE, false, G_ID.NONE);
 		this.Tooltip_Rect(this, Vector3.zero);
 		this.Show();
 	}
@@ -194,31 +259,46 @@ public class ItemTooltipDlg : Form
 		this.m_eParentWindowID = eWidowID;
 		this.m_cItem.Init();
 		this.m_cItem.m_nItemUnique = itemunique;
-		this.Item_Tooltip(this, this.m_cItem, null, eWidowID, false);
+		this.m_cItem.m_nItemNum = 1;
+		this.Item_Tooltip(this, this.m_cItem, null, eWidowID, false, G_ID.NONE);
 		this.Tooltip_Rect(this, Vector3.zero);
 		this.Show();
 	}
 
-	public void Item_Tooltip(Form cThis, ITEM pkItem, ITEM pkEquipItem, G_ID eWidowID, bool bEquiped = false)
+	public void Item_Tooltip(Form cThis, ITEM pkItem, ITEM pkEquipItem, G_ID eWidowID, bool bEquiped = false, G_ID ParentWindowID = G_ID.NONE)
 	{
 		if (pkItem == null || !pkItem.IsValid())
 		{
 			return;
 		}
-		ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(pkItem, pkEquipItem, bEquiped, true);
+		ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(pkItem, pkEquipItem, bEquiped, true, ParentWindowID);
 		ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
 		int rank = pkItem.m_nOption[2];
 		int num = 0;
 		string name = NrTSingleton<ItemManager>.Instance.GetName(pkItem);
 		this.m_txClass.SetTexture("Win_I_Frame" + ItemManager.ChangeRankToString(rank));
-		this.m_lbTitle.Text = string.Format("{0} {1}", name, (!bEquiped) ? string.Empty : string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("2002"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1479")));
+		if (pkItem.m_nDurability == 0)
+		{
+			if (pkItem.m_nPosType == 1 || pkItem.m_nPosType == 2 || pkItem.m_nPosType == 3 || pkItem.m_nPosType == 4)
+			{
+				this.m_lbTitle.Text = string.Format("{0} {1}", name, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2984"));
+			}
+			else
+			{
+				this.m_lbTitle.Text = string.Format("{0} {1}", name, string.Empty);
+			}
+		}
+		else
+		{
+			this.m_lbTitle.Text = string.Format("{0} {1}", name, (!bEquiped) ? string.Empty : string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("2002"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1479")));
+		}
 		if (pkItem.m_nItemNum > 0)
 		{
 			this.m_itItemTex.SetItemTexture(pkItem);
 		}
 		else
 		{
-			this.m_itItemTex.SetItemTexture(pkItem, false);
+			this.m_itItemTex.SetItemTexture(pkItem, false, true, 1f);
 		}
 		if (pkItem.m_nPosType == 10 || pkItem.m_nPosType == 1 || pkItem.m_nPosType == 2 || pkItem.m_nPosType == 3 || pkItem.m_nPosType == 4)
 		{
@@ -229,7 +309,7 @@ public class ItemTooltipDlg : Form
 			this.m_lbClass.Text = string.Format("{0}", NrTSingleton<ItemManager>.Instance.GetItemTypeName((eITEM_TYPE)itemInfo.m_nItemType));
 		}
 		this.m_lbType.Text = Protocol_Item.GetItemPartText(NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(pkItem.m_nItemUnique));
-		if (array.Length > 0)
+		if (array.Length > 0 || NrTSingleton<ItemManager>.Instance.IsPrivateEquip(itemInfo.m_nItemUnique))
 		{
 			if (array[0].m_MainOption)
 			{
@@ -244,12 +324,39 @@ public class ItemTooltipDlg : Form
 			}
 			StringBuilder stringBuilder = new StringBuilder();
 			StringBuilder stringBuilder2 = new StringBuilder();
+			StringBuilder stringBuilder3 = new StringBuilder();
+			string empty = string.Empty;
+			for (int i = 0; i < 10; i++)
+			{
+				int charKindByCode = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(itemInfo.m_strOnlyUseCharCode[i]);
+				if (string.IsNullOrEmpty(NrTSingleton<NrCharKindInfoManager>.Instance.GetName(charKindByCode)))
+				{
+					break;
+				}
+				if (i != 0)
+				{
+					stringBuilder3.Append(",");
+				}
+				stringBuilder3.Append(NrTSingleton<NrCharKindInfoManager>.Instance.GetName(charKindByCode));
+			}
+			if (stringBuilder3.Length > 0)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3515"),
+					"targetname",
+					stringBuilder3.ToString()
+				});
+				stringBuilder.Append(empty);
+				stringBuilder.Append("\n");
+				stringBuilder2.Append("\n");
+			}
 			if (array.Length > num)
 			{
-				for (int i = num; i < array.Length; i++)
+				for (int j = num; j < array.Length; j++)
 				{
-					stringBuilder.Append(array[i].m_OptionName);
-					stringBuilder2.Append(array[i].m_OptionValue);
+					stringBuilder.Append(array[j].m_OptionName);
+					stringBuilder2.Append(array[j].m_OptionValue);
 				}
 			}
 			this.m_lbSubOption.SetFlashLabel(stringBuilder.ToString());
@@ -294,8 +401,8 @@ public class ItemTooltipDlg : Form
 				{
 					flashLabel = string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1401"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2183"));
 				}
-				string empty = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, null);
+				string empty2 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, null, -1);
 				if (this.bText)
 				{
 					this.m_lbItemSkillName.SetLocation(this.m_lbItemSkillName.GetLocation().x, this.m_lbText.GetLocationY() + this.m_lbText.Height + 20f);
@@ -306,7 +413,7 @@ public class ItemTooltipDlg : Form
 				}
 				this.m_lbItemSkillName.SetFlashLabel(flashLabel);
 				this.m_lbItemSkillText.SetLocation(this.m_lbItemSkillText.GetLocation().x, this.m_lbItemSkillName.GetLocationY() + this.m_lbItemSkillName.Height);
-				this.m_lbItemSkillText.SetFlashLabel(empty);
+				this.m_lbItemSkillText.SetFlashLabel(empty2);
 				this.bItemSkillText = true;
 			}
 		}
@@ -320,10 +427,10 @@ public class ItemTooltipDlg : Form
 			BATTLESKILL_DETAIL battleSkillDetail2 = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillDetail(num4, num5);
 			if (battleSkillDetail2 != null)
 			{
-				string empty2 = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail2.m_nSkillTooltip), battleSkillDetail2, null);
+				string empty3 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail2.m_nSkillTooltip), battleSkillDetail2, null, -1);
 				this.m_lbItemSkillText2.SetLocation(this.m_lbItemSkillText.GetLocation().x, this.m_lbItemSkillText.GetLocationY() + this.m_lbItemSkillText.Height);
-				this.m_lbItemSkillText2.SetFlashLabel(empty2);
+				this.m_lbItemSkillText2.SetFlashLabel(empty3);
 				this.bItemSkillText2 = true;
 			}
 		}
@@ -341,7 +448,7 @@ public class ItemTooltipDlg : Form
 	{
 	}
 
-	public static ItemOption_Text[] Get_Item_Info(ITEM pkItem, ITEM pkEquipedItem, bool bEquiped, bool bShowItemNum = true)
+	public static ItemOption_Text[] Get_Item_Info(ITEM pkItem, ITEM pkEquipedItem, bool bEquiped, bool bShowItemNum = true, G_ID ParentWindowID = G_ID.NONE)
 	{
 		List<ItemOption_Text> list = new List<ItemOption_Text>();
 		ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
@@ -381,14 +488,6 @@ public class ItemTooltipDlg : Form
 				m_OptionName = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1264"),
 				m_OptionValue = ItemTooltipDlg.GetStat(itemInfo.m_nDefense, weight, pkItem.m_nOption[0], bEquiped, (iTEMINFO == null) ? 0 : iTEMINFO.m_nDefense, weight2, (pkEquipedItem == null) ? 0 : pkEquipedItem.m_nOption[0], 0, 0),
 				m_MainOption = true
-			});
-		}
-		if (itemInfo.m_nDEX != 0)
-		{
-			list.Add(new ItemOption_Text
-			{
-				m_OptionName = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1272"),
-				m_OptionValue = ItemTooltipDlg.GetStat((int)itemInfo.m_nDEX, weight, pkItem.m_nOption[1], bEquiped, (int)((pkEquipedItem == null) ? 0 : iTEMINFO.m_nDEX), weight2, (pkEquipedItem == null) ? 0 : pkEquipedItem.m_nOption[1], 0, 0)
 			});
 		}
 		if (itemInfo.m_nCriticalPlus != 0)
@@ -431,14 +530,6 @@ public class ItemTooltipDlg : Form
 				m_OptionValue = ItemTooltipDlg.GetStat(itemInfo.m_nHitratePlus, weight, pkItem.m_nOption[1], bEquiped, (iTEMINFO == null) ? 0 : iTEMINFO.m_nHitratePlus, weight2, (pkEquipedItem == null) ? 0 : pkEquipedItem.m_nOption[1], 0, 0)
 			});
 		}
-		if (itemInfo.m_nINT != 0)
-		{
-			list.Add(new ItemOption_Text
-			{
-				m_OptionName = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1274"),
-				m_OptionValue = ItemTooltipDlg.GetStat((int)itemInfo.m_nINT, weight, pkItem.m_nOption[1], bEquiped, (int)((pkEquipedItem == null) ? 0 : iTEMINFO.m_nINT), weight2, (pkEquipedItem == null) ? 0 : pkEquipedItem.m_nOption[1], 0, 0)
-			});
-		}
 		if (itemInfo.m_nMagicDefense != 0)
 		{
 			list.Add(new ItemOption_Text
@@ -446,6 +537,9 @@ public class ItemTooltipDlg : Form
 				m_OptionName = "\n" + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1237"),
 				m_OptionValue = "\n" + itemInfo.m_nMagicDefense
 			});
+		}
+		if (itemInfo.m_nSetUnique != 0)
+		{
 		}
 		int num = pkItem.m_nOption[4];
 		int num2 = pkItem.m_nOption[5];
@@ -469,6 +563,14 @@ public class ItemTooltipDlg : Form
 					m_OptionValue = string.Format("\n{0}{1} {2}", NrTSingleton<CTextParser>.Instance.GetTextColor("1401"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey), "Lv." + num2)
 				});
 			}
+		}
+		else if (NrTSingleton<ContentsLimitManager>.Instance.IsItemNormalSkillBlock() && NrTSingleton<ItemManager>.Instance.isEquipItem(pkItem.m_nItemUnique) && ParentWindowID == G_ID.ITEM_BOX_SELECT_DLG)
+		{
+			list.Add(new ItemOption_Text
+			{
+				m_OptionName = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1401"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1178")),
+				m_OptionValue = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1401"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("919"))
+			});
 		}
 		int num3 = pkItem.m_nOption[6];
 		int num4 = pkItem.m_nOption[9];
@@ -496,14 +598,21 @@ public class ItemTooltipDlg : Form
 		if (itemInfo.m_nUseMinLevel != 0)
 		{
 			ItemOption_Text itemOption_Text = new ItemOption_Text();
-			itemOption_Text.m_OptionName = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1258"));
-			if (0 >= pkItem.m_nOption[8])
+			if (NrTSingleton<ItemManager>.Instance.isEquipItem(itemInfo.m_nItemUnique))
 			{
-				itemOption_Text.m_OptionValue = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), itemInfo.m_nUseMinLevel);
+				itemOption_Text.m_OptionName = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3416"));
 			}
 			else
 			{
+				itemOption_Text.m_OptionName = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1258"));
+			}
+			if (0 < pkItem.m_nOption[8] && NrTSingleton<ContentsLimitManager>.Instance.IsItemLevelCheckBlock())
+			{
 				itemOption_Text.m_OptionValue = string.Format("\n{0}{1}({2})", NrTSingleton<CTextParser>.Instance.GetTextColor("1105"), itemInfo.GetUseMinLevel(pkItem), -pkItem.m_nOption[8]);
+			}
+			else
+			{
+				itemOption_Text.m_OptionValue = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), itemInfo.m_nUseMinLevel);
 			}
 			list.Add(itemOption_Text);
 		}
@@ -539,17 +648,38 @@ public class ItemTooltipDlg : Form
 		}
 		if (pkItem.GetTradeCount() != 0)
 		{
-			ItemOption_Text itemOption_Text3 = new ItemOption_Text();
-			itemOption_Text3.m_OptionName = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1309"));
-			string empty2 = string.Empty;
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+			if (itemInfo.IsItemATB(131072L) || itemInfo.IsItemATB(524288L))
 			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1143"),
-				"count",
-				pkItem.GetTradeCount()
-			});
-			itemOption_Text3.m_OptionValue = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), empty2);
-			list.Add(itemOption_Text3);
+				int num5 = pkItem.m_nOption[7];
+				if (num5 > 0)
+				{
+					ItemOption_Text itemOption_Text3 = new ItemOption_Text();
+					itemOption_Text3.m_OptionName = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3072"));
+					string empty2 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2175"),
+						"count",
+						num5
+					});
+					itemOption_Text3.m_OptionValue = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), empty2);
+					list.Add(itemOption_Text3);
+				}
+			}
+			else
+			{
+				ItemOption_Text itemOption_Text4 = new ItemOption_Text();
+				itemOption_Text4.m_OptionName = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1309"));
+				string empty3 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1143"),
+					"count",
+					pkItem.GetTradeCount()
+				});
+				itemOption_Text4.m_OptionValue = string.Format("\n{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1101"), empty3);
+				list.Add(itemOption_Text4);
+			}
 		}
 		return list.ToArray();
 	}
@@ -729,27 +859,52 @@ public class ItemTooltipDlg : Form
 
 	private void ButtonSetting(ref float SizeY, ITEM pkItem)
 	{
+		if (pkItem != null)
+		{
+			ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
+			if (itemInfo != null)
+			{
+				if (itemInfo.m_nSetUnique != 0)
+				{
+					this.SetItemView(true);
+				}
+				else
+				{
+					this.SetItemView(false);
+				}
+			}
+		}
 		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ITEMTOOLTIP_SECOND_DLG))
 		{
 			if (this.bItemSkillText2)
 			{
 				SizeY = this.m_lbItemSkillText2.GetLocationY() + this.m_lbItemSkillText2.Height + 10f;
-			}
-			else if (this.bItemSkillText)
-			{
-				SizeY = this.m_lbItemSkillText.GetLocationY() + this.m_lbItemSkillText.Height + 10f;
+				this.m_txLine.Visible = true;
 			}
 			else
 			{
-				SizeY = this.m_lbText.GetLocationY() + this.m_lbText.Height + 10f;
+				if (this.bItemSkillText)
+				{
+					SizeY = this.m_lbItemSkillText.GetLocationY() + this.m_lbItemSkillText.Height + 10f;
+				}
+				else
+				{
+					SizeY = this.m_lbText.GetLocationY() + this.m_lbText.Height + 10f;
+				}
+				this.m_txLine.Visible = false;
 			}
 			this.m_btnEquip.Visible = false;
 			this.m_btnUpgrade.Visible = false;
 			this.m_btnSell.Visible = false;
 			return;
 		}
-		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.AUCTION_MAIN_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DLG_OTHER_CHAR_EQUIPMENT) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ITEMSKILL_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REFORGEMAIN_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REDUCEMAIN_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EXCHANGE_JEWELRY_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EVENT_DAILY_GIFT_DLG))
+		ITEMINFO itemInfo2 = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
+		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.AUCTION_MAIN_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DLG_OTHER_CHAR_EQUIPMENT) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ITEMSKILL_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REFORGEMAIN_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REDUCEMAIN_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EXCHANGE_JEWELRY_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EVENT_DAILY_GIFT_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EXCHANGE_MYTHICSOL_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EXCHANGE_ITEM_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EXCHANGE_POINT_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EXCHANGE_GUILDWAR_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ITEM_BOX_ALL_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ITEM_BOX_SELECT_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EVENT_NORMAL_ATTEND) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BONUS_ITEM_INFO_DLG) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EVENT_NEW_ATTEND) || NrTSingleton<FormsManager>.Instance.IsShow(G_ID.EXCHANGE_EVENTITEM_DLG))
 		{
+			if (Protocol_Item.Enable_Use(pkItem.m_nItemUnique) && !Protocol_Item.Enable_SystemUse(pkItem.m_nItemUnique))
+			{
+				this.m_txLine.Visible = false;
+			}
 			this.m_btnEquip.Visible = false;
 			this.m_btnUpgrade.Visible = false;
 			this.m_btnSell.Visible = false;
@@ -760,19 +915,40 @@ public class ItemTooltipDlg : Form
 			this.m_btnUpgrade.SetEnabled(false);
 			this.m_btnSell.SetEnabled(false);
 		}
-		ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
-		if (this.m_SolInfo != null && itemInfo != null && itemInfo.m_nItemType == 19 && !this.m_SolInfo.IsAtbCommonFlag(2L) && !this.m_SolInfo.GetCharKindInfo().IsATB(1L))
+		if (this.m_SolInfo != null && itemInfo2 != null && itemInfo2.m_nItemType == 19 && !this.m_SolInfo.IsAtbCommonFlag(2L) && !this.m_SolInfo.GetCharKindInfo().IsATB(1L))
+		{
+			this.m_btnEquip.SetEnabled(false);
+		}
+		if (this.m_btnEquip.Visible || this.m_btnSell.Visible || this.m_btnUpgrade.Visible || this.bItemSkillText2)
+		{
+			this.m_txLine.Visible = true;
+		}
+		else
+		{
+			this.m_txLine.Visible = false;
+		}
+		if (itemInfo2 != null && (pkItem.m_nPosType == 1 || pkItem.m_nPosType == 2 || pkItem.m_nPosType == 3 || pkItem.m_nPosType == 4) && pkItem.m_nDurability == 0)
 		{
 			this.m_btnEquip.SetEnabled(false);
 		}
 		this.m_btnSell.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemSell));
 		this.m_btnSell.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemReleaseEquip));
+		this.m_btnSell.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemBreak));
 		this.m_btnEquip.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemUseEquip));
 		this.m_btnUpgrade.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemEnhance));
 		if (pkItem.m_nPosType == 1 || pkItem.m_nPosType == 2 || pkItem.m_nPosType == 3 || pkItem.m_nPosType == 4)
 		{
-			this.m_btnSell.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemSell));
-			this.m_btnSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("704"));
+			ITEM_BREAK iTEM_BREAK = NrTSingleton<Item_Break_Manager>.Instance.Get_RankData(itemInfo2.m_nQualityLevel, 6);
+			if (iTEM_BREAK != null)
+			{
+				this.m_btnSell.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemBreak));
+				this.m_btnSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("269"));
+			}
+			else
+			{
+				this.m_btnSell.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemSell));
+				this.m_btnSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("704"));
+			}
 			this.m_btnEquip.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemUseEquip));
 			this.m_btnEquip.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("626"));
 			this.m_btnUpgrade.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemEnhance));
@@ -799,13 +975,24 @@ public class ItemTooltipDlg : Form
 			{
 				SizeY = this.m_lbItemSkillText2.GetLocationY() + this.m_lbItemSkillText2.Height + 92f;
 			}
+			else if (this.m_btnEquip.Visible || this.m_btnSell.Visible || this.m_btnUpgrade.Visible)
+			{
+				if (this.bItemSkillText)
+				{
+					SizeY = this.m_lbItemSkillText.GetLocationY() + this.m_lbItemSkillText.Height + 92f;
+				}
+				else
+				{
+					SizeY = this.m_lbText.GetLocationY() + this.m_lbText.Height + 92f;
+				}
+			}
 			else if (this.bItemSkillText)
 			{
-				SizeY = this.m_lbItemSkillText.GetLocationY() + this.m_lbItemSkillText.Height + 92f;
+				SizeY = this.m_lbItemSkillText.GetLocationY() + this.m_lbItemSkillText.Height + 14f;
 			}
 			else
 			{
-				SizeY = this.m_lbText.GetLocationY() + this.m_lbText.Height + 92f;
+				SizeY = this.m_lbText.GetLocationY() + this.m_lbText.Height + 14f;
 			}
 		}
 		else if (pkItem.m_nPosType == 10)
@@ -930,6 +1117,11 @@ public class ItemTooltipDlg : Form
 					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("369"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 					return;
 				}
+				if (this.m_SolInfo.IsAtbCommonFlag(16L))
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("880"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					return;
+				}
 				SolEquipItemSelectDlg solEquipItemSelectDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLEQUIPITEMSELECT_DLG) as SolEquipItemSelectDlg;
 				if (solEquipItemSelectDlg != null)
 				{
@@ -993,7 +1185,7 @@ public class ItemTooltipDlg : Form
 
 	public void ClickItemEnhance(IUIObject obj)
 	{
-		if (this.m_SolInfo != null && (this.m_SolInfo.GetSolPosType() == 2 || this.m_SolInfo.GetSolPosType() == 6))
+		if (this.m_SolInfo != null && this.m_SolInfo.GetSolPosType() == 6)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("370"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
@@ -1083,7 +1275,151 @@ public class ItemTooltipDlg : Form
 		this.Close();
 	}
 
+	public void ClickItemBreak(IUIObject data)
+	{
+		TsLog.LogWarning("ClickItemBreak", new object[0]);
+		if (this.m_eParentWindowID == G_ID.INVENTORY_DLG)
+		{
+			bool flag = false;
+			ITEM cItem = this.m_cItem;
+			if (cItem == null)
+			{
+				return;
+			}
+			if (this.m_cItem.IsLock())
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("726"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				return;
+			}
+			switch (NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(cItem.m_nItemUnique))
+			{
+			case eITEM_PART.ITEMPART_WEAPON:
+			case eITEM_PART.ITEMPART_ARMOR:
+			case eITEM_PART.ITEMPART_ACCESSORY:
+				flag = true;
+				break;
+			}
+			if (!flag)
+			{
+				return;
+			}
+			if (NrTSingleton<ItemManager>.Instance.GetItemQuailtyLevel(cItem.m_nItemUnique) == 1000)
+			{
+				return;
+			}
+			ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(cItem.m_nItemUnique);
+			if (itemInfo == null)
+			{
+				return;
+			}
+			ITEM_BREAK iTEM_BREAK = NrTSingleton<Item_Break_Manager>.Instance.Get_RankData(itemInfo.m_nQualityLevel, 6);
+			if (iTEM_BREAK == null)
+			{
+				this.Close();
+				return;
+			}
+			int num = cItem.m_nOption[5];
+			num += cItem.m_nOption[9];
+			int expectMin = iTEM_BREAK.i32ItemNum_Min + num * iTEM_BREAK.i32Skill_increase_itemnum;
+			int expectMax = iTEM_BREAK.i32ItemNum_Max + num * iTEM_BREAK.i32Skill_increase_itemnum;
+			ItemSellDlg itemSellDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMSELL_DLG) as ItemSellDlg;
+			if (itemSellDlg != null)
+			{
+				itemSellDlg.SetItemBreak(cItem, iTEM_BREAK.i32ItemUnique, expectMin, expectMax);
+			}
+			Inventory_Dlg inventory_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.INVENTORY_DLG) as Inventory_Dlg;
+			if (inventory_Dlg != null)
+			{
+				inventory_Dlg.AddBreakItem(cItem);
+			}
+		}
+		this.Close();
+	}
+
+	public void ClickSetItemView(IUIObject data)
+	{
+		if (this.pSetItemTooltipDlg == null)
+		{
+			this.pSetItemTooltipDlg = (NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.SETITEMTOOLTIP_DLG) as ItemSetTooltip_Dlg);
+		}
+		if (this.pSetItemTooltipDlg != null)
+		{
+			this.pSetItemTooltipDlg.SetData(this.m_cItem, this.m_SolInfo, base.WindowID);
+			this.pSetItemTooltipDlg.SetLocation(base.GetLocationX() + this.m_txSetItemView_03.GetLocationX() + this.m_txSetItemView_03.GetSize().x, base.GetLocationY(), base.GetLocation().z - 2f);
+		}
+	}
+
 	public override void OnClose()
 	{
+		this.HideUIGuide();
+		if (this.pSetItemTooltipDlg != null)
+		{
+			this.pSetItemTooltipDlg.Close();
+		}
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		this._GuideItem = (base.GetControl(param1) as UIButton);
+		this.m_nWinID = winID;
+		if (null != this._GuideItem)
+		{
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				this._GuideItem.EffectAni = false;
+				Vector2 vector = new Vector2(base.GetLocationX() + this._GuideItem.GetLocationX() + 80f, base.GetLocationY() + this._GuideItem.GetLocationY() - 10f);
+				uI_UIGuide.Move(vector, vector);
+				this._ButtonZ = this._GuideItem.GetLocation().z;
+				this._GuideItem.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+				this._GuideItem.AlphaAni(1f, 0.8f, -0.5f);
+			}
+		}
+		else
+		{
+			Debug.LogError("_GuideItem == NULL");
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+			this._GuideItem.StopAni();
+			this._GuideItem.AlphaAni(1f, 1f, 0f);
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				uI_UIGuide.Close();
+			}
+		}
+		this._GuideItem = null;
+	}
+
+	private void SetItemView(bool bshow)
+	{
+		this.m_btnSetItemView.Visible = bshow;
+		this.m_txSetItemView_01.Visible = bshow;
+		this.m_txSetItemView_02.Visible = bshow;
+		this.m_txSetItemView_03.Visible = bshow;
+		if (bshow)
+		{
+			this.LoadEffect();
+		}
+		else if (this.m_gbEffect_Set != null)
+		{
+			UnityEngine.Object.DestroyImmediate(this.m_gbEffect_Set);
+		}
+	}
+
+	public void CloseSetItemTooltip()
+	{
+		if (this.pSetItemTooltipDlg != null)
+		{
+			this.pSetItemTooltipDlg.Close();
+			this.pSetItemTooltipDlg = null;
+		}
 	}
 }

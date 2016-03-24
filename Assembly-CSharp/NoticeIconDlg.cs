@@ -1,8 +1,5 @@
 using GAME;
 using Ndoors.Framework.Stage;
-using PROTOCOL;
-using PROTOCOL.GAME;
-using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,6 +15,7 @@ public class NoticeIconDlg : Form
 
 	public static int[] tempicontype = new int[]
 	{
+		-1,
 		-1,
 		-1,
 		-1,
@@ -38,7 +36,7 @@ public class NoticeIconDlg : Form
 	{
 		get
 		{
-			return 4;
+			return 5;
 		}
 	}
 
@@ -49,8 +47,16 @@ public class NoticeIconDlg : Form
 			NoticeIconDlg noticeIconDlg = (NoticeIconDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MAIN_UI_ICON);
 			if (noticeIconDlg != null)
 			{
-				noticeIconDlg.SetIconOnOff(type, bOn);
-				noticeIconDlg.SetIconStatus(type, bOn);
+				if (type == ICON_TYPE.ATTEND_REWARD)
+				{
+					noticeIconDlg.SetIconOnOff(type, false);
+					noticeIconDlg.SetIconStatus(type, false);
+				}
+				else
+				{
+					noticeIconDlg.SetIconOnOff(type, bOn);
+					noticeIconDlg.SetIconStatus(type, bOn);
+				}
 				if (!NrTSingleton<NkQuestManager>.Instance.IsCompletedFirstQuest())
 				{
 					noticeIconDlg.Hide();
@@ -69,7 +75,7 @@ public class NoticeIconDlg : Form
 		{
 			return;
 		}
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			if (NoticeIconDlg.tempicontype[i] < 0)
 			{
@@ -81,7 +87,7 @@ public class NoticeIconDlg : Form
 
 	public void InitTempNotice()
 	{
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			NoticeIconDlg.tempicontype[i] = -1;
 		}
@@ -89,7 +95,7 @@ public class NoticeIconDlg : Form
 
 	public bool IsTempNotice()
 	{
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			if (NoticeIconDlg.tempicontype[i] >= 0)
 			{
@@ -106,7 +112,7 @@ public class NoticeIconDlg : Form
 			return;
 		}
 		NoticeIconDlg noticeIconDlg = (NoticeIconDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MAIN_UI_ICON);
-		for (int i = 0; i < 4; i++)
+		for (int i = 0; i < 5; i++)
 		{
 			if (NoticeIconDlg.tempicontype[i] >= 0)
 			{
@@ -136,7 +142,7 @@ public class NoticeIconDlg : Form
 		Form form = this;
 		instance.LoadFileAll(ref form, "Main/Dlg_MiniIcn", G_ID.MAIN_UI_ICON, false);
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
-		base.DonotDepthChange(UIPanelManager.UI_DEPTH);
+		base.DonotDepthChange(UIPanelManager.UI_DEPTH - 1f);
 	}
 
 	public float GetButtonLocationX(ICON_TYPE type)
@@ -157,6 +163,7 @@ public class NoticeIconDlg : Form
 		this.m_BtnIcon[1] = (base.GetControl("Button_NewMail") as Button);
 		this.m_BtnIcon[2] = (base.GetControl("Button_GameGuide") as Button);
 		this.m_BtnIcon[3] = (base.GetControl("Button_Dailygift") as Button);
+		this.m_BtnIcon[4] = (base.GetControl("Button_MineRecord") as Button);
 		for (int i = 0; i < this.COUNT_MAX; i++)
 		{
 			this.m_BtnIcon[i].AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickIcon));
@@ -366,13 +373,9 @@ public class NoticeIconDlg : Form
 		case ICON_TYPE.GAMEGUIDE:
 			this.ShowHiteSwitch(G_ID.GAMEGUIDE_DLG);
 			break;
-		case ICON_TYPE.ATTEND_REWARD:
-		{
-			this.ShowHiteSwitch(G_ID.EVENT_DAILY_GIFT_DLG);
-			GS_CHAR_DAILY_ATTEND_NFY obj2 = new GS_CHAR_DAILY_ATTEND_NFY();
-			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_CHAR_DAILY_ATTEND_NFY, obj2);
+		case ICON_TYPE.MINE_RECORED:
+			this.ShowHiteSwitch(G_ID.MINE_RECORD_DLG);
 			break;
-		}
 		}
 	}
 

@@ -31,6 +31,10 @@ public static class CDefinePath
 
 	public static string CHARKIND_SOLGRADEINFO_URL = "CharInfo/CHARKIND_SOLGRADEINFO";
 
+	public static string CHARKIND_LEGENDINFO_URL = "CharInfo/CHARKIND_LEGENDINFO";
+
+	public static string CHARKIND_SOLINFO_URL = "CharInfo/CHARKIND_SOLDIERINFO";
+
 	public static string CHARKIND_SOLGUIDE_URL = "CharInfo/SolGuide";
 
 	public static string GMHElpInfo_URL = "CharInfo/GMHelp_Info";
@@ -82,6 +86,10 @@ public static class CDefinePath
 	public static string POINTLIMIT_TABLE_PATH = "ItemCommon/pointexchangelimit";
 
 	public static string MYTHICSOL_TABLE_PATH = "ItemCommon/mythicexchange";
+
+	public static string GUILDWAR_EXCHANGE_TABLE_PATH = "Guild/GuildWar_Exchange";
+
+	public static string EVENT_EXCHANGE_TABLE_PATH = "ItemCommon/EventExchange";
 
 	public static string EXPLORATION_TABLE_PATH = "ItemCommon/Exploration_Info";
 
@@ -135,6 +143,8 @@ public static class CDefinePath
 
 	public static string s_strBattleSkillIconURL = "BattleSkill/BattleSkill_Icon";
 
+	public static string s_strMythSkillTrainingURL = "BattleSkill/MythSkill_Training";
+
 	public static string s_strItemAccessoryURL = "ItemInfo/item_accessory";
 
 	public static string s_strItemArmorURL = "ItemInfo/item_armor";
@@ -159,9 +169,19 @@ public static class CDefinePath
 
 	public static string s_strItemReforgeURL = "ItemCommon/ITEM_REFORGE";
 
+	public static string s_strItemSkillReinforceURL = "ItemCommon/ITEM_SKILL_REINFORCE";
+
+	public static string s_strItemEvolutionURL = "ItemCommon/ITEM_EVOLUTION";
+
+	public static string s_strExchangeEvolutionURL = "ItemCommon/EXCHANGE_EVOLUTION";
+
 	public static string s_strItemSellURL = "ItemCommon/ITEM_SELL";
 
 	public static string s_strItemBoxGroupURL = "ItemCommon/item_boxgroup";
+
+	public static string s_strItemMakeRankURL = "ItemCommon/make_rank";
+
+	public static string s_strItemGroupSolTicketURL = "ItemCommon/group_sol_ticket";
 
 	public static string s_strLoadingTextURL = "loading_text";
 
@@ -243,6 +263,8 @@ public static class CDefinePath
 
 	public static string ITEMSKILL_URL = "ItemCommon/ITEM_SKILL";
 
+	public static string s_strPoPupShop_URL = "ItemCommon/popup_shop";
+
 	public static string MineConstantURL = "Mine/mine_constant";
 
 	public static string MineDataURL = "Mine/mine_data";
@@ -287,6 +309,8 @@ public static class CDefinePath
 
 	public static string NEWGUILD_CONSTANT = "guild_constant";
 
+	public static string GUILDWAR_REWARD = "guild/guildwar_reward";
+
 	public static string TRANSCENDENCE_COST_URL = "transcendence/transcendence_cost";
 
 	public static string TRANSCENDENCE_RATE_URL = "transcendence/transcendence_rate";
@@ -294,6 +318,56 @@ public static class CDefinePath
 	public static string TRANSCENDENCE_SOL_URL = "transcendence/transcendence_sol";
 
 	public static string TRANSCENDENCE_FAILREWARD_URL = "transcendence/transcendence_failreward";
+
+	public static string LEVELUP_GUIDE_URL = "charinfo/levelupguide";
+
+	public static string GAMEHELP_INFO_URL = "gamehelplist";
+
+	public static string ACHIVEMENT_INFO_URL = "quest/achivement_google";
+
+	public static string SET_ITEM_DATA_URL = "iteminfo/set_item_info";
+
+	public static string MYTHRAID_INFO = "raid/raid_info";
+
+	public static string SOLCOMBINE_INFO_URL = "battleskill/sol_combination_skill";
+
+	public static string MYTHRAID_CLEAR_REWARD = "raid/raid_clear_reward";
+
+	public static string MYTHRAID_RANK_REWARD = "raid/raid_rank_reward";
+
+	public static string MYTHRAID_GuardianAngel = "raid/raid_guardianangel";
+
+	public static string ITEM_BREAK_URL = "itemcommon/item_break";
+
+	public static string ITEM_RATE_URL = "rate_openurl";
+
+	public static string VIPSUBINFO_URL = "vip/vip_sub";
+
+	public static string AUTOSELL_INFO_URL = "itemcommon/auto_sell_table";
+
+	public static string CHAR_COSTUME = "charinfo/costume_info";
+
+	public static string ATTENDANCE = "Event/attendance";
+
+	public static string EMULATOR_INFO_URL = "emulator";
+
+	public static string TIMESHOP_URL = "itemcommon/item_timeshop";
+
+	public static string TIMESHOPREFRESH_URL = "itemcommon/item_timeshop_refresh";
+
+	public static string NEWEXPLORATION_INFO_URL = "NewExploration/NewExploration_info";
+
+	public static string NEWEXPLORATION_SREWARD_URL = "NewExploration/NewExploration_special_reward";
+
+	public static string NEWEXPLORATION_TREASURE_URL = "NewExploration/NewExploration_treasureBox";
+
+	public static string NEWEXPLORATION_RESET_INFO_URL = "NewExploration/NewExploration_reset_Info";
+
+	public static string NEWEXPLORATION_RANK_REWARD_INFO_URL = "NewExploration/NewExploration_Rank_reward";
+
+	public static string MYTH_EVOLUTION_URL = "charinfo/myth_evolution_spend";
+
+	public static string MOVIE_URL = "movieurl";
 
 	public static string WebData()
 	{

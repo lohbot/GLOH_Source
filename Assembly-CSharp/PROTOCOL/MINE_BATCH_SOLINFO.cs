@@ -13,5 +13,7 @@ namespace PROTOCOL
 		public byte ui8BatchPos;
 
 		public long nFightPower;
+
+		public int nCostumeUnique;
 	}
 }

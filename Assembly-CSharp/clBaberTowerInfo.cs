@@ -23,6 +23,8 @@ public class clBaberTowerInfo
 
 	public short m_nBabelFloorType;
 
+	private bool m_bPartyBatch;
+
 	public BABELTOWER_PERSON[] stBabelPersonInfo = new BABELTOWER_PERSON[4];
 
 	public List<BABEL_RNDINVITE_PERSON> m_Babel_RndInvitePersonList = new List<BABEL_RNDINVITE_PERSON>();
@@ -128,6 +130,13 @@ public class clBaberTowerInfo
 			}
 		}
 		return b;
+	}
+
+	public bool IsPartyBatch()
+	{
+		bool bPartyBatch = this.m_bPartyBatch;
+		this.m_bPartyBatch = true;
+		return bPartyBatch;
 	}
 
 	public bool IsReadyBattle(long nPersonID)
@@ -260,6 +269,8 @@ public class clBaberTowerInfo
 			return;
 		}
 		this.stBabelPersonInfo[pos].nSlotType = slot_type;
+		BabelLobbyUserListDlg babelLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABELTOWERUSERLIST_DLG) as BabelLobbyUserListDlg;
+		babelLobbyUserListDlg.SetUserSlotType(pos, slot_type);
 	}
 
 	public void AddRndInvitePerson(BABEL_RNDINVITE_PERSON info)

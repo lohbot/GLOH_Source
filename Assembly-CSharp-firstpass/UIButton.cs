@@ -200,6 +200,16 @@ public class UIButton : AutoSpriteControlBase
 		}
 	}
 
+	public override void SetClippingRect(Rect3D value)
+	{
+		if (this.ignoreClipping)
+		{
+			return;
+		}
+		base.SetClippingRect(value);
+		this.PlayAnim((int)this.m_ctrlState);
+	}
+
 	public void SetEnabled(bool value)
 	{
 		this.controlIsEnabled = value;
@@ -792,5 +802,67 @@ public class UIButton : AutoSpriteControlBase
 			this.animations[i].SetAnim(this.States[i], i);
 		}
 		base.PlayAnim(0, 0);
+	}
+
+	public void AlphaAni(float startA, float destA, float time)
+	{
+		SpriteRoot[] componentsInChildren = base.transform.GetComponentsInChildren<SpriteRoot>(true);
+		if (componentsInChildren != null)
+		{
+			SpriteRoot[] array = componentsInChildren;
+			for (int i = 0; i < array.Length; i++)
+			{
+				SpriteRoot spriteRoot = array[i];
+				if (null != spriteRoot)
+				{
+					FadeSprite.Do(spriteRoot, EZAnimation.ANIM_MODE.FromTo, new Color(spriteRoot.color.r, spriteRoot.color.g, spriteRoot.color.b, startA), new Color(spriteRoot.color.r, spriteRoot.color.g, spriteRoot.color.b, destA), new EZAnimation.Interpolator(EZAnimation.linear), time, 0f, null, null);
+				}
+			}
+		}
+		SpriteText[] componentsInChildren2 = base.transform.GetComponentsInChildren<SpriteText>(true);
+		if (componentsInChildren2 != null)
+		{
+			SpriteText[] array2 = componentsInChildren2;
+			for (int j = 0; j < array2.Length; j++)
+			{
+				SpriteText spriteText = array2[j];
+				if (null != spriteText)
+				{
+					FadeText.Do(spriteText, EZAnimation.ANIM_MODE.FromTo, new Color(spriteText.color.r, spriteText.color.g, spriteText.color.b, startA), new Color(spriteText.color.r, spriteText.color.g, spriteText.color.b, destA), new EZAnimation.Interpolator(EZAnimation.linear), time, 0f, null, null);
+				}
+			}
+		}
+	}
+
+	public void StopAni()
+	{
+		SpriteRoot[] componentsInChildren = base.transform.GetComponentsInChildren<SpriteRoot>(true);
+		if (componentsInChildren != null)
+		{
+			SpriteRoot[] array = componentsInChildren;
+			for (int i = 0; i < array.Length; i++)
+			{
+				SpriteRoot spriteRoot = array[i];
+				if (null != spriteRoot)
+				{
+					EZAnimator.instance.Stop(spriteRoot.gameObject);
+					EZAnimator.instance.Stop(spriteRoot);
+				}
+			}
+		}
+		SpriteText[] componentsInChildren2 = base.transform.GetComponentsInChildren<SpriteText>(true);
+		if (componentsInChildren2 != null)
+		{
+			SpriteText[] array2 = componentsInChildren2;
+			for (int j = 0; j < array2.Length; j++)
+			{
+				SpriteText spriteText = array2[j];
+				if (null != spriteText)
+				{
+					EZAnimator.instance.Stop(spriteText.gameObject);
+					EZAnimator.instance.Stop(spriteText);
+				}
+			}
+		}
 	}
 }

@@ -6,7 +6,7 @@ public class BASE_EXPEDITION_DATA : NrTableBase
 {
 	public static List<EXPEDITION_DATA> m_listExpeditionData = new List<EXPEDITION_DATA>();
 
-	public BASE_EXPEDITION_DATA() : base(CDefinePath.ExpeditionDataURL, true)
+	public BASE_EXPEDITION_DATA() : base(CDefinePath.ExpeditionDataURL)
 	{
 	}
 

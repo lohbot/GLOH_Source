@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ReservedWord : NrTableBase
 {
-	public NrTable_ReservedWord(string strFilePath) : base(strFilePath, true)
+	public NrTable_ReservedWord(string strFilePath) : base(strFilePath)
 	{
 	}
 

@@ -808,6 +808,7 @@ public class ExpeditionSearchDetallInfoDlg : Form
 								nkListSolInfo.SolCharKind = this.m_pksolinfo[i].m_kBase.CharKind;
 								nkListSolInfo.SolGrade = (int)this.m_pksolinfo[i].m_kBase.Grade;
 								nkListSolInfo.ShowLevel = false;
+								nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(this.m_pksolinfo[i]);
 								EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(nkListSolInfo.SolCharKind, (byte)nkListSolInfo.SolGrade);
 								if (eventHeroCharCode != null)
 								{

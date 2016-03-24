@@ -53,6 +53,8 @@ public class EventTriggerMapManager : MonoBehaviour
 
 	private bool LoadingTrigger;
 
+	private bool m_bReload;
+
 	public List<Action> m_PreLoadList = new List<Action>();
 
 	public List<Func<bool>> m_StandbyWaitList = new List<Func<bool>>();
@@ -140,6 +142,7 @@ public class EventTriggerMapManager : MonoBehaviour
 
 	public void Claer()
 	{
+		UnityEngine.Debug.Log("EventTriggerMapManager Clear");
 		EventTriggerHelper.DestoryChildObject(base.transform);
 		base.transform.DetachChildren();
 		this._ActiveMap.Clear();
@@ -237,6 +240,10 @@ public class EventTriggerMapManager : MonoBehaviour
 		this.LoadingTrigger = false;
 		this.CheckActiveTrigger(mapInfo.m_MapIdx);
 		this.LoadNext(this.LoadingSection);
+		if (this.m_bReload && this.LoadTriggerBuffer != null && this.LoadTriggerBuffer.Count == 0)
+		{
+			this.ReloadPostWork();
+		}
 	}
 
 	private void LoadNext(EventTriggerMapManager.LoadingTriggerInfo Info)
@@ -440,6 +447,21 @@ public class EventTriggerMapManager : MonoBehaviour
 		}
 	}
 
+	public void ReloadMapTrigger()
+	{
+		UnityEngine.Debug.Log("ReloadMapTrigger : " + this.isActive);
+		EventTriggerMapManager.Instance.Claer();
+		this.m_bReload = true;
+		this.LoadMapTrigger(NrTSingleton<MapManager>.Instance.CurrentMapIndex);
+		base.StartCoroutine(EventTriggerStageLoader.LoadEventTrigger());
+	}
+
+	private void ReloadPostWork()
+	{
+		base.StartCoroutine(EventTriggerMapManager.Instance.RunPostLoadWork());
+		this.m_bReload = false;
+	}
+
 	public void SetRetuenStageFunc(Action preload, Func<bool> standbywait, Action postload)
 	{
 		if (TsPlatform.IsMobile)
@@ -481,7 +503,7 @@ public class EventTriggerMapManager : MonoBehaviour
 	[DebuggerHidden]
 	public IEnumerator RunStandByWork()
 	{
-		EventTriggerMapManager.<RunStandByWork>c__Iterator2 <RunStandByWork>c__Iterator = new EventTriggerMapManager.<RunStandByWork>c__Iterator2();
+		EventTriggerMapManager.<RunStandByWork>c__Iterator4 <RunStandByWork>c__Iterator = new EventTriggerMapManager.<RunStandByWork>c__Iterator4();
 		<RunStandByWork>c__Iterator.<>f__this = this;
 		return <RunStandByWork>c__Iterator;
 	}
@@ -489,7 +511,7 @@ public class EventTriggerMapManager : MonoBehaviour
 	[DebuggerHidden]
 	public IEnumerator RunPostLoadWork()
 	{
-		EventTriggerMapManager.<RunPostLoadWork>c__Iterator3 <RunPostLoadWork>c__Iterator = new EventTriggerMapManager.<RunPostLoadWork>c__Iterator3();
+		EventTriggerMapManager.<RunPostLoadWork>c__Iterator5 <RunPostLoadWork>c__Iterator = new EventTriggerMapManager.<RunPostLoadWork>c__Iterator5();
 		<RunPostLoadWork>c__Iterator.<>f__this = this;
 		return <RunPostLoadWork>c__Iterator;
 	}
@@ -507,6 +529,25 @@ public class EventTriggerMapManager : MonoBehaviour
 				current.gameObject.name
 			});
 			current.OnTrigger();
+		}
+	}
+
+	public void ActionTrigger_Reset(string _DlgID)
+	{
+		foreach (EventTrigger_Game current in this._ActionEventTrigger)
+		{
+			TsLog.LogWarning("[EventTrigger] ActionTrigger_Reset {0}", new object[]
+			{
+				current.gameObject.name
+			});
+			foreach (GameObject current2 in current.BehaviorList)
+			{
+				Behavior_UIGuide component = current2.GetComponent<Behavior_UIGuide>();
+				if (component != null && string.Equals(component.m_DlgID, _DlgID))
+				{
+					current.TriggerOn = false;
+				}
+			}
 		}
 	}
 }

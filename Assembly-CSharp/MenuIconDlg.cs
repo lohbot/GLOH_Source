@@ -1,6 +1,7 @@
 using GAME;
 using NPatch;
 using PROTOCOL;
+using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -18,17 +19,23 @@ public class MenuIconDlg : Form
 
 	private Box menuNotice;
 
-	private Button shopMenu;
+	private Button btShopMenu;
+
+	private Label lbShopMenu;
 
 	private Box ShopNotice;
 
-	private Button downLoad;
+	private Button btPatchDownload;
+
+	private Label lbPatchDownload;
 
 	private float bookmarkUIWidth;
 
 	private Vector3 oldOpenMenuPos = Vector3.zero;
 
 	private Vector3 oldCloseMenuPos = Vector3.zero;
+
+	public int m_nChallengeEvent_Count;
 
 	private bool bDown = true;
 
@@ -60,36 +67,50 @@ public class MenuIconDlg : Form
 		this.menuNotice.Visible = false;
 		this.ShopNotice = (base.GetControl("Box_Notice1") as Box);
 		this.ShopNotice.Visible = false;
-		this.shopMenu = (base.GetControl("Button_Shop") as Button);
-		this.shopMenu.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickShopMenu));
+		this.btShopMenu = (base.GetControl("Button_Shop") as Button);
+		this.btShopMenu.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickShopMenu));
+		this.lbShopMenu = (base.GetControl("Label_ItemShop") as Label);
 		this.newNotice.Visible = NrTSingleton<UIDataManager>.Instance.NoticeStoryChat;
-		this.downLoad = (base.GetControl("Button_Download") as Button);
-		this.downLoad.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickDownLoad));
-		this.downLoad.Visible = false;
-		this.shopMenu.Visible = true;
+		this.btPatchDownload = (base.GetControl("Button_Download") as Button);
+		this.btPatchDownload.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickDownLoad));
+		this.lbPatchDownload = (base.GetControl("Label_Download") as Label);
+		this.lbPatchDownload.Visible = false;
+		this.btPatchDownload.Visible = false;
+		this.btShopMenu.Visible = true;
 		this.ShowDownButton(true);
 		NrTSingleton<ItemMallItemManager>.Instance.Send_GS_ITEMMALL_INFO_REQ(eITEMMALL_TYPE.VOUCHER_ITEM, false);
+		NrCharBase @char = NrTSingleton<NkCharManager>.Instance.GetChar(1);
+		GS_CHAR_CHALLENGE_EVENT_REWARD_REQ gS_CHAR_CHALLENGE_EVENT_REWARD_REQ = new GS_CHAR_CHALLENGE_EVENT_REWARD_REQ();
+		gS_CHAR_CHALLENGE_EVENT_REWARD_REQ.i64PersonID = @char.GetPersonID();
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_CHAR_CHALLENGE_EVENT_REWARD_REQ, gS_CHAR_CHALLENGE_EVENT_REWARD_REQ);
 	}
 
 	public void ShowDownButton(bool flag)
 	{
 		if (Launcher.Instance.LocalPatchLevel == Launcher.Instance.PatchLevelMax)
 		{
-			this.downLoad.Visible = false;
-			this.shopMenu.Visible = true;
+			this.btPatchDownload.Visible = false;
+			this.lbPatchDownload.Visible = false;
+			this.btShopMenu.Visible = true;
+			this.lbShopMenu.Visible = true;
 		}
 		else
 		{
 			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 			if (kMyCharInfo.GetLevel() < 7)
 			{
-				this.downLoad.Visible = false;
-				this.shopMenu.Visible = true;
+				this.btPatchDownload.Visible = false;
+				this.lbPatchDownload.Visible = false;
+				this.btShopMenu.Visible = true;
+				this.lbShopMenu.Visible = true;
 			}
 			else
 			{
-				this.downLoad.Visible = true;
-				this.shopMenu.Visible = false;
+				this.btPatchDownload.Visible = true;
+				this.lbPatchDownload.Visible = true;
+				this.btShopMenu.Visible = false;
+				this.lbShopMenu.Visible = false;
+				this.ShopNotice.Visible = false;
 			}
 		}
 	}
@@ -112,7 +133,7 @@ public class MenuIconDlg : Form
 			{
 				return;
 			}
-			msgBoxUI.SetMsg(new YesDelegate(this.OnOKDownStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2458"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("213"), eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnOKDownStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2458"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("213"), eMsgType.MB_OK_CANCEL, 2);
 			msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10"));
 			msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 		}
@@ -200,14 +221,15 @@ public class MenuIconDlg : Form
 
 	public override void Update()
 	{
-		int rewardNoticeCount = NrTSingleton<ChallengeManager>.Instance.GetRewardNoticeCount();
-		if (0 < rewardNoticeCount)
+		int noticeCount = this.GetNoticeCount();
+		if (0 < noticeCount)
 		{
-			if (this.count != rewardNoticeCount)
+			if (this.count != noticeCount)
 			{
+				int num = noticeCount;
 				this.menuNotice.Visible = true;
-				this.menuNotice.Text = rewardNoticeCount.ToString();
-				this.count = rewardNoticeCount;
+				this.menuNotice.Text = num.ToString();
+				this.count = num;
 			}
 		}
 		else if (this.menuNotice.Visible)
@@ -238,7 +260,21 @@ public class MenuIconDlg : Form
 				}
 			}
 		}
-		if (flag)
+		if (!flag)
+		{
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			long charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_FREETICKET_PREMINUM_TIME);
+			if (PublicMethod.GetCurTime() > charSubData)
+			{
+				flag = true;
+			}
+			charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_FREETICKET_HEARTS_TIME);
+			if (PublicMethod.GetCurTime() > charSubData)
+			{
+				flag = true;
+			}
+		}
+		if (flag && this.btShopMenu.Visible)
 		{
 			this.ShopNotice.Visible = true;
 		}
@@ -246,5 +282,16 @@ public class MenuIconDlg : Form
 		{
 			this.ShopNotice.Visible = false;
 		}
+	}
+
+	private int GetNoticeCount()
+	{
+		int num = 0;
+		num += NrTSingleton<ChallengeManager>.Instance.GetRewardNoticeCount();
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo != null)
+		{
+			num += NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.CustomerAnswerCount;
+		}
+		return num;
 	}
 }

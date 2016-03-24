@@ -7,6 +7,8 @@ public class BountyInfoData : NrTableData
 
 	public short i16Week;
 
+	public short i16Hour;
+
 	public short i16Page;
 
 	public short i16Episode;
@@ -62,6 +64,7 @@ public class BountyInfoData : NrTableData
 	{
 		this.i16Unique = 0;
 		this.i16Week = 0;
+		this.i16Hour = 0;
 		this.i16Page = 0;
 		this.i16Episode = 0;
 		this.i32NPCCharKind = 0;
@@ -96,6 +99,7 @@ public class BountyInfoData : NrTableData
 		int num = 0;
 		row.GetColumn(num++, out this.i16Unique);
 		row.GetColumn(num++, out this.i16Week);
+		row.GetColumn(num++, out this.i16Hour);
 		row.GetColumn(num++, out this.i16Page);
 		row.GetColumn(num++, out this.i16Episode);
 		row.GetColumn(num++, out this.strNPCCharCode);

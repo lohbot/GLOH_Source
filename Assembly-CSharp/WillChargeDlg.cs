@@ -25,9 +25,13 @@ public class WillChargeDlg : Form
 
 	private Button m_btFullElixir;
 
+	private Button m_btFullGold;
+
 	private Label m_lbLabel10;
 
 	private Label m_lbLabel11;
+
+	private Button m_btClose;
 
 	private GS_BABELTOWER_INVITE_FRIEND_ACK m_InvitePersonInfo;
 
@@ -84,8 +88,32 @@ public class WillChargeDlg : Form
 		this.m_lbElixir.SetText(empty);
 		this.m_btFullElixir = (base.GetControl("Button_Full") as Button);
 		this.m_btFullElixir.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickUseFullElixir));
+		this.m_btFullGold = (base.GetControl("Button_gold_Full") as Button);
+		this.m_btFullGold.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickUseFullGold));
+		long maxWillMoney = this.GetMaxWillMoney();
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2912"),
+			"gold",
+			ANNUALIZED.Convert(maxWillMoney)
+		});
+		this.m_btFullGold.SetText(empty);
+		if (maxWillMoney > 0L)
+		{
+			this.m_btFullGold.SetEnabled(true);
+		}
+		else
+		{
+			this.m_btFullGold.SetEnabled(false);
+		}
 		this.m_lbLabel10 = (base.GetControl("Label_Label10") as Label);
 		this.m_lbLabel11 = (base.GetControl("Label_Label11") as Label);
+		this.m_btClose = (base.GetControl("Btn_Close") as Button);
+		if (this.m_btClose != null)
+		{
+			Button expr_28D = this.m_btClose;
+			expr_28D.Click = (EZValueChangedDelegate)Delegate.Combine(expr_28D.Click, new EZValueChangedDelegate(this.CloseForm));
+		}
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		if (kMyCharInfo != null)
 		{
@@ -198,8 +226,55 @@ public class WillChargeDlg : Form
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.WILLCHARGE_DLG);
 	}
 
+	public long GetMaxWillMoney()
+	{
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo == null)
+		{
+			return 0L;
+		}
+		if (!this.IsWillCharge())
+		{
+			return 0L;
+		}
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return 0L;
+		}
+		long iWillCount = kMyCharInfo.m_nMaxActivityPoint - kMyCharInfo.m_nActivityPoint;
+		return kMyCharInfo.GetMaxWillChargeGold(iWillCount);
+	}
+
+	public void ClickUseFullGold(IUIObject obj)
+	{
+		TsAudioManager.Container.RequestAudioClip("UI_SFX", "ETC", "ENERTGY_RECHARGE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo == null)
+		{
+			return;
+		}
+		long maxWillMoney = this.GetMaxWillMoney();
+		if (maxWillMoney == 0L)
+		{
+			this.m_btFullGold.SetEnabled(false);
+			return;
+		}
+		this.m_btFullGold.SetEnabled(true);
+		if (maxWillMoney > kMyCharInfo.m_Money)
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("89"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return;
+		}
+		SendPacket.GetInstance().SendObject(46);
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.WILLCHARGE_DLG);
+	}
+
 	public void ClickUseFullElixir(IUIObject obj)
 	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return;
+		}
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		if (kMyCharInfo != null)
 		{
@@ -291,6 +366,10 @@ public class WillChargeDlg : Form
 
 	public bool IsWillCharge()
 	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return false;
+		}
 		long num = (long)COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_CHARGE_ACTIVITY_MAX);
 		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_nActivityPoint >= num)
 		{
@@ -301,6 +380,13 @@ public class WillChargeDlg : Form
 	}
 
 	public string GetNeedMoney()
+	{
+		string empty = string.Empty;
+		long willChargeGold = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetWillChargeGold();
+		return ANNUALIZED.Convert(willChargeGold);
+	}
+
+	public string GetAllElixirNeedMoney()
 	{
 		string empty = string.Empty;
 		long willChargeGold = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetWillChargeGold();

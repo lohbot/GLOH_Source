@@ -40,9 +40,10 @@ public class Agit_GoldenEggDlg : Form
 
 	public override void SetComponent()
 	{
+		base.SetScreenCenter();
 		this.m_dtProgressBar = (base.GetControl("DT_Progress") as DrawTexture);
 		this.m_dtPortrait = (base.GetControl("DT_port") as DrawTexture);
-		this.m_dtPortrait.SetTexture(eCharImageType.LARGE, NrTSingleton<NewGuildManager>.Instance.GetAgitNPCCharKindFromNPCType(5), 0);
+		this.m_dtPortrait.SetTexture(eCharImageType.LARGE, NrTSingleton<NewGuildManager>.Instance.GetAgitNPCCharKindFromNPCType(5), 0, string.Empty);
 		this.m_lbDefaultTakenInfo = (base.GetControl("Label_default") as Label);
 		this.m_nlbReward = (base.GetControl("NLB_reward") as NewListBox);
 		this.m_dtProgressBar = (base.GetControl("DT_Progress") as DrawTexture);
@@ -71,6 +72,10 @@ public class Agit_GoldenEggDlg : Form
 			if (current.i64PersonID == personID)
 			{
 				this.m_btReward.SetEnabled(false);
+				if (NrTSingleton<NewGuildManager>.Instance.CanGetGoldenEggReward())
+				{
+					NrTSingleton<NewGuildManager>.Instance.SetCanGoldenEggReward(false);
+				}
 			}
 		}
 	}
@@ -142,7 +147,7 @@ public class Agit_GoldenEggDlg : Form
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2779");
 			}
-			NewListItem newListItem = new NewListItem(this.m_nlbReward.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_nlbReward.ColumnNum, true, string.Empty);
 			string empty = string.Empty;
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{

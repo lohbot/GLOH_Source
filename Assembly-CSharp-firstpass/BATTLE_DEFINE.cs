@@ -36,6 +36,8 @@ public static class BATTLE_DEFINE
 
 	public const int MAX_ANGERLY_POINT = 1000;
 
+	public const int MAX_ANGELANGERLY_POINT = 1000;
+
 	public const int MAX_BABEL_SOLO_ANGERLY_POINT = 1500;
 
 	public const float DELAY_RATE = 0.25f;
@@ -63,6 +65,14 @@ public static class BATTLE_DEFINE
 	public const int MAX_BABELTOWER_ROOMPERCHAR_NUM = 16;
 
 	public const int MAX_BABELTOWER_ONEPLAYER_NUM = 12;
+
+	public const int MAX_MYTHRAID_ROOMPERCHAR_NUM = 12;
+
+	public const int MAX_MYTHRAID_ONEPLAYER_NUM = 12;
+
+	public const int MAX_MYTHRAID_ROOM_NUM = 1000;
+
+	public const int MAX_MYTHRAID_BATCH_GRIDPOS = 20;
 
 	public const int MAX_BABELTOWER_ROOM_NUM = 1000;
 
@@ -97,6 +107,8 @@ public static class BATTLE_DEFINE
 	public const int MAX_TOURNAMENT_SELECT_STEP = 4;
 
 	public const int TUTORIAL_BATTLE_SCENARIO = 99999999;
+
+	public const int MAX_DAILYDUNGEON_GRIDPOS = 9;
 
 	public static string[] RANK_STRING = new string[]
 	{

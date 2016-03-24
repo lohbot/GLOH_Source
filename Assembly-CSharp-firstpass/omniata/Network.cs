@@ -30,7 +30,7 @@ namespace omniata
 		[DebuggerHidden]
 		private IEnumerator Request(WWW www, string url, NetworkResponseHandler networkResponseHandler)
 		{
-			Network.<Request>c__Iterator14 <Request>c__Iterator = new Network.<Request>c__Iterator14();
+			Network.<Request>c__Iterator15 <Request>c__Iterator = new Network.<Request>c__Iterator15();
 			<Request>c__Iterator.www = www;
 			<Request>c__Iterator.networkResponseHandler = networkResponseHandler;
 			<Request>c__Iterator.url = url;

@@ -6,9 +6,22 @@ public class UserChallengeInfo
 {
 	private Dictionary<short, Challenge_Info> m_kChallengeInfo = new Dictionary<short, Challenge_Info>();
 
+	private bool bLoadData;
+
 	public void Init()
 	{
 		this.m_kChallengeInfo.Clear();
+		this.bLoadData = false;
+	}
+
+	public void SetLoadData(bool bData)
+	{
+		this.bLoadData = bData;
+	}
+
+	public bool GetLoadData()
+	{
+		return this.bLoadData;
 	}
 
 	public void SetUserChallengeInfo(Challenge_Info info)

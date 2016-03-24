@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ChallengeTable : NrTableBase
 {
-	public NrTable_ChallengeTable(string strFilePath) : base(strFilePath, true)
+	public NrTable_ChallengeTable(string strFilePath) : base(strFilePath)
 	{
 	}
 
@@ -16,6 +16,10 @@ public class NrTable_ChallengeTable : NrTableBase
 			if (0 < challengeTable.m_nType)
 			{
 				NrTSingleton<ChallengeManager>.Instance.AddChallengeTable(challengeTable);
+				if (0 < challengeTable.m_nSequence)
+				{
+					NrTSingleton<ChallengeManager>.Instance.AddSequenceChallengeTable(challengeTable);
+				}
 			}
 		}
 		NrTSingleton<ChallengeManager>.Instance.CalcTotalRewardCount();

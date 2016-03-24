@@ -12,6 +12,8 @@ public class MineWaitMiltaryInfoDlg : Form
 
 	public NewListBox m_nlbWaitGuildInfo;
 
+	private Button m_btClose;
+
 	public int m_nTotalCount;
 
 	public NewListItem item;
@@ -24,6 +26,8 @@ public class MineWaitMiltaryInfoDlg : Form
 		Form form = this;
 		base.Scale = true;
 		instance.LoadFileAll(ref form, "Mine/dlg_mine_battlewait", G_ID.MINE_WAITMILTARYINFO_DLG, true);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 	}
 
 	public override void SetComponent()
@@ -44,11 +48,12 @@ public class MineWaitMiltaryInfoDlg : Form
 		base.OnClose();
 	}
 
-	public void SetWaitGuildInfo(string Guildname, long GuildId)
+	public void SetWaitGuildInfo(string Guildname, long GuildId, bool isHiddenInfo)
 	{
 		MINE_WAIT_MILITARY_INFO mINE_WAIT_MILITARY_INFO = new MINE_WAIT_MILITARY_INFO();
 		mINE_WAIT_MILITARY_INFO.nGuildID = GuildId;
 		mINE_WAIT_MILITARY_INFO.strGuildName = Guildname;
+		mINE_WAIT_MILITARY_INFO.isHiddenInfo = isHiddenInfo;
 		if (GuildId <= 0L)
 		{
 			return;
@@ -66,7 +71,7 @@ public class MineWaitMiltaryInfoDlg : Form
 		this.m_nTotalCount = 0;
 		for (int i = 0; i < this.m_TempGuildInfo.Count; i++)
 		{
-			NewListItem newListItem = new NewListItem(this.m_nlbWaitGuildInfo.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_nlbWaitGuildInfo.ColumnNum, true, string.Empty);
 			if (this.m_TempGuildInfo[i].nGuildID == guildID)
 			{
 				newListItem.SetListItemData(0, NrTSingleton<CTextParser>.Instance.GetTextColor("1107") + this.m_TempGuildInfo[i].strGuildName, null, null, null);
@@ -75,14 +80,24 @@ public class MineWaitMiltaryInfoDlg : Form
 			{
 				newListItem.SetListItemData(0, this.m_TempGuildInfo[i].strGuildName, null, null, null);
 			}
-			newListItem.SetListItemData(1, NrTSingleton<NewGuildManager>.Instance.GetGuildDefualtTexture(), true, null, null);
+			if (this.m_TempGuildInfo[i].isHiddenInfo)
+			{
+				newListItem.SetListItemData(1, NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_BI_Nomark"), true, null, null);
+			}
+			else
+			{
+				newListItem.SetListItemData(1, NrTSingleton<NewGuildManager>.Instance.GetGuildDefualtTexture(), true, null, null);
+			}
 			this.m_nlbWaitGuildInfo.Add(newListItem);
 		}
 		this.m_nlbWaitGuildInfo.RepositionItems();
 		for (int j = 0; j < this.m_TempGuildInfo.Count; j++)
 		{
-			string guildPortraitURL = NrTSingleton<NkCharManager>.Instance.GetGuildPortraitURL(this.m_TempGuildInfo[j].nGuildID);
-			WebFileCache.RequestImageWebFile(guildPortraitURL, new WebFileCache.ReqTextureCallback(this.ReqWebImageCallback), j);
+			if (!this.m_TempGuildInfo[j].isHiddenInfo)
+			{
+				string guildPortraitURL = NrTSingleton<NkCharManager>.Instance.GetGuildPortraitURL(this.m_TempGuildInfo[j].nGuildID);
+				WebFileCache.RequestImageWebFile(guildPortraitURL, new WebFileCache.ReqTextureCallback(this.ReqWebImageCallback), j);
+			}
 		}
 	}
 
@@ -99,7 +114,7 @@ public class MineWaitMiltaryInfoDlg : Form
 			IUIListObject iUIListObject = this.m_nlbWaitGuildInfo.GetItem(num);
 			if (iUIListObject != null)
 			{
-				NewListItem newListItem = new NewListItem(this.m_nlbWaitGuildInfo.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_nlbWaitGuildInfo.ColumnNum, true, string.Empty);
 				if (this.m_TempGuildInfo[num].nGuildID == guildID)
 				{
 					newListItem.SetListItemData(0, NrTSingleton<CTextParser>.Instance.GetTextColor("1107") + this.m_TempGuildInfo[num].strGuildName, null, null, null);

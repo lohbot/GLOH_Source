@@ -19,6 +19,7 @@ public class ChatNoticeDlg : Form
 		Form form = this;
 		instance.LoadFileAll(ref form, "Chat/Dlg_BGMinfo", G_ID.CHAT_NOTICE_DLG, false);
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
+		base.DonotDepthChange(UIPanelManager.UI_DEPTH);
 	}
 
 	public override void SetComponent()

@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableCharKindSolGradeInfo : NrTableBase
 {
-	public NkTableCharKindSolGradeInfo() : base(CDefinePath.CHARKIND_SOLGRADEINFO_URL, true)
+	public NkTableCharKindSolGradeInfo() : base(CDefinePath.CHARKIND_SOLGRADEINFO_URL)
 	{
 	}
 

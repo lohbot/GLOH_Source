@@ -6,6 +6,7 @@ using PROTOCOL.GAME.ID;
 using StageHelper;
 using System;
 using System.Collections.Generic;
+using System.Text;
 using TsBundle;
 using UnityEngine;
 using UnityForms;
@@ -51,6 +52,12 @@ public class Battle_ResultDlg_Content : Form
 	private Button m_RewardOKButton;
 
 	private Label m_RewardNotify;
+
+	private DrawTexture m_RewardTexture;
+
+	private Button m_btPartyAgain;
+
+	private Label m_lbPartyAgain;
 
 	private DrawTexture m_dtRank;
 
@@ -101,6 +108,14 @@ public class Battle_ResultDlg_Content : Form
 	private SREWARD_PRODUCT m_SelectSRewardProduct = new SREWARD_PRODUCT();
 
 	private List<long> m_lsInjurySolID = new List<long>();
+
+	private bool isStageChangeEnd;
+
+	private bool bBountyRewardMsg = true;
+
+	private bool bBountyRewardGet;
+
+	private GS_BOUNTYHUNT_REWARD_NFY m_BountyReward = new GS_BOUNTYHUNT_REWARD_NFY();
 
 	private GameObject m_SelectSRewardGameObject;
 
@@ -182,6 +197,10 @@ public class Battle_ResultDlg_Content : Form
 			this.m_lbItemNumGet[i].Hide(true);
 		}
 		this.m_fCloseEnableTime = 0f;
+		this.isStageChangeEnd = false;
+		this.bBountyRewardGet = false;
+		this.bBountyRewardMsg = true;
+		this.m_BountyReward = null;
 	}
 
 	public override void InitData()
@@ -241,6 +260,11 @@ public class Battle_ResultDlg_Content : Form
 				{
 					this.m_btClose.Visible = true;
 					this.m_lbClose.Visible = true;
+					Battle_ResultDlg battle_ResultDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_RESULT_DLG) as Battle_ResultDlg;
+					if (battle_ResultDlg2 != null)
+					{
+						battle_ResultDlg2.ShowSceneType = FormsManager.FORM_TYPE_POPUP;
+					}
 					this.m_lbLoading.Visible = false;
 					if (this.m_eRoomType == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER)
 					{
@@ -254,9 +278,39 @@ public class Battle_ResultDlg_Content : Form
 							this.BabelTowerButtonSet(true);
 						}
 					}
-					if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
+					if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro() || NrTSingleton<NewExplorationManager>.Instance.AutoBattle)
 					{
 						this.OnClickClose(this.m_btClose);
+					}
+				}
+			}
+		}
+		if (Scene.CurScene != Scene.Type.BATTLE && this.bBountyRewardGet)
+		{
+			if (CommonTasks.IsEndOfPrework && !this.isStageChangeEnd)
+			{
+				this.m_RewardTexture.Visible = true;
+				NrTSingleton<MythRaidManager>.Instance.ActiveRewardEffect(this.m_RewardTexture);
+				if (this.m_eRoomType == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+				{
+					this.isStageChangeEnd = true;
+				}
+			}
+			else if (this.bBountyRewardMsg)
+			{
+				Animation componentInChildren2 = this.m_RewardTexture.transform.GetComponentInChildren<Animation>();
+				if (componentInChildren2 != null && !componentInChildren2.isPlaying && this.m_BountyReward.i32Result == 0)
+				{
+					for (int i = 0; i < 10; i++)
+					{
+						if (this.m_BountyReward.i32RewardItemUnique[i] > 0 && this.m_BountyReward.i32RewardItemNum[i] > 0)
+						{
+							this.bBountyRewardMsg = false;
+						}
+					}
+					if (!this.bBountyRewardMsg)
+					{
+						this.BountyRewardMsgBox(this.m_BountyReward.i32RewardItemUnique, this.m_BountyReward.i32RewardItemNum);
 					}
 				}
 			}
@@ -308,6 +362,8 @@ public class Battle_ResultDlg_Content : Form
 		{
 			UnityEngine.Object.Destroy(this.m_goRankEffectObject);
 			this.m_goRankEffectObject = null;
+			GS_BOUNTYHUNT_DETAILINFO_REQ obj = new GS_BOUNTYHUNT_DETAILINFO_REQ();
+			SendPacket.GetInstance().SendObject(1931, obj);
 		}
 		else if (this.m_eRoomType == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM)
 		{
@@ -342,6 +398,30 @@ public class Battle_ResultDlg_Content : Form
 			if (babelGuildBossDlg != null)
 			{
 				babelGuildBossDlg.ShowList();
+			}
+		}
+		else if (this.m_eRoomType == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+		{
+			if (NrTSingleton<NewExplorationManager>.Instance.AutoBattle)
+			{
+				if (this.m_bWin && (int)NrTSingleton<NewExplorationManager>.Instance.GetSubFloor() == 1)
+				{
+					NrTSingleton<NewExplorationManager>.Instance.SetAutoBattle(false, false, false);
+				}
+				if (!this.m_bWin && NrTSingleton<NewExplorationManager>.Instance.IfDie_StopAutoBattle)
+				{
+					NrTSingleton<NewExplorationManager>.Instance.SetAutoBattle(false, false, false);
+				}
+				NrTSingleton<NewExplorationManager>.Instance.AutoSellItem();
+			}
+			if (!NrTSingleton<NewExplorationManager>.Instance.AutoBattle)
+			{
+				NrTSingleton<NewExplorationManager>.Instance.SetAutoBattle(false, false, false);
+				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWEXPLORATION_MAIN_DLG);
+			}
+			else
+			{
+				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWEXPLORATION_REPEAT_DLG);
 			}
 		}
 		NrTSingleton<FiveRocksEventManager>.Instance.BattleResult(this.m_eRoomType, this.m_fBattleTime, this.m_nInjurySolCount);
@@ -406,6 +486,10 @@ public class Battle_ResultDlg_Content : Form
 		this.m_lbDown = (base.GetControl("LB_down") as Label);
 		this.m_lbUp = (base.GetControl("LB_up") as Label);
 		this.m_dtLock = (base.GetControl("DT_Lock") as DrawTexture);
+		this.m_btPartyAgain = (base.GetControl("Button_party") as Button);
+		Button expr_2F4 = this.m_btPartyAgain;
+		expr_2F4.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2F4.Click, new EZValueChangedDelegate(this.OnClickPartyAgain));
+		this.m_lbPartyAgain = (base.GetControl("Label_party") as Label);
 		this.BabelTowerButtonSet(false);
 	}
 
@@ -416,6 +500,7 @@ public class Battle_ResultDlg_Content : Form
 		this.m_RewardOKButton = (base.GetControl("Button_ok2") as Button);
 		this.m_RewardOKButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickRewardOKButton));
 		this.m_RewardOKButton.Visible = false;
+		this.m_RewardTexture = (base.GetControl("DrawTexture_BG2") as DrawTexture);
 		this.m_RewardNotify = (base.GetControl("Label_Notify") as Label);
 		if (null != this.m_RewardNotify.spriteText)
 		{
@@ -451,9 +536,16 @@ public class Battle_ResultDlg_Content : Form
 			{
 				this.m_dtLock.Visible = false;
 			}
+			if (Battle.isLeader && Battle.BabelPartyCount > 1)
+			{
+				this.m_btPartyAgain.Visible = true;
+				this.m_lbPartyAgain.Visible = true;
+			}
 		}
 		else
 		{
+			this.m_btPartyAgain.Visible = false;
+			this.m_lbPartyAgain.Visible = false;
 			this.m_dtLock.Visible = false;
 		}
 	}
@@ -649,7 +741,7 @@ public class Battle_ResultDlg_Content : Form
 		});
 		msgBoxTwoCheckUI.SetCheckBoxState(1, false);
 		msgBoxTwoCheckUI.SetCheckBoxState(2, false);
-		msgBoxTwoCheckUI.SetMsg(new YesDelegate(BabelTowerMainDlg.RepeatBabelStart), msgBoxTwoCheckUI, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("185"), empty2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("196"), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("263"), new CheckBox2Delegate(BabelTowerMainDlg.CheckBattleSpeedCount), eMsgType.MB_CHECK12_OK_CANCEL);
+		msgBoxTwoCheckUI.SetMsg(new YesDelegate(BabelTowerMainDlg.RepeatBabelStart), msgBoxTwoCheckUI, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("185"), empty2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("354"), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("263"), new CheckBox2Delegate(BabelTowerMainDlg.CheckBattleSpeedCount), eMsgType.MB_CHECK12_OK_CANCEL);
 	}
 
 	public void OnClickUp(IUIObject obj)
@@ -759,6 +851,57 @@ public class Battle_ResultDlg_Content : Form
 		}
 	}
 
+	private void OnClickPartyAgain(IUIObject obj)
+	{
+		if (Scene.CurScene == Scene.Type.BATTLE)
+		{
+			return;
+		}
+		if (!CommonTasks.IsEndOfPrework)
+		{
+			return;
+		}
+		short num = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELTYPE, 0);
+		short num2;
+		short num3;
+		if (num == 2)
+		{
+			num2 = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELFLOOR_HARD, 0);
+			num3 = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELSUBFLOOR_HARD, -1);
+		}
+		else
+		{
+			num2 = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELFLOOR, 0);
+			num3 = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELSUBFLOOR, -1);
+		}
+		if (num3 < -1 || num2 < 0)
+		{
+			Debug.LogError(string.Concat(new object[]
+			{
+				"Error - SubFloor : ",
+				num3,
+				" _nFllor : ",
+				num2
+			}));
+			return;
+		}
+		if (!this.IsEnableBattle(num2, num3, num))
+		{
+			return;
+		}
+		bool flag = NrTSingleton<BabelTowerManager>.Instance.IsBabelStart();
+		if (flag)
+		{
+			GS_BABELTOWER_GOLOBBY_REQ gS_BABELTOWER_GOLOBBY_REQ = new GS_BABELTOWER_GOLOBBY_REQ();
+			gS_BABELTOWER_GOLOBBY_REQ.mode = 4;
+			gS_BABELTOWER_GOLOBBY_REQ.babel_floor = num2;
+			gS_BABELTOWER_GOLOBBY_REQ.babel_subfloor = num3;
+			gS_BABELTOWER_GOLOBBY_REQ.nPersonID = 0L;
+			gS_BABELTOWER_GOLOBBY_REQ.Babel_FloorType = num;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_GOLOBBY_REQ, gS_BABELTOWER_GOLOBBY_REQ);
+		}
+	}
+
 	public void AddSolData(GS_BATTLE_RESULT_SOLDIER solinfo)
 	{
 		this.m_SolInfoList.Add(solinfo);
@@ -804,6 +947,12 @@ public class Battle_ResultDlg_Content : Form
 	public void SetSRewardBasicData(GS_BATTLE_SREWARD_ACK info)
 	{
 		this.m_SReward_BasicInfo = info;
+	}
+
+	public void SetBountyReward(GS_BOUNTYHUNT_REWARD_NFY info)
+	{
+		this.bBountyRewardGet = true;
+		this.m_BountyReward = info;
 	}
 
 	public void ClearSRewardSolData()
@@ -878,30 +1027,7 @@ public class Battle_ResultDlg_Content : Form
 			"gold",
 			"0"
 		});
-		if (this.m_SelectSRewardProduct.m_nRewardType == 1)
-		{
-			if (this.m_SReward_ItemInfoList.Count > 0)
-			{
-				if (this.m_SelectSRewardProduct.m_nRewardValue1 > 0)
-				{
-					int itemPosFromItemUnique = NkUserInventory.GetInstance().GetItemPosFromItemUnique(this.m_SelectSRewardProduct.m_nRewardValue1);
-					int itemPosType = Protocol_Item.GetItemPosType(this.m_SelectSRewardProduct.m_nRewardValue1);
-					ITEM item = NkUserInventory.GetInstance().GetItem(itemPosType, itemPosFromItemUnique);
-					if (item != null)
-					{
-						this.AddLinkItemDataList(item, this.m_SelectSRewardProduct.m_nRewardValue2);
-					}
-				}
-			}
-			else
-			{
-				this.AddLinkItemDataList(0L);
-			}
-		}
-		else if (this.m_SelectSRewardProduct.m_nRewardType == 2)
-		{
-			this.AddLinkItemDataList((long)this.m_SelectSRewardProduct.m_nRewardValue1);
-		}
+		this._LinkSpeacialItemData();
 		foreach (GS_BATTLE_RESULT_ITEM current in this.m_ItemInfoList)
 		{
 			ITEM sItem = current.m_sItem;
@@ -922,6 +1048,28 @@ public class Battle_ResultDlg_Content : Form
 			}
 		}
 		this.m_ItemList.RepositionItems();
+	}
+
+	private void _LinkSpeacialItemData()
+	{
+		if (this.m_SelectSRewardProduct.m_nRewardType == 1)
+		{
+			if (this.m_SReward_ItemInfoList == null || this.m_SReward_ItemInfoList.Count != 1)
+			{
+				Debug.LogError("ERROR, Battle_ResultDlg.Content.cs, _LinkSpeacialItemData() : m_SReward_ItemInfoList is Null or Count Error");
+				return;
+			}
+			ITEM sItem = this.m_SReward_ItemInfoList[0].m_sItem;
+			if (sItem == null)
+			{
+				return;
+			}
+			this.AddLinkItemDataList(sItem, this.m_SelectSRewardProduct.m_nRewardValue2);
+		}
+		else if (this.m_SelectSRewardProduct.m_nRewardType == 2)
+		{
+			this.AddLinkItemDataList((long)this.m_SReward_BasicInfo.m_nRewardRealMoney);
+		}
 	}
 
 	private void _LinkSolData()
@@ -949,7 +1097,7 @@ public class Battle_ResultDlg_Content : Form
 					short gradeMaxLevel = charKindInfo.GetGradeMaxLevel((short)((byte)current.SolGrade));
 					if (num % 2 == 0)
 					{
-						newListItem = new NewListItem(this.m_nlSolInfo.ColumnNum, true);
+						newListItem = new NewListItem(this.m_nlSolInfo.ColumnNum, true, string.Empty);
 					}
 					NkListSolInfo nkListSolInfo = new NkListSolInfo();
 					nkListSolInfo.SolCharKind = current.CharKind;
@@ -957,6 +1105,10 @@ public class Battle_ResultDlg_Content : Form
 					nkListSolInfo.SolInjuryStatus = current.bInjury;
 					nkListSolInfo.SolLevel = current.i16Level;
 					nkListSolInfo.ShowLevel = true;
+					if (NrTSingleton<NrCharCostumeTableManager>.Instance.IsCostumeUniqueEqualSolKind(current.i32CostumeUnique, current.CharKind))
+					{
+						nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(current.i32CostumeUnique);
+					}
 					if (nkListSolInfo.SolInjuryStatus)
 					{
 						this.m_lsInjurySolID.Add(current.SolID);
@@ -1044,7 +1196,7 @@ public class Battle_ResultDlg_Content : Form
 						{
 							NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1802"),
 							"exp",
-							gS_BATTLE_RESULT_SOLDIER.i32AddExp.ToString()
+							ANNUALIZED.Convert(gS_BATTLE_RESULT_SOLDIER.i32AddExp)
 						});
 						text2 = empty2 + empty3;
 						num3 += current.i32AddExp + gS_BATTLE_RESULT_SOLDIER.i32AddExp;
@@ -1193,86 +1345,175 @@ public class Battle_ResultDlg_Content : Form
 	public void _LinkSRewardDataSelect()
 	{
 		this.m_fAutoCloseTime = Time.realtimeSinceStartup + 3f;
-		if (this.m_eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && this.m_eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+		eBATTLE_ROOMTYPE eRoomType = this.m_eRoomType;
+		if (eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
 		{
-			BATTLE_SREWARD battleSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleSRewardData(this.m_SReward_BasicInfo.m_nRewardUnique);
-			if (battleSRewardData == null)
+			if (eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
 			{
-				return;
-			}
-			if (this.m_SReward_BasicInfo.m_nRewardProductIndex >= 4)
-			{
-				return;
-			}
-			SREWARD_PRODUCT sREWARD_PRODUCT = battleSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
-			if (sREWARD_PRODUCT == null)
-			{
-				return;
-			}
-			this.m_SelectSRewardProduct = sREWARD_PRODUCT;
-			Transform child = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, "fx_selecttext");
-			if (child != null)
-			{
-				UnityEngine.Object.DestroyImmediate(child.gameObject);
-			}
-			this.m_RewardNotify.Visible = false;
-			if (this.m_SelectSRewardGameObject != null)
-			{
-				UnityEngine.Object.DestroyImmediate(this.m_SelectSRewardGameObject);
-				this.m_SelectSRewardGameObject = null;
-			}
-			WWWItem wWWItem = NkEffectManager.CreateWItem("FX_REWARDGET");
-			wWWItem.SetItemType(ItemType.USER_ASSETB);
-			wWWItem.SetCallback(new PostProcPerItem(this.NewShowSRewardGet), null);
-			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
-			this.sRewardImageKey = sREWARD_PRODUCT.m_stRewardTexture;
-			if (TsPlatform.IsMobile)
-			{
-				this.sRewardImageKey += "_mobile";
-			}
-			switch (sREWARD_PRODUCT.m_nRewardType)
-			{
-			case 0:
-			{
-				string empty = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				BATTLE_SREWARD battleSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleSRewardData(this.m_SReward_BasicInfo.m_nRewardUnique);
+				if (battleSRewardData == null)
 				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1826"),
-					"count",
-					sREWARD_PRODUCT.m_nRewardValue1.ToString()
-				});
-				this.m_RewardExplainLabel.SetText(empty);
-				break;
-			}
-			case 1:
-			{
-				string empty2 = string.Empty;
-				string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(sREWARD_PRODUCT.m_nRewardValue1);
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					return;
+				}
+				if (this.m_SReward_BasicInfo.m_nRewardProductIndex >= 4)
 				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1827"),
-					"itemname",
-					itemNameByItemUnique,
-					"num",
-					sREWARD_PRODUCT.m_nRewardValue2.ToString()
-				});
-				this.m_RewardExplainLabel.SetText(empty2);
-				break;
-			}
-			case 2:
-			{
-				string empty3 = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
+					return;
+				}
+				SREWARD_PRODUCT sREWARD_PRODUCT = battleSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
+				if (sREWARD_PRODUCT == null)
 				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1911"),
-					"money",
-					sREWARD_PRODUCT.m_nRewardValue1.ToString()
-				});
-				this.m_RewardExplainLabel.SetText(empty3);
-				break;
+					return;
+				}
+				this.m_SelectSRewardProduct = sREWARD_PRODUCT;
+				Transform child = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, "fx_selecttext");
+				if (child != null)
+				{
+					UnityEngine.Object.DestroyImmediate(child.gameObject);
+				}
+				this.m_RewardNotify.Visible = false;
+				if (this.m_SelectSRewardGameObject != null)
+				{
+					UnityEngine.Object.DestroyImmediate(this.m_SelectSRewardGameObject);
+					this.m_SelectSRewardGameObject = null;
+				}
+				WWWItem wWWItem = NkEffectManager.CreateWItem("FX_REWARDGET");
+				wWWItem.SetItemType(ItemType.USER_ASSETB);
+				wWWItem.SetCallback(new PostProcPerItem(this.NewShowSRewardGet), null);
+				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+				this.sRewardImageKey = sREWARD_PRODUCT.m_stRewardTexture;
+				if (TsPlatform.IsMobile)
+				{
+					this.sRewardImageKey += "_mobile";
+				}
+				switch (sREWARD_PRODUCT.m_nRewardType)
+				{
+				case 0:
+				{
+					string empty = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1826"),
+						"count",
+						sREWARD_PRODUCT.m_nRewardValue1.ToString()
+					});
+					this.m_RewardExplainLabel.SetText(empty);
+					break;
+				}
+				case 1:
+				{
+					string empty2 = string.Empty;
+					string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(sREWARD_PRODUCT.m_nRewardValue1);
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1827"),
+						"itemname",
+						itemNameByItemUnique,
+						"num",
+						sREWARD_PRODUCT.m_nRewardValue2.ToString()
+					});
+					this.m_RewardExplainLabel.SetText(empty2);
+					break;
+				}
+				case 2:
+				{
+					string empty3 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1911"),
+						"money",
+						this.m_SReward_BasicInfo.m_nRewardRealMoney.ToString()
+					});
+					this.m_RewardExplainLabel.SetText(empty3);
+					break;
+				}
+				}
+				this.m_RewardExplainLabel.SetCharacterSize(50f);
 			}
+			else
+			{
+				BATTLE_NEWEXPLORATION_SREWARD sReward = NrTSingleton<NewExplorationManager>.Instance.GetSReward(this.m_SReward_BasicInfo.m_nRewardUnique);
+				if (sReward == null)
+				{
+					return;
+				}
+				if (this.m_SReward_BasicInfo.m_nRewardProductIndex >= 4)
+				{
+					return;
+				}
+				SREWARD_PRODUCT sREWARD_PRODUCT2 = sReward.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
+				if (sREWARD_PRODUCT2 == null)
+				{
+					return;
+				}
+				this.m_SelectSRewardProduct = sREWARD_PRODUCT2;
+				Transform child2 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, "fx_selecttext");
+				if (child2 != null)
+				{
+					UnityEngine.Object.DestroyImmediate(child2.gameObject);
+				}
+				this.m_RewardNotify.Visible = false;
+				if (this.m_SelectSRewardGameObject != null)
+				{
+					UnityEngine.Object.DestroyImmediate(this.m_SelectSRewardGameObject);
+					this.m_SelectSRewardGameObject = null;
+				}
+				WWWItem wWWItem2 = NkEffectManager.CreateWItem("FX_REWARDGET");
+				wWWItem2.SetItemType(ItemType.USER_ASSETB);
+				wWWItem2.SetCallback(new PostProcPerItem(this.NewShowSRewardGet), null);
+				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
+				this.sRewardImageKey = sREWARD_PRODUCT2.m_stRewardTexture;
+				if (TsPlatform.IsMobile)
+				{
+					this.sRewardImageKey += "_mobile";
+				}
+				switch (sREWARD_PRODUCT2.m_nRewardType)
+				{
+				case 0:
+				{
+					string empty4 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty4, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1826"),
+						"count",
+						sREWARD_PRODUCT2.m_nRewardValue1.ToString()
+					});
+					this.m_RewardExplainLabel.SetText(empty4);
+					break;
+				}
+				case 1:
+				{
+					string empty5 = string.Empty;
+					string itemNameByItemUnique2 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(sREWARD_PRODUCT2.m_nRewardValue1);
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1827"),
+						"itemname",
+						itemNameByItemUnique2,
+						"num",
+						sREWARD_PRODUCT2.m_nRewardValue2.ToString()
+					});
+					this.m_RewardExplainLabel.SetText(empty5);
+					break;
+				}
+				case 2:
+				{
+					string empty6 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty6, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1911"),
+						"money",
+						this.m_SReward_BasicInfo.m_nRewardRealMoney.ToString()
+					});
+					this.m_RewardExplainLabel.SetText(empty6);
+					break;
+				}
+				}
+				this.m_RewardExplainLabel.SetCharacterSize(50f);
+				if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
+				{
+					NrTSingleton<NkBabelMacroManager>.Instance.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_BATTLE_SELECT_SPECIAL_COMPLETE, Time.realtimeSinceStartup);
+				}
 			}
-			this.m_RewardExplainLabel.SetCharacterSize(50f);
 		}
 		else
 		{
@@ -1285,16 +1526,16 @@ public class Battle_ResultDlg_Content : Form
 			{
 				return;
 			}
-			SREWARD_PRODUCT sREWARD_PRODUCT2 = battleBabelSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
-			if (sREWARD_PRODUCT2 == null)
+			SREWARD_PRODUCT sREWARD_PRODUCT3 = battleBabelSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
+			if (sREWARD_PRODUCT3 == null)
 			{
 				return;
 			}
-			this.m_SelectSRewardProduct = sREWARD_PRODUCT2;
-			Transform child2 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, "fx_selecttext");
-			if (child2 != null)
+			this.m_SelectSRewardProduct = sREWARD_PRODUCT3;
+			Transform child3 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, "fx_selecttext");
+			if (child3 != null)
 			{
-				UnityEngine.Object.DestroyImmediate(child2.gameObject);
+				UnityEngine.Object.DestroyImmediate(child3.gameObject);
 			}
 			this.m_RewardNotify.Visible = false;
 			if (this.m_SelectSRewardGameObject != null)
@@ -1302,54 +1543,54 @@ public class Battle_ResultDlg_Content : Form
 				UnityEngine.Object.DestroyImmediate(this.m_SelectSRewardGameObject);
 				this.m_SelectSRewardGameObject = null;
 			}
-			WWWItem wWWItem2 = NkEffectManager.CreateWItem("FX_REWARDGET");
-			wWWItem2.SetItemType(ItemType.USER_ASSETB);
-			wWWItem2.SetCallback(new PostProcPerItem(this.NewShowSRewardGet), null);
-			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
-			this.sRewardImageKey = sREWARD_PRODUCT2.m_stRewardTexture;
+			WWWItem wWWItem3 = NkEffectManager.CreateWItem("FX_REWARDGET");
+			wWWItem3.SetItemType(ItemType.USER_ASSETB);
+			wWWItem3.SetCallback(new PostProcPerItem(this.NewShowSRewardGet), null);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem3, DownGroup.RUNTIME, true);
+			this.sRewardImageKey = sREWARD_PRODUCT3.m_stRewardTexture;
 			if (TsPlatform.IsMobile)
 			{
 				this.sRewardImageKey += "_mobile";
 			}
-			switch (sREWARD_PRODUCT2.m_nRewardType)
+			switch (sREWARD_PRODUCT3.m_nRewardType)
 			{
 			case 0:
 			{
-				string empty4 = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty4, new object[]
+				string empty7 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty7, new object[]
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1826"),
 					"count",
-					sREWARD_PRODUCT2.m_nRewardValue1.ToString()
+					sREWARD_PRODUCT3.m_nRewardValue1.ToString()
 				});
-				this.m_RewardExplainLabel.SetText(empty4);
+				this.m_RewardExplainLabel.SetText(empty7);
 				break;
 			}
 			case 1:
 			{
-				string empty5 = string.Empty;
-				string itemNameByItemUnique2 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(sREWARD_PRODUCT2.m_nRewardValue1);
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
+				string empty8 = string.Empty;
+				string itemNameByItemUnique3 = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(sREWARD_PRODUCT3.m_nRewardValue1);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty8, new object[]
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1827"),
 					"itemname",
-					itemNameByItemUnique2,
+					itemNameByItemUnique3,
 					"num",
-					sREWARD_PRODUCT2.m_nRewardValue2.ToString()
+					sREWARD_PRODUCT3.m_nRewardValue2.ToString()
 				});
-				this.m_RewardExplainLabel.SetText(empty5);
+				this.m_RewardExplainLabel.SetText(empty8);
 				break;
 			}
 			case 2:
 			{
-				string empty6 = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty6, new object[]
+				string empty9 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty9, new object[]
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1911"),
 					"money",
-					sREWARD_PRODUCT2.m_nRewardValue1.ToString()
+					this.m_SReward_BasicInfo.m_nRewardRealMoney.ToString()
 				});
-				this.m_RewardExplainLabel.SetText(empty6);
+				this.m_RewardExplainLabel.SetText(empty9);
 				break;
 			}
 			}
@@ -1412,57 +1653,63 @@ public class Battle_ResultDlg_Content : Form
 
 	private void ShowSReward(WWWItem _item, object _param)
 	{
-		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		if (null == _item.GetSafeBundle())
 		{
-			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
-			if (null != gameObject)
+			return;
+		}
+		if (null == _item.GetSafeBundle().mainAsset)
+		{
+			return;
+		}
+		GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+		if (null == gameObject)
+		{
+			return;
+		}
+		this.m_SelectSRewardGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+		Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+		Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+		this.m_SelectSRewardGameObject.transform.position = effectUIPos;
+		NkUtil.SetAllChildLayer(this.m_SelectSRewardGameObject, GUICamera.UILayer);
+		for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
+		{
+			string strName = string.Format("card{0}", (i + 1).ToString());
+			Transform child = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
+			if (child != null)
 			{
-				this.m_SelectSRewardGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
-				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
-				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
-				this.m_SelectSRewardGameObject.transform.position = effectUIPos;
-				NkUtil.SetAllChildLayer(this.m_SelectSRewardGameObject, GUICamera.UILayer);
-				for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
+				GameObject gameObject2 = child.gameObject;
+				if (gameObject2 != null)
 				{
-					string strName = string.Format("card{0}", (i + 1).ToString());
-					Transform child = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
-					if (child != null)
+					NmSpecialReward nmSpecialReward = gameObject2.GetComponent<NmSpecialReward>();
+					if (nmSpecialReward == null)
 					{
-						GameObject gameObject2 = child.gameObject;
-						if (gameObject2 != null)
+						nmSpecialReward = gameObject2.AddComponent<NmSpecialReward>();
+					}
+					else
+					{
+						Animation component = gameObject2.GetComponent<Animation>();
+						if (component != null)
 						{
-							NmSpecialReward nmSpecialReward = gameObject2.GetComponent<NmSpecialReward>();
-							if (nmSpecialReward == null)
+							if (component.isPlaying)
 							{
-								nmSpecialReward = gameObject2.AddComponent<NmSpecialReward>();
+								component.Stop();
 							}
-							else
-							{
-								Animation component = gameObject2.GetComponent<Animation>();
-								if (component != null)
-								{
-									if (component.isPlaying)
-									{
-										component.Stop();
-									}
-									string animation = string.Format("card{0}_off", (i + 1).ToString());
-									component.Play(animation);
-								}
-							}
-							nmSpecialReward.SetData(this, i);
+							string animation = string.Format("card{0}_off", (i + 1).ToString());
+							component.Play(animation);
 						}
 					}
+					nmSpecialReward.SetData(this, i);
 				}
-				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
-				{
-					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_SelectSRewardGameObject);
-				}
-				this.Show();
 			}
 		}
+		if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_SelectSRewardGameObject);
+		}
+		this.Show();
 	}
 
-	private void _LinkSRewardData(int BattleSRewardUnique)
+	private void _LinkSRewardData()
 	{
 		WWWItem wWWItem = NkEffectManager.CreateWItem("FX_REWARD");
 		wWWItem.SetItemType(ItemType.USER_ASSETB);
@@ -1475,7 +1722,7 @@ public class Battle_ResultDlg_Content : Form
 		base.AllHideLayer();
 		this.m_BattleSRewardUnique = BattleSRewardUnique;
 		base.ShowLayer(Battle_ResultDlg_Content.BATTLE_SREWARD_LAYER_NUM);
-		this._LinkSRewardData(BattleSRewardUnique);
+		this._LinkSRewardData();
 		this.ShowSRewardDlgNext(false);
 	}
 
@@ -1487,184 +1734,271 @@ public class Battle_ResultDlg_Content : Form
 
 	private void NewShowSReward(WWWItem _item, object _param)
 	{
-		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		if (null == _item.GetSafeBundle())
 		{
-			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
-			if (null != gameObject)
+			return;
+		}
+		if (null == _item.GetSafeBundle().mainAsset)
+		{
+			return;
+		}
+		GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+		if (gameObject == null)
+		{
+			return;
+		}
+		float x = (GUICamera.width - this.m_RewardNotify.width) / 2f;
+		if (Screen.width == 1024)
+		{
+			this.m_RewardNotify.SetLocation(x, 760f);
+		}
+		else if (Screen.width == 960)
+		{
+			this.m_RewardNotify.SetLocation(x, 660f);
+		}
+		else
+		{
+			this.m_RewardNotify.SetLocation(x, 630f);
+		}
+		this.m_RewardNotify.Visible = true;
+		eBATTLE_ROOMTYPE eRoomType = this.m_eRoomType;
+		if (eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+		{
+			if (eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
 			{
-				float x = (GUICamera.width - this.m_RewardNotify.width) / 2f;
-				if (Screen.width == 1024)
+				BATTLE_SREWARD battleSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleSRewardData(this.m_BasicInfo.BattleSRewardUnique);
+				this.m_SelectSRewardGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+				this.m_SelectSRewardGameObject.transform.position = effectUIPos;
+				NkUtil.SetAllChildLayer(this.m_SelectSRewardGameObject, GUICamera.UILayer);
+				Vector3 localPosition = new Vector3(0.162f, 0f, 0f);
+				Vector3 localEulerAngles = new Vector3(0f, 0f, 0f);
+				Vector3 localScale = new Vector3(0f, 0f, 0f);
+				string strName = string.Empty;
+				for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
 				{
-					this.m_RewardNotify.SetLocation(x, 760f);
-				}
-				else if (Screen.width == 960)
-				{
-					this.m_RewardNotify.SetLocation(x, 660f);
-				}
-				else
-				{
-					this.m_RewardNotify.SetLocation(x, 630f);
-				}
-				this.m_RewardNotify.Visible = true;
-				if (this.m_eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && this.m_eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
-				{
-					BATTLE_SREWARD battleSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleSRewardData(this.m_BasicInfo.BattleSRewardUnique);
-					this.m_SelectSRewardGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
-					Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
-					Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
-					this.m_SelectSRewardGameObject.transform.position = effectUIPos;
-					NkUtil.SetAllChildLayer(this.m_SelectSRewardGameObject, GUICamera.UILayer);
-					Vector3 localPosition = new Vector3(0.162f, 0f, 0f);
-					Vector3 localEulerAngles = new Vector3(0f, 0f, 0f);
-					Vector3 localScale = new Vector3(0f, 0f, 0f);
-					string strName = string.Empty;
-					for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
+					strName = string.Format("card{0}", (i + 1).ToString());
+					Transform child = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
+					if (child != null)
 					{
-						strName = string.Format("card{0}", (i + 1).ToString());
-						Transform child = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
-						if (child != null)
+						GameObject gameObject2 = child.gameObject;
+						if (gameObject2 != null)
 						{
-							GameObject gameObject2 = child.gameObject;
-							if (gameObject2 != null)
+							NmSpecialReward nmSpecialReward = gameObject2.GetComponent<NmSpecialReward>();
+							if (nmSpecialReward == null)
 							{
-								NmSpecialReward nmSpecialReward = gameObject2.GetComponent<NmSpecialReward>();
-								if (nmSpecialReward == null)
+								nmSpecialReward = gameObject2.AddComponent<NmSpecialReward>();
+							}
+							Animation component = gameObject2.GetComponent<Animation>();
+							if (component != null)
+							{
+								if (component.isPlaying)
 								{
-									nmSpecialReward = gameObject2.AddComponent<NmSpecialReward>();
+									component.Stop();
 								}
-								else
+								string animation = string.Format("card0{0}_off", (i + 1).ToString());
+								component.Play(animation);
+							}
+							nmSpecialReward.SetData(this, i);
+						}
+					}
+					strName = string.Format("card0{0}up", (i + 1).ToString());
+					Transform child2 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
+					if (child2 != null)
+					{
+						this.SetRewardItemInfo(child2.gameObject, battleSRewardData.m_sRewardProduct[i], i, this.m_lbItemNum[i]);
+					}
+					strName = string.Format("card0{0}down", i + 1);
+					Transform child3 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
+					if (child3 != null)
+					{
+						this.m_lbItemNum[i].Hide(false);
+						this.m_lbItemNum[i].gameObject.transform.parent = child3;
+						if (Vector3.zero == localEulerAngles && Vector3.zero != this.m_lbItemNum[i].gameObject.transform.localEulerAngles)
+						{
+							localEulerAngles = this.m_lbItemNum[i].gameObject.transform.localEulerAngles;
+						}
+						if (Vector3.zero == localScale && Vector3.zero != this.m_lbItemNum[i].gameObject.transform.localScale)
+						{
+							localScale = this.m_lbItemNum[i].gameObject.transform.localScale;
+						}
+					}
+				}
+				for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
+				{
+					this.m_lbItemNum[i].gameObject.transform.localPosition = localPosition;
+					this.m_lbItemNum[i].gameObject.transform.localEulerAngles = localEulerAngles;
+					this.m_lbItemNum[i].gameObject.transform.localScale = localScale;
+				}
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_SelectSRewardGameObject);
+				}
+				this.Show();
+			}
+			else
+			{
+				BATTLE_NEWEXPLORATION_SREWARD sReward = NrTSingleton<NewExplorationManager>.Instance.GetSReward(this.m_BasicInfo.BattleSRewardUnique);
+				this.m_SelectSRewardGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				Vector2 screenPos2 = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+				Vector3 effectUIPos2 = base.GetEffectUIPos(screenPos2);
+				this.m_SelectSRewardGameObject.transform.position = effectUIPos2;
+				NkUtil.SetAllChildLayer(this.m_SelectSRewardGameObject, GUICamera.UILayer);
+				Vector3 localPosition2 = new Vector3(0.162f, 0f, 0f);
+				Vector3 localEulerAngles2 = new Vector3(0f, 0f, 0f);
+				Vector3 localScale2 = new Vector3(0f, 0f, 0f);
+				string strName2 = string.Empty;
+				for (int j = 0; j < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; j++)
+				{
+					strName2 = string.Format("card{0}", (j + 1).ToString());
+					Transform child4 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName2);
+					if (child4 != null)
+					{
+						GameObject gameObject3 = child4.gameObject;
+						if (gameObject3 != null)
+						{
+							NmSpecialReward nmSpecialReward2 = gameObject3.GetComponent<NmSpecialReward>();
+							if (nmSpecialReward2 == null)
+							{
+								nmSpecialReward2 = gameObject3.AddComponent<NmSpecialReward>();
+							}
+							else
+							{
+								Animation component2 = gameObject3.GetComponent<Animation>();
+								if (component2 != null)
 								{
-									Animation component = gameObject2.GetComponent<Animation>();
-									if (component != null)
+									if (component2.isPlaying)
 									{
-										if (component.isPlaying)
-										{
-											component.Stop();
-										}
-										string animation = string.Format("card0{0}_off", (i + 1).ToString());
-										component.Play(animation);
+										component2.Stop();
 									}
+									string animation2 = string.Format("card0{0}_off", (j + 1).ToString());
+									component2.Play(animation2);
 								}
-								nmSpecialReward.SetData(this, i);
 							}
-						}
-						strName = string.Format("card0{0}up", (i + 1).ToString());
-						Transform child2 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
-						if (child2 != null)
-						{
-							this.SetRewardItemInfo(child2.gameObject, battleSRewardData.m_sRewardProduct[i], i, this.m_lbItemNum[i]);
-						}
-						strName = string.Format("card0{0}down", i + 1);
-						Transform child3 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName);
-						if (child3 != null)
-						{
-							this.m_lbItemNum[i].Hide(false);
-							this.m_lbItemNum[i].gameObject.transform.parent = child3;
-							if (Vector3.zero == localEulerAngles && Vector3.zero != this.m_lbItemNum[i].gameObject.transform.localEulerAngles)
-							{
-								localEulerAngles = this.m_lbItemNum[i].gameObject.transform.localEulerAngles;
-							}
-							if (Vector3.zero == localScale && Vector3.zero != this.m_lbItemNum[i].gameObject.transform.localScale)
-							{
-								localScale = this.m_lbItemNum[i].gameObject.transform.localScale;
-							}
+							nmSpecialReward2.SetData(this, j);
 						}
 					}
-					for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
+					strName2 = string.Format("card0{0}up", (j + 1).ToString());
+					Transform child5 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName2);
+					if (child5 != null)
 					{
-						this.m_lbItemNum[i].gameObject.transform.localPosition = localPosition;
-						this.m_lbItemNum[i].gameObject.transform.localEulerAngles = localEulerAngles;
-						this.m_lbItemNum[i].gameObject.transform.localScale = localScale;
+						this.SetRewardItemInfo(child5.gameObject, sReward.m_sRewardProduct[j], j, this.m_lbItemNum[j]);
 					}
-					if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+					strName2 = string.Format("card0{0}down", j + 1);
+					Transform child6 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName2);
+					if (child6 != null)
 					{
-						NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_SelectSRewardGameObject);
+						this.m_lbItemNum[j].Hide(false);
+						this.m_lbItemNum[j].gameObject.transform.parent = child6;
+						if (Vector3.zero == localEulerAngles2 && Vector3.zero != this.m_lbItemNum[j].gameObject.transform.localEulerAngles)
+						{
+							localEulerAngles2 = this.m_lbItemNum[j].gameObject.transform.localEulerAngles;
+						}
+						if (Vector3.zero == localScale2 && Vector3.zero != this.m_lbItemNum[j].gameObject.transform.localScale)
+						{
+							localScale2 = this.m_lbItemNum[j].gameObject.transform.localScale;
+						}
 					}
-					this.Show();
 				}
-				else
+				for (int j = 0; j < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; j++)
 				{
-					BATTLE_BABEL_SREWARD battleBabelSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleBabelSRewardData(this.m_BasicInfo.BattleSRewardUnique);
-					this.m_SelectSRewardGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
-					Vector2 screenPos2 = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
-					Vector3 effectUIPos2 = base.GetEffectUIPos(screenPos2);
-					this.m_SelectSRewardGameObject.transform.position = effectUIPos2;
-					NkUtil.SetAllChildLayer(this.m_SelectSRewardGameObject, GUICamera.UILayer);
-					Vector3 localPosition2 = new Vector3(0.162f, 0f, 0f);
-					Vector3 localEulerAngles2 = new Vector3(0f, 0f, 0f);
-					Vector3 localScale2 = new Vector3(0f, 0f, 0f);
-					string strName2 = string.Empty;
-					for (int j = 0; j < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; j++)
+					this.m_lbItemNum[j].gameObject.transform.localPosition = localPosition2;
+					this.m_lbItemNum[j].gameObject.transform.localEulerAngles = localEulerAngles2;
+					this.m_lbItemNum[j].gameObject.transform.localScale = localScale2;
+				}
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_SelectSRewardGameObject);
+				}
+				this.Show();
+				if (NrTSingleton<NewExplorationManager>.Instance.AutoBattle)
+				{
+					this.ClickRewardCardButton(UnityEngine.Random.Range(0, 4));
+				}
+			}
+		}
+		else
+		{
+			BATTLE_BABEL_SREWARD battleBabelSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleBabelSRewardData(this.m_BasicInfo.BattleSRewardUnique);
+			this.m_SelectSRewardGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+			Vector2 screenPos3 = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+			Vector3 effectUIPos3 = base.GetEffectUIPos(screenPos3);
+			this.m_SelectSRewardGameObject.transform.position = effectUIPos3;
+			NkUtil.SetAllChildLayer(this.m_SelectSRewardGameObject, GUICamera.UILayer);
+			Vector3 localPosition3 = new Vector3(0.162f, 0f, 0f);
+			Vector3 localEulerAngles3 = new Vector3(0f, 0f, 0f);
+			Vector3 localScale3 = new Vector3(0f, 0f, 0f);
+			string strName3 = string.Empty;
+			for (int k = 0; k < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; k++)
+			{
+				strName3 = string.Format("card{0}", (k + 1).ToString());
+				Transform child7 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName3);
+				if (child7 != null)
+				{
+					GameObject gameObject4 = child7.gameObject;
+					if (gameObject4 != null)
 					{
-						strName2 = string.Format("card{0}", (j + 1).ToString());
-						Transform child4 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName2);
-						if (child4 != null)
+						NmSpecialReward nmSpecialReward3 = gameObject4.GetComponent<NmSpecialReward>();
+						if (nmSpecialReward3 == null)
 						{
-							GameObject gameObject3 = child4.gameObject;
-							if (gameObject3 != null)
+							nmSpecialReward3 = gameObject4.AddComponent<NmSpecialReward>();
+						}
+						else
+						{
+							Animation component3 = gameObject4.GetComponent<Animation>();
+							if (component3 != null)
 							{
-								NmSpecialReward nmSpecialReward2 = gameObject3.GetComponent<NmSpecialReward>();
-								if (nmSpecialReward2 == null)
+								if (component3.isPlaying)
 								{
-									nmSpecialReward2 = gameObject3.AddComponent<NmSpecialReward>();
+									component3.Stop();
 								}
-								else
-								{
-									Animation component2 = gameObject3.GetComponent<Animation>();
-									if (component2 != null)
-									{
-										if (component2.isPlaying)
-										{
-											component2.Stop();
-										}
-										string animation2 = string.Format("card0{0}_off", (j + 1).ToString());
-										component2.Play(animation2);
-									}
-								}
-								if (!NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
-								{
-									nmSpecialReward2.SetData(this, j);
-								}
+								string animation3 = string.Format("card0{0}_off", (k + 1).ToString());
+								component3.Play(animation3);
 							}
 						}
-						strName2 = string.Format("card0{0}up", (j + 1).ToString());
-						Transform child5 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName2);
-						if (child5 != null)
+						if (!NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
 						{
-							this.SetRewardItemInfo(child5.gameObject, battleBabelSRewardData.m_sRewardProduct[j], j, this.m_lbItemNum[j]);
+							nmSpecialReward3.SetData(this, k);
 						}
-						strName2 = string.Format("card0{0}down", j + 1);
-						Transform child6 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName2);
-						if (child6 != null)
-						{
-							this.m_lbItemNum[j].Hide(false);
-							this.m_lbItemNum[j].gameObject.transform.parent = child6;
-							if (Vector3.zero == localEulerAngles2 && Vector3.zero != this.m_lbItemNum[j].gameObject.transform.localEulerAngles)
-							{
-								localEulerAngles2 = this.m_lbItemNum[j].gameObject.transform.localEulerAngles;
-							}
-							if (Vector3.zero == localScale2 && Vector3.zero != this.m_lbItemNum[j].gameObject.transform.localScale)
-							{
-								localScale2 = this.m_lbItemNum[j].gameObject.transform.localScale;
-							}
-						}
-					}
-					for (int j = 0; j < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; j++)
-					{
-						this.m_lbItemNum[j].gameObject.transform.localPosition = localPosition2;
-						this.m_lbItemNum[j].gameObject.transform.localEulerAngles = localEulerAngles2;
-						this.m_lbItemNum[j].gameObject.transform.localScale = localScale2;
-					}
-					if (TsPlatform.IsMobile && TsPlatform.IsEditor)
-					{
-						NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_SelectSRewardGameObject);
-					}
-					this.Show();
-					if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
-					{
-						NrTSingleton<NkBabelMacroManager>.Instance.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_BATTLE_SELECT_SPECIAL_RESULT, Time.realtimeSinceStartup);
 					}
 				}
+				strName3 = string.Format("card0{0}up", (k + 1).ToString());
+				Transform child8 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName3);
+				if (child8 != null)
+				{
+					this.SetRewardItemInfo(child8.gameObject, battleBabelSRewardData.m_sRewardProduct[k], k, this.m_lbItemNum[k]);
+				}
+				strName3 = string.Format("card0{0}down", k + 1);
+				Transform child9 = NkUtil.GetChild(this.m_SelectSRewardGameObject.transform, strName3);
+				if (child9 != null)
+				{
+					this.m_lbItemNum[k].Hide(false);
+					this.m_lbItemNum[k].gameObject.transform.parent = child9;
+					if (Vector3.zero == localEulerAngles3 && Vector3.zero != this.m_lbItemNum[k].gameObject.transform.localEulerAngles)
+					{
+						localEulerAngles3 = this.m_lbItemNum[k].gameObject.transform.localEulerAngles;
+					}
+					if (Vector3.zero == localScale3 && Vector3.zero != this.m_lbItemNum[k].gameObject.transform.localScale)
+					{
+						localScale3 = this.m_lbItemNum[k].gameObject.transform.localScale;
+					}
+				}
+			}
+			for (int k = 0; k < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; k++)
+			{
+				this.m_lbItemNum[k].gameObject.transform.localPosition = localPosition3;
+				this.m_lbItemNum[k].gameObject.transform.localEulerAngles = localEulerAngles3;
+				this.m_lbItemNum[k].gameObject.transform.localScale = localScale3;
+			}
+			if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+			{
+				NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_SelectSRewardGameObject);
+			}
+			this.Show();
+			if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
+			{
+				NrTSingleton<NkBabelMacroManager>.Instance.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_BATTLE_SELECT_SPECIAL_RESULT, Time.realtimeSinceStartup);
 			}
 		}
 	}
@@ -1727,50 +2061,80 @@ public class Battle_ResultDlg_Content : Form
 	private void NewShowSRewardGet(WWWItem _item, object _param)
 	{
 		Main_UI_SystemMessage.CloseUI();
-		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		if (null == _item.GetSafeBundle())
 		{
-			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
-			if (null != gameObject)
+			return;
+		}
+		if (null == _item.GetSafeBundle().mainAsset)
+		{
+			return;
+		}
+		GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+		if (null == gameObject)
+		{
+			return;
+		}
+		this.m_SRewardGetGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+		Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+		Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+		this.m_SRewardGetGameObject.transform.position = effectUIPos;
+		NkUtil.SetAllChildLayer(this.m_SRewardGetGameObject, GUICamera.UILayer);
+		if (null == this.m_SRewardGetGameObject)
+		{
+			return;
+		}
+		eBATTLE_ROOMTYPE eRoomType = this.m_eRoomType;
+		if (eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+		{
+			if (eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
 			{
-				this.m_SRewardGetGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
-				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
-				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
-				this.m_SRewardGetGameObject.transform.position = effectUIPos;
-				NkUtil.SetAllChildLayer(this.m_SRewardGetGameObject, GUICamera.UILayer);
-				if (null != this.m_SRewardGetGameObject)
+				BATTLE_SREWARD battleSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleSRewardData(this.m_SReward_BasicInfo.m_nRewardUnique);
+				List<SREWARD_PRODUCT> list = new List<SREWARD_PRODUCT>();
+				for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
 				{
-					if (this.m_eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && this.m_eRoomType != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
-					{
-						BATTLE_SREWARD battleSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleSRewardData(this.m_SReward_BasicInfo.m_nRewardUnique);
-						List<SREWARD_PRODUCT> list = new List<SREWARD_PRODUCT>();
-						for (int i = 0; i < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; i++)
-						{
-							list.Add(battleSRewardData.m_sRewardProduct[i]);
-						}
-						if (this.m_iSelectIndex != this.m_SReward_BasicInfo.m_nRewardProductIndex)
-						{
-							list[this.m_iSelectIndex] = battleSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
-							list[this.m_SReward_BasicInfo.m_nRewardProductIndex] = battleSRewardData.m_sRewardProduct[this.m_iSelectIndex];
-						}
-						this.NewShowSRewardGetSetItem(list);
-					}
-					else
-					{
-						BATTLE_BABEL_SREWARD battleBabelSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleBabelSRewardData(this.m_SReward_BasicInfo.m_nRewardUnique);
-						List<SREWARD_PRODUCT> list2 = new List<SREWARD_PRODUCT>();
-						for (int j = 0; j < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; j++)
-						{
-							list2.Add(battleBabelSRewardData.m_sRewardProduct[j]);
-						}
-						if (this.m_iSelectIndex != this.m_SReward_BasicInfo.m_nRewardProductIndex)
-						{
-							list2[this.m_iSelectIndex] = battleBabelSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
-							list2[this.m_SReward_BasicInfo.m_nRewardProductIndex] = battleBabelSRewardData.m_sRewardProduct[this.m_iSelectIndex];
-						}
-						this.NewShowSRewardGetSetItem(list2);
-					}
+					list.Add(battleSRewardData.m_sRewardProduct[i]);
 				}
+				if (this.m_iSelectIndex != this.m_SReward_BasicInfo.m_nRewardProductIndex)
+				{
+					list[this.m_iSelectIndex] = battleSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
+					list[this.m_SReward_BasicInfo.m_nRewardProductIndex] = battleSRewardData.m_sRewardProduct[this.m_iSelectIndex];
+				}
+				this.NewShowSRewardGetSetItem(list);
 			}
+			else
+			{
+				BATTLE_NEWEXPLORATION_SREWARD sReward = NrTSingleton<NewExplorationManager>.Instance.GetSReward(this.m_SReward_BasicInfo.m_nRewardUnique);
+				if (sReward == null)
+				{
+					return;
+				}
+				List<SREWARD_PRODUCT> list2 = new List<SREWARD_PRODUCT>();
+				for (int j = 0; j < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; j++)
+				{
+					list2.Add(sReward.m_sRewardProduct[j]);
+				}
+				if (this.m_iSelectIndex != this.m_SReward_BasicInfo.m_nRewardProductIndex)
+				{
+					list2[this.m_iSelectIndex] = sReward.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
+					list2[this.m_SReward_BasicInfo.m_nRewardProductIndex] = sReward.m_sRewardProduct[this.m_iSelectIndex];
+				}
+				this.NewShowSRewardGetSetItem(list2);
+			}
+		}
+		else
+		{
+			BATTLE_BABEL_SREWARD battleBabelSRewardData = NrTSingleton<BattleSReward_Manager>.Instance.GetBattleBabelSRewardData(this.m_SReward_BasicInfo.m_nRewardUnique);
+			List<SREWARD_PRODUCT> list3 = new List<SREWARD_PRODUCT>();
+			for (int k = 0; k < Battle_ResultDlg_Content.BATTLE_SREWARD_BUTTON_MAX; k++)
+			{
+				list3.Add(battleBabelSRewardData.m_sRewardProduct[k]);
+			}
+			if (this.m_iSelectIndex != this.m_SReward_BasicInfo.m_nRewardProductIndex)
+			{
+				list3[this.m_iSelectIndex] = battleBabelSRewardData.m_sRewardProduct[this.m_SReward_BasicInfo.m_nRewardProductIndex];
+				list3[this.m_SReward_BasicInfo.m_nRewardProductIndex] = battleBabelSRewardData.m_sRewardProduct[this.m_iSelectIndex];
+			}
+			this.NewShowSRewardGetSetItem(list3);
 		}
 	}
 
@@ -1990,5 +2354,66 @@ public class Battle_ResultDlg_Content : Form
 			return;
 		}
 		this.m_CloseEffect = obj;
+	}
+
+	private void ActiveRewardMsgBox(int[] itemUnique, int[] itemNum)
+	{
+		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+		if (msgBoxUI == null)
+		{
+			return;
+		}
+		StringBuilder stringBuilder = new StringBuilder();
+		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3169");
+		for (int i = 0; i < 5; i++)
+		{
+			if (itemUnique[i] > 0 && itemNum[i] > 0)
+			{
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					textFromInterface,
+					"rewardname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(itemUnique[i]),
+					"rewardnum",
+					itemNum[i].ToString()
+				});
+				stringBuilder.AppendLine(empty);
+			}
+		}
+		stringBuilder.Remove(stringBuilder.Length - 1, 1);
+		msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3170"), stringBuilder.ToString(), eMsgType.MB_OK, 2);
+		msgBoxUI.ChangeSceneDestory = false;
+	}
+
+	private void BountyRewardMsgBox(int[] itemUnique, int[] itemNum)
+	{
+		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+		if (msgBoxUI == null)
+		{
+			return;
+		}
+		StringBuilder stringBuilder = new StringBuilder();
+		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3169");
+		string empty = string.Empty;
+		for (int i = 0; i < 10; i++)
+		{
+			if (itemUnique[i] > 0 && itemNum[i] > 0)
+			{
+				empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					textFromInterface,
+					"rewardname",
+					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(itemUnique[i]),
+					"rewardnum",
+					itemNum[i].ToString()
+				});
+				stringBuilder.AppendLine(empty);
+			}
+		}
+		stringBuilder.Remove(stringBuilder.Length - 1, 1);
+		msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3170"), stringBuilder.ToString(), eMsgType.MB_OK, 2);
+		msgBoxUI.ChangeSceneDestory = false;
 	}
 }

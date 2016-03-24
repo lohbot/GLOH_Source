@@ -14,12 +14,8 @@ namespace PROTOCOL.GAME
 
 		public int nBattleSkillLevel;
 
-		public int nPosType;
-
-		public int nPosItem;
-
-		public int nItemNum;
-
 		public long lLeftMoney;
+
+		public bool bBattleSkillMessageShow;
 	}
 }

@@ -2745,7 +2745,7 @@ public class iTween : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator TweenDelay()
 	{
-		iTween.<TweenDelay>c__Iterator26 <TweenDelay>c__Iterator = new iTween.<TweenDelay>c__Iterator26();
+		iTween.<TweenDelay>c__Iterator28 <TweenDelay>c__Iterator = new iTween.<TweenDelay>c__Iterator28();
 		<TweenDelay>c__Iterator.<>f__this = this;
 		return <TweenDelay>c__Iterator;
 	}
@@ -2753,7 +2753,7 @@ public class iTween : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator TsTweenDelay()
 	{
-		iTween.<TsTweenDelay>c__Iterator27 <TsTweenDelay>c__Iterator = new iTween.<TsTweenDelay>c__Iterator27();
+		iTween.<TsTweenDelay>c__Iterator29 <TsTweenDelay>c__Iterator = new iTween.<TsTweenDelay>c__Iterator29();
 		<TsTweenDelay>c__Iterator.<>f__this = this;
 		return <TsTweenDelay>c__Iterator;
 	}
@@ -2780,9 +2780,9 @@ public class iTween : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator TweenRestart()
 	{
-		iTween.<TweenRestart>c__Iterator28 <TweenRestart>c__Iterator = new iTween.<TweenRestart>c__Iterator28();
-		<TweenRestart>c__Iterator.<>f__this = this;
-		return <TweenRestart>c__Iterator;
+		iTween.<TweenRestart>c__Iterator2A <TweenRestart>c__Iterator2A = new iTween.<TweenRestart>c__Iterator2A();
+		<TweenRestart>c__Iterator2A.<>f__this = this;
+		return <TweenRestart>c__Iterator2A;
 	}
 
 	private void TweenUpdate()
@@ -4163,9 +4163,9 @@ public class iTween : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator Start()
 	{
-		iTween.<Start>c__Iterator29 <Start>c__Iterator = new iTween.<Start>c__Iterator29();
-		<Start>c__Iterator.<>f__this = this;
-		return <Start>c__Iterator;
+		iTween.<Start>c__Iterator2B <Start>c__Iterator2B = new iTween.<Start>c__Iterator2B();
+		<Start>c__Iterator2B.<>f__this = this;
+		return <Start>c__Iterator2B;
 	}
 
 	private void Update()

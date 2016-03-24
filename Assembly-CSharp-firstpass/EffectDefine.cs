@@ -141,6 +141,14 @@ public class EffectDefine
 
 	public const string FX_UI_GUILDMARK = "FX_UI_GUILDMARK";
 
+	public const string FX_SOL_COMBINATION5 = "FX_SOL_COMBINATION";
+
+	public const string FX_SOL_COMBINATION4 = "FX_SOL_COMBINATION4";
+
+	public const string FX_SOL_COMBINATION3 = "FX_SOL_COMBINATION3";
+
+	public const string FX_GUILDWAR_VICTORYMARK = "FX_GUILDWAR_VICTORYMARK";
+
 	public static string FX_ITEMMALL_PRODUCT = "FX_READMORE_UI";
 
 	private static GameObject m_efRoot;

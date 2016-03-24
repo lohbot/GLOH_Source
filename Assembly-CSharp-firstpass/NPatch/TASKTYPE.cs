@@ -5,9 +5,10 @@ namespace NPatch
 	public enum TASKTYPE
 	{
 		NONE,
-		DOWNLOADPACK,
+		CHECKFILE,
+		DOWNLOAD,
 		INSTALL,
 		RETRY,
-		REDOWNLOADPACK
+		REDOWNLOAD
 	}
 }

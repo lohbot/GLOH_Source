@@ -27,7 +27,11 @@ public class GameGuideDlg : Form
 
 	private maxCamera m_WorldCamera;
 
+	private Button m_bttransbutton;
+
 	private GameGuideInfo currentGameGuideInfo;
+
+	private OnCloseCallback _closeCallback;
 
 	private bool escClose = true;
 
@@ -37,14 +41,18 @@ public class GameGuideDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.Scale = false;
+		base.TopMost = true;
 		instance.LoadFileAll(ref form, "System/Dlg_GameGuide", G_ID.GAMEGUIDE_DLG, false);
 	}
 
 	public override void SetComponent()
 	{
+		this.m_bttransbutton = (base.GetControl("Button_Transbutton") as Button);
+		this.m_bttransbutton.Click = new EZValueChangedDelegate(this.ClickClose);
+		this.m_bttransbutton.UseDefaultSound = false;
 		this.backImage = (base.GetControl("NPCTalk_BG") as DrawTexture);
 		this.m_CenterNpcImage = (base.GetControl("DrawTexture_NPCFace01") as DrawTexture);
-		this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, 242, -1);
+		this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, 242, -1, string.Empty);
 		this.m_CenterNpcName = (base.GetControl("NPCTalk_npcname") as Label);
 		this.m_CenterNpcName.Text = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(242);
 		this.m_CenterNpcNameBack[0] = (base.GetControl("DrawTexture_NPCTalk_npcnameBG_left_line") as DrawTexture);
@@ -126,6 +134,10 @@ public class GameGuideDlg : Form
 
 	public override void OnClose()
 	{
+		if (this._closeCallback != null)
+		{
+			this._closeCallback();
+		}
 		if (this.escClose)
 		{
 			this.ClickClose(null);
@@ -210,5 +222,10 @@ public class GameGuideDlg : Form
 	public override void ChangedResolution()
 	{
 		this.RepositionControl();
+	}
+
+	public void RegistCloseCallback(OnCloseCallback callback)
+	{
+		this._closeCallback = callback;
 	}
 }

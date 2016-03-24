@@ -2,6 +2,7 @@ using Ndoors.Framework.Stage;
 using StageHelper;
 using System;
 using System.IO;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
@@ -9,17 +10,17 @@ public class Battle_ResultTutorialDlg : Form
 {
 	private DrawTexture m_dtTotalBG;
 
-	private DrawTexture m_dtWinLose;
-
 	private DrawTexture m_dtTopBG;
 
+	private DrawTexture m_waitImg;
+
 	private float m_OpenTime;
+
+	private float m_MovieTime;
 
 	private float m_ScreenWidth;
 
 	private float m_ScreenHeight;
-
-	private bool m_CloseDlg = true;
 
 	private bool m_bClearMiddleStage;
 
@@ -28,6 +29,32 @@ public class Battle_ResultTutorialDlg : Form
 	private bool m_bPlayMovie;
 
 	private int BattleScenarioUnique;
+
+	public bool m_bUpdateCheck;
+
+	public float OpenTime
+	{
+		get
+		{
+			return this.m_OpenTime;
+		}
+		set
+		{
+			this.m_OpenTime = value;
+		}
+	}
+
+	public float MovieTime
+	{
+		get
+		{
+			return this.m_MovieTime;
+		}
+		set
+		{
+			this.m_MovieTime = value;
+		}
+	}
 
 	public bool UpdateCheck
 	{
@@ -64,7 +91,6 @@ public class Battle_ResultTutorialDlg : Form
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
 		base.ChangeSceneDestory = false;
 		base.Draggable = false;
-		this.Show();
 		base.DonotDepthChange(NrTSingleton<FormsManager>.Instance.GetTopMostZ() - 4f);
 	}
 
@@ -76,6 +102,7 @@ public class Battle_ResultTutorialDlg : Form
 			NrTSingleton<EventConditionHandler>.Instance.MapIn.OnTrigger();
 			NrTSingleton<EventConditionHandler>.Instance.SceneChange.Value.Set(Scene.Type.PREPAREGAME, Scene.Type.WORLD);
 			NrTSingleton<EventConditionHandler>.Instance.SceneChange.OnTrigger();
+			Debug.LogError("=========== CLOSE TUTORIAL BATTLE DLG ======================");
 		}
 	}
 
@@ -83,6 +110,7 @@ public class Battle_ResultTutorialDlg : Form
 	{
 		this._SetComponetBasic();
 		this.ResizeDlg();
+		this.Show();
 	}
 
 	public override void InitData()
@@ -97,8 +125,25 @@ public class Battle_ResultTutorialDlg : Form
 		{
 			this.ResizeDlg();
 		}
+		if (this.m_MovieTime != 0f && Time.realtimeSinceStartup - this.m_MovieTime > 40f)
+		{
+			this.m_bUpdateCheck = true;
+			this.m_OpenTime = 0f;
+			this.m_bPlayMovie = false;
+			this.m_MovieTime = 0f;
+			Debug.LogError("Movie PlayTime Error");
+		}
+		if (!this.m_bUpdateCheck)
+		{
+			return;
+		}
 		if (this.m_bUpdate && !this.m_bPlayMovie)
 		{
+			if (!this.m_waitImg.Visible)
+			{
+				this.m_waitImg.Visible = true;
+			}
+			this.m_waitImg.Rotate(5f);
 			if (this.m_OpenTime == 0f)
 			{
 				if (!this.m_bClearMiddleStage)
@@ -111,16 +156,6 @@ public class Battle_ResultTutorialDlg : Form
 					this.m_OpenTime = Time.realtimeSinceStartup;
 				}
 			}
-			else if (Time.realtimeSinceStartup >= this.m_OpenTime + 1f && this.m_CloseDlg)
-			{
-				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.TOOLTIP_DLG);
-				this.Close();
-			}
-			else
-			{
-				float alpha = 1f - (Time.realtimeSinceStartup - this.m_OpenTime);
-				base.SetAlpha(alpha);
-			}
 		}
 	}
 
@@ -128,10 +163,10 @@ public class Battle_ResultTutorialDlg : Form
 	{
 		this.m_dtTotalBG = (base.GetControl("DrawTexture_TotalBG") as DrawTexture);
 		this.m_dtTopBG = (base.GetControl("DrawTexture_DrawTexture3") as DrawTexture);
-		this.m_dtWinLose = (base.GetControl("DrawTexture_DrawTexture1_C") as DrawTexture);
-		this.m_dtWinLose.Visible = false;
+		this.m_waitImg = (base.GetControl("DrawTexture_Loading") as DrawTexture);
 		this.m_dtTotalBG.Visible = false;
 		this.m_dtTopBG.Visible = false;
+		this.m_waitImg.Visible = false;
 		string path = string.Format("{0}Texture/Loading/0{1}", NrTSingleton<UIDataManager>.Instance.FilePath, NrTSingleton<UIDataManager>.Instance.AddFilePath);
 		Texture2D texture = (Texture2D)CResources.Load(path);
 		this.m_dtTotalBG.SetTexture(texture);
@@ -140,6 +175,26 @@ public class Battle_ResultTutorialDlg : Form
 		if (null != base.BLACK_BG)
 		{
 			base.BLACK_BG.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
+		}
+	}
+
+	public void SetBG(WWWItem _item, object _param)
+	{
+		if (this == null)
+		{
+			return;
+		}
+		if (_item.isCanceled)
+		{
+			return;
+		}
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.m_dtTotalBG.SetTexture(texture2D);
+			}
 		}
 	}
 
@@ -153,26 +208,29 @@ public class Battle_ResultTutorialDlg : Form
 		{
 			this.m_dtTopBG.SetSize(this.m_ScreenWidth, this.m_dtTopBG.height);
 		}
-		this.m_dtWinLose.SetLocation(GUICamera.width / 2f - 262f, 0f);
-		this.m_dtWinLose.SetSize(525f, 144f);
+		this.m_waitImg.SetLocation((this.m_ScreenWidth - this.m_waitImg.GetSize().x) / 2f, (this.m_ScreenHeight - this.m_waitImg.GetSize().y) / 2f);
 	}
 
 	public void ShowResultFx()
 	{
-		this.m_dtWinLose.Visible = false;
 		this.m_OpenTime = 0f;
 		if (!this.m_bPlayMovie)
 		{
-			string str = string.Format("{0}/", NrTSingleton<NrGlobalReference>.Instance.basePath);
-			if (File.Exists(str + "LOHBI.mp4"))
+			this.m_waitImg.Visible = false;
+			string text = "UI/Drama/TUTORIAL.mp4";
+			text = text.ToLower();
+			string path = string.Format("{0}/{1}", NrTSingleton<NrGlobalReference>.Instance.basePath, text);
+			if (File.Exists(path))
 			{
 				this.m_bPlayMovie = false;
+				this.m_bUpdateCheck = true;
 				Debug.LogError("TUTORIAL MOVIE NOT EXIST");
 				return;
 			}
-			TsPlatform.Operator.PlayMovieURL(str + "LOHBI.mp4", Color.black, false, 1f);
+			NmMainFrameWork.PlayMovieURL(path, true, false, true);
 			this.m_bPlayMovie = true;
-			this.Hide();
+			this.MovieTime = Time.realtimeSinceStartup;
+			this.m_bUpdateCheck = false;
 		}
 	}
 }

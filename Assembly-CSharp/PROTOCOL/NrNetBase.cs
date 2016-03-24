@@ -24,7 +24,7 @@ namespace PROTOCOL
 
 		private List<byte> m_ReceiveBuffer;
 
-		private int m_iBufferSize = 262147;
+		private int m_iBufferSize = 204800;
 
 		private bool m_bReadAble;
 
@@ -171,7 +171,7 @@ namespace PROTOCOL
 
 		private void _OnMessageBoxOK_QuitGame(object a_oObject)
 		{
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 		}
 
 		private void _OnMessageBoxOK_Relogin(object a_oObject)
@@ -197,7 +197,8 @@ namespace PROTOCOL
 				}
 				catch (SocketException ex)
 				{
-					Main_UI_SystemMessage.ADDMessage(ex.ToString(), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+					Debug.LogError(ex.ToString());
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("169"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 				}
 				this.m_Socket = null;
 				NrTSingleton<NrUpdateProcessor>.Instance.DellUpdate(new UpdateFunc(this.NetUpdate));

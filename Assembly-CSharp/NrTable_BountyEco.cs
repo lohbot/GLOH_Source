@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BountyEco : NrTableBase
 {
-	public NrTable_BountyEco() : base(CDefinePath.BOUNTYECO_URL, true)
+	public NrTable_BountyEco() : base(CDefinePath.BOUNTYECO_URL)
 	{
 	}
 

@@ -15,6 +15,8 @@ public class NrCharUser : NrCharBase
 
 	private short m_i16ColosseumGrade;
 
+	private bool m_bGuildWar;
+
 	public NrCharUser()
 	{
 		this.m_kPersonInfo = new NrPersonInfoUser();
@@ -39,6 +41,15 @@ public class NrCharUser : NrCharBase
 		return this.m_i64GuildID;
 	}
 
+	public override bool GetGuildWar()
+	{
+		if (base.GetID() == 1)
+		{
+			this.m_bGuildWar = NrTSingleton<NewGuildManager>.Instance.IsGuildWar();
+		}
+		return this.m_bGuildWar;
+	}
+
 	public override short GetUserColosseumGrade()
 	{
 		if (base.GetID() == 1)
@@ -53,11 +64,12 @@ public class NrCharUser : NrCharBase
 		this.m_i16ColosseumGrade = i16ColosseumGrade;
 	}
 
-	public void SetUserGuildName(string strGuildName, long i64GuildID)
+	public void SetUserGuildName(string strGuildName, long i64GuildID, bool bGuildWar = false)
 	{
 		this.m_strGuildName = strGuildName;
 		this.m_i64GuildID = i64GuildID;
-		base.MakeCharGuildNameShow(this.m_strGuildName, i64GuildID);
+		this.m_bGuildWar = bGuildWar;
+		base.MakeCharGuildNameShow(this.m_strGuildName, i64GuildID, bGuildWar);
 	}
 
 	public override void Init()
@@ -68,6 +80,7 @@ public class NrCharUser : NrCharBase
 		this.m_strGuildName = string.Empty;
 		this.m_i64GuildID = 0L;
 		this.m_i16ColosseumGrade = 0;
+		this.m_bGuildWar = false;
 	}
 
 	public override void Release()
@@ -282,12 +295,14 @@ public class NrCharUser : NrCharBase
 		this.m_kPartControl.ChangeWeaponTarget();
 	}
 
-	public void ChangeCharModel(int facecharkind, byte facechargrade)
+	public void ChangeCharModel(int facecharkind, byte facechargrade, long faceSolID, int faceCostumeUnique)
 	{
 		bool flag = false;
-		if (this.m_nFaceCharKind != facecharkind)
+		if (this.m_nFaceCharKind != facecharkind || this.m_nFaceCostumeUnique != faceCostumeUnique)
 		{
 			this.m_nFaceCharKind = facecharkind;
+			this.m_nFaceSolID = faceSolID;
+			this.m_nFaceCostumeUnique = faceCostumeUnique;
 			if (base.IsCreated3DModel())
 			{
 				base.Refresh3DChar();

@@ -5,7 +5,7 @@ public class NkTableMapTileInfo : NrTableBase
 {
 	private bool bWorldMap;
 
-	public NkTableMapTileInfo(string strFileName, bool worldmap) : base(strFileName, true)
+	public NkTableMapTileInfo(string strFileName, bool worldmap) : base(strFileName)
 	{
 		this.bWorldMap = worldmap;
 	}

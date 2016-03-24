@@ -7,5 +7,7 @@ namespace PROTOCOL.GAME
 		public int nBabelRoomIndex;
 
 		public long nPersonID;
+
+		public int nCombinationUnique;
 	}
 }

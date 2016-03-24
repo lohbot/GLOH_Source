@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableTranscendence_Sol : NrTableBase
 {
-	public NrTableTranscendence_Sol() : base(CDefinePath.TRANSCENDENCE_SOL_URL, true)
+	public NrTableTranscendence_Sol() : base(CDefinePath.TRANSCENDENCE_SOL_URL)
 	{
 	}
 

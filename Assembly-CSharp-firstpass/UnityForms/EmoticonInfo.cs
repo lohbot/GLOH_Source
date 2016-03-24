@@ -266,33 +266,36 @@ namespace UnityForms
 					{
 						if (string.Compare(str, current, EmoticonInfo.linkTextTags[i], 0, EmoticonInfo.linkTextTags[i].Length) == 0)
 						{
-							int num3 = EmoticonInfo.AddNormalTextToEmoticonInfo(str, current, num, num2);
-							num += num3 + EmoticonInfo.linkTextTags[i].Length;
-							int num4 = str.IndexOf('}', current) - num;
-							if (num4 < 0)
+							if (current - num >= 0)
 							{
-								num4 = str.Length - num;
+								int num3 = EmoticonInfo.AddNormalTextToEmoticonInfo(str, current, num, num2);
+								num += num3 + EmoticonInfo.linkTextTags[i].Length;
+								int num4 = str.IndexOf('}', current) - num;
+								if (num4 < 0)
+								{
+									num4 = str.Length - num;
+								}
+								string text = str.Substring(num, num4);
+								string[] array2 = text.Split(new char[]
+								{
+									','
+								});
+								EmoticonInfo.ChatTextInfo chatTextInfo2 = new EmoticonInfo.ChatTextInfo();
+								chatTextInfo2.type = EmoticonInfo.ChatTextInfo.ChatTextInfoType.LINKTEXT;
+								chatTextInfo2.normalText = array2[0];
+								if (array2.Length > 1)
+								{
+									chatTextInfo2.textKey = array2[1];
+								}
+								chatTextInfo2.linkTextType = i + LinkText.TYPE.ITEM;
+								chatTextInfo2.fontSize = num2;
+								if (string.Empty != chatTextInfo2.normalText)
+								{
+									EmoticonInfo.emoticonImageInfo.Add(chatTextInfo2);
+								}
+								num += num4 + 1;
+								break;
 							}
-							string text = str.Substring(num, num4);
-							string[] array2 = text.Split(new char[]
-							{
-								','
-							});
-							EmoticonInfo.ChatTextInfo chatTextInfo2 = new EmoticonInfo.ChatTextInfo();
-							chatTextInfo2.type = EmoticonInfo.ChatTextInfo.ChatTextInfoType.LINKTEXT;
-							chatTextInfo2.normalText = array2[0];
-							if (array2.Length > 1)
-							{
-								chatTextInfo2.textKey = array2[1];
-							}
-							chatTextInfo2.linkTextType = i + LinkText.TYPE.ITEM;
-							chatTextInfo2.fontSize = num2;
-							if (string.Empty != chatTextInfo2.normalText)
-							{
-								EmoticonInfo.emoticonImageInfo.Add(chatTextInfo2);
-							}
-							num += num4 + 1;
-							break;
 						}
 					}
 				}
@@ -1748,14 +1751,7 @@ namespace UnityForms
 					EmoticonInfo.ChatTextInfo chatTextInfo = EmoticonInfo.emoticonImageInfo[i];
 					if (chatTextInfo.type == EmoticonInfo.ChatTextInfo.ChatTextInfoType.TEXT)
 					{
-						if (NrGlobalReference.strLangType.Equals("eng"))
-						{
-							EmoticonInfo.EngReLabel(ref num3, chatTextInfo.fontSize, chatTextInfo.normalText, ref container, ref num4, ref num5, ref num6, num, ref num7, ref list, ref list2, ref list3, EmoticonInfo.defaultColor, lineSpacing);
-						}
-						else
-						{
-							EmoticonInfo.ReLabel(ref num3, chatTextInfo.fontSize, chatTextInfo.normalText, ref container, ref num4, ref num5, ref num6, num, ref num7, ref list, ref list2, ref list3, EmoticonInfo.defaultColor, lineSpacing);
-						}
+						EmoticonInfo.ReLabel(ref num3, chatTextInfo.fontSize, chatTextInfo.normalText, ref container, ref num4, ref num5, ref num6, num, ref num7, ref list, ref list2, ref list3, EmoticonInfo.defaultColor, lineSpacing);
 					}
 					else if (chatTextInfo.type == EmoticonInfo.ChatTextInfo.ChatTextInfoType.EMOTICON)
 					{

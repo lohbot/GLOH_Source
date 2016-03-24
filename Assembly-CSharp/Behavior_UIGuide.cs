@@ -34,12 +34,18 @@ public class Behavior_UIGuide : EventTriggerItem_Behavior
 		{
 			return;
 		}
+		Form showFormOrignal = NrTSingleton<FormsManager>.Instance.GetShowFormOrignal(G_ID.UIGUIDE_DLG);
+		if (showFormOrignal != null && this._UIGuide != null && this._UIGuide.m_Touch != null && this._UIGuide.m_Touch.gameObject.activeSelf)
+		{
+			return;
+		}
 		this._UIGuide = (NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.UIGUIDE_DLG) as UI_UIGuide);
 		this._UIGuide.SetText(this.m_Explain);
 		if ("1" == this.m_Param2)
 		{
 			this._UIGuide.SetShowLayer(0, false);
 			this._UIGuide.SetShowLayer(1, true);
+			this._UIGuide.SetCheckGuide(this.m_Explain);
 		}
 		else
 		{
@@ -119,7 +125,7 @@ public class Behavior_UIGuide : EventTriggerItem_Behavior
 
 	public override string GetComment()
 	{
-		return string.Concat(new string[]
+		string text = string.Concat(new string[]
 		{
 			"DLG : ",
 			this.m_DlgID,
@@ -127,8 +133,21 @@ public class Behavior_UIGuide : EventTriggerItem_Behavior
 			this.m_Param1,
 			"+",
 			this.m_Param2,
-			"���� �� ������ ���� �Ѵ�."
+			"���� �� ������ ���� �Ѵ�.\n"
 		});
+		for (int i = 0; i < 9; i++)
+		{
+			string text2 = text;
+			text = string.Concat(new object[]
+			{
+				text2,
+				i,
+				" : ",
+				((SpriteRoot.ANCHOR_METHOD)i).ToString(),
+				". "
+			});
+		}
+		return text;
 	}
 
 	public override float ExcuteTiemSecond()

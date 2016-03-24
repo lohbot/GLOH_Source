@@ -28,7 +28,11 @@ public class BabelTowerOpenRoomListDlg : Form
 
 	private Button m_btSearchFloor;
 
+	private Button m_btClose;
+
 	private Label m_laPage;
+
+	private Label m_lbFloorText;
 
 	private Button m_btBackPage;
 
@@ -83,6 +87,7 @@ public class BabelTowerOpenRoomListDlg : Form
 		this.m_btRefresh.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtClickRefreshList));
 		this.m_btSearchFloor = (base.GetControl("Button_Floor") as Button);
 		this.m_btSearchFloor.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtClickInputSearchFloor));
+		this.m_lbFloorText = (base.GetControl("LB_FloorText") as Label);
 		this.m_laTitle = (base.GetControl("Label_title") as Label);
 		this.m_laPage = (base.GetControl("LB_Page") as Label);
 		this.m_laPage.SetText(string.Empty);
@@ -91,6 +96,8 @@ public class BabelTowerOpenRoomListDlg : Form
 		this.m_btNextPage = (base.GetControl("BT_NextPage") as Button);
 		this.m_btNextPage.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtClickNextPage));
 		this.m_ddlFloorList = (base.GetControl("DropDownList_FloorInfo") as DropDownList);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		base.SetScreenCenter();
 	}
 
@@ -160,7 +167,7 @@ public class BabelTowerOpenRoomListDlg : Form
 			this.m_nMaxPage--;
 		}
 		this.m_nPage = 0;
-		this.m_btSearchFloor.Text = this.m_nSearchFloor.ToString();
+		this.m_lbFloorText.SetText(this.m_nSearchFloor.ToString());
 		this.ShowList();
 	}
 
@@ -178,7 +185,7 @@ public class BabelTowerOpenRoomListDlg : Form
 			BABELTOWER_OPENROOMLIST bABELTOWER_OPENROOMLIST = this.m_listBabelOpenRoomList[i];
 			if (bABELTOWER_OPENROOMLIST != null)
 			{
-				NewListItem newListItem = new NewListItem(this.m_lbOpenRoomList.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_lbOpenRoomList.ColumnNum, true, string.Empty);
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1639");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 				{
@@ -302,7 +309,7 @@ public class BabelTowerOpenRoomListDlg : Form
 		{
 			num = 1;
 		}
-		this.m_btSearchFloor.Text = num.ToString();
+		this.m_lbFloorText.SetText(num.ToString());
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.DLG_INPUTNUMBER);
 	}
 
@@ -313,7 +320,7 @@ public class BabelTowerOpenRoomListDlg : Form
 
 	public void BtClickSearch(IUIObject obj)
 	{
-		string text = this.m_btSearchFloor.GetText();
+		string text = this.m_lbFloorText.GetText();
 		short num = short.Parse(text);
 		if (num < 1 || num > NrTSingleton<BabelTowerManager>.Instance.GetLastFloor(this.m_nFloorType))
 		{

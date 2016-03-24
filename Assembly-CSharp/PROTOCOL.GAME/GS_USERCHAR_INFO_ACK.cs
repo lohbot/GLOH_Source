@@ -18,5 +18,7 @@ namespace PROTOCOL.GAME
 		public bool bCharGuildPortrait;
 
 		public short iColosseumGrade;
+
+		public bool bGuildWar;
 	}
 }

@@ -26,7 +26,7 @@ public class ChallengeBundleDlg : Form
 		base.TopMost = true;
 		instance.LoadFileAll(ref form, "Item/DLG_Equipment_item", G_ID.CHALLENGE_BUNDLE_DLG, false, true);
 		base.SetSize(GUICamera.width, GUICamera.height);
-		base.ShowBlackBG(0.5f);
+		base.ShowBlackBG(1f);
 		base.BLACK_BG.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 	}
 

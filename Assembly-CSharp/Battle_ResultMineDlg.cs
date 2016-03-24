@@ -1,14 +1,23 @@
-using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
 public class Battle_ResultMineDlg : Form
 {
+	public class BATTLE_RESULT_ITEM_REWARD_INFO
+	{
+		public int m_nItemUnique;
+
+		public int m_nItemNum;
+
+		public int m_nBonusItemNum;
+	}
+
 	private Label m_lbResult;
 
 	private Label m_lbItem;
@@ -23,7 +32,7 @@ public class Battle_ResultMineDlg : Form
 
 	private NewListBox m_lbContRankList;
 
-	private Button m_btTakeMail;
+	private Button m_btTakeReward;
 
 	private Button m_btReplay;
 
@@ -31,13 +40,11 @@ public class Battle_ResultMineDlg : Form
 
 	private float m_ScreenHeight;
 
-	private bool m_bWin;
-
 	private long m_i64MailID;
 
 	private List<GS_BATTLE_RESULT_SOLDIER> m_SolInfoList = new List<GS_BATTLE_RESULT_SOLDIER>();
 
-	private List<ITEM> m_ItemList = new List<ITEM>();
+	private List<Battle_ResultMineDlg.BATTLE_RESULT_ITEM_REWARD_INFO> m_ItemList = new List<Battle_ResultMineDlg.BATTLE_RESULT_ITEM_REWARD_INFO>();
 
 	private GS_BATTLE_RESULT_MINE m_BasicInfo = new GS_BATTLE_RESULT_MINE();
 
@@ -49,7 +56,17 @@ public class Battle_ResultMineDlg : Form
 		Form form = this;
 		form.TopMost = true;
 		instance.LoadFileAll(ref form, "MINE/dlg_minebattle_result", G_ID.BATTLE_RESULT_MINE_DLG, false);
-		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
+	}
+
+	public void ClearData()
+	{
+		this.m_BasicInfo.i64LegionActionID = 0L;
+		this.m_SolInfoList.Clear();
+		this.m_ItemList.Clear();
+		this.m_ContributionRankList.Clear();
+		this.m_lbSolList.Clear();
+		this.m_lbItemList.Clear();
+		this.m_lbContRankList.Clear();
 	}
 
 	public override void Show()
@@ -73,14 +90,34 @@ public class Battle_ResultMineDlg : Form
 		this.m_lbSolList.Reserve = false;
 		this.m_lbItemList = (base.GetControl("NLB_MineItemList") as NewListBox);
 		this.m_lbItemList.Reserve = false;
-		this.m_btTakeMail = (base.GetControl("Button_ok") as Button);
-		Button expr_FF = this.m_btTakeMail;
-		expr_FF.Click = (EZValueChangedDelegate)Delegate.Combine(expr_FF.Click, new EZValueChangedDelegate(this.OnClickTakMail));
+		this.m_btTakeReward = (base.GetControl("Button_ok") as Button);
+		Button expr_FF = this.m_btTakeReward;
+		expr_FF.Click = (EZValueChangedDelegate)Delegate.Combine(expr_FF.Click, new EZValueChangedDelegate(this.OnClickTakReward));
 		this.m_lbContRankList = (base.GetControl("NLB_MineRank") as NewListBox);
 		this.m_lbContRankList.Reserve = false;
 		this.m_btReplay = (base.GetControl("Button_Replay") as Button);
 		Button expr_15E = this.m_btReplay;
 		expr_15E.Click = (EZValueChangedDelegate)Delegate.Combine(expr_15E.Click, new EZValueChangedDelegate(this.OnClickReplay));
+	}
+
+	public void SetBG(WWWItem _item, object _param)
+	{
+		if (this == null)
+		{
+			return;
+		}
+		if (_item.isCanceled)
+		{
+			return;
+		}
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.m_dtTotalBG.SetTexture(texture2D);
+			}
+		}
 	}
 
 	public override void InitData()
@@ -120,9 +157,13 @@ public class Battle_ResultMineDlg : Form
 		this.m_BasicInfo = info;
 	}
 
-	public void AddItemData(ITEM item_info)
+	public void AddItemData(int itemUnique, int itemNum, int i32BonusItemNum)
 	{
-		this.m_ItemList.Add(item_info);
+		Battle_ResultMineDlg.BATTLE_RESULT_ITEM_REWARD_INFO bATTLE_RESULT_ITEM_REWARD_INFO = new Battle_ResultMineDlg.BATTLE_RESULT_ITEM_REWARD_INFO();
+		bATTLE_RESULT_ITEM_REWARD_INFO.m_nItemUnique = itemUnique;
+		bATTLE_RESULT_ITEM_REWARD_INFO.m_nItemNum = itemNum;
+		bATTLE_RESULT_ITEM_REWARD_INFO.m_nBonusItemNum = i32BonusItemNum;
+		this.m_ItemList.Add(bATTLE_RESULT_ITEM_REWARD_INFO);
 	}
 
 	public void AddContributionRankInfo(MINE_REPORT_CONTRANK_USER_INFO info)
@@ -160,20 +201,40 @@ public class Battle_ResultMineDlg : Form
 			"sec",
 			string.Format("{0:D2}", num3)
 		});
-		this.m_bWin = (this.m_BasicInfo.i64WinGuildID == NrTSingleton<NewGuildManager>.Instance.GetGuildID());
-		if (this.m_bWin)
+		if (this.m_BasicInfo.i64AttackGuildID <= 0L)
 		{
-			this.m_dtWinLose.SetTexture("Bat_I_ResultWin");
-			this.m_lbResult.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("855"));
+			this.m_dtWinLose.Hide(true);
+			this.m_lbResult.Hide(true);
+			this.m_btReplay.Hide(true);
 		}
 		else
 		{
-			this.m_dtWinLose.SetTexture("Bat_I_ResultLose");
-			this.m_lbResult.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("856"));
+			this.m_dtWinLose.Hide(false);
+			this.m_lbResult.Hide(false);
+			this.m_btReplay.Hide(false);
+			if (this.m_BasicInfo.bIsWin)
+			{
+				this.m_dtWinLose.SetTexture("Bat_I_ResultWin");
+				this.m_lbResult.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("855"));
+			}
+			else
+			{
+				this.m_dtWinLose.SetTexture("Bat_I_ResultLose");
+				this.m_lbResult.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("856"));
+			}
 		}
-		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1365");
-		string textFromInterface2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1641");
-		this.m_lbItem.Text = ((this.m_BasicInfo.i64AttackGuildID != NrTSingleton<NewGuildManager>.Instance.GetGuildID()) ? textFromInterface2 : textFromInterface);
+		if (this.m_BasicInfo.i64AttackGuildID <= 0L)
+		{
+			this.m_lbItem.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3078");
+		}
+		else if (this.m_BasicInfo.i64AttackGuildID == NrTSingleton<NewGuildManager>.Instance.GetGuildID())
+		{
+			this.m_lbItem.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1365");
+		}
+		else
+		{
+			this.m_lbItem.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1641");
+		}
 	}
 
 	private void _LinkSolData()
@@ -187,18 +248,26 @@ public class Battle_ResultMineDlg : Form
 		this.m_lbSolList.Clear();
 		foreach (GS_BATTLE_RESULT_SOLDIER current in this.m_SolInfoList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true, string.Empty);
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(current.CharKind);
 			if (charKindInfo != null)
 			{
-				newListItem.SetListItemData(1, new NkListSolInfo
+				NkListSolInfo nkListSolInfo = new NkListSolInfo();
+				nkListSolInfo.SolCharKind = current.CharKind;
+				nkListSolInfo.SolGrade = current.SolGrade;
+				nkListSolInfo.SolInjuryStatus = current.bInjury;
+				nkListSolInfo.SolLevel = current.i16Level;
+				nkListSolInfo.ShowLevel = true;
+				if (NrTSingleton<NrCharCostumeTableManager>.Instance.IsCostumeUniqueEqualSolKind(current.i32CostumeUnique, current.CharKind))
 				{
-					SolCharKind = current.CharKind,
-					SolGrade = current.SolGrade,
-					SolInjuryStatus = current.bInjury,
-					SolLevel = current.i16Level,
-					ShowLevel = true
-				}, null, null, null);
+					nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(current.i32CostumeUnique);
+				}
+				UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(nkListSolInfo.SolCharKind, nkListSolInfo.SolGrade);
+				if (legendFrame != null)
+				{
+					newListItem.SetListItemData(0, legendFrame, null, null, null);
+				}
+				newListItem.SetListItemData(1, nkListSolInfo, null, null, null);
 				string text = string.Empty;
 				if (NrTSingleton<NrCharKindInfoManager>.Instance.IsUserCharKind(current.CharKind))
 				{
@@ -219,25 +288,26 @@ public class Battle_ResultMineDlg : Form
 				});
 				newListItem.SetListItemData(2, text2, null, null, null);
 				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(current.SolID);
-				short gradeMaxLevel = charKindInfo.GetGradeMaxLevel((short)soldierInfoFromSolID.GetGrade());
+				short num2 = 0;
 				if (soldierInfoFromSolID != null)
 				{
-					float num2 = soldierInfoFromSolID.GetExpPercent();
+					num2 = charKindInfo.GetGradeMaxLevel((short)soldierInfoFromSolID.GetGrade());
+					float num3 = soldierInfoFromSolID.GetExpPercent();
 					string empty = string.Empty;
-					if (num2 < 0f)
+					if (num3 < 0f)
 					{
-						num2 = 0f;
+						num3 = 0f;
 					}
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 					{
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("672"),
 						"Count",
-						((int)(num2 * 100f)).ToString()
+						((int)(num3 * 100f)).ToString()
 					});
-					newListItem.SetListItemData(4, "Com_T_GauWaPr4", 400f * num2, null, null);
+					newListItem.SetListItemData(4, "Com_T_GauWaPr4", 400f * num3, null, null);
 					newListItem.SetListItemData(5, empty, null, null, null);
 				}
-				if (gradeMaxLevel == current.i16Level)
+				if (num2 == current.i16Level)
 				{
 					newListItem.SetListItemData(6, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("286"), null, null, null);
 				}
@@ -248,7 +318,7 @@ public class Battle_ResultMineDlg : Form
 					{
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1802"),
 						"exp",
-						current.i32AddExp.ToString()
+						ANNUALIZED.Convert(current.i32AddExp)
 					});
 					text2 += "\r\n";
 					text2 += empty2;
@@ -263,15 +333,26 @@ public class Battle_ResultMineDlg : Form
 
 	private void _LinkItemData()
 	{
-		foreach (ITEM current in this.m_ItemList)
+		foreach (Battle_ResultMineDlg.BATTLE_RESULT_ITEM_REWARD_INFO current in this.m_ItemList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbItemList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbItemList.ColumnNum, true, string.Empty);
 			UIBaseInfoLoader itemTexture = NrTSingleton<ItemManager>.Instance.GetItemTexture(current.m_nItemUnique);
 			newListItem.SetListItemData(0, itemTexture, null, null, null);
 			string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(current.m_nItemUnique);
 			newListItem.SetListItemData(1, itemNameByItemUnique, null, null, null);
 			int nItemNum = current.m_nItemNum;
 			string text = Protocol_Item.Money_Format((long)nItemNum) + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("442");
+			if (current.m_nBonusItemNum > 0)
+			{
+				string empty = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2967"),
+					"count",
+					current.m_nBonusItemNum
+				});
+				text += empty;
+			}
 			newListItem.SetListItemData(2, text, null, null, null);
 			this.m_lbItemList.Add(newListItem);
 		}
@@ -285,7 +366,7 @@ public class Battle_ResultMineDlg : Form
 		string empty = string.Empty;
 		foreach (MINE_REPORT_CONTRANK_USER_INFO current in this.m_ContributionRankList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbContRankList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbContRankList.ColumnNum, true, string.Empty);
 			if (current.ContributionRank == 0)
 			{
 				b += 1;
@@ -309,37 +390,33 @@ public class Battle_ResultMineDlg : Form
 		this.m_lbContRankList.RepositionItems();
 	}
 
-	public void OnClickTakMail(IUIObject obj)
+	public void OnClickTakReward(IUIObject obj)
 	{
-		GS_MAILBOX_TAKE_REPORT_REQ gS_MAILBOX_TAKE_REPORT_REQ = new GS_MAILBOX_TAKE_REPORT_REQ();
-		gS_MAILBOX_TAKE_REPORT_REQ.ui8TakeReportType = 0;
-		gS_MAILBOX_TAKE_REPORT_REQ.i64MailID = this.m_i64MailID;
-		gS_MAILBOX_TAKE_REPORT_REQ.i64LegionActionID = this.m_BasicInfo.i64LegionActionID;
-		for (int i = 0; i < 5; i++)
+		if (this.m_BasicInfo.bGiveComplete || this.m_BasicInfo.i64LegionActionID == 0L)
 		{
-			if (this.m_ItemList.Count <= i)
-			{
-				gS_MAILBOX_TAKE_REPORT_REQ.i32ItemUnique[i] = 0;
-				gS_MAILBOX_TAKE_REPORT_REQ.i32ItemNum[i] = 0;
-			}
-			else
-			{
-				gS_MAILBOX_TAKE_REPORT_REQ.i32ItemUnique[i] = this.m_ItemList[i].m_nItemUnique;
-				gS_MAILBOX_TAKE_REPORT_REQ.i32ItemNum[i] = this.m_ItemList[i].m_nItemNum;
-			}
+			this.Close();
+			return;
 		}
-		for (int j = 0; j < this.m_SolInfoList.Count; j++)
+		GS_MINE_BATTLE_RESULT_REWARD_GET_REQ gS_MINE_BATTLE_RESULT_REWARD_GET_REQ = new GS_MINE_BATTLE_RESULT_REWARD_GET_REQ();
+		gS_MINE_BATTLE_RESULT_REWARD_GET_REQ.i64MailID = this.m_i64MailID;
+		gS_MINE_BATTLE_RESULT_REWARD_GET_REQ.i64LegionActionID = this.m_BasicInfo.i64LegionActionID;
+		if (this.m_ItemList.Count > 0)
 		{
-			if (j >= 5)
+			gS_MINE_BATTLE_RESULT_REWARD_GET_REQ.i32ItemUnique = this.m_ItemList[0].m_nItemUnique;
+			gS_MINE_BATTLE_RESULT_REWARD_GET_REQ.i32ItemNum = this.m_ItemList[0].m_nItemNum;
+		}
+		for (int i = 0; i < this.m_SolInfoList.Count; i++)
+		{
+			if (i >= 5)
 			{
 				break;
 			}
-			if (this.m_SolInfoList[j].SolID > 0L)
+			if (this.m_SolInfoList[i].SolID > 0L)
 			{
-				gS_MAILBOX_TAKE_REPORT_REQ.i64SolID[j] = this.m_SolInfoList[j].SolID;
+				gS_MINE_BATTLE_RESULT_REWARD_GET_REQ.i64SolID[i] = this.m_SolInfoList[i].SolID;
 			}
 		}
-		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MAILBOX_TAKE_REPORT_REQ, gS_MAILBOX_TAKE_REPORT_REQ);
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MINE_BATTLE_RESULT_REWARD_GET_REQ, gS_MINE_BATTLE_RESULT_REWARD_GET_REQ);
 		this.Close();
 	}
 

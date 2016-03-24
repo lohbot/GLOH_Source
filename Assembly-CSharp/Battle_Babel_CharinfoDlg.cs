@@ -63,7 +63,14 @@ public class Battle_Babel_CharinfoDlg : Form
 			return;
 		}
 		this.m_bUpdate = true;
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMOTICON_DLG))
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_RADIOALARM_DLG))
+			{
+				NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BATTLE_RADIOALARM_DLG);
+			}
+		}
+		else if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_EMOTICON_DLG))
 		{
 			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BATTLE_EMOTICON_DLG);
 		}

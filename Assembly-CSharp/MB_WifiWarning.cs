@@ -19,6 +19,6 @@ internal class MB_WifiWarning : MessageBox
 	public override void OnCancel()
 	{
 		NPatchLauncherHandler_forInGame._isClosedMsgBox = true;
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 }

@@ -33,6 +33,15 @@ public class ColosseumChallenge : Form
 			this.m_DisableBG = null;
 			this.m_Name = null;
 		}
+
+		public void SetLocationZ(float _Z)
+		{
+			this.m_ChallengeButton.SetLocationZ(_Z);
+			this.m_LeagerFaceImg.SetLocationZ(_Z - 0.1f);
+			this.m_ClearImage.SetLocationZ(_Z - 0.2f);
+			this.m_DisableMark.SetLocationZ(_Z - 0.3f);
+			this.m_DisableBG.SetLocationZ(_Z - 0.4f);
+		}
 	}
 
 	private DrawTexture m_BackImage;
@@ -43,11 +52,19 @@ public class ColosseumChallenge : Form
 
 	private Button m_NextButton;
 
+	private Button m_btBack;
+
 	private ColosseumChallenge.ChallengeControl[] m_ChallengeControl;
 
 	private static int m_CurrentIndex;
 
+	private ColosseumChallenge.ChallengeControl _GuideItem;
+
+	private float _ButtonZ;
+
 	private Dictionary<int, ECO> m_dicEcoGroupInfo = new Dictionary<int, ECO>();
+
+	private int m_nWinID;
 
 	public override void InitializeComponent()
 	{
@@ -70,6 +87,8 @@ public class ColosseumChallenge : Form
 		this.m_PrevButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickPrev));
 		this.m_NextButton = (base.GetControl("Button_NextPageBtn01") as Button);
 		this.m_NextButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickNext));
+		this.m_btBack = (base.GetControl("Button_Back") as Button);
+		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickBack));
 		this.m_ChallengeControl = new ColosseumChallenge.ChallengeControl[8];
 		for (int i = 0; i < 8; i++)
 		{
@@ -140,6 +159,12 @@ public class ColosseumChallenge : Form
 			return;
 		}
 		this.ShowChallengeList();
+	}
+
+	private void ClickBack(IUIObject obj)
+	{
+		NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.COLOSSEUMMAIN_DLG);
+		this.Close();
 	}
 
 	private void ShowChallengeList()
@@ -245,7 +270,7 @@ public class ColosseumChallenge : Form
 		ECO eco = NrTSingleton<NrBaseTableManager>.Instance.GetEco(groupunique.ToString());
 		if (eco != null)
 		{
-			this.m_ChallengeControl[index].m_LeagerFaceImg.SetTexture(eCharImageType.SMALL, NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(eco.szCharCode[0]), -1);
+			this.m_ChallengeControl[index].m_LeagerFaceImg.SetTexture(eCharImageType.SMALL, NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(eco.szCharCode[0]), -1, string.Empty);
 			if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().IsColosseumChallengeClear(nStepIndex))
 			{
 				this.m_ChallengeControl[index].m_ClearImage.Visible = true;
@@ -293,5 +318,65 @@ public class ColosseumChallenge : Form
 		{
 			colosseumChallengeCheck.SetEpisode(episode);
 		}
+		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+		if (uI_UIGuide != null)
+		{
+			uI_UIGuide.Close();
+		}
+		this.HideUIGuide();
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		int num = 0;
+		if (!int.TryParse(param1, out num))
+		{
+			num = 0;
+		}
+		ColosseumChallenge.ChallengeControl challengeControl = this.m_ChallengeControl[num];
+		if (challengeControl != null)
+		{
+			this._GuideItem = challengeControl;
+		}
+		else
+		{
+			Debug.LogError("ChallengeControl == NULL");
+		}
+		this.m_nWinID = winID;
+		if (this._GuideItem != null)
+		{
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				this._GuideItem.m_ChallengeButton.EffectAni = false;
+				Vector2 vector = new Vector2(base.GetLocationX() + this._GuideItem.m_ChallengeButton.GetLocationX() + 80f, base.GetLocationY() + this._GuideItem.m_ChallengeButton.GetLocationY() - 10f);
+				uI_UIGuide.Move(vector, vector);
+				this._ButtonZ = this._GuideItem.m_ChallengeButton.GetLocation().z;
+				challengeControl.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+				challengeControl.m_LeagerFaceImg.AlphaAni(1f, 0.5f, -0.5f);
+			}
+		}
+		else
+		{
+			Debug.LogError("_GuideItem == NULL");
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (this._GuideItem != null)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+			this._GuideItem.m_LeagerFaceImg.StopAni();
+			this._GuideItem.m_LeagerFaceImg.AlphaAni(1f, 1f, 0f);
+		}
+		this._GuideItem = null;
+	}
+
+	public override void CloseForm(IUIObject obj)
+	{
+		base.CloseForm(obj);
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.COLOSSEUMMAIN_DLG);
 	}
 }

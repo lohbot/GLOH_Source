@@ -4,6 +4,7 @@ using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
@@ -72,6 +73,26 @@ public class Battle_ResultExpeditionDlg : Form
 		this.m_btReplay = (base.GetControl("Button_Replay") as Button);
 		Button expr_126 = this.m_btReplay;
 		expr_126.Click = (EZValueChangedDelegate)Delegate.Combine(expr_126.Click, new EZValueChangedDelegate(this.OnClickReplay));
+	}
+
+	public void SetBG(WWWItem _item, object _param)
+	{
+		if (this == null)
+		{
+			return;
+		}
+		if (_item.isCanceled)
+		{
+			return;
+		}
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.m_dtTotalBG.SetTexture(texture2D);
+			}
+		}
 	}
 
 	public override void InitData()
@@ -168,7 +189,7 @@ public class Battle_ResultExpeditionDlg : Form
 		this.m_lbSolList.Clear();
 		foreach (GS_BATTLE_RESULT_SOLDIER current in this.m_SolInfoList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true, string.Empty);
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(current.CharKind);
 			if (charKindInfo != null)
 			{
@@ -178,7 +199,8 @@ public class Battle_ResultExpeditionDlg : Form
 					SolGrade = current.SolGrade,
 					SolInjuryStatus = current.bInjury,
 					SolLevel = current.i16Level,
-					ShowLevel = true
+					ShowLevel = true,
+					SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(current.i32CostumeUnique)
 				}, null, null, null);
 				string text = string.Empty;
 				text = charKindInfo.GetName();
@@ -193,25 +215,26 @@ public class Battle_ResultExpeditionDlg : Form
 				});
 				newListItem.SetListItemData(2, text2, null, null, null);
 				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(current.SolID);
-				short gradeMaxLevel = charKindInfo.GetGradeMaxLevel((short)soldierInfoFromSolID.GetGrade());
+				short num2 = 0;
 				if (soldierInfoFromSolID != null)
 				{
-					float num2 = soldierInfoFromSolID.GetExpPercent();
+					num2 = charKindInfo.GetGradeMaxLevel((short)soldierInfoFromSolID.GetGrade());
+					float num3 = soldierInfoFromSolID.GetExpPercent();
 					string empty = string.Empty;
-					if (num2 < 0f)
+					if (num3 < 0f)
 					{
-						num2 = 0f;
+						num3 = 0f;
 					}
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 					{
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("672"),
 						"Count",
-						((int)(num2 * 100f)).ToString()
+						((int)(num3 * 100f)).ToString()
 					});
-					newListItem.SetListItemData(4, "Com_T_GauWaPr4", 400f * num2, null, null);
+					newListItem.SetListItemData(4, "Com_T_GauWaPr4", 400f * num3, null, null);
 					newListItem.SetListItemData(5, empty, null, null, null);
 				}
-				if (gradeMaxLevel == current.i16Level)
+				if (num2 == current.i16Level)
 				{
 					newListItem.SetListItemData(6, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("286"), null, null, null);
 				}
@@ -222,7 +245,7 @@ public class Battle_ResultExpeditionDlg : Form
 					{
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1802"),
 						"exp",
-						current.i32AddExp.ToString()
+						ANNUALIZED.Convert(current.i32AddExp)
 					});
 					text2 += "\r\n";
 					text2 += empty2;
@@ -239,7 +262,7 @@ public class Battle_ResultExpeditionDlg : Form
 	{
 		foreach (ITEM current in this.m_ItemList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbItemList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbItemList.ColumnNum, true, string.Empty);
 			UIBaseInfoLoader itemTexture = NrTSingleton<ItemManager>.Instance.GetItemTexture(current.m_nItemUnique);
 			newListItem.SetListItemData(0, itemTexture, null, null, null);
 			string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(current.m_nItemUnique);
@@ -255,7 +278,7 @@ public class Battle_ResultExpeditionDlg : Form
 	public void OnClickTakeMail(IUIObject obj)
 	{
 		GS_MAILBOX_TAKE_REPORT_REQ gS_MAILBOX_TAKE_REPORT_REQ = new GS_MAILBOX_TAKE_REPORT_REQ();
-		gS_MAILBOX_TAKE_REPORT_REQ.ui8TakeReportType = 1;
+		gS_MAILBOX_TAKE_REPORT_REQ.ui8TakeReportType = 0;
 		gS_MAILBOX_TAKE_REPORT_REQ.i64MailID = this.m_i64MailID;
 		gS_MAILBOX_TAKE_REPORT_REQ.i64LegionActionID = this.m_BasicInfo.i64ExpeditionBattleUnique;
 		for (int i = 0; i < 5; i++)

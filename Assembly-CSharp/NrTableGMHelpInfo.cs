@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableGMHelpInfo : NrTableBase
 {
-	public NrTableGMHelpInfo() : base(CDefinePath.GMHElpInfo_URL, true)
+	public NrTableGMHelpInfo() : base(CDefinePath.GMHElpInfo_URL)
 	{
 	}
 

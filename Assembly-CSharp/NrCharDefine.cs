@@ -156,6 +156,8 @@ public class NrCharDefine
 
 	public const byte USA_MENUCHANGE_LEVEL = 7;
 
+	public const byte USA_MEASURE_LEVEL = 15;
+
 	public static bool IsTerritoryChar(short charunique)
 	{
 		return charunique >= 29000 && charunique < 29100;

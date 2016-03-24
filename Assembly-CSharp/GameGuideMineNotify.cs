@@ -12,6 +12,8 @@ public class GameGuideMineNotify : GameGuideInfo
 
 	private int _i32itemNum;
 
+	private int _i32BonusItemNum;
+
 	public override void Init()
 	{
 		this._i64MineID = 0L;
@@ -20,11 +22,12 @@ public class GameGuideMineNotify : GameGuideInfo
 		base.Init();
 	}
 
-	public void SetInfo(byte mode, long mineid, int itemunique, int itemnum)
+	public void SetInfo(byte mode, long mineid, int itemunique, int itemnum, int i32BonusItemNum)
 	{
 		this._i64MineID = mineid;
 		this._i32ItemUnique = itemunique;
 		this._i32itemNum = itemnum;
+		this._i32BonusItemNum = i32BonusItemNum;
 	}
 
 	public override void InitData()
@@ -58,17 +61,34 @@ public class GameGuideMineNotify : GameGuideInfo
 
 	public override string GetGameGuideText()
 	{
-		string textFromToolTip = NrTSingleton<NrTextMgr>.Instance.GetTextFromToolTip(this.m_strTalkKey);
-		string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(this._i32ItemUnique);
 		string empty = string.Empty;
-		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(this._i32ItemUnique);
+		if (this._i32BonusItemNum == 0)
 		{
-			textFromToolTip,
-			"count",
-			this._i32itemNum,
-			"targetname",
-			itemNameByItemUnique
-		});
+			string textFromToolTip = NrTSingleton<NrTextMgr>.Instance.GetTextFromToolTip(this.m_strTalkKey);
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				textFromToolTip,
+				"count",
+				this._i32itemNum,
+				"targetname",
+				itemNameByItemUnique
+			});
+		}
+		else
+		{
+			string textFromToolTip2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromToolTip("8");
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				textFromToolTip2,
+				"count",
+				this._i32itemNum,
+				"count2",
+				this._i32BonusItemNum,
+				"targetname",
+				itemNameByItemUnique
+			});
+		}
 		return empty;
 	}
 }

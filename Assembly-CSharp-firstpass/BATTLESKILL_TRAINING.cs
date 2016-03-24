@@ -7,7 +7,7 @@ public class BATTLESKILL_TRAINING : NrTableData
 
 	public int m_nSkillLevel;
 
-	public string[] m_szCharCode = new string[10];
+	public string[] m_szCharCode = new string[20];
 
 	public int m_nSkillNeedGold;
 
@@ -22,7 +22,7 @@ public class BATTLESKILL_TRAINING : NrTableData
 	{
 		this.m_nSkillUnique = 0;
 		this.m_nSkillLevel = 0;
-		for (int i = 0; i < 10; i++)
+		for (int i = 0; i < 20; i++)
 		{
 			this.m_szCharCode[i] = string.Empty;
 		}

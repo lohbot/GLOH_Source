@@ -38,6 +38,15 @@ public struct INPUT_INFO
 		TOUCHPAD
 	}
 
+	public enum ResolutionType
+	{
+		Normal,
+		HD,
+		FHD,
+		QHD,
+		WQXGA
+	}
+
 	public INPUT_INFO.INPUT_TYPE type;
 
 	public int id;
@@ -60,6 +69,8 @@ public struct INPUT_INFO
 
 	public float clickTime;
 
+	public bool isDrag;
+
 	public void Copy(INPUT_INFO ptr)
 	{
 		this.type = ptr.type;
@@ -73,6 +84,7 @@ public struct INPUT_INFO
 		this.isTap = ptr.isTap;
 		this.isGesture = ptr.isGesture;
 		this.clickTime = ptr.clickTime;
+		this.isDrag = ptr.isDrag;
 	}
 
 	public void Reuse(INPUT_INFO ptr)
@@ -86,6 +98,7 @@ public struct INPUT_INFO
 		this.isTap = ptr.isTap;
 		this.isGesture = ptr.isGesture;
 		this.clickTime = ptr.clickTime;
+		this.isDrag = ptr.isDrag;
 	}
 
 	public void Reset(int actID)
@@ -99,5 +112,27 @@ public struct INPUT_INFO
 		this.isTap = true;
 		this.isGesture = false;
 		this.clickTime = 0f;
+		this.isDrag = false;
+	}
+
+	public INPUT_INFO.ResolutionType getResolution()
+	{
+		if (Screen.width == 1280)
+		{
+			return INPUT_INFO.ResolutionType.HD;
+		}
+		if (Screen.width == 1920)
+		{
+			return INPUT_INFO.ResolutionType.FHD;
+		}
+		if (Screen.width != 2560)
+		{
+			return INPUT_INFO.ResolutionType.Normal;
+		}
+		if (Screen.height == 1600)
+		{
+			return INPUT_INFO.ResolutionType.WQXGA;
+		}
+		return INPUT_INFO.ResolutionType.QHD;
 	}
 }

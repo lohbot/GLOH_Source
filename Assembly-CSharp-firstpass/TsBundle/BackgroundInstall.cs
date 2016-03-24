@@ -416,10 +416,10 @@ namespace TsBundle
 		[DebuggerHidden]
 		private IEnumerable<string> _ParseBundleList(string bundleListText)
 		{
-			BackgroundInstall.<_ParseBundleList>c__Iterator1F <_ParseBundleList>c__Iterator1F = new BackgroundInstall.<_ParseBundleList>c__Iterator1F();
-			<_ParseBundleList>c__Iterator1F.bundleListText = bundleListText;
-			<_ParseBundleList>c__Iterator1F.<$>bundleListText = bundleListText;
-			BackgroundInstall.<_ParseBundleList>c__Iterator1F expr_15 = <_ParseBundleList>c__Iterator1F;
+			BackgroundInstall.<_ParseBundleList>c__Iterator20 <_ParseBundleList>c__Iterator = new BackgroundInstall.<_ParseBundleList>c__Iterator20();
+			<_ParseBundleList>c__Iterator.bundleListText = bundleListText;
+			<_ParseBundleList>c__Iterator.<$>bundleListText = bundleListText;
+			BackgroundInstall.<_ParseBundleList>c__Iterator20 expr_15 = <_ParseBundleList>c__Iterator;
 			expr_15.$PC = -2;
 			return expr_15;
 		}

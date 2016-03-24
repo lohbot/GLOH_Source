@@ -9,6 +9,8 @@ public class DailyDungeon_Difficulty_Dlg : Form
 
 	private Button m_btChangeDifficulty;
 
+	private Button m_btClose;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -26,6 +28,8 @@ public class DailyDungeon_Difficulty_Dlg : Form
 		this.m_btChangeDifficulty = (base.GetControl("Button_OK") as Button);
 		Button expr_32 = this.m_btChangeDifficulty;
 		expr_32.Click = (EZValueChangedDelegate)Delegate.Combine(expr_32.Click, new EZValueChangedDelegate(this.OnClickChangeDifficult));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this._SetDialogPos();
 		this.SetDifficultData();
 	}
@@ -44,8 +48,8 @@ public class DailyDungeon_Difficulty_Dlg : Form
 
 	private void SetDifficultData()
 	{
-		sbyte nDayOfWeek = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventWeek();
-		Dictionary<sbyte, EVENT_DAILY_DUNGEON_INFO> dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(nDayOfWeek);
+		sbyte dayOfWeek = NrTSingleton<DailyDungeonManager>.Instance.GetDayOfWeek();
+		Dictionary<sbyte, EVENT_DAILY_DUNGEON_INFO> dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(dayOfWeek);
 		if (dailyDungeonInfo == null)
 		{
 			return;
@@ -55,7 +59,7 @@ public class DailyDungeon_Difficulty_Dlg : Form
 		{
 			if (current != null)
 			{
-				NewListItem newListItem = new NewListItem(this.m_nlDifficulty.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_nlDifficulty.ColumnNum, true, string.Empty);
 				string empty = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 				{
@@ -87,7 +91,7 @@ public class DailyDungeon_Difficulty_Dlg : Form
 			return;
 		}
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnChangeDifficult), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("179"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("180"), eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnChangeDifficult), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("179"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("180"), eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnChangeDifficult(object a_oObject)

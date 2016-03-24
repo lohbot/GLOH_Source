@@ -126,7 +126,7 @@ public class PlunderRankInfoDlg : Form
 		string empty = string.Empty;
 		foreach (UI_RANKINFO current in this.ListRankInfo)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbRankList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbRankList.ColumnNum, true, string.Empty);
 			newListItem.SetListItemData(0, current.Charname, null, null, null);
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1031");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]

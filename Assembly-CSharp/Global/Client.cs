@@ -99,7 +99,7 @@ namespace Global
 		public static int GetLoginServerPort()
 		{
 			eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
-			if (TsPlatform.IsIPhone && (currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORKAKAO || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USIOS))
+			if (TsPlatform.IsIPhone && (currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORKAKAO))
 			{
 				return 9600;
 			}
@@ -107,19 +107,27 @@ namespace Global
 			{
 				return 10600;
 			}
+			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USGOOGLE || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USIOS)
+			{
+				return 9600;
+			}
 			return 6000;
 		}
 
 		public static int GetWorldServerPort()
 		{
 			eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
-			if (TsPlatform.IsIPhone && (currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORKAKAO || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USIOS))
+			if (TsPlatform.IsIPhone && (currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORKAKAO))
 			{
 				return 9400;
 			}
 			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_JPQALINE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_JPLINE || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_JPQALINE || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_JPLINE)
 			{
 				return 10400;
+			}
+			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USGOOGLE || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USIOS)
+			{
+				return 9400;
 			}
 			return 4000;
 		}

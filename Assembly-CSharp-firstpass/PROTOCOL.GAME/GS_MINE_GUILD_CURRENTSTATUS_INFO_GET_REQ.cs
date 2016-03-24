@@ -7,5 +7,7 @@ namespace PROTOCOL.GAME
 		public long i64GuildID;
 
 		public int i32Page;
+
+		public byte bType;
 	}
 }

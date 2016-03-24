@@ -115,7 +115,7 @@ public class SupporterDlg : Form
 		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("550");
 		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("172");
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnSupporterOK), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnSupporterOK), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnSupporterOK(object a_oObject)
@@ -138,7 +138,7 @@ public class SupporterDlg : Form
 			return;
 		}
 		this.OnClose();
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 
 	public void SetSupport(string strSupporterName)

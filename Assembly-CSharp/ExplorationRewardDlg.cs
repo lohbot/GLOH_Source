@@ -90,7 +90,7 @@ public class ExplorationRewardDlg : Form
 				{
 					return;
 				}
-				NewListItem newListItem = new NewListItem(this.m_nlSolInfo.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_nlSolInfo.ColumnNum, true, string.Empty);
 				string text = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 				{

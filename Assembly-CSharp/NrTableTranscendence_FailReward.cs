@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableTranscendence_FailReward : NrTableBase
 {
-	public NrTableTranscendence_FailReward() : base(CDefinePath.TRANSCENDENCE_FAILREWARD_URL, true)
+	public NrTableTranscendence_FailReward() : base(CDefinePath.TRANSCENDENCE_FAILREWARD_URL)
 	{
 	}
 

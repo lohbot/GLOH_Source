@@ -113,6 +113,36 @@ public class InitiativeSetDlg : Form
 				}
 			}
 		}
+		else if (eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_DAILYDUNGEON)
+		{
+			for (int i = 0; i < 6; i++)
+			{
+				long num = SoldierBatch.SOLDIERBATCH.GetTempBattleSolID(i);
+				if (num > 0L)
+				{
+					NkSoldierInfo soldierInfoFromSolID4 = charPersonInfo.GetSoldierInfoFromSolID(num);
+					if (soldierInfoFromSolID4 != null)
+					{
+						this.m_SoldierInfoSortList.Add(soldierInfoFromSolID4);
+					}
+				}
+			}
+		}
+		else if (eBattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+		{
+			for (int i = 0; i < 5; i++)
+			{
+				long num = SoldierBatch.SOLDIERBATCH.GetTempBattleSolID(i);
+				if (num > 0L)
+				{
+					NkSoldierInfo soldierInfoFromSolID5 = charPersonInfo.GetSoldierInfoFromSolID(num);
+					if (soldierInfoFromSolID5 != null)
+					{
+						this.m_SoldierInfoSortList.Add(soldierInfoFromSolID5);
+					}
+				}
+			}
+		}
 		if (this.m_SoldierInfoSortList.Count > 0)
 		{
 			this.SoltInitiativeBatch(true);
@@ -221,7 +251,7 @@ public class InitiativeSetDlg : Form
 			this.InitiativeNewListBox.Clear();
 			for (int i = 0; i < this.m_SoldierInfoSortList.Count; i++)
 			{
-				NewListItem item = new NewListItem(this.InitiativeNewListBox.ColumnNum, true);
+				NewListItem item = new NewListItem(this.InitiativeNewListBox.ColumnNum, true, string.Empty);
 				if (i > 0)
 				{
 					lastSolInfo = this.m_SoldierInfoSortList[i - 1];
@@ -327,10 +357,10 @@ public class InitiativeSetDlg : Form
 			if (num2 != this.m_SolInitiativeList[num])
 			{
 				this.m_SolInitiativeList[num] = num2;
-				UIListItemContainer uIListItemContainer = this.InitiativeNewListBox.GetItem(num) as UIListItemContainer;
-				if (uIListItemContainer != null)
+				UIListItemContainer item = this.InitiativeNewListBox.GetItem(num);
+				if (item != null)
 				{
-					Label label = uIListItemContainer.GetElement(11) as Label;
+					Label label = item.GetElement(11) as Label;
 					if (label != null)
 					{
 						label.SetText(this.m_SolInitiativeList[num].ToString());
@@ -395,16 +425,16 @@ public class InitiativeSetDlg : Form
 			if (num != this.m_SolInitiativeList[index])
 			{
 				this.m_SolInitiativeList[index] = num;
-				UIListItemContainer uIListItemContainer = this.InitiativeNewListBox.GetSelectItem() as UIListItemContainer;
-				if (uIListItemContainer != null)
+				UIListItemContainer selectItem = this.InitiativeNewListBox.GetSelectItem();
+				if (selectItem != null)
 				{
-					Label label = uIListItemContainer.GetElement(11) as Label;
+					Label label = selectItem.GetElement(11) as Label;
 					if (label != null)
 					{
 						label.SetText(num.ToString());
 					}
 					float num2 = (float)num / 100f;
-					HorizontalSlider horizontalSlider = uIListItemContainer.GetElement(12) as HorizontalSlider;
+					HorizontalSlider horizontalSlider = selectItem.GetElement(12) as HorizontalSlider;
 					horizontalSlider.CallChangeDelegate = false;
 					horizontalSlider.defaultValue = num2;
 					horizontalSlider.Value = num2;

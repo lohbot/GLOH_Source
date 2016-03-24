@@ -8,6 +8,7 @@ namespace TsBundle
 		USER_STRING,
 		USER_BYTESA,
 		USER_ASSETB,
+		USER_AUDIO,
 		SKIN_BONE,
 		SKIN_FULL,
 		SKIN_PART,

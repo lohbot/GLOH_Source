@@ -23,7 +23,7 @@ public class MainMenuDlg : Form
 		ITEMSHOP,
 		AUCTION,
 		MINIALBUM,
-		ELEMENTALBUM,
+		SOLCOMBINATION,
 		NPCAUTOMOVE,
 		SYSTEM,
 		CHANNELMOVE,
@@ -64,17 +64,19 @@ public class MainMenuDlg : Form
 
 	private DrawTexture m_dtCoupon;
 
-	private Label m_lbCoupon;
-
 	private Button m_btCoupon;
 
 	private Box m_bxAuction;
 
 	private Button m_btGoCustomer;
 
+	private Box m_bxCustomerNotice;
+
 	public long m_TotalPlayTimeCount;
 
 	public long m_RealPlayTimeCount;
+
+	public int m_nChallenge_Event;
 
 	private float sendtime;
 
@@ -83,8 +85,6 @@ public class MainMenuDlg : Form
 	private Button m_btnKaKao;
 
 	private Button m_btnConvert;
-
-	private Label m_lbCafe;
 
 	private Button[] m_btnSDK = new Button[3];
 
@@ -97,7 +97,7 @@ public class MainMenuDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.Scale = true;
-		instance.LoadFileAll(ref form, "System/Dlg_Mainmenu", G_ID.MAINMENU_DLG, false);
+		instance.LoadFileAll(ref form, "System/Dlg_Mainmenu", G_ID.MAINMENU_DLG, false, true);
 		this.sendtime = Time.time;
 		this.sendtime += 1f;
 		if (TsPlatform.IsMobile)
@@ -162,11 +162,12 @@ public class MainMenuDlg : Form
 		this.challengeNotice = (base.GetControl("Box_Notice") as Box);
 		this.challengeNotice.Visible = false;
 		this.m_dtCoupon = (base.GetControl("DT_Coupon") as DrawTexture);
-		this.m_lbCoupon = (base.GetControl("LB_Coupon") as Label);
 		this.m_btCoupon = (base.GetControl("BT_GoCoupon") as Button);
 		this.m_btCoupon.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickCoupon));
 		this.m_bxAuction = (base.GetControl("Box_Auction") as Box);
 		this.m_bxAuction.Hide(true);
+		this.m_bxCustomerNotice = (base.GetControl("Box_Notice_Customer") as Box);
+		this.m_bxCustomerNotice.Hide(true);
 		this.m_btGoCustomer = (base.GetControl("BT_GoCustomer") as Button);
 		this.m_btGoCustomer.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickGoCustomer));
 		this.m_btnSDK[1] = (base.GetControl("BT_MoreGame_Chn") as Button);
@@ -175,13 +176,12 @@ public class MainMenuDlg : Form
 		this.m_btnSDK[0].Hide(true);
 		this.m_btnSDK[2] = (base.GetControl("BT_Exit_Chn") as Button);
 		this.m_btnSDK[2].Hide(true);
-		this.m_lbCafe = (base.GetControl("LB_Cafe") as Label);
 		if (NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1) == null)
 		{
 			return;
 		}
 		this.mapFun.Add(MainMenuDlg.TYPE.NOTICE, new FunDelegate(this.Notice));
-		this.mapFun.Add(MainMenuDlg.TYPE.MINIALBUM, new FunDelegate(this.MiniAlbum));
+		this.mapFun.Add(MainMenuDlg.TYPE.SOLCOMBINATION, new FunDelegate(this.SolCombination));
 		this.mapFun.Add(MainMenuDlg.TYPE.ITEMUPGRADE, new FunDelegate(this.ItemUpgrade));
 		this.mapFun.Add(MainMenuDlg.TYPE.POST, new FunDelegate(this.Post));
 		this.mapFun.Add(MainMenuDlg.TYPE.CHANNELMOVE, new FunDelegate(this.ChannelMove));
@@ -193,7 +193,7 @@ public class MainMenuDlg : Form
 		this.mapFun.Add(MainMenuDlg.TYPE.ITEMSHOP, new FunDelegate(this.ItemShop));
 		this.mapFun.Add(MainMenuDlg.TYPE.NPCAUTOMOVE, new FunDelegate(this.NPCAutoMove));
 		this.mapFun.Add(MainMenuDlg.TYPE.AUCTION, new FunDelegate(this.Auction));
-		this.mapFun.Add(MainMenuDlg.TYPE.ELEMENTALBUM, new FunDelegate(this.ElementAlbum));
+		this.mapFun.Add(MainMenuDlg.TYPE.MINIALBUM, new FunDelegate(this.MiniAlbum));
 		NrCharBase @char = NrTSingleton<NkCharManager>.Instance.GetChar(1);
 		GS_SERVER_CHARINFO_REQ gS_SERVER_CHARINFO_REQ = new GS_SERVER_CHARINFO_REQ();
 		gS_SERVER_CHARINFO_REQ.siCharUnique = @char.GetCharUnique();
@@ -202,6 +202,12 @@ public class MainMenuDlg : Form
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MAINMENU", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 		base.SetScreenCenter();
 		this.CheckCouponUse();
+	}
+
+	public override void OnClose()
+	{
+		base.OnClose();
+		this.RequestCustomerAnswerCount();
 	}
 
 	private void ConverPlatformID(IUIObject obj)
@@ -223,7 +229,7 @@ public class MainMenuDlg : Form
 			if (soldierInfo != null)
 			{
 				this.m_dtCharImg.SetUVMask(new Rect(4f / this.TEX_SIZE, 0f, 504f / this.TEX_SIZE, 448f / this.TEX_SIZE));
-				this.m_dtCharImg.SetTexture(eCharImageType.LARGE, soldierInfo.GetCharKind(), (int)soldierInfo.GetGrade());
+				this.m_dtCharImg.SetTexture(eCharImageType.LARGE, soldierInfo.GetCharKind(), (int)soldierInfo.GetGrade(), string.Empty);
 				this.m_lbCharName.Text = string.Format("Lv.{0} {1}", soldierInfo.GetLevel(), soldierInfo.GetName());
 				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.IntroMsg == string.Empty)
 				{
@@ -241,6 +247,10 @@ public class MainMenuDlg : Form
 						{
 							text
 						});
+					}
+					if (text.Contains("*"))
+					{
+						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("797"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 					}
 					this.m_taIntroMsg.SetText(text);
 				}
@@ -260,6 +270,10 @@ public class MainMenuDlg : Form
 		}
 		this.SetCharInfo();
 		this.CheckCouponUse();
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo != null)
+		{
+			this.ShowCustomerNotice(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.CustomerAnswerCount);
+		}
 		base.Show();
 	}
 
@@ -298,8 +312,8 @@ public class MainMenuDlg : Form
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("888");
 			break;
 		case 6:
-			texture = "Win_I_DarkAlchemy";
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1645");
+			texture = "Win_I_SolTeamIcon";
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1863");
 			break;
 		case 7:
 			texture = "Win_I_Npc";
@@ -345,9 +359,10 @@ public class MainMenuDlg : Form
 		{
 			if (this.count != rewardNoticeCount)
 			{
+				int num = rewardNoticeCount;
 				this.challengeNotice.Visible = true;
-				this.challengeNotice.Text = rewardNoticeCount.ToString();
-				this.count = rewardNoticeCount;
+				this.challengeNotice.Text = num.ToString();
+				this.count = num;
 			}
 		}
 		else if (this.challengeNotice.Visible)
@@ -443,6 +458,10 @@ public class MainMenuDlg : Form
 			{
 				intro_msg
 			});
+		}
+		if (intro_msg.Contains("*"))
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("797"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 		}
 		this.m_taIntroMsg.Text = intro_msg;
 		string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("125");
@@ -548,11 +567,7 @@ public class MainMenuDlg : Form
 	{
 		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REFORGEMAIN_DLG))
 		{
-			ReforgeMainDlg reforgeMainDlg = (ReforgeMainDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.REFORGEMAIN_DLG);
-			if (!reforgeMainDlg.Visible)
-			{
-				reforgeMainDlg.Show();
-			}
+			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.REFORGEMAIN_DLG);
 		}
 		else
 		{
@@ -560,18 +575,27 @@ public class MainMenuDlg : Form
 		}
 	}
 
+	public void SolCombination(IUIObject obj)
+	{
+		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMBINATION_DLG))
+		{
+			SolCombination_Dlg solCombination_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMBINATION_DLG) as SolCombination_Dlg;
+			if (solCombination_Dlg == null)
+			{
+				Debug.LogError("ERROR, MainMenuDlg.cs, SolCombination(), SolCombination_Dlg is Null");
+				return;
+			}
+			solCombination_Dlg.MakeCombinationSolUI(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetOwnBattleReadyAndReadySolKindList(), -1);
+		}
+		else
+		{
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SOLCOMBINATION_DLG);
+		}
+	}
+
 	public void MiniAlbum(IUIObject obj)
 	{
 		this.SendSolGuideInfo(false);
-	}
-
-	public void ElementAlbum(IUIObject obj)
-	{
-		if (!NrTSingleton<ContentsLimitManager>.Instance.IsAlchemy())
-		{
-			return;
-		}
-		this.SendSolGuideInfo(true);
 	}
 
 	public void Community(IUIObject obj)
@@ -610,7 +634,7 @@ public class MainMenuDlg : Form
 	{
 		NrMobileAuthSystem.Instance.RequestLogout = true;
 		NrMobileAuthSystem.Instance.Auth.DeleteAuthInfo();
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 
 	public void ChannelMove(IUIObject obj)
@@ -656,6 +680,10 @@ public class MainMenuDlg : Form
 					this.m_taIntroMsg.Text
 				});
 			}
+			if (this.m_taIntroMsg.Text.Contains("*"))
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("797"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
 			GS_CHARACTER_INTRO_MSG_SET_REQ gS_CHARACTER_INTRO_MSG_SET_REQ = new GS_CHARACTER_INTRO_MSG_SET_REQ();
 			TKString.StringChar(this.m_taIntroMsg.Text, ref gS_CHARACTER_INTRO_MSG_SET_REQ.szIntromsg);
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_CHARACTER_INTRO_MSG_SET_REQ, gS_CHARACTER_INTRO_MSG_SET_REQ);
@@ -677,7 +705,7 @@ public class MainMenuDlg : Form
 	private void Test(IUIObject obj)
 	{
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.ClickInit), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("1147"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("100"), eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.ClickInit), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("1147"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("100"), eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	private void ClickInit(object a_oObject)
@@ -735,12 +763,46 @@ public class MainMenuDlg : Form
 			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
-		if (NrTSingleton<ContentsLimitManager>.Instance.IsHP_Auth() && NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.HP_Auth != 1)
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsHP_Auth())
 		{
-			this.SetHP_AuthMessageBox();
-			return;
+			if (!TsPlatform.IsEditor)
+			{
+				Debug.LogWarning(string.Concat(new object[]
+				{
+					" Auction Platform : [ ",
+					NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea(),
+					" ] .[ ",
+					NrTSingleton<NkClientLogic>.Instance.GetAuthPlatformType(),
+					"].[",
+					PlayerPrefs.GetInt(NrPrefsKey.LAST_AUTH_PLATFORM),
+					" ]"
+				}));
+				int @int = PlayerPrefs.GetInt(NrPrefsKey.LAST_AUTH_PLATFORM);
+				if (@int == 1 && 0 >= NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_nConfirmCheck)
+				{
+					NrTSingleton<NkClientLogic>.Instance.RequestOTPAuthKey(eOTPRequestType.OTPREQ_EMAIL);
+					return;
+				}
+			}
+			NrCharBase @char = NrTSingleton<NkCharManager>.Instance.GetChar(1);
+			if (@char != null)
+			{
+				if (!TsPlatform.IsEditor)
+				{
+					WS_AUCTION_AUTHINFO_REQ wS_AUCTION_AUTHINFO_REQ = new WS_AUCTION_AUTHINFO_REQ();
+					wS_AUCTION_AUTHINFO_REQ.i64SN = NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_nSerialNumber;
+					SendPacket.GetInstance().SendObject(16777297, wS_AUCTION_AUTHINFO_REQ);
+				}
+				else
+				{
+					NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AUCTION_MAIN_DLG);
+				}
+			}
 		}
-		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AUCTION_MAIN_DLG);
+		else
+		{
+			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.AUCTION_MAIN_DLG);
+		}
 	}
 
 	public void SetAuctionRegisterInfo(int iRegisterNum)
@@ -784,13 +846,11 @@ public class MainMenuDlg : Form
 		if (NrTSingleton<ContentsLimitManager>.Instance.IsCouponUse())
 		{
 			this.m_dtCoupon.Hide(false);
-			this.m_lbCoupon.Hide(false);
 			this.m_btCoupon.Hide(false);
 		}
 		else
 		{
 			this.m_dtCoupon.Hide(true);
-			this.m_lbCoupon.Hide(true);
 			this.m_btCoupon.Hide(true);
 		}
 	}
@@ -816,9 +876,10 @@ public class MainMenuDlg : Form
 
 	public void ClickGoCustomer(IUIObject obj)
 	{
-		if (TsPlatform.IsMobile && !TsPlatform.IsEditor)
+		NrTSingleton<NkClientLogic>.Instance.RequestOTPAuthKey(eOTPRequestType.OTPREQ_HELPQUESTION);
+		if (this.m_bxCustomerNotice != null)
 		{
-			NrTSingleton<NkClientLogic>.Instance.RequestOTPAuthKey(eOTPRequestType.OTPREQ_HELPQUESTION);
+			this.m_bxCustomerNotice.Hide(true);
 		}
 	}
 
@@ -861,58 +922,52 @@ public class MainMenuDlg : Form
 							{
 								if ((TsPlatform.IsIPhone || NrGlobalReference.strLangType.Equals("eng")) && j == 4)
 								{
-									goto IL_318;
+									goto IL_2DD;
 								}
 								if (TsPlatform.IsBand && j == 12)
 								{
-									goto IL_318;
+									goto IL_2DD;
 								}
 								if (TsPlatform.IsKakao && j == 12)
 								{
-									goto IL_318;
+									goto IL_2DD;
 								}
 							}
-							if (!NrGlobalReference.strLangType.Equals("eng") || j != 6)
+							if (NrTSingleton<ContentsLimitManager>.Instance.IsAuctionUse() || j != 4)
 							{
-								if (j != 6 || NrTSingleton<ContentsLimitManager>.Instance.IsAlchemy())
+								this.m_BtnGameInfo[num].controlIsEnabled = true;
+								this.m_BtnGameInfo[num].data = j;
+								this.m_BtnGameInfo[num].AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickButton));
+								this.m_BtnGameInfo[num].Visible = true;
+								this.SetMenuButton(num, j);
+								if (TsPlatform.IsBand && j == 11)
 								{
-									if (NrTSingleton<ContentsLimitManager>.Instance.IsAuctionUse() || j != 4)
+									this.m_dwButtonImg[num].Visible = false;
+								}
+								else if (TsPlatform.IsKakao && j == 11)
+								{
+									if (!NrTSingleton<NkClientLogic>.Instance.IsGuestLogin())
 									{
-										this.m_BtnGameInfo[num].controlIsEnabled = true;
-										this.m_BtnGameInfo[num].data = j;
-										this.m_BtnGameInfo[num].AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickButton));
-										this.m_BtnGameInfo[num].Visible = true;
-										this.SetMenuButton(num, j);
-										if (TsPlatform.IsBand && j == 11)
-										{
-											this.m_dwButtonImg[num].Visible = false;
-										}
-										else if (TsPlatform.IsKakao && j == 11)
-										{
-											if (!NrTSingleton<NkClientLogic>.Instance.IsGuestLogin())
-											{
-												this.m_dwButtonImg[num].Visible = false;
-											}
-											else
-											{
-												this.m_dwButtonImg[num].Visible = true;
-											}
-										}
-										else
-										{
-											this.m_dwButtonImg[num].Visible = true;
-										}
-										this.m_lbMenuName[num].Visible = true;
-										this.m_dwBGImg[num].Visible = true;
-										num++;
+										this.m_dwButtonImg[num].Visible = false;
+									}
+									else
+									{
+										this.m_dwButtonImg[num].Visible = true;
 									}
 								}
+								else
+								{
+									this.m_dwButtonImg[num].Visible = true;
+								}
+								this.m_lbMenuName[num].Visible = true;
+								this.m_dwBGImg[num].Visible = true;
+								num++;
 							}
 						}
 					}
 				}
 			}
-			IL_318:;
+			IL_2DD:;
 		}
 	}
 
@@ -920,6 +975,36 @@ public class MainMenuDlg : Form
 	{
 		GS_SOLGUIDE_INFO_REQ gS_SOLGUIDE_INFO_REQ = new GS_SOLGUIDE_INFO_REQ();
 		gS_SOLGUIDE_INFO_REQ.bElementMark = bElementMark;
+		gS_SOLGUIDE_INFO_REQ.i32CharKind = 0;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_SOLGUIDE_INFO_REQ, gS_SOLGUIDE_INFO_REQ);
+	}
+
+	public void ShowCustomerNotice(int answerCount)
+	{
+		if (this.m_bxCustomerNotice == null)
+		{
+			return;
+		}
+		if (answerCount <= 0)
+		{
+			return;
+		}
+		this.m_bxCustomerNotice.Hide(false);
+		this.m_bxCustomerNotice.Text = answerCount.ToString();
+		this.m_bxCustomerNotice.AlphaAni(1f, 0.5f, -0.5f);
+	}
+
+	private void RequestCustomerAnswerCount()
+	{
+		if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
+		{
+			return;
+		}
+		if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().CustomerAnswerCount <= 0)
+		{
+			return;
+		}
+		GS_INQUIRE_ANSWER_COUNT_REQ obj = new GS_INQUIRE_ANSWER_COUNT_REQ();
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_INQUIRE_ANSWER_COUNT_REQ, obj);
 	}
 }

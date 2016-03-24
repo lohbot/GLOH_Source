@@ -73,6 +73,12 @@ public class ReforgeMainDlg : Form
 
 	private Label m_lbHelp;
 
+	private UIButton _GuideItem;
+
+	private float _ButtonZ;
+
+	private int m_nWinID;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -114,7 +120,6 @@ public class ReforgeMainDlg : Form
 		{
 			this.m_ivReforgeItem.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_Mouse_Click));
 			this.m_ivReforgeItem.AddMouseOutDelegate(new EZValueChangedDelegate(this.On_Mouse_Out));
-			this.m_ivReforgeItem.AddMouseOverDelegate(new EZValueChangedDelegate(this.On_Mouse_Over));
 		}
 		this.m_ivReforgeItemTiket = (base.GetControl("ImageView_Ticket") as ImageView);
 		this.m_ivReforgeItemTiket.SetImageView(1, 1, 80, 80, 1, 1, (int)this.m_ivReforgeItem.GetSize().y);
@@ -202,6 +207,12 @@ public class ReforgeMainDlg : Form
 		base.SetShowLayer(3, false);
 		base.SetShowLayer(4, false);
 		this.m_btnReforgeTicket.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1946");
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.REFORGECONFIRM_DLG);
+		ReforgeSelectDlg reforgeSelectDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.REFORGESELECT_DLG) as ReforgeSelectDlg;
+		if (reforgeSelectDlg != null)
+		{
+			reforgeSelectDlg.closeButton.Visible = true;
+		}
 	}
 
 	private void TicketSlotClear()
@@ -383,39 +394,7 @@ public class ReforgeMainDlg : Form
 
 	private void OnClickConfirm(IUIObject a_oObject)
 	{
-		if (this.bSendRequest)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		if (this.m_SolID > 0L)
-		{
-			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-			NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(this.m_SolID);
-			if (soldierInfoFromSolID == null)
-			{
-				return;
-			}
-			if (soldierInfoFromSolID.GetSolPosType() == 2 || soldierInfoFromSolID.GetSolPosType() == 6)
-			{
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("370"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-				return;
-			}
-			this.m_Packet.SolID = this.m_SolID;
-		}
-		if (this.m_Packet.nSrcItemUnique == 0)
-		{
-			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("552");
-			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		if (this.m_SetItem.GetRank() == eITEM_RANK_TYPE.ITEM_RANK_SS)
-		{
-			string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("505");
-			Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		if (!this.isMaterialCheck())
+		if (!this.IsCheck())
 		{
 			return;
 		}
@@ -436,6 +415,44 @@ public class ReforgeMainDlg : Form
 		{
 			reforgeSelectDlg.closeButton.Visible = false;
 		}
+		this.HideUIGuide();
+	}
+
+	public bool IsCheck()
+	{
+		if (this.bSendRequest)
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return false;
+		}
+		if (this.m_SolID > 0L)
+		{
+			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+			NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(this.m_SolID);
+			if (soldierInfoFromSolID == null)
+			{
+				return false;
+			}
+			if (soldierInfoFromSolID.GetSolPosType() == 6)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("370"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return false;
+			}
+			this.m_Packet.SolID = this.m_SolID;
+		}
+		if (this.m_Packet.nSrcItemUnique == 0)
+		{
+			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("552");
+			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return false;
+		}
+		if (this.m_SetItem.GetRank() == eITEM_RANK_TYPE.ITEM_RANK_SS)
+		{
+			string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("505");
+			Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return false;
+		}
+		return this.isMaterialCheck();
 	}
 
 	private void OnClickTicketHelp(IUIObject a_oObject)
@@ -687,6 +704,7 @@ public class ReforgeMainDlg : Form
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PRODUCTION", "CLOSE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 		NrTSingleton<ChallengeManager>.Instance.ShowNotice();
 		NrTSingleton<GameGuideManager>.Instance.CheckGameGuide(GameGuideType.EQUIP_ITEM);
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.CHALLENGE_DLG);
 	}
 
 	public void ActionReforge()
@@ -754,5 +772,50 @@ public class ReforgeMainDlg : Form
 	public void UpdateMoney()
 	{
 		this.m_lbHaveMoney.Text = Protocol_Item.Money_Format(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money);
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		if (null != base.InteractivePanel)
+		{
+			base.InteractivePanel.depthChangeable = false;
+		}
+		this._GuideItem = (base.GetControl(param1) as UIButton);
+		this.m_nWinID = winID;
+		if (null != this._GuideItem)
+		{
+			this._ButtonZ = this._GuideItem.GetLocation().z;
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				if (uI_UIGuide.GetLocation().z == base.GetLocation().z)
+				{
+					uI_UIGuide.SetLocation(uI_UIGuide.GetLocationX(), uI_UIGuide.GetLocationY(), uI_UIGuide.GetLocation().z - 10f);
+				}
+				this._GuideItem.EffectAni = false;
+				Vector2 x = new Vector2(base.GetLocationX() + this._GuideItem.GetLocationX() + 72f, base.GetLocationY() + this._GuideItem.GetLocationY() - 17f);
+				uI_UIGuide.Move(x, UI_UIGuide.eTIPPOS.BUTTOM);
+				this._ButtonZ = this._GuideItem.gameObject.transform.localPosition.z;
+				this._GuideItem.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+				this._GuideItem.AlphaAni(1f, 0.5f, -0.5f);
+			}
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+			this._GuideItem.StopAni();
+			this._GuideItem.AlphaAni(1f, 1f, 0f);
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				uI_UIGuide.Close();
+			}
+		}
+		this._GuideItem = null;
 	}
 }

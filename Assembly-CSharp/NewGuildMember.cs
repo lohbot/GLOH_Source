@@ -38,6 +38,8 @@ public class NewGuildMember
 
 	private bool m_bConnected;
 
+	private int m_iFaceCostumeUnique;
+
 	public NewGuildMember(NEWGUILDMEMBER_INFO NewGuildMemberInfo)
 	{
 		this.m_lPersonID = NewGuildMemberInfo.i64PersonID;
@@ -56,6 +58,7 @@ public class NewGuildMember
 		this.SetPortrait();
 		this.m_lSN = NewGuildMemberInfo.i64SN;
 		this.m_bConnected = NewGuildMemberInfo.bConnected;
+		this.m_iFaceCostumeUnique = NewGuildMemberInfo.i32CostumeUnique;
 	}
 
 	private void Clear()
@@ -74,6 +77,7 @@ public class NewGuildMember
 		this.m_iContribute = 0;
 		this.m_lLogOffTime = 0L;
 		this.m_GuildMemberPortrait = null;
+		this.m_iFaceCostumeUnique = 0;
 	}
 
 	public long GetPersonID()
@@ -154,6 +158,11 @@ public class NewGuildMember
 	public Texture2D GetPortrait()
 	{
 		return this.m_GuildMemberPortrait;
+	}
+
+	public int GetCostumeUnique()
+	{
+		return this.m_iFaceCostumeUnique;
 	}
 
 	public void SetPortrait()

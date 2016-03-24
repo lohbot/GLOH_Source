@@ -26,6 +26,8 @@ namespace NPatch
 
 		public long taskProcessedSize;
 
+		public double taskProcessedPercent;
+
 		public int taskReconnectCount;
 
 		public int taskReconnectCountMax;
@@ -79,9 +81,11 @@ namespace NPatch
 			this.totalInstallProcessedSize = 0L;
 			this.totalSize = 0L;
 			this.totalProcessedSize = 0L;
+			this.totalProcessedPercent = 0.0;
 			this.taskStatus = string.Empty;
 			this.taskSize = 0L;
 			this.taskProcessedSize = 0L;
+			this.taskProcessedPercent = 0.0;
 			this.taskReconnectCount = 0;
 			this.taskReconnectCountMax = 0;
 			this.taskType = TASKTYPE.NONE;
@@ -93,6 +97,7 @@ namespace NPatch
 			this.packDownloadProcessedSize = 0L;
 			this.packInstallSize = 0L;
 			this.packInstallProcessedSize = 0L;
+			this.fullPackCount = 0;
 		}
 	}
 }

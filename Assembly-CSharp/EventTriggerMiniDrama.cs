@@ -620,6 +620,7 @@ public class EventTriggerMiniDrama : NrTSingleton<EventTriggerMiniDrama>
 				NrTSingleton<FormsManager>.Instance.Main_UI_Show(FormsManager.eMAIN_UI_VISIBLE_MODE.COMMON);
 			}
 		}
+		this._bNpcTalk = false;
 		if (TsPlatform.IsMobile)
 		{
 		}

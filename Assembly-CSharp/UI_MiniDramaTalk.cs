@@ -80,7 +80,7 @@ public class UI_MiniDramaTalk : Form
 		if (nrCharBase.GetCharKindInfo() != null)
 		{
 			int cHARKIND = nrCharBase.GetCharKindInfo().GetCHARKIND_INFO().CHARKIND;
-			this.dtFace1.SetTexture(eCharImageType.SMALL, cHARKIND, -1);
+			this.dtFace1.SetTexture(eCharImageType.SMALL, cHARKIND, -1, string.Empty);
 		}
 		string strText = NrTSingleton<CTextParser>.Instance.GetTextColor(szColorNum) + text;
 		this.SetTalkControl(strText, this.flbTalk1);

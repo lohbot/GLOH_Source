@@ -32,7 +32,7 @@ public class NrGlobalReference : NrTSingleton<NrGlobalReference>
 
 	public static string strWebPageDomain = "klohw.ndoors.com";
 
-	public static string strUSAWepPageDomain = "nexonm1.zendesk.com";
+	public static string strUSAWepPageDomain = "nexonm.com";
 
 	public static string strPackageSuffix = string.Empty;
 
@@ -55,6 +55,8 @@ public class NrGlobalReference : NrTSingleton<NrGlobalReference>
 	private string strResourcesVer = string.Empty;
 
 	private string strPublicMode = "yes";
+
+	private bool m_bisLoadWWW;
 
 	private static bool _isWebBasepathExteranlCalled = false;
 
@@ -150,8 +152,25 @@ public class NrGlobalReference : NrTSingleton<NrGlobalReference>
 				{
 					this.SetCurrentServiceAreaInfo(currentServiceAreaInfo.szServiceKey);
 					UnityEngine.Debug.LogWarning("Public Mode = NO! Changed CurrentService = " + currentServiceAreaInfo.szServiceKey);
+					NrTSingleton<NrUserDeviceInfo>.Instance.BillingMode(false);
 				}
 			}
+			else
+			{
+				NrTSingleton<NrUserDeviceInfo>.Instance.BillingMode(true);
+			}
+		}
+	}
+
+	public bool isLoadWWW
+	{
+		get
+		{
+			return this.m_bisLoadWWW;
+		}
+		set
+		{
+			this.m_bisLoadWWW = value;
 		}
 	}
 
@@ -372,10 +391,17 @@ public class NrGlobalReference : NrTSingleton<NrGlobalReference>
 				if (TsPlatform.IsAndroid)
 				{
 					TsPlatform.APP_VERSION_AND = text3.Trim();
+					this.strMobileVer = TsPlatform.APP_VERSION_AND;
 				}
 				else if (TsPlatform.IsIPhone)
 				{
 					TsPlatform.APP_VERSION_IOS = text3.Trim();
+					this.strMobileVer = TsPlatform.APP_VERSION_IOS;
+				}
+				if (TsPlatform.IsMobile && !TsPlatform.IsEditor)
+				{
+					string rootPath = string.Format("{0}/at2/cacheroot/", TsPlatform.Operator.GetFileDir());
+					Option.SetProtocolRootPath(Protocol.FILE, rootPath);
 				}
 			}
 		}
@@ -621,6 +647,7 @@ public class NrGlobalReference : NrTSingleton<NrGlobalReference>
 	private void InitServiceAreaInfo()
 	{
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL);
+		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL_MOBILE);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_ANDROID_KORQA);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_ANDROID_KORTSTORE);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE);
@@ -656,6 +683,7 @@ public class NrGlobalReference : NrTSingleton<NrGlobalReference>
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_IOS_USQA);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_IOS_USIOS);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_IOS_CNQA);
+		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_IOS_CNTEST);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_IOS_JPQA);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_IOS_CNTEST);
 		this.AddServiceAreaInfo(eSERVICE_AREA.SERVICE_IOS_JPQA);
@@ -674,6 +702,20 @@ public class NrGlobalReference : NrTSingleton<NrGlobalReference>
 	public NkServiceAreaInfo GetCurrentServiceAreaInfo()
 	{
 		return this.m_kCurrentServiceAreaInfo;
+	}
+
+	public string GetPatchSerialUrl()
+	{
+		string arg = string.Empty;
+		if (TsPlatform.IsAndroid)
+		{
+			arg = "ver_and";
+		}
+		else if (TsPlatform.IsIPhone)
+		{
+			arg = "ver_ios";
+		}
+		return string.Format("http://{0}{1}/{2}/patch_serial.txt", NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceAreaInfo().szOriginalDataCDNPath, arg, this.strMobileVer);
 	}
 
 	private NkServiceAreaInfo FindServiceArea(string servicekey)

@@ -192,7 +192,7 @@ public class InputNumberDlg : Form
 				this.m_strText = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1644");
 			}
 			this.m_strMessage = string.Format("{0}({1} ~ {2})", this.m_strText, this.m_iMinValue.ToString(), this.m_iMaxValue.ToString());
-			msgBoxUI.SetMsg(null, null, this.m_strTitle, this.m_strMessage, eMsgType.MB_OK);
+			msgBoxUI.SetMsg(null, null, this.m_strTitle, this.m_strMessage, eMsgType.MB_OK, 2);
 			return;
 		}
 		if (this.m_deApply != null)

@@ -1550,6 +1550,7 @@ public class UIBaseFileManager : NrTSingleton<UIBaseFileManager>
 		}
 		if (this.m_szTok.Length > 27)
 		{
+			Tab.TextPos = this.GetToolbarTextPos(this.m_szTok[26]);
 		}
 		Tab.AddPaelTapDelegate();
 		this.pDlg.AddDictionaryControl(szID, Tab);
@@ -1585,7 +1586,7 @@ public class UIBaseFileManager : NrTSingleton<UIBaseFileManager>
 		slider.emptySprite.transform.localPosition = new Vector3(0f, -num / 2f, -0.5f);
 		UIBaseInfoLoader uIBaseInfoLoader3 = UIBaseFileManager.FindUIImageDictionary(szID, this.m_szTok[9]);
 		slider.m_sprKnobTile.SetSpriteTile(uIBaseInfoLoader3.Tile, uIBaseInfoLoader3.UVs.width, uIBaseInfoLoader3.UVs.height);
-		slider.knobSize = new Vector2(uIBaseInfoLoader3.UVs.width / (float)uIBaseInfoLoader3.ButtonCount, float.Parse(this.m_szTok[6]));
+		slider.knobSize = new Vector2(uIBaseInfoLoader3.UVs.width / (float)uIBaseInfoLoader3.ButtonCount, uIBaseInfoLoader3.UVs.height);
 		float pixelToUVsWidth = UIBaseFileManager.GetPixelToUVsWidth(material, uIBaseInfoLoader3.UVs.width / (float)uIBaseInfoLoader3.ButtonCount);
 		rect = new Rect(UIBaseFileManager.GetPixelToUVsWidth(material, uIBaseInfoLoader3.UVs.x) - pixelToUVsWidth, 1f - UIBaseFileManager.GetPixelToUVsHeight(material, uIBaseInfoLoader3.UVs.y + uIBaseInfoLoader3.UVs.height), pixelToUVsWidth, UIBaseFileManager.GetPixelToUVsHeight(material, uIBaseInfoLoader3.UVs.height));
 		Rect uvs = new Rect(rect);
@@ -1853,7 +1854,7 @@ public class UIBaseFileManager : NrTSingleton<UIBaseFileManager>
 
 	public virtual bool CreateCloseButton(ref Button ctrl, string name, bool scale)
 	{
-		UIBaseInfoLoader uIBaseInfoLoader = UIBaseFileManager.FindUIImageDictionary(name, "Win_B_Close");
+		UIBaseInfoLoader uIBaseInfoLoader = UIBaseFileManager.FindUIImageDictionary(name, "Win_B_CloseAuto");
 		ctrl = Button.Create(name, Vector3.zero);
 		float num = uIBaseInfoLoader.UVs.width / (float)uIBaseInfoLoader.ButtonCount;
 		ctrl.SetSpriteTile(uIBaseInfoLoader.Tile, num, uIBaseInfoLoader.UVs.height);
@@ -1886,7 +1887,7 @@ public class UIBaseFileManager : NrTSingleton<UIBaseFileManager>
 		this.pDlg.AddDictionaryControl(name, ctrl);
 		this.pDlg.InteractivePanel.MakeChild(ctrl.gameObject);
 		this.pDlg.SetCloseButton(ctrl);
-		ctrl.SetLocation(this.pDlg.GetSizeX() - num, 0f, -0.1f);
+		ctrl.SetLocation(this.pDlg.GetSizeX() - num + 7f, 0f, -0.1f);
 		return true;
 	}
 

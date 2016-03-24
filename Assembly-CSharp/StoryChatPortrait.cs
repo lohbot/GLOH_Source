@@ -40,15 +40,15 @@ public class StoryChatPortrait
 		if (txtr != null)
 		{
 			this.m_PortraitTexutre = txtr;
+			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.STORYCHAT_DLG))
+			{
+				StoryChatDlg storyChatDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.STORYCHAT_DLG) as StoryChatDlg;
+				storyChatDlg.UpdateUserPersonID(i64PersonID);
+			}
 		}
 		else
 		{
 			this.m_PortraitTexutre = null;
-		}
-		if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.STORYCHAT_DLG))
-		{
-			StoryChatDlg storyChatDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.STORYCHAT_DLG) as StoryChatDlg;
-			storyChatDlg.UpdateUserPersonID(i64PersonID);
 		}
 	}
 }

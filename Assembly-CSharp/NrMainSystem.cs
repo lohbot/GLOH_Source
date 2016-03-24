@@ -199,6 +199,7 @@ public class NrMainSystem : NrTSingleton<NrMainSystem>
 
 	public void Alert(string msg)
 	{
+		Debug.LogError("[경보] " + msg);
 	}
 
 	public void ShutdownUnity()
@@ -318,12 +319,11 @@ public class NrMainSystem : NrTSingleton<NrMainSystem>
 		}
 	}
 
-	public void QuitGame()
+	public void QuitGame(bool bQuit = false)
 	{
 		if (PlayerPrefs.GetInt(NrPrefsKey.GUESTID) == 0)
 		{
 			PlayerPrefs.SetInt(NrPrefsKey.GUESTID, 0);
-			PlayerPrefs.SetInt(NrPrefsKey.CONVERT_GUESTID, 0);
 		}
 		PlayerPrefs.Save();
 		if (TsPlatform.IsEditor)
@@ -462,6 +462,7 @@ public class NrMainSystem : NrTSingleton<NrMainSystem>
 		NrTSingleton<NkEffectManager>.Instance.ClearEffectCache();
 		NpcCache.Clear();
 		NrTSingleton<ItemMallItemManager>.Instance.ClearItemMallBuyCount();
+		NrTSingleton<ChatManager>.Instance.InitChatMsg();
 		NrTSingleton<UIManager>.Instance.ClearInputQueue();
 	}
 

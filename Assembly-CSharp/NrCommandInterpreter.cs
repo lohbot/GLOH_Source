@@ -382,7 +382,7 @@ public class NrCommandInterpreter
 			return;
 		}
 		case "quit":
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 			return;
 		case "show":
 		{
@@ -391,28 +391,28 @@ public class NrCommandInterpreter
 			{
 			case "mem.growup":
 				MemoryCollection.Print(MemoryCollection.Mode.NewlyLeakOnly);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "mem.leak":
 				MemoryCollection.Print(MemoryCollection.Mode.AllLeaks);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "mem.all":
 				MemoryCollection.Print(MemoryCollection.Mode.LoadedAll);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "mem.newl":
 				MemoryCollection.Print(MemoryCollection.Mode.NewObjectOnly);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "mem.monitor":
 				MemoryMonitor.Show(180f);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "mem.monitor.cycle":
 				NrTSingleton<NrDebugConsole>.Instance.Print(string.Format(" => {0}분 마다 메모리 모니터링을 합니다. (현재 로딩되어 있는 오브젝트 수집 및 경고)", MemoryMonitor.cycleTime));
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "mem.monitor.growup":
 				NrTSingleton<NrDebugConsole>.Instance.Print(string.Format("평균 증가량이 {0}MB 보다 크면, 경고 화면을 보여줍니다.", MemoryMonitor.growUpAllowedSize));
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "packet":
 				this.ShowPacketInfo(command);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "bundle":
 			{
 				string text4;
@@ -432,7 +432,7 @@ public class NrCommandInterpreter
 						text4
 					});
 				}
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "bundlecnt":
 			{
@@ -442,33 +442,33 @@ public class NrCommandInterpreter
 				{
 					text5
 				});
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "downloaded":
 				NrTSingleton<NrDebugConsole>.Instance.Print(Holder.DbgPrint_Downloaded());
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "bundleinfo":
 				TsImmortal.bundleDbgPrint.enabled = !TsImmortal.bundleDbgPrint.enabled;
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "char":
 				this.CommandCharInfo(command);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "basepath":
 				NrTSingleton<NrDebugConsole>.Instance.Print(NrTSingleton<NrGlobalReference>.Instance.basePath);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "cache":
 			{
 				NrTSingleton<NrDebugConsole>.Instance.Print("Cache Active : " + NrTSingleton<NrGlobalReference>.Instance.useCache.ToString());
 				long num6 = Caching.spaceFree / 1048576L;
 				NrTSingleton<NrDebugConsole>.Instance.Print(" Free space : " + num6.ToString() + "MB");
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "autopath":
 				NrTSingleton<NrDebugConsole>.Instance.Print(NrTSingleton<NrAutoPath>.Instance.GetDebug());
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "quest":
 				NrTSingleton<NrDebugConsole>.Instance.Print(NrTSingleton<NkQuestManager>.Instance.GetDebugMsg());
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "config":
 				NrTSingleton<NrDebugConsole>.Instance.Print("Local WWW : " + NrTSingleton<NrGlobalReference>.Instance.localWWW.ToString());
 				NrTSingleton<NrDebugConsole>.Instance.Print("BasePath : " + NrTSingleton<NrGlobalReference>.Instance.basePath);
@@ -481,10 +481,10 @@ public class NrCommandInterpreter
 				{
 					NrTSingleton<NrDebugConsole>.Instance.Print(" - Audio " + eAudioType.ToString() + " : " + (!TsAudio.IsDisableDownloadAudio(eAudioType)).ToString());
 				}
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "usetexture":
 				TsMemLog.TextureByFormat();
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "camera":
 				NrTSingleton<NrDebugConsole>.Instance.Print(string.Concat(new object[]
 				{
@@ -500,31 +500,31 @@ public class NrCommandInterpreter
 					"Width: ",
 					Screen.width
 				}));
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "fps":
 				NrTSingleton<NrDebugConsole>.Instance.Print("TargetFrameRate (FPS) = {0}", new object[]
 				{
 					Application.targetFrameRate
 				});
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "version":
 				NrTSingleton<NrDebugConsole>.Instance.Print("UnityVersion = {0}", new object[]
 				{
 					Application.unityVersion
 				});
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "log":
 				NrTSingleton<NrDebugConsole>.Instance.Print(string.Format("debugLog => {0}", (!NrTSingleton<NrGlobalReference>.Instance.IsEnableLog) ? "Disabled" : "Enabled"));
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "stage":
 			{
 				string str = StageSystem.ToStringStatus();
 				NrTSingleton<NrDebugConsole>.Instance.Print(str);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "dlginfo":
 				NrTSingleton<NrDebugConsole>.Instance.Print(NrTSingleton<FormsManager>.Instance.GetDlgStatus());
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "monhp":
 				if (Scene.IsCurScene(Scene.Type.BATTLE))
 				{
@@ -543,7 +543,7 @@ public class NrCommandInterpreter
 						NrTSingleton<NrDebugConsole>.Instance.Print(text6);
 					}
 				}
-				goto IL_1E8B;
+				goto IL_1E8D;
 			case "path":
 			{
 				string text2 = command.m_arArg[1];
@@ -581,7 +581,7 @@ public class NrCommandInterpreter
 						}
 					}
 				}
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "qu":
 			{
@@ -600,7 +600,7 @@ public class NrCommandInterpreter
 					break;
 				}
 				CustomQuality.GetInstance().SetQualitySettings(qualitySettings);
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "tx":
 			{
@@ -620,7 +620,7 @@ public class NrCommandInterpreter
 					QualitySettings.masterTextureLimit = 4;
 					break;
 				}
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "charinfo":
 			{
@@ -724,7 +724,7 @@ public class NrCommandInterpreter
 						NrTSingleton<NrDebugConsole>.Instance.Print("Shadow: " + light.shadows.ToString());
 					}
 				}
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "ev":
 			{
@@ -746,7 +746,7 @@ public class NrCommandInterpreter
 					});
 				}
 				NrTSingleton<NrDebugConsole>.Instance.Print("======================");
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			case "evst":
 			{
@@ -802,11 +802,11 @@ public class NrCommandInterpreter
 					eventTrigger_Game2.IsVerifyState()
 				});
 				NrTSingleton<NrDebugConsole>.Instance.Print("======================================");
-				goto IL_1E8B;
+				goto IL_1E8D;
 			}
 			}
 			NrTSingleton<NrDebugConsole>.Instance.Print("don't show anything.");
-			IL_1E8B:
+			IL_1E8D:
 			return;
 		}
 		}

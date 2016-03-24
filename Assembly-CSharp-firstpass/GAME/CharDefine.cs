@@ -48,7 +48,9 @@ namespace GAME
 
 		public const int MAX_SOL_NUM = 6;
 
-		public const int MAX_READY_SOL_NUM = 50;
+		public const int MAX_READY_SOL_NUM = 100;
+
+		public const int MAX_WAREHOUSE_SOL_NUM = 100;
 
 		public const int MAX_SOLGRADE_NUM = 15;
 
@@ -71,6 +73,8 @@ namespace GAME
 		public const int COMPOSE_MAX_SOL_NUM = 50;
 
 		public const int MAX_SOL_RECRUIT_NUM = 11;
+
+		public const byte COMPOSE_EXTRACT_MAX = 10;
 
 		public const int LEGEND_GRADE_START = 6;
 
@@ -214,7 +218,7 @@ namespace GAME
 
 		public const long ATB_BOSS = 128L;
 
-		public const long ATB_NOLOOTING = 256L;
+		public const long ATB_PHYSICAL_RESIST = 256L;
 
 		public const long ATB_BUYITEMNPC = 512L;
 
@@ -248,7 +252,7 @@ namespace GAME
 
 		public const long ATB_NAMEUI = 16777216L;
 
-		public const long ATB_TERRITORYITEMBUY = 33554432L;
+		public const long ATB_EVENTITEMEXCHANGE = 33554432L;
 
 		public const long ATB_DIEANI = 67108864L;
 
@@ -310,6 +314,20 @@ namespace GAME
 
 		public const long ATB_MYTHICEXCHANGE = 36028797018963968L;
 
+		public const long ATB_MYTH_DAMAGEADD = 72057594037927936L;
+
+		public const long ATB_BATTLE_IMMUNE_SKILL = 144115188075855872L;
+
+		public const long ATB_ITEMREPAIR = 288230376151711744L;
+
+		public const long ATB_ANGELPOINT = 576460752303423488L;
+
+		public const long ATB_GUILDWAREXCHANGE = 1152921504606846976L;
+
+		public const long ATB_IMMORTAL = 2305843009213693952L;
+
+		public const long ATB_MAGIC_RESIST = 4611686018427387904L;
+
 		public const long ATB_RIDE_HORSE = 1L;
 
 		public const long ATB_RIDE_CAMEL = 2L;
@@ -352,7 +370,7 @@ namespace GAME
 
 		public const int BATTLESKILL_BUF_MAX = 12;
 
-		public const int MAX_BATTLESKILL_TRAINING_CHAR_NUM = 10;
+		public const int MAX_BATTLESKILL_TRAINING_CHAR_NUM = 20;
 
 		public const int MAX_BATTLE_SREWARD_PRODUCT = 4;
 
@@ -378,13 +396,15 @@ namespace GAME
 
 		public const int REINCARNATION_AFTER_GRADE = 0;
 
-		public const int MAX_SEASON = 6;
+		public const int MAX_SEASON = 10;
 
 		public const int MAX_TREASURE_ITEM_REWARD = 5;
 
 		public const byte MAX_GRADE = 5;
 
 		public const byte MAX_INFIBATTLE_REWARD_INFO = 9;
+
+		public const byte MAX_BOUNTYHUNT_MAX = 5;
 
 		public const long ATB_COMMONFLAG_COLOSSEUM_INVITE = 1L;
 
@@ -400,7 +420,11 @@ namespace GAME
 
 		public const long SOL_ATB_COMMONFLAG_ONLYSKILL = 8L;
 
+		public const long SOL_ATB_COMMONFLAG_NEWEXPLORATION_DIE = 16L;
+
 		public const byte MAX_TRANSCENDENCE_BASE_SEASON = 10;
+
+		public const int MAX_SOLCOMBINATION_CHARCODE = 5;
 
 		public static int MAX_HIT_COUNT = 5;
 	}

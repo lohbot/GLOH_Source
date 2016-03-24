@@ -12,6 +12,8 @@ namespace PROTOCOL.GAME
 
 		public int m_nRewardNumItems;
 
+		public int m_nRewardRealMoney;
+
 		public bool bGiveVal;
 	}
 }

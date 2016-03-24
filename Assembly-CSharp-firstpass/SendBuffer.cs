@@ -1,9 +1,10 @@
 using System;
 using System.Net.Sockets;
+using UnityEngine;
 
 public class SendBuffer
 {
-	public static int SEND_BUFFER_SIZE = 8192;
+	public static int SEND_BUFFER_SIZE = 16384;
 
 	private byte[] mBufferPool;
 
@@ -40,6 +41,16 @@ public class SendBuffer
 
 	private void InserBuffer(byte[] btArray)
 	{
+		if (btArray != null && btArray.Length > SendBuffer.SEND_BUFFER_SIZE)
+		{
+			Debug.LogError(string.Concat(new object[]
+			{
+				"Send Packet Size Overflow!!!  CURRENT SIZE=",
+				btArray.Length,
+				" BUFFER_SIZE : ",
+				SendBuffer.SEND_BUFFER_SIZE
+			}));
+		}
 		if (btArray != null)
 		{
 			Array.Copy(btArray, 0, this.mBufferPool, this.mLen, btArray.Length);

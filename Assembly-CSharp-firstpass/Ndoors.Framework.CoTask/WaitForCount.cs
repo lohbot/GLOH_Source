@@ -17,7 +17,7 @@ namespace Ndoors.Framework.CoTask
 		[DebuggerHidden]
 		private IEnumerator Count()
 		{
-			WaitForCount.<Count>c__Iterator10 <Count>c__Iterator = new WaitForCount.<Count>c__Iterator10();
+			WaitForCount.<Count>c__Iterator11 <Count>c__Iterator = new WaitForCount.<Count>c__Iterator11();
 			<Count>c__Iterator.<>f__this = this;
 			return <Count>c__Iterator;
 		}

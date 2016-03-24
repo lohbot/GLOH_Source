@@ -52,7 +52,7 @@ namespace Ndoors.Framework.CoTask
 		[DebuggerHidden]
 		private IEnumerator SerialDo()
 		{
-			WaitSerialTasks.<SerialDo>c__Iterator11 <SerialDo>c__Iterator = new WaitSerialTasks.<SerialDo>c__Iterator11();
+			WaitSerialTasks.<SerialDo>c__Iterator12 <SerialDo>c__Iterator = new WaitSerialTasks.<SerialDo>c__Iterator12();
 			<SerialDo>c__Iterator.<>f__this = this;
 			return <SerialDo>c__Iterator;
 		}

@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ColosseumRankReward : NrTableBase
 {
-	public NrTable_ColosseumRankReward() : base(CDefinePath.s_strColosseumRankRewardURL, true)
+	public NrTable_ColosseumRankReward() : base(CDefinePath.s_strColosseumRankRewardURL)
 	{
 	}
 

@@ -8,7 +8,7 @@ public class BASE_EXPEDITION_CREATE_DATA : NrTableBase
 
 	public static List<EXPEDITION_CREATE_DATA> m_listExpeditionListData = new List<EXPEDITION_CREATE_DATA>();
 
-	public BASE_EXPEDITION_CREATE_DATA() : base(CDefinePath.ExpeditionCrateDataURL, true)
+	public BASE_EXPEDITION_CREATE_DATA() : base(CDefinePath.ExpeditionCrateDataURL)
 	{
 	}
 

@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableGateInfo : NrTableBase
 {
-	public NkTableGateInfo() : base(CDefinePath.GATE_INFO_URL, true)
+	public NkTableGateInfo() : base(CDefinePath.GATE_INFO_URL)
 	{
 	}
 

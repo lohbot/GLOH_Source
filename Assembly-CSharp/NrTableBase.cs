@@ -5,76 +5,64 @@ using TsLibs;
 using UnityEngine;
 using UnityForms;
 
-public abstract class NrTableBase : TsDataReader.IBindingRow, TsDataReader.IBinding
+public abstract class NrTableBase : TsDataReader.IRowBindee, TsDataReader.IBindee
 {
 	public bool m_bFinishProcess;
 
 	public string m_strFilePath = string.Empty;
 
-	protected bool m_bUseNDT;
-
 	public WWWItem m_wItem;
 
-	private bool m_bForceNDT;
-
-	public bool ForceUseNDT
-	{
-		get
-		{
-			return false;
-		}
-	}
+	public bool m_bReadImmediate;
 
 	public NrTableBase(string strFileName)
 	{
-		this._Construct(strFileName);
-	}
-
-	public NrTableBase(string strFileName, bool bUseNDT)
-	{
-		if (!NrTSingleton<NrGlobalReference>.Instance.useCache)
-		{
-			this.m_bUseNDT = true;
-		}
-		else
-		{
-			this.m_bUseNDT = false;
-		}
+		this.m_bReadImmediate = false;
 		this._Construct(strFileName);
 	}
 
 	private void _Construct(string strFileName)
 	{
-		string arg = string.Empty;
-		string arg2 = string.Empty;
+		string text = string.Empty;
+		string text2 = string.Empty;
 		if (Path.HasExtension(strFileName))
 		{
 			strFileName = Path.GetFileNameWithoutExtension(strFileName);
 		}
-		if (!NrTSingleton<NrGlobalReference>.Instance.useCache)
+		if (!NrTSingleton<NrGlobalReference>.Instance.isLoadWWW)
 		{
-			arg = CDefinePath.NDTPath();
-			arg2 = ".ndt";
+			text = CDefinePath.NDTPath();
+			text2 = ".ndt";
+			strFileName += text2;
+			this.m_strFilePath = Path.Combine(text, strFileName);
 		}
 		else
 		{
-			arg = CDefinePath.XMLBundlePath();
-			arg2 = ".assetbundle";
-			if (strFileName.Contains("/"))
+			if (!NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
-				int num = strFileName.IndexOf("/");
-				if (num < strFileName.Length)
+				text = CDefinePath.NDTPath();
+				text2 = ".ndt";
+			}
+			else
+			{
+				text = CDefinePath.XMLBundlePath();
+				text2 = ".assetbundle";
+				if (strFileName.Contains("/"))
 				{
-					strFileName = strFileName.Substring(num + 1);
+					int num = strFileName.IndexOf("/");
+					if (num < strFileName.Length)
+					{
+						strFileName = strFileName.Substring(num + 1);
+					}
 				}
 			}
+			if (NrTSingleton<NrGlobalReference>.Instance.useCache && TsPlatform.IsMobile)
+			{
+				strFileName += "_mobile";
+			}
+			this.m_strFilePath = string.Format("{0}{1}{2}", text, strFileName, text2);
+			this.m_wItem = this.CreateRequest();
 		}
-		if (NrTSingleton<NrGlobalReference>.Instance.useCache && TsPlatform.IsMobile)
-		{
-			strFileName += "_mobile";
-		}
-		this.m_strFilePath = string.Format("{0}{1}{2}", arg, strFileName, arg2);
-		this.m_wItem = this.CreateRequest();
 	}
 
 	private WWWItem CreateRequest()
@@ -88,10 +76,6 @@ public abstract class NrTableBase : TsDataReader.IBindingRow, TsDataReader.IBind
 		else
 		{
 			wWWItem.SetItemType(ItemType.USER_ASSETB);
-		}
-		if (this.m_bForceNDT)
-		{
-			wWWItem.SetItemType(ItemType.USER_BYTESA);
 		}
 		return wWWItem;
 	}
@@ -144,7 +128,11 @@ public abstract class NrTableBase : TsDataReader.IBindingRow, TsDataReader.IBind
 					{
 						float realtimeSinceStartup = Time.realtimeSinceStartup;
 						bool flag;
-						if (tsDataReader.LoadFrom(wItem.safeBytes))
+						if (this.m_bReadImmediate)
+						{
+							flag = tsDataReader.LoadFromImmediate(wItem.safeBytes, "[Table]", new TsDataReader.RowDataCallback(this.ParseDataFromNDTImmediate));
+						}
+						else if (tsDataReader.LoadFrom(wItem.safeBytes))
 						{
 							tsDataReader.BeginSection("[Table]");
 							flag = this.ParseDataFromNDT(tsDataReader);
@@ -181,6 +169,11 @@ public abstract class NrTableBase : TsDataReader.IBindingRow, TsDataReader.IBind
 	}
 
 	public virtual bool ParseDataFromNDT(TsDataReader dr)
+	{
+		return false;
+	}
+
+	public virtual bool ParseDataFromNDTImmediate(TsDataReader.Row row)
 	{
 		return false;
 	}

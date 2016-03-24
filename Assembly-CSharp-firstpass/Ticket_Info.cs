@@ -5,7 +5,7 @@ public class Ticket_Info : NrTableData
 {
 	public int Grade;
 
-	public int[] GainRate = new int[20];
+	public int[] GainRate = new int[23];
 
 	public Ticket_Info() : base(NrTableData.eResourceType.eRT_SOLDIER_TICKETINFO)
 	{
@@ -15,7 +15,7 @@ public class Ticket_Info : NrTableData
 	public void Init()
 	{
 		this.Grade = 0;
-		for (int i = 0; i < 20; i++)
+		for (int i = 0; i < 23; i++)
 		{
 			this.GainRate[i] = 0;
 		}

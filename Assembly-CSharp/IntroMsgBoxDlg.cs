@@ -42,13 +42,18 @@ public class IntroMsgBoxDlg : Form
 		this.m_oNoObject = null;
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
+		base.Scale = true;
 		base.TopMost = true;
-		instance.LoadFile(ref form, "Message/DLG_IntroMsgBox", G_ID.INTROMSGBOX_DLG, true);
-		instance.CreateControl(ref this.m_Label_title, "Label_title");
-		instance.CreateControl(ref this.m_Label_Note, "Label_Note");
-		instance.CreateControl(ref this.m_Button_ok, "Button_ok");
-		instance.CreateControl(ref this.m_Button_ok1, "Button_ok1");
-		instance.CreateControl(ref this.m_Button_cancel, "Button_cancel");
+		instance.LoadFileAll(ref form, "Message/DLG_IntroMsgBox", G_ID.INTROMSGBOX_DLG, true);
+	}
+
+	public override void SetComponent()
+	{
+		this.m_Label_title = (base.GetControl("Label_title") as Label);
+		this.m_Label_Note = (base.GetControl("Label_Note") as Label);
+		this.m_Button_ok = (base.GetControl("Button_ok") as Button);
+		this.m_Button_ok1 = (base.GetControl("Button_ok1") as Button);
+		this.m_Button_cancel = (base.GetControl("Button_cancel") as Button);
 		this.m_Button_ok.Click = new EZValueChangedDelegate(this.BtnMsg_OK);
 		this.m_Button_cancel.Click = new EZValueChangedDelegate(this.BtnMsg_Cancel);
 		this.m_Button_ok1.Click = new EZValueChangedDelegate(this.BtnMsg_OK2);

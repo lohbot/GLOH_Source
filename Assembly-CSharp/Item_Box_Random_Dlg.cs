@@ -6,11 +6,11 @@ using UnityForms;
 
 public class Item_Box_Random_Dlg : Form
 {
-	private const int N_RANDOM_TIME = 1500;
+	private const int N_RANDOM_TIME = 750;
 
-	private const int N_HIDE_TIME = 1500;
+	private const int N_HIDE_TIME = 750;
 
-	private const int N_ITEM_ICON_CHANGE = 60;
+	private const int N_ITEM_ICON_CHANGE = 30;
 
 	private const int N_ROTATE = -15;
 
@@ -121,7 +121,7 @@ public class Item_Box_Random_Dlg : Form
 
 	public override void Update()
 	{
-		if (!this.m_bCompleted && Environment.TickCount - this.m_nTime > 1500)
+		if (!this.m_bCompleted && Environment.TickCount - this.m_nTime > 750)
 		{
 			this.m_bCompleted = true;
 			if (this.m_deDelegate != null)
@@ -129,7 +129,7 @@ public class Item_Box_Random_Dlg : Form
 				this.m_deDelegate(this.m_oObject);
 			}
 		}
-		if (!this.m_bSelectItem && Environment.TickCount - this.m_nItemChangeTime > 60)
+		if (!this.m_bSelectItem && Environment.TickCount - this.m_nItemChangeTime > 30)
 		{
 			this.m_nItemChangeTime = Environment.TickCount;
 			this.m_dtItemIcon.BaseInfoLoderImage = NrTSingleton<ItemManager>.Instance.GetItemTexture(this.m_saRouletteItem[this.m_nArrayIndex].m_nItemUnique);
@@ -142,7 +142,7 @@ public class Item_Box_Random_Dlg : Form
 			}
 			this.m_dtBackAni.Rotate(-15f);
 		}
-		if (this.m_bSelectItem && this.m_bAutoClose && Environment.TickCount - this.m_nTime > 1500)
+		if (this.m_bSelectItem && this.m_bAutoClose && Environment.TickCount - this.m_nTime > 750)
 		{
 			this.Close();
 		}
@@ -201,7 +201,7 @@ public class Item_Box_Random_Dlg : Form
 		this.m_bSelectItem = true;
 		this.m_bAutoClose = bAutoClose;
 		this.m_dtItemIcon.Visible = false;
-		this.m_itSelectItemIcon.SetItemTexture(a_lItem, false);
+		this.m_itSelectItemIcon.SetItemTexture(a_lItem, false, true, 1f);
 		this.m_itSelectItemIcon.Visible = true;
 		this.m_laItemName.Text = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(a_lItem.m_nItemUnique);
 		string empty = string.Empty;

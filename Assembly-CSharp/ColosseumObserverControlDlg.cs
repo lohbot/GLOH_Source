@@ -291,7 +291,7 @@ public class ColosseumObserverControlDlg : Form
 		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1068");
 		textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1767");
 		message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("102");
-		msgBoxUI.SetMsg(new YesDelegate(this.OnRetreatkOK), null, textFromInterface, message, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnRetreatkOK), null, textFromInterface, message, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnRetreatkOK(object a_oObject)
@@ -392,7 +392,7 @@ public class ColosseumObserverControlDlg : Form
 							if (charKindInfo != null)
 							{
 								string textureFromBundle = string.Empty;
-								textureFromBundle = "UI/Soldier/64/" + charKindInfo.GetPortraitFile1(0) + "_64";
+								textureFromBundle = "UI/Soldier/64/" + charKindInfo.GetPortraitFile1(0, string.Empty) + "_64";
 								obSoldierInfo.m_itSol.SetTextureFromBundle(textureFromBundle);
 								obSoldierInfo.m_nBUID = nkBattleChar.GetBUID();
 								obSoldierInfo.m_dtQuestion.Visible = false;
@@ -429,7 +429,7 @@ public class ColosseumObserverControlDlg : Form
 					return;
 				}
 				string textureFromBundle = string.Empty;
-				textureFromBundle = "UI/Soldier/64/" + charKindInfo.GetPortraitFile1(0) + "_64";
+				textureFromBundle = "UI/Soldier/64/" + charKindInfo.GetPortraitFile1(0, string.Empty) + "_64";
 				obSoldierInfo.m_itSol.SetTextureFromBundle(textureFromBundle);
 				obSoldierInfo.m_nBUID = charByBUID.GetBUID();
 				obSoldierInfo.m_dtQuestion.Visible = false;
@@ -592,11 +592,11 @@ public class ColosseumObserverControlDlg : Form
 		this.m_goSummonEffect.transform.position = effectUIPos;
 		if (UIDataManager.IsUse256Texture())
 		{
-			this.faceImageKey = charKindInfo.GetPortraitFile1(0) + "_256";
+			this.faceImageKey = charKindInfo.GetPortraitFile1(0, string.Empty) + "_256";
 		}
 		else
 		{
-			this.faceImageKey = charKindInfo.GetPortraitFile1(0) + "_512";
+			this.faceImageKey = charKindInfo.GetPortraitFile1(0, string.Empty) + "_512";
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.faceImageKey))
 		{

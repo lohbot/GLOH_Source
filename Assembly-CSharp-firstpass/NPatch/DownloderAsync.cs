@@ -27,6 +27,8 @@ namespace NPatch
 
 		private WebClient client;
 
+		private long downloadSize;
+
 		public bool isNeedRetry
 		{
 			get
@@ -129,6 +131,7 @@ namespace NPatch
 			this.ErrorLevel = ERRORLEVEL.SUCCESS;
 			this.OnCompletedFile = _OnCompleted;
 			this.client = new WebClient();
+			this.client.DownloadProgressChanged += new DownloadProgressChangedEventHandler(this.OnDownloadFileProgressChanged);
 			this.client.DownloadFileCompleted += new AsyncCompletedEventHandler(this.OnCompleted_File);
 			this.client.DownloadFileAsync(new Uri(url), filename);
 			return true;
@@ -136,6 +139,7 @@ namespace NPatch
 
 		public virtual bool DownloadString(string url, Action<ERRORLEVEL, string> _OnCompleted)
 		{
+			this.isNeedRetry = true;
 			this.OnCompletedString = _OnCompleted;
 			this.ErrorString = string.Empty;
 			this.ErrorLevel = ERRORLEVEL.SUCCESS;
@@ -147,18 +151,14 @@ namespace NPatch
 			return true;
 		}
 
+		private void OnDownloadFileProgressChanged(object sender, DownloadProgressChangedEventArgs e)
+		{
+			this.downloadSize = e.BytesReceived;
+		}
+
 		public virtual long GetDownloadedBytes(string zipFile, int fileSize)
 		{
-			if (!Path.IsPathRooted(zipFile))
-			{
-				zipFile = Path.GetFullPath(zipFile);
-			}
-			FileInfo fileInfo = new FileInfo(zipFile);
-			if (fileInfo.Exists)
-			{
-				return fileInfo.Length;
-			}
-			return 0L;
+			return this.downloadSize;
 		}
 
 		private void OnCompleted_File(object sender, AsyncCompletedEventArgs e)
@@ -232,6 +232,7 @@ namespace NPatch
 		{
 			try
 			{
+				this.isNeedRetry = false;
 				if (this.OnCompletedString != null)
 				{
 					if (e.Cancelled)

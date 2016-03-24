@@ -19,6 +19,8 @@ public class SoldierBatch : IDisposable
 
 	private static clBaberTowerInfo m_cBaberTowerInfo;
 
+	private static clMythRaidInfo m_cMythRaidInfo;
+
 	private static clMineInfo m_MineInfo;
 
 	private static clGuildBossInfo m_GuildBossInfo;
@@ -37,6 +39,8 @@ public class SoldierBatch : IDisposable
 
 	private static byte m_iGuildWarRaidBattlePos;
 
+	private static sbyte m_i32DailyDungeon_Difficulty;
+
 	private SoldierBatchCamera m_Camera;
 
 	public SoldierBatch_Input m_Input;
@@ -48,6 +52,10 @@ public class SoldierBatch : IDisposable
 	private Dictionary<eBATTLE_ALLY, Dictionary<int, SoldierBatchGrid>> m_SoldierBatchGridObj;
 
 	private Dictionary<int, SOLDIERBATCH_INFO_BABEL_TOWER> m_dicBabel_Tower_BatchInfo;
+
+	private PLUNDER_TARGET_INFO[] InfiDefenseSolInfo = new PLUNDER_TARGET_INFO[15];
+
+	private long m_SumFightPower;
 
 	private Dictionary<long, GameObject> m_dicSolChar;
 
@@ -62,6 +70,8 @@ public class SoldierBatch : IDisposable
 	private eSOL_SUBDATA m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_ATTACK_BATTLEPOS;
 
 	private List<PLUNDER_TARGET_INFO> m_MakeCharList;
+
+	private string m_strEnemyUserName = string.Empty;
 
 	private GameObject m_goSoldierBatchLoading;
 
@@ -110,6 +120,22 @@ public class SoldierBatch : IDisposable
 		set
 		{
 			SoldierBatch.m_cBaberTowerInfo = value;
+		}
+	}
+
+	public static clMythRaidInfo MYTHRAID_INFO
+	{
+		get
+		{
+			if (SoldierBatch.m_cMythRaidInfo == null)
+			{
+				SoldierBatch.m_cMythRaidInfo = new clMythRaidInfo();
+			}
+			return SoldierBatch.m_cMythRaidInfo;
+		}
+		set
+		{
+			SoldierBatch.m_cMythRaidInfo = value;
 		}
 	}
 
@@ -199,6 +225,18 @@ public class SoldierBatch : IDisposable
 		}
 	}
 
+	public static sbyte DailyDungeonDifficulty
+	{
+		get
+		{
+			return SoldierBatch.m_i32DailyDungeon_Difficulty;
+		}
+		set
+		{
+			SoldierBatch.m_i32DailyDungeon_Difficulty = value;
+		}
+	}
+
 	public SoldierBatchCamera CAMERA
 	{
 		get
@@ -208,6 +246,18 @@ public class SoldierBatch : IDisposable
 		set
 		{
 			this.m_Camera = value;
+		}
+	}
+
+	public long SumFightPower
+	{
+		get
+		{
+			return this.m_SumFightPower;
+		}
+		set
+		{
+			this.m_SumFightPower = value;
 		}
 	}
 
@@ -281,6 +331,7 @@ public class SoldierBatch : IDisposable
 		this.m_dicBabel_Tower_BatchInfo = null;
 		this.m_dicSolChar = null;
 		this.m_MakeUpCharInfo = null;
+		SoldierBatch.m_cMythRaidInfo = null;
 		if (this.m_goSoldierBatchCharRoot != null)
 		{
 			UnityEngine.Object.Destroy(this.m_goSoldierBatchCharRoot);
@@ -339,10 +390,31 @@ public class SoldierBatch : IDisposable
 			this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_0].Add(new Vector3(103f, 41f, 98f));
 			this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_1].Add(new Vector3(103f, 41f, 106f));
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION)
 		{
 			this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_0].Add(new Vector3(31f, 5f, 66f));
 			this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_1].Add(new Vector3(31f, 5f, 76f));
+		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			MYTHRAIDINFO_DATA mythRaidInfoData = NrTSingleton<NrBaseTableManager>.Instance.GetMythRaidInfoData(NrTSingleton<MythRaidManager>.Instance.GetMyInfo().nRaidSeason.ToString() + NrTSingleton<MythRaidManager>.Instance.GetMyInfo().nRaidType.ToString());
+			this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_0].Add(new Vector3(mythRaidInfoData.m_fBatchMapGrideX, mythRaidInfoData.m_fBatchMapGrideY, mythRaidInfoData.m_fBatchMapGrideZ));
+			this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_1].Add(new Vector3(71f, 98f, 91f));
+		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
+		{
+			sbyte nDayOfWeek = (sbyte)PublicMethod.GetDayOfWeek();
+			Vector3 dailyDungeonStartPos = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonStartPos(SoldierBatch.DailyDungeonDifficulty, nDayOfWeek);
+			if (dailyDungeonStartPos != Vector3.zero)
+			{
+				this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_0].Add(dailyDungeonStartPos);
+				this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_1].Add(new Vector3(dailyDungeonStartPos.x, dailyDungeonStartPos.y, dailyDungeonStartPos.z + 10f));
+			}
+			else
+			{
+				this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_0].Add(new Vector3(31f, 5f, 66f));
+				this.m_dicVecStartPos[eBATTLE_ALLY.eBATTLE_ALLY_1].Add(new Vector3(31f, 5f, 76f));
+			}
 		}
 		else
 		{
@@ -359,37 +431,11 @@ public class SoldierBatch : IDisposable
 		NrTSingleton<NrMainSystem>.Instance.GetInputManager().AddInputCommandLayer(this.m_Input);
 		Time.timeScale = 1f;
 		this.m_bMapLoadComplete = false;
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PLUNDER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_MAKEUP)
-		{
-			this.m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_ATTACK_BATTLEPOS;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENCE_MAKEUP)
-		{
-			this.m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_DEFENCE_BATTLEPOS;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP)
-		{
-			this.m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_PVP_BATTLEPOS;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
-		{
-			this.m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_NONE;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE)
-		{
-			this.m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_ATTACK_INFIBATTLE;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP)
-		{
-			this.m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_DEFENSE_INFIBATTLE;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
-		{
-			this.m_eSetMode = eSOL_SUBDATA.SOL_SUBDATA_NONE;
-		}
+		this.m_eSetMode = SoldierBatch.GetSubDataEnum();
 		this.m_MakeCharList = new List<PLUNDER_TARGET_INFO>();
 		this.m_lsUiID.Clear();
 		this.msgBox = null;
+		PlunderSolNumDlg._syncSolCombinationUniqueKey = -1;
 	}
 
 	public clTempBattlePos[] GetTempBattlePosInfo()
@@ -401,6 +447,10 @@ public class SoldierBatch : IDisposable
 	{
 		int num = 1;
 		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP)
+		{
+			num = 5;
+		}
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION)
 		{
 			num = 5;
 		}
@@ -424,9 +474,9 @@ public class SoldierBatch : IDisposable
 				num = 15;
 			}
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
-			num = 5;
+			num = 6;
 		}
 		if (nIndex >= num)
 		{
@@ -442,6 +492,10 @@ public class SoldierBatch : IDisposable
 		{
 			num = 5;
 		}
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION)
+		{
+			num = 5;
+		}
 		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP)
 		{
 			num = 9;
@@ -462,9 +516,9 @@ public class SoldierBatch : IDisposable
 				num = 15;
 			}
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
-			num = 5;
+			num = 6;
 		}
 		for (int i = 0; i < num; i++)
 		{
@@ -478,9 +532,12 @@ public class SoldierBatch : IDisposable
 
 	public void SetTempBattlePos(long nSolID, byte nBattlePos, int nCharKind, bool bInitInfo)
 	{
-		this.InitTempSolInfo(nSolID);
 		int num = 1;
 		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP)
+		{
+			num = 5;
+		}
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION)
 		{
 			num = 5;
 		}
@@ -496,19 +553,29 @@ public class SoldierBatch : IDisposable
 		{
 			num = 15;
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
-			num = 5;
+			num = 6;
+		}
+		for (int i = 0; i < num; i++)
+		{
+			if (this.m_TempBattlePos[i].m_nSolID == nSolID)
+			{
+				this.m_TempBattlePos[i].m_nSolID = 0L;
+				this.m_TempBattlePos[i].m_nBattlePos = 0;
+				this.m_TempBattlePos[i].m_nCharKind = 0;
+				break;
+			}
 		}
 		if (!bInitInfo)
 		{
-			for (int i = 0; i < num; i++)
+			for (int j = 0; j < num; j++)
 			{
-				if (this.m_TempBattlePos[i].m_nSolID <= 0L)
+				if (this.m_TempBattlePos[j].m_nSolID <= 0L)
 				{
-					this.m_TempBattlePos[i].m_nSolID = nSolID;
-					this.m_TempBattlePos[i].m_nBattlePos = nBattlePos;
-					this.m_TempBattlePos[i].m_nCharKind = nCharKind;
+					this.m_TempBattlePos[j].m_nSolID = nSolID;
+					this.m_TempBattlePos[j].m_nBattlePos = nBattlePos;
+					this.m_TempBattlePos[j].m_nCharKind = nCharKind;
 					break;
 				}
 			}
@@ -520,41 +587,6 @@ public class SoldierBatch : IDisposable
 			{
 				plunderSolListDlg.UpdateSolList(nSolID);
 				plunderSolListDlg.SetSolNum(this.GetTempCount(), false);
-			}
-		}
-	}
-
-	public void InitTempSolInfo(long nSolID)
-	{
-		int num = 1;
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP)
-		{
-			num = 5;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP)
-		{
-			num = 9;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2)
-		{
-			num = 3;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
-		{
-			num = 15;
-		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
-		{
-			num = 5;
-		}
-		for (int i = 0; i < num; i++)
-		{
-			if (this.m_TempBattlePos[i].m_nSolID == nSolID)
-			{
-				this.m_TempBattlePos[i].m_nSolID = 0L;
-				this.m_TempBattlePos[i].m_nBattlePos = 0;
-				this.m_TempBattlePos[i].m_nCharKind = 0;
-				break;
 			}
 		}
 	}
@@ -573,9 +605,13 @@ public class SoldierBatch : IDisposable
 		Vector3 result = Vector3.zero;
 		if (SoldierBatch.m_eSoldierBatchMode != eSOLDIER_BATCH_MODE.MODE_PLUNDER && SoldierBatch.m_eSoldierBatchMode != eSOLDIER_BATCH_MODE.MODE_INFIBATTLE && SoldierBatch.m_eSoldierBatchMode != eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE && SoldierBatch.m_eSoldierBatchMode != eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
 		{
-			if (SoldierBatch.m_eSoldierBatchMode == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+			if (SoldierBatch.m_eSoldierBatchMode == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 			{
 				result = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][0].mListPos[5];
+			}
+			else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+			{
+				result = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][0].mListPos[10];
 			}
 			else
 			{
@@ -592,11 +628,11 @@ public class SoldierBatch : IDisposable
 	public int GetSolBatchNum()
 	{
 		int result;
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			result = this.GetBabelTowerSolCount();
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP)
 		{
 			result = this.GetTempCount();
 		}
@@ -658,6 +694,23 @@ public class SoldierBatch : IDisposable
 		{
 			this.m_dicSolChar.Add(SolID, goObject);
 		}
+		PlunderSolNumDlg plunderSolNumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+		if (plunderSolNumDlg != null)
+		{
+			plunderSolNumDlg.CalFightPower(SolID, true);
+		}
+		else
+		{
+			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+			if (charPersonInfo != null)
+			{
+				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(SolID);
+				if (soldierInfoFromSolID != null)
+				{
+					this.SumFightPower += soldierInfoFromSolID.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_FIGHTINGPOWER);
+				}
+			}
+		}
 	}
 
 	public void RemoveCharFromSolID(long SolID)
@@ -669,6 +722,11 @@ public class SoldierBatch : IDisposable
 		GameObject gameObject = this.m_dicSolChar[SolID];
 		if (gameObject != null)
 		{
+			PlunderSolNumDlg plunderSolNumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+			if (plunderSolNumDlg != null)
+			{
+				plunderSolNumDlg.CalFightPower(SolID, false);
+			}
 			this.m_dicSolChar.Remove(SolID);
 		}
 		UnityEngine.Object.Destroy(gameObject);
@@ -701,6 +759,11 @@ public class SoldierBatch : IDisposable
 		{
 			plunderSolNumDlg.SetExplain();
 			plunderSolNumDlg.Show();
+			InfiCombinationDlg infiCombinationDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.INFICOMBINATION_DLG) as InfiCombinationDlg;
+			if (infiCombinationDlg != null)
+			{
+				infiCombinationDlg.Show();
+			}
 		}
 		int nSolNum = 0;
 		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
@@ -713,6 +776,19 @@ public class SoldierBatch : IDisposable
 				{
 					babelLobbyUserListDlg.RefreshSolInfo();
 					babelLobbyUserListDlg.SetWaitingLock(false);
+				}
+			}
+		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			nSolNum = this.GetSolBatchNum();
+			MythRaidLobbyUserListDlg mythRaidLobbyUserListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MYTHRAID_USERLIST_DLG) as MythRaidLobbyUserListDlg;
+			if (mythRaidLobbyUserListDlg != null)
+			{
+				for (int j = 0; j < (int)SoldierBatch.MYTHRAID_INFO.Count; j++)
+				{
+					mythRaidLobbyUserListDlg.RefreshSolInfo();
+					mythRaidLobbyUserListDlg.SetWaitingLock(false);
 				}
 			}
 		}
@@ -741,6 +817,10 @@ public class SoldierBatch : IDisposable
 			{
 				plunderStartAndReMatchDlg2.SetButtonMode();
 			}
+			if (plunderSolNumDlg != null)
+			{
+				plunderSolNumDlg.SetTitle(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2218"));
+			}
 		}
 		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE)
 		{
@@ -760,9 +840,38 @@ public class SoldierBatch : IDisposable
 			{
 				plunderStartAndReMatchDlg4.SetButtonMode();
 			}
+			if (plunderSolNumDlg != null)
+			{
+				plunderSolNumDlg.SetTitle(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("495"));
+			}
+		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
+		{
+			this.Load_DailyDungeonBatchSolInfo();
+			DailyDungeon_Start_Dlg dailyDungeon_Start_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DAILYDUNGEON_START_DLG) as DailyDungeon_Start_Dlg;
+			if (dailyDungeon_Start_Dlg != null)
+			{
+				dailyDungeon_Start_Dlg.Set_Button(SoldierBatch.SOLDIER_BATCH_MODE);
+			}
+			if (plunderSolNumDlg != null)
+			{
+				plunderSolNumDlg.SetTitle(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1966"));
+			}
+			nSolNum = this.GetTempCount();
 		}
 		else
 		{
+			if (plunderSolNumDlg != null)
+			{
+				if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2)
+				{
+					plunderSolNumDlg.SetTitle(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("495"));
+				}
+				else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP)
+				{
+					plunderSolNumDlg.SetTitle(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1307"));
+				}
+			}
 			PlunderStartAndReMatchDlg plunderStartAndReMatchDlg5 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDER_STARTANDREMATCH_DLG) as PlunderStartAndReMatchDlg;
 			if (plunderStartAndReMatchDlg5 != null)
 			{
@@ -772,6 +881,19 @@ public class SoldierBatch : IDisposable
 		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENCE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
 		{
 			nSolNum = this.GetSolBatchNum();
+		}
+		PlunderSolNumDlg plunderSolNumDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+		if (plunderSolNumDlg2 != null)
+		{
+			if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE)
+			{
+				plunderSolNumDlg2.SetSumFightPowerAlly0(this.SumFightPower, false);
+			}
+			else if (this.SumFightPower > 0L)
+			{
+				plunderSolNumDlg2.ShowAllFightPower(SoldierBatch.SOLDIER_BATCH_MODE, this.SumFightPower);
+			}
+			this.SumFightPower = 0L;
 		}
 		PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
 		if (plunderSolListDlg != null)
@@ -833,15 +955,32 @@ public class SoldierBatch : IDisposable
 	public bool IsAllCharLoadComplete()
 	{
 		this.MakeGridInfo();
-		this.SetChangeBabelBatchGrid();
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			this.SetChangeMythRaidBatchGrid();
+		}
+		else
+		{
+			this.SetChangeBabelBatchGrid();
+		}
 		this.MakePlunderMyCharTotal();
 		for (int i = 0; i < this.m_MakeCharList.Count; i++)
 		{
 			PLUNDER_TARGET_INFO info = this.m_MakeCharList[i];
-			this.MakePlunderCharEnemy(info);
+			this.MakePlunderCharEnemy(info, i);
 		}
 		this.m_MakeCharList.Clear();
 		return true;
+	}
+
+	public void SetEnemyUserName(string UserName)
+	{
+		this.m_strEnemyUserName = UserName;
+	}
+
+	public string GetEnemyUserName()
+	{
+		return this.m_strEnemyUserName;
 	}
 
 	public void AddEnemyCharInfo(PLUNDER_TARGET_INFO _info)
@@ -856,7 +995,7 @@ public class SoldierBatch : IDisposable
 	[DebuggerHidden]
 	public static IEnumerator DownloadPlunderMap(AStage stage, BATTLE_MAP BASEMAP, TsSceneSwitcher.ESceneType eSceneType)
 	{
-		SoldierBatch.<DownloadPlunderMap>c__Iterator5 <DownloadPlunderMap>c__Iterator = new SoldierBatch.<DownloadPlunderMap>c__Iterator5();
+		SoldierBatch.<DownloadPlunderMap>c__Iterator7 <DownloadPlunderMap>c__Iterator = new SoldierBatch.<DownloadPlunderMap>c__Iterator7();
 		<DownloadPlunderMap>c__Iterator.BASEMAP = BASEMAP;
 		<DownloadPlunderMap>c__Iterator.<$>BASEMAP = BASEMAP;
 		return <DownloadPlunderMap>c__Iterator;
@@ -893,7 +1032,7 @@ public class SoldierBatch : IDisposable
 	private void MakeGridInfo()
 	{
 		int id = 0;
-		if (SoldierBatch.m_eSoldierBatchMode == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.m_eSoldierBatchMode == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			id = 4;
 		}
@@ -914,7 +1053,7 @@ public class SoldierBatch : IDisposable
 				{
 					BATTLE_POS_GRID bATTLE_POS_GRID = new BATTLE_POS_GRID();
 					BATTLE_POS_GRID info = BASE_BATTLE_POS_Manager.GetInstance().GetInfo(id);
-					bATTLE_POS_GRID.Set(info, (i != 0) ? 180 : 0);
+					bATTLE_POS_GRID.Set(info, (i != 0) ? 180 : 0, SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE);
 					bATTLE_POS_GRID.SetCenter(new Vector3(vector.x, vector.y, vector.z));
 					dictionary.Add(j, bATTLE_POS_GRID);
 				}
@@ -943,7 +1082,7 @@ public class SoldierBatch : IDisposable
 		}
 		Vector3 gridCenter = this.GetGridCenter();
 		SoldierBatchGridCell.PickTerrain(this.GetGridCenter(), ref gridCenter);
-		if (SoldierBatch.m_eSoldierBatchMode == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.m_eSoldierBatchMode == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			BATTLE_POS_GRID info2 = BASE_BATTLE_POS_Manager.GetInstance().GetInfo(id);
 			for (int i = 0; i < info2.mListPos.Length; i++)
@@ -1112,13 +1251,14 @@ public class SoldierBatch : IDisposable
 				if (charKindInfo != null)
 				{
 					string text = string.Empty;
+					string charBundlePath = this.GetCharBundlePath(charKindInfo, nkSoldierInfo);
 					if (charKindInfo.IsATB(1L))
 					{
-						text = "Char/Player/" + charKindInfo.GetBundlePath();
+						text = "Char/Player/" + charBundlePath;
 					}
 					else
 					{
-						text = "char/" + charKindInfo.GetBundlePath();
+						text = "char/" + charBundlePath;
 					}
 					float num = (float)charKindInfo.GetScale() / 10f;
 					num *= 1f;
@@ -1173,13 +1313,14 @@ public class SoldierBatch : IDisposable
 				if (charKindInfo2 != null)
 				{
 					string text2 = string.Empty;
+					string charBundlePath2 = this.GetCharBundlePath(charKindInfo2, current);
 					if (charKindInfo2.IsATB(1L))
 					{
-						text2 = "Char/Player/" + charKindInfo2.GetBundlePath();
+						text2 = "Char/Player/" + charBundlePath2;
 					}
 					else
 					{
-						text2 = "char/" + charKindInfo2.GetBundlePath();
+						text2 = "char/" + charBundlePath2;
 					}
 					float num2 = (float)charKindInfo2.GetScale() / 10f;
 					num2 *= 1f;
@@ -1295,7 +1436,7 @@ public class SoldierBatch : IDisposable
 		}
 	}
 
-	public void MakePlunderCharFromUI(long nSolID, long nFriendPersonID, int nFriendCharKind, long nFriendFightPower)
+	public void MakePlunderCharFromUI(long nSolID, long nFriendPersonID, int nFriendCharKind, long nFriendFightPower, int nFriendCostumeUnique)
 	{
 		GameObject gameObject = TsSceneSwitcher.Instance._GetSwitchData_RootSceneGO(TsSceneSwitcher.ESceneType.SoldierBatchScene);
 		if (gameObject == null)
@@ -1317,11 +1458,13 @@ public class SoldierBatch : IDisposable
 			return;
 		}
 		bool flag = false;
+		string text = string.Empty;
 		NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(nSolID);
 		int charkind;
 		if (soldierInfoFromSolID != null)
 		{
 			charkind = soldierInfoFromSolID.GetCharKind();
+			text = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeBundlePath(soldierInfoFromSolID);
 		}
 		else
 		{
@@ -1331,6 +1474,7 @@ public class SoldierBatch : IDisposable
 			}
 			flag = true;
 			charkind = nFriendCharKind;
+			text = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeBundlePath(nFriendCostumeUnique);
 		}
 		GameObject charFromSolID = this.GetCharFromSolID(nSolID);
 		if (charFromSolID != null)
@@ -1340,14 +1484,23 @@ public class SoldierBatch : IDisposable
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(charkind);
 		if (charKindInfo != null)
 		{
-			string text = string.Empty;
+			string text2 = string.Empty;
+			string str = charKindInfo.GetBundlePath();
 			if (charKindInfo.IsATB(1L))
 			{
-				text = "Char/Player/" + charKindInfo.GetBundlePath();
+				if (!string.IsNullOrEmpty(text))
+				{
+					str = text;
+				}
+				text2 = "Char/Player/" + str;
 			}
 			else
 			{
-				text = "char/" + charKindInfo.GetBundlePath();
+				if (!string.IsNullOrEmpty(text))
+				{
+					str = text;
+				}
+				text2 = "char/" + str;
 			}
 			float num = (float)charKindInfo.GetScale() / 10f;
 			num *= 1f;
@@ -1392,8 +1545,8 @@ public class SoldierBatch : IDisposable
 					}
 				}
 			}
-			text = text.ToLower();
-			NrTSingleton<NkBundleCallBack>.Instance.RequestBundleCallBackRunTime(text, NkBundleCallBack.NPCBundleStackName, new NkBundleParam.funcParamBundleCallBack(this.LoadPlunderCharFromUI), soldierBatchSetCharInfo, true);
+			text2 = text2.ToLower();
+			NrTSingleton<NkBundleCallBack>.Instance.RequestBundleCallBackRunTime(text2, NkBundleCallBack.NPCBundleStackName, new NkBundleParam.funcParamBundleCallBack(this.LoadPlunderCharFromUI), soldierBatchSetCharInfo, true);
 		}
 	}
 
@@ -1466,7 +1619,12 @@ public class SoldierBatch : IDisposable
 		}
 	}
 
-	public void MakePlunderCharEnemy(PLUNDER_TARGET_INFO _info)
+	public PLUNDER_TARGET_INFO GetInfiDefenseSolInfo(int index)
+	{
+		return this.InfiDefenseSolInfo[index];
+	}
+
+	public void MakePlunderCharEnemy(PLUNDER_TARGET_INFO _info, int index)
 	{
 		if (_info.nCharKind < 0)
 		{
@@ -1486,13 +1644,18 @@ public class SoldierBatch : IDisposable
 		if (charKindInfo != null)
 		{
 			string text = string.Empty;
+			string str = charKindInfo.GetBundlePath();
 			if (charKindInfo.IsATB(1L))
 			{
-				text = "Char/Player/" + charKindInfo.GetBundlePath();
+				text = "Char/Player/" + str;
 			}
 			else
 			{
-				text = "char/" + charKindInfo.GetBundlePath();
+				if (_info.nCostumeUnique > 0)
+				{
+					str = this.GetCharBundlePath(charKindInfo.GetBundlePath(), _info.nCostumeUnique);
+				}
+				text = "char/" + str;
 			}
 			float num = (float)charKindInfo.GetScale() / 10f;
 			num *= 1f;
@@ -1525,24 +1688,26 @@ public class SoldierBatch : IDisposable
 					battle_PowerDlg.Set(gameObject2, (long)_info.nFightPower);
 				}
 			}
+			this.InfiDefenseSolInfo[index] = _info;
 			text = text.ToLower();
 			NrTSingleton<NkBundleCallBack>.Instance.RequestBundleCallBackRunTime(text, NkBundleCallBack.NPCBundleStackName, new NkBundleParam.funcParamBundleCallBack(this.LoadPlunderChar), gameObject2, true);
 		}
 	}
 
-	public void MakeBabelChar(long nSolID, int nCharKind, long PersonID, byte nBattlePos, long nFightPower)
+	public void MakeBabelChar(long nSolID, int nCharKind, long PersonID, byte nBattlePos, long nFightPower, int nCostumeUnique)
 	{
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(nCharKind);
 		if (charKindInfo != null)
 		{
 			string text = string.Empty;
+			string charBundlePath = this.GetCharBundlePath(charKindInfo.GetBundlePath(), nCostumeUnique);
 			if (charKindInfo.IsATB(1L))
 			{
-				text = "Char/Player/" + charKindInfo.GetBundlePath();
+				text = "Char/Player/" + charBundlePath;
 			}
 			else
 			{
-				text = "char/" + charKindInfo.GetBundlePath();
+				text = "char/" + charBundlePath;
 			}
 			GameObject gameObject = TsSceneSwitcher.Instance._GetSwitchData_RootSceneGO(TsSceneSwitcher.ESceneType.SoldierBatchScene);
 			if (gameObject == null)
@@ -1681,416 +1846,501 @@ public class SoldierBatch : IDisposable
 		{
 			nCharKind = (int)nFromSolID;
 		}
-		if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
 		{
-			NkSoldierInfo nkSoldierInfo2 = null;
-			if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 && nToSolID > 0L)
+			if (SoldierBatch.BABELTOWER_INFO.IsReadyBattle(charPersonInfo.GetPersonID()))
 			{
-				nkSoldierInfo2 = charPersonInfo.GetSoldierInfoFromSolID(nToSolID);
-				if (nkSoldierInfo2 == null)
-				{
-					return false;
-				}
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("171"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return false;
 			}
-			if ((SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PLUNDER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENCE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP) && nkSoldierInfo != null && nkSoldierInfo2 != null)
+			int positionBabel_Tower = this.GetPositionBabel_Tower(nToSolID);
+			int positionBabel_Tower2 = this.GetPositionBabel_Tower(nFromSolID);
+			if (positionBabel_Tower > 0)
 			{
-				if (nkSoldierInfo2.GetCharKind() == nkSoldierInfo.GetCharKind())
+				if (positionBabel_Tower2 < 0)
 				{
-					if (nkSoldierInfo2.GetSolSubData(this.m_eSetMode) > 0L && nkSoldierInfo.GetSolSubData(this.m_eSetMode) > 0L)
+					if (nkSoldierInfo != null && nkSoldierInfo.GetCharKind() != this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower].nCharKind && this.IsSameKindCharBatch(nCharKind, nFromSolID, flag))
 					{
 						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 						return false;
 					}
-				}
-				else
-				{
-					if (nkSoldierInfo2.GetSolSubData(this.m_eSetMode) <= 0L && this.IsSameKindCharBatch(nkSoldierInfo2.GetCharKind(), 0L, flag))
+					if (this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower].nPersonID != charPersonInfo.GetPersonID())
 					{
-						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-						return false;
-					}
-					if (nkSoldierInfo.GetSolSubData(this.m_eSetMode) <= 0L && this.IsSameKindCharBatch(nkSoldierInfo.GetCharKind(), 0L, flag))
-					{
-						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-						return false;
-					}
-				}
-			}
-			long num2 = -1L;
-			long num3 = -1L;
-			byte objID = 0;
-			byte objID2 = 0;
-			if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
-			{
-				if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
-				{
-					if (nFromSolID > 0L)
-					{
-						num2 = (long)this.GetTempBattlePos(nFromSolID);
-					}
-					if (nToSolID > 0L)
-					{
-						num3 = (long)this.GetTempBattlePos(nToSolID);
-					}
-					Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
-					if (num2 > 0L)
-					{
-						dictionary[(int)num2].SolID = nToSolID;
-						this.SetTempBattlePos(nToSolID, (byte)num2, nkSoldierInfo2.GetCharKind(), false);
-					}
-					else
-					{
-						if (nkSoldierInfo2.GetCharKind() != nkSoldierInfo.GetCharKind() && this.IsSameKindCharBatch(nkSoldierInfo.GetCharKind(), 0L, flag))
+						if (this.IsSameKindCharBatch(nCharKind, nFromSolID, flag))
 						{
 							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 							return false;
 						}
-						this.SetTempBattlePos(nToSolID, (byte)num2, nkSoldierInfo2.GetCharKind(), true);
-					}
-					dictionary[(int)num3].SolID = nFromSolID;
-					this.SetTempBattlePos(nFromSolID, (byte)num3, nkSoldierInfo.GetCharKind(), false);
-				}
-				else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2)
-				{
-					if (nFromSolID > 0L)
-					{
-						num2 = (long)this.GetTempBattlePos(nFromSolID);
-					}
-					if (nToSolID > 0L)
-					{
-						num3 = (long)this.GetTempBattlePos(nToSolID);
-					}
-					Dictionary<int, SoldierBatchGrid> dictionary2 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
-					if (num2 > 0L)
-					{
-						dictionary2[(int)num2].SolID = nToSolID;
-						this.SetTempBattlePos(nToSolID, (byte)num2, (int)nToSolID, false);
-					}
-					else
-					{
-						if (nToSolID != nFromSolID && this.IsSameKindCharBatch((int)nFromSolID, 0L, flag))
+						int num2 = 0;
+						for (int i = 0; i < this.m_dicBabel_Tower_BatchInfo.Count; i++)
 						{
-							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-							return false;
+							int key = this.SetCalcBattlePos(0, (byte)i);
+							if (this.m_dicBabel_Tower_BatchInfo[key].nSolID != 0L && this.m_dicBabel_Tower_BatchInfo[key].nSolID != nFromSolID && this.m_dicBabel_Tower_BatchInfo[key].nPersonID == charPersonInfo.GetPersonID())
+							{
+								num2++;
+							}
 						}
-						this.SetTempBattlePos(nToSolID, (byte)num2, (int)nToSolID, true);
-					}
-					dictionary2[(int)num3].SolID = nFromSolID;
-					this.SetTempBattlePos(nFromSolID, (byte)num3, (int)nFromSolID, false);
-				}
-				else
-				{
-					if (nFromSolID > 0L)
-					{
-						num2 = nkSoldierInfo.GetSolSubData(this.m_eSetMode);
-					}
-					else
-					{
-						num2 = (long)this.m_DefenceObjectInfo[num].m_nBattlePos;
-						objID = this.m_DefenceObjectInfo[num].m_nObjID;
-					}
-					int num4 = -1;
-					if (nToSolID > 0L)
-					{
-						num3 = nkSoldierInfo2.GetSolSubData(this.m_eSetMode);
-					}
-					else
-					{
-						num4 = this.GetObjetIndex(nToSolID);
-						if (num4 < 0)
+						if (flag)
 						{
-							return false;
-						}
-						num3 = (long)this.m_DefenceObjectInfo[num4].m_nBattlePos;
-						objID2 = this.m_DefenceObjectInfo[num4].m_nObjID;
-					}
-					Dictionary<int, SoldierBatchGrid> dictionary3 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
-					if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENCE_MAKEUP && (num >= 0 || num4 >= 0) && num2 > 0L && num3 > 0L)
-					{
-						byte b = 0;
-						byte b2 = 0;
-						byte b3 = 0;
-						SoldierBatch.GetCalcBattlePos(num2, ref b, ref b3);
-						SoldierBatch.GetCalcBattlePos(num3, ref b2, ref b3);
-						if (b != b2)
-						{
-							byte b4 = 0;
-							if (nFromSolID > 0L)
+							num2 = 0;
+							for (int j = 0; j < this.m_dicBabel_Tower_BatchInfo.Count; j++)
 							{
-								b4 = b2;
-							}
-							if (nToSolID > 0L)
-							{
-								b4 = b;
-							}
-							NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-							if (kMyCharInfo == null)
-							{
-								return false;
-							}
-							int level = kMyCharInfo.GetLevel();
-							int a = level / 3;
-							int num5 = Mathf.Min(a, 5);
-							BATTLE_POS_GRID bATTLE_POS_GRID = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][(int)b4];
-							int num6 = 0;
-							for (int i = 0; i < bATTLE_POS_GRID.mListPos.Length; i++)
-							{
-								int key = this.SetCalcBattlePos(b4, (byte)i);
-								if (dictionary3[key].SolID > 0L)
+								int key2 = this.SetCalcBattlePos(0, (byte)j);
+								if (this.m_dicBabel_Tower_BatchInfo[key2].nSolID != 0L && this.m_dicBabel_Tower_BatchInfo[key2].nSolID != nFromSolID && this.m_dicBabel_Tower_BatchInfo[key2].nPersonID != charPersonInfo.GetPersonID())
 								{
-									num6++;
+									num2++;
 								}
 							}
-							if (num6 >= num5)
+						}
+						byte nCount = SoldierBatch.BABELTOWER_INFO.m_nCount;
+						int num3;
+						if (nCount == 1)
+						{
+							if (flag)
 							{
-								string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("123");
-								string empty = string.Empty;
-								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+								num3 = 3;
+							}
+							else
+							{
+								num3 = 9;
+							}
+						}
+						else
+						{
+							num3 = (int)(12 / nCount + 1);
+						}
+						if (num2 >= num3)
+						{
+							string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("123");
+							string empty = string.Empty;
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+							{
+								textFromNotify,
+								"num",
+								num3.ToString()
+							});
+							Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							return false;
+						}
+					}
+					else
+					{
+						int num4 = 0;
+						if (flag)
+						{
+							for (int k = 0; k < this.m_dicBabel_Tower_BatchInfo.Count; k++)
+							{
+								int key3 = this.SetCalcBattlePos(0, (byte)k);
+								if (this.m_dicBabel_Tower_BatchInfo[key3].nSolID != 0L && this.m_dicBabel_Tower_BatchInfo[key3].nSolID != nFromSolID && this.m_dicBabel_Tower_BatchInfo[key3].nPersonID != charPersonInfo.GetPersonID())
 								{
-									textFromNotify,
-									"num",
-									num5.ToString()
-								});
-								Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-								return false;
+									num4++;
+								}
 							}
 						}
-					}
-					if (num2 > 0L)
-					{
-						dictionary3[(int)num2].SolID = nToSolID;
-						dictionary3[(int)num2].ObjID = objID2;
-					}
-					dictionary3[(int)num3].SolID = nFromSolID;
-					dictionary3[(int)num3].ObjID = objID;
-					if (num < 0)
-					{
-						nkSoldierInfo.SetSolSubData((int)this.m_eSetMode, num3);
-					}
-					else
-					{
-						if (num2 <= 0L)
+						byte nCount2 = SoldierBatch.BABELTOWER_INFO.m_nCount;
+						int num5;
+						if (nCount2 == 1)
 						{
-							this.m_DefenceObjectInfo[num].m_nObjID = this.MakeUpCharInfo.m_nObjectid;
-							dictionary3[(int)num3].ObjID = this.MakeUpCharInfo.m_nObjectid;
-						}
-						this.m_DefenceObjectInfo[num].m_nBattlePos = (byte)num3;
-					}
-					if (num4 < 0)
-					{
-						nkSoldierInfo2.SetSolSubData((int)this.m_eSetMode, num2);
-					}
-					else if (num2 > 0L)
-					{
-						this.m_DefenceObjectInfo[num4].m_nBattlePos = (byte)num2;
-					}
-					else
-					{
-						this.m_DefenceObjectInfo[num4].m_nBattlePos = 0;
-						this.m_DefenceObjectInfo[num4].m_nObjID = 0;
-						if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
-						{
-							PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
-							if (plunderSolListDlg != null)
+							if (flag)
 							{
-								plunderSolListDlg.SetSolNum(SoldierBatch.SOLDIERBATCH.GetObjCount(), true);
+								num5 = 3;
+							}
+							else
+							{
+								num5 = 9;
 							}
 						}
-					}
-					if (num2 <= 0L && num >= 0)
-					{
-						NrTable_PlunderObjectinfo_Manager instance = NrTSingleton<NrTable_PlunderObjectinfo_Manager>.Instance;
-						if (instance != null)
+						else
 						{
-							PLUNDER_OBJECT_INFO pLUNDER_OBJECT_INFO = instance.Get_Value(this.m_DefenceObjectInfo[num].m_nObjID);
-							string name = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(pLUNDER_OBJECT_INFO.nObject_Kind);
+							num5 = (int)(12 / nCount2 + 1);
+						}
+						if (num4 >= num5)
+						{
+							string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("123");
 							string empty2 = string.Empty;
 							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
 							{
-								NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("131"),
-								"charname",
-								name,
-								"gold",
-								pLUNDER_OBJECT_INFO.nSpendGold.ToString()
+								textFromNotify2,
+								"num",
+								num5.ToString()
 							});
-							this.msgBox = (NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG) as MsgBoxUI);
-							this.msgBox.SetMsg(new YesDelegate(this.OnRequestObjectBatchOk), num, new NoDelegate(this.OnRequestObjectBatchCancle), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("130"), empty2, eMsgType.MB_OK_CANCEL);
-							this.m_lsUiID.Add(this.msgBox.WindowID);
+							Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							return false;
 						}
 					}
 				}
-			}
-			GameObject charFromSolID = this.GetCharFromSolID(nFromSolID);
-			GameObject charFromSolID2 = this.GetCharFromSolID(nToSolID);
-			byte key2 = 0;
-			byte b5 = 0;
-			Vector3 vector = Vector3.zero;
-			BATTLE_POS_GRID bATTLE_POS_GRID2;
-			if (num2 > 0L)
-			{
-				SoldierBatch.GetCalcBattlePos(num2, ref key2, ref b5);
-				bATTLE_POS_GRID2 = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][(int)key2];
-				vector = bATTLE_POS_GRID2.mListPos[(int)b5];
-				SoldierBatchGridCell.PickTerrain(vector, ref vector);
-				charFromSolID2.transform.position = vector;
-			}
-			else
-			{
-				this.RemoveCharFromSolID(nToSolID);
-			}
-			if (charFromSolID != null)
-			{
-				TsPositionFollowerTerrain component = charFromSolID.GetComponent<TsPositionFollowerTerrain>();
-				if (component != null)
+				byte b = 0;
+				byte nBattlePos = 0;
+				SoldierBatch.GetCalcBattlePos((long)positionBabel_Tower, ref b, ref nBattlePos);
+				GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = nFromSolID;
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = nCharKind;
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = nBattlePos;
+				if (flag)
 				{
-					component.enabled = false;
-					TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = nFriendPersonID;
 				}
+				else
+				{
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = 0L;
+				}
+				SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
 			}
-			SoldierBatch.GetCalcBattlePos(num3, ref key2, ref b5);
-			bATTLE_POS_GRID2 = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][(int)key2];
-			vector = bATTLE_POS_GRID2.mListPos[(int)b5];
-			SoldierBatchGridCell.PickTerrain(vector, ref vector);
-			charFromSolID.transform.position = vector;
 			return true;
 		}
-		if (SoldierBatch.BABELTOWER_INFO.IsReadyBattle(charPersonInfo.GetPersonID()))
+		else
 		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("171"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return false;
-		}
-		int positionBabel_Tower = this.GetPositionBabel_Tower(nToSolID);
-		int positionBabel_Tower2 = this.GetPositionBabel_Tower(nFromSolID);
-		if (positionBabel_Tower > 0)
-		{
-			if (positionBabel_Tower2 < 0)
+			if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 			{
-				if (nkSoldierInfo != null && nkSoldierInfo.GetCharKind() != this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower].nCharKind && this.IsSameKindCharBatch(nCharKind, nFromSolID, flag))
+				NkSoldierInfo nkSoldierInfo2 = null;
+				if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 && nToSolID > 0L)
+				{
+					nkSoldierInfo2 = charPersonInfo.GetSoldierInfoFromSolID(nToSolID);
+					if (nkSoldierInfo2 == null)
+					{
+						return false;
+					}
+				}
+				if ((SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PLUNDER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENCE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE) && nkSoldierInfo != null && nkSoldierInfo2 != null)
+				{
+					if (nkSoldierInfo2.GetCharKind() == nkSoldierInfo.GetCharKind())
+					{
+						if (nkSoldierInfo2.GetSolSubData(this.m_eSetMode) > 0L && nkSoldierInfo.GetSolSubData(this.m_eSetMode) > 0L)
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							return false;
+						}
+					}
+					else
+					{
+						if (nkSoldierInfo2.GetSolSubData(this.m_eSetMode) <= 0L && this.IsSameKindCharBatch(nkSoldierInfo2.GetCharKind(), 0L, flag))
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							return false;
+						}
+						if (nkSoldierInfo.GetSolSubData(this.m_eSetMode) <= 0L && this.IsSameKindCharBatch(nkSoldierInfo.GetCharKind(), 0L, flag))
+						{
+							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+							return false;
+						}
+					}
+				}
+				long num6 = -1L;
+				long num7 = -1L;
+				byte objID = 0;
+				byte objID2 = 0;
+				if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER && SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+				{
+					if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
+					{
+						if (nFromSolID > 0L)
+						{
+							num6 = (long)this.GetTempBattlePos(nFromSolID);
+						}
+						if (nToSolID > 0L)
+						{
+							num7 = (long)this.GetTempBattlePos(nToSolID);
+						}
+						Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+						if (num6 > 0L)
+						{
+							dictionary[(int)num6].SolID = nToSolID;
+							dictionary[(int)num6].CharKind = nkSoldierInfo2.GetCharKind();
+							this.SetTempBattlePos(nToSolID, (byte)num6, nkSoldierInfo2.GetCharKind(), false);
+						}
+						else
+						{
+							if (nkSoldierInfo2.GetCharKind() != nkSoldierInfo.GetCharKind() && this.IsSameKindCharBatch(nkSoldierInfo.GetCharKind(), 0L, flag))
+							{
+								Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+								return false;
+							}
+							this.SetTempBattlePos(nToSolID, (byte)num6, nkSoldierInfo2.GetCharKind(), true);
+						}
+						dictionary[(int)num7].SolID = nFromSolID;
+						if (nkSoldierInfo != null)
+						{
+							dictionary[(int)num7].CharKind = nkSoldierInfo.GetCharKind();
+						}
+						this.SetTempBattlePos(nFromSolID, (byte)num7, nkSoldierInfo.GetCharKind(), false);
+					}
+					else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2)
+					{
+						if (nFromSolID > 0L)
+						{
+							num6 = (long)this.GetTempBattlePos(nFromSolID);
+						}
+						if (nToSolID > 0L)
+						{
+							num7 = (long)this.GetTempBattlePos(nToSolID);
+						}
+						Dictionary<int, SoldierBatchGrid> dictionary2 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+						if (num6 > 0L)
+						{
+							dictionary2[(int)num6].SolID = nToSolID;
+							this.SetTempBattlePos(nToSolID, (byte)num6, (int)nToSolID, false);
+						}
+						else
+						{
+							if (nToSolID != nFromSolID && this.IsSameKindCharBatch((int)nFromSolID, 0L, flag))
+							{
+								Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+								return false;
+							}
+							this.SetTempBattlePos(nToSolID, (byte)num6, (int)nToSolID, true);
+						}
+						dictionary2[(int)num7].SolID = nFromSolID;
+						this.SetTempBattlePos(nFromSolID, (byte)num7, (int)nFromSolID, false);
+					}
+					else
+					{
+						if (nFromSolID > 0L)
+						{
+							num6 = nkSoldierInfo.GetSolSubData(this.m_eSetMode);
+						}
+						else
+						{
+							num6 = (long)this.m_DefenceObjectInfo[num].m_nBattlePos;
+							objID = this.m_DefenceObjectInfo[num].m_nObjID;
+						}
+						int num8 = -1;
+						if (nToSolID > 0L)
+						{
+							num7 = nkSoldierInfo2.GetSolSubData(this.m_eSetMode);
+						}
+						else
+						{
+							num8 = this.GetObjetIndex(nToSolID);
+							if (num8 < 0)
+							{
+								return false;
+							}
+							num7 = (long)this.m_DefenceObjectInfo[num8].m_nBattlePos;
+							objID2 = this.m_DefenceObjectInfo[num8].m_nObjID;
+						}
+						Dictionary<int, SoldierBatchGrid> dictionary3 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+						if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENCE_MAKEUP && (num >= 0 || num8 >= 0) && num6 > 0L && num7 > 0L)
+						{
+							byte b2 = 0;
+							byte b3 = 0;
+							byte b4 = 0;
+							SoldierBatch.GetCalcBattlePos(num6, ref b2, ref b4);
+							SoldierBatch.GetCalcBattlePos(num7, ref b3, ref b4);
+							if (b2 != b3)
+							{
+								byte b5 = 0;
+								if (nFromSolID > 0L)
+								{
+									b5 = b3;
+								}
+								if (nToSolID > 0L)
+								{
+									b5 = b2;
+								}
+								NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+								if (kMyCharInfo == null)
+								{
+									return false;
+								}
+								int level = kMyCharInfo.GetLevel();
+								int a = level / 3;
+								int num9 = Mathf.Min(a, 5);
+								BATTLE_POS_GRID bATTLE_POS_GRID = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][(int)b5];
+								int num10 = 0;
+								for (int l = 0; l < bATTLE_POS_GRID.mListPos.Length; l++)
+								{
+									int key4 = this.SetCalcBattlePos(b5, (byte)l);
+									if (dictionary3[key4].SolID > 0L)
+									{
+										num10++;
+									}
+								}
+								if (num10 >= num9)
+								{
+									string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("123");
+									string empty3 = string.Empty;
+									NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
+									{
+										textFromNotify3,
+										"num",
+										num9.ToString()
+									});
+									Main_UI_SystemMessage.ADDMessage(empty3, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+									return false;
+								}
+							}
+						}
+						if (num6 > 0L)
+						{
+							dictionary3[(int)num6].SolID = nToSolID;
+							dictionary3[(int)num6].ObjID = objID2;
+							if (nkSoldierInfo2 != null)
+							{
+								dictionary3[(int)num6].CharKind = nkSoldierInfo2.GetCharKind();
+							}
+						}
+						dictionary3[(int)num7].SolID = nFromSolID;
+						dictionary3[(int)num7].ObjID = objID;
+						if (nkSoldierInfo != null)
+						{
+							dictionary3[(int)num7].CharKind = nkSoldierInfo.GetCharKind();
+						}
+						if (num < 0)
+						{
+							nkSoldierInfo.SetSolSubData((int)this.m_eSetMode, num7);
+						}
+						else
+						{
+							if (num6 <= 0L)
+							{
+								this.m_DefenceObjectInfo[num].m_nObjID = this.MakeUpCharInfo.m_nObjectid;
+								dictionary3[(int)num7].ObjID = this.MakeUpCharInfo.m_nObjectid;
+							}
+							this.m_DefenceObjectInfo[num].m_nBattlePos = (byte)num7;
+						}
+						if (num8 < 0)
+						{
+							nkSoldierInfo2.SetSolSubData((int)this.m_eSetMode, num6);
+						}
+						else if (num6 > 0L)
+						{
+							this.m_DefenceObjectInfo[num8].m_nBattlePos = (byte)num6;
+						}
+						else
+						{
+							this.m_DefenceObjectInfo[num8].m_nBattlePos = 0;
+							this.m_DefenceObjectInfo[num8].m_nObjID = 0;
+							if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
+							{
+								PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
+								if (plunderSolListDlg != null)
+								{
+									plunderSolListDlg.SetSolNum(SoldierBatch.SOLDIERBATCH.GetObjCount(), true);
+								}
+							}
+						}
+						if (num6 <= 0L && num >= 0)
+						{
+							NrTable_PlunderObjectinfo_Manager instance = NrTSingleton<NrTable_PlunderObjectinfo_Manager>.Instance;
+							if (instance != null)
+							{
+								PLUNDER_OBJECT_INFO pLUNDER_OBJECT_INFO = instance.Get_Value(this.m_DefenceObjectInfo[num].m_nObjID);
+								string name = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(pLUNDER_OBJECT_INFO.nObject_Kind);
+								string empty4 = string.Empty;
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty4, new object[]
+								{
+									NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("131"),
+									"charname",
+									name,
+									"gold",
+									pLUNDER_OBJECT_INFO.nSpendGold.ToString()
+								});
+								this.msgBox = (NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG) as MsgBoxUI);
+								this.msgBox.SetMsg(new YesDelegate(this.OnRequestObjectBatchOk), num, new NoDelegate(this.OnRequestObjectBatchCancle), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("130"), empty4, eMsgType.MB_OK_CANCEL);
+								this.m_lsUiID.Add(this.msgBox.WindowID);
+							}
+						}
+					}
+				}
+				GameObject charFromSolID = this.GetCharFromSolID(nFromSolID);
+				GameObject charFromSolID2 = this.GetCharFromSolID(nToSolID);
+				byte key5 = 0;
+				byte b6 = 0;
+				Vector3 vector = Vector3.zero;
+				BATTLE_POS_GRID bATTLE_POS_GRID2;
+				if (num6 > 0L)
+				{
+					SoldierBatch.GetCalcBattlePos(num6, ref key5, ref b6);
+					bATTLE_POS_GRID2 = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][(int)key5];
+					vector = bATTLE_POS_GRID2.mListPos[(int)b6];
+					SoldierBatchGridCell.PickTerrain(vector, ref vector);
+					charFromSolID2.transform.position = vector;
+				}
+				else
+				{
+					this.RemoveCharFromSolID(nToSolID);
+				}
+				if (charFromSolID != null)
+				{
+					TsPositionFollowerTerrain component = charFromSolID.GetComponent<TsPositionFollowerTerrain>();
+					if (component != null)
+					{
+						component.enabled = false;
+						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+					}
+				}
+				SoldierBatch.GetCalcBattlePos(num7, ref key5, ref b6);
+				bATTLE_POS_GRID2 = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][(int)key5];
+				vector = bATTLE_POS_GRID2.mListPos[(int)b6];
+				SoldierBatchGridCell.PickTerrain(vector, ref vector);
+				charFromSolID.transform.position = vector;
+				return true;
+			}
+			if (SoldierBatch.MYTHRAID_INFO.IsReadyBattle(charPersonInfo.GetPersonID()))
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("171"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return false;
+			}
+			int positionBabel_Tower3 = this.GetPositionBabel_Tower(nToSolID);
+			int positionBabel_Tower4 = this.GetPositionBabel_Tower(nFromSolID);
+			if (positionBabel_Tower3 <= 0)
+			{
+				UnityEngine.Debug.LogError("nToBattlePos1 Invaild value : " + positionBabel_Tower3);
+				return false;
+			}
+			if (nkSoldierInfo != null && nkSoldierInfo.GetCharKind() != this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower3].nCharKind && this.IsSameKindCharBatch(nCharKind, nFromSolID, flag))
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return false;
+			}
+			if (positionBabel_Tower4 < 0 && this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower3].nPersonID != charPersonInfo.GetPersonID())
+			{
+				if (this.IsSameKindCharBatch(nCharKind, nFromSolID, flag))
 				{
 					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 					return false;
 				}
-				if (this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower].nPersonID != charPersonInfo.GetPersonID())
+				int num11 = 0;
+				for (int m = 0; m < this.m_dicBabel_Tower_BatchInfo.Count; m++)
 				{
-					int num7 = 0;
-					for (int j = 0; j < this.m_dicBabel_Tower_BatchInfo.Count; j++)
+					int key6 = this.SetCalcBattlePos(0, (byte)m);
+					if (this.m_dicBabel_Tower_BatchInfo[key6].nSolID != 0L && this.m_dicBabel_Tower_BatchInfo[key6].nSolID != nFromSolID && this.m_dicBabel_Tower_BatchInfo[key6].nPersonID == charPersonInfo.GetPersonID())
 					{
-						int key3 = this.SetCalcBattlePos(0, (byte)j);
-						if (this.m_dicBabel_Tower_BatchInfo[key3].nSolID != 0L && this.m_dicBabel_Tower_BatchInfo[key3].nSolID != nFromSolID && this.m_dicBabel_Tower_BatchInfo[key3].nPersonID == charPersonInfo.GetPersonID())
-						{
-							num7++;
-						}
-					}
-					if (flag)
-					{
-						num7 = 0;
-						for (int k = 0; k < this.m_dicBabel_Tower_BatchInfo.Count; k++)
-						{
-							int key4 = this.SetCalcBattlePos(0, (byte)k);
-							if (this.m_dicBabel_Tower_BatchInfo[key4].nSolID != 0L && this.m_dicBabel_Tower_BatchInfo[key4].nSolID != nFromSolID && this.m_dicBabel_Tower_BatchInfo[key4].nPersonID != charPersonInfo.GetPersonID())
-							{
-								num7++;
-							}
-						}
-					}
-					byte nCount = SoldierBatch.BABELTOWER_INFO.m_nCount;
-					int num8;
-					if (nCount == 1)
-					{
-						if (flag)
-						{
-							num8 = 3;
-						}
-						else
-						{
-							num8 = 9;
-						}
-					}
-					else
-					{
-						num8 = (int)(12 / nCount + 1);
-					}
-					if (num7 >= num8)
-					{
-						string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("123");
-						string empty3 = string.Empty;
-						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty3, new object[]
-						{
-							textFromNotify2,
-							"num",
-							num8.ToString()
-						});
-						Main_UI_SystemMessage.ADDMessage(empty3, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-						return false;
+						num11++;
 					}
 				}
-				else
+				byte nCount3 = SoldierBatch.MYTHRAID_INFO.m_nCount;
+				int num12 = (int)(12 / nCount3);
+				if (num11 >= num12)
 				{
-					int num9 = 0;
-					if (flag)
+					string textFromNotify4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("123");
+					string empty5 = string.Empty;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty5, new object[]
 					{
-						for (int l = 0; l < this.m_dicBabel_Tower_BatchInfo.Count; l++)
-						{
-							int key5 = this.SetCalcBattlePos(0, (byte)l);
-							if (this.m_dicBabel_Tower_BatchInfo[key5].nSolID != 0L && this.m_dicBabel_Tower_BatchInfo[key5].nSolID != nFromSolID && this.m_dicBabel_Tower_BatchInfo[key5].nPersonID != charPersonInfo.GetPersonID())
-							{
-								num9++;
-							}
-						}
-					}
-					byte nCount2 = SoldierBatch.BABELTOWER_INFO.m_nCount;
-					int num10;
-					if (nCount2 == 1)
-					{
-						if (flag)
-						{
-							num10 = 3;
-						}
-						else
-						{
-							num10 = 9;
-						}
-					}
-					else
-					{
-						num10 = (int)(12 / nCount2 + 1);
-					}
-					if (num9 >= num10)
-					{
-						string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("123");
-						string empty4 = string.Empty;
-						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty4, new object[]
-						{
-							textFromNotify3,
-							"num",
-							num10.ToString()
-						});
-						Main_UI_SystemMessage.ADDMessage(empty4, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-						return false;
-					}
+						textFromNotify4,
+						"num",
+						num12.ToString()
+					});
+					Main_UI_SystemMessage.ADDMessage(empty5, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					return false;
 				}
 			}
-			byte b6 = 0;
-			byte nBattlePos = 0;
-			SoldierBatch.GetCalcBattlePos((long)positionBabel_Tower, ref b6, ref nBattlePos);
-			GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = nFromSolID;
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = nCharKind;
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = nBattlePos;
-			if (flag)
-			{
-				gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = nFriendPersonID;
-			}
-			else
-			{
-				gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = 0L;
-			}
-			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
+			byte b7 = 0;
+			byte nBattlePos2 = 0;
+			SoldierBatch.GetCalcBattlePos((long)positionBabel_Tower3, ref b7, ref nBattlePos2);
+			GS_MYTHRAID_BATTLEPOS_SET_REQ gS_MYTHRAID_BATTLEPOS_SET_REQ = new GS_MYTHRAID_BATTLEPOS_SET_REQ();
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nType = 1;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nMythRaidRoomIndex = SoldierBatch.m_cMythRaidInfo.m_nMythRaidRoomIndex;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cMythRaidInfo.m_nLeaderPersonID;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nSolID = nFromSolID;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nCharKind = nCharKind;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nBattlePos = nBattlePos2;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_BATTLEPOS_SET_REQ, gS_MYTHRAID_BATTLEPOS_SET_REQ);
+			return true;
 		}
-		return true;
 	}
 
 	public bool EnableChangePos(long nFromSolID, long nToSolID, long nFriendPersonID, int nFriendCharKInd)
@@ -2128,7 +2378,7 @@ public class SoldierBatch : IDisposable
 			}
 			num3 = (long)this.m_DefenceObjectInfo[num].m_nBattlePos;
 		}
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
 			num3 = (long)this.GetTempBattlePos(nFromSolID);
 		}
@@ -2194,7 +2444,7 @@ public class SoldierBatch : IDisposable
 		{
 			nCharKind = soldierInfoFromSolID.GetCharKind();
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			if (nFriendCharKind <= 0)
 			{
@@ -2243,7 +2493,31 @@ public class SoldierBatch : IDisposable
 				return;
 			}
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			if (SoldierBatch.BABELTOWER_INFO.IsReadyBattle(charPersonInfo.GetPersonID()))
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("171"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return;
+			}
+			int positionBabel_Tower2 = this.GetPositionBabel_Tower(nSolID, nCharKind);
+			if (positionBabel_Tower2 > 0)
+			{
+				byte b2 = 0;
+				byte nBattlePos2 = 0;
+				SoldierBatch.GetCalcBattlePos((long)positionBabel_Tower2, ref b2, ref nBattlePos2);
+				GS_MYTHRAID_BATTLEPOS_SET_REQ gS_MYTHRAID_BATTLEPOS_SET_REQ = new GS_MYTHRAID_BATTLEPOS_SET_REQ();
+				gS_MYTHRAID_BATTLEPOS_SET_REQ.nType = 2;
+				gS_MYTHRAID_BATTLEPOS_SET_REQ.nMythRaidRoomIndex = SoldierBatch.m_cMythRaidInfo.m_nMythRaidRoomIndex;
+				gS_MYTHRAID_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cMythRaidInfo.m_nLeaderPersonID;
+				gS_MYTHRAID_BATTLEPOS_SET_REQ.nSolID = nSolID;
+				gS_MYTHRAID_BATTLEPOS_SET_REQ.nCharKind = nCharKind;
+				gS_MYTHRAID_BATTLEPOS_SET_REQ.nBattlePos = nBattlePos2;
+				SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_BATTLEPOS_SET_REQ, gS_MYTHRAID_BATTLEPOS_SET_REQ);
+				return;
+			}
+		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
 			int tempBattlePos = this.GetTempBattlePos(nSolID);
 			if (tempBattlePos > 0)
@@ -2321,7 +2595,7 @@ public class SoldierBatch : IDisposable
 			{
 				num = nkSoldierInfo.GetCharKind();
 			}
-			else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+			else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 			{
 				if (nFriendCharKind <= 0)
 				{
@@ -2356,7 +2630,7 @@ public class SoldierBatch : IDisposable
 				return false;
 			}
 		}
-		else if ((SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP) && this.IsSameKindCharBatch(num, nSolID, flag))
+		else if ((SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON) && this.IsSameKindCharBatch(num, nSolID, flag))
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("511"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return false;
@@ -2364,7 +2638,7 @@ public class SoldierBatch : IDisposable
 		BATTLE_POS_GRID bATTLE_POS_GRID = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][(int)nStartPos];
 		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
 		int num3 = 0;
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			for (int i = 0; i < bATTLE_POS_GRID.mListPos.Length; i++)
 			{
@@ -2429,6 +2703,10 @@ public class SoldierBatch : IDisposable
 		{
 			num4 = 5;
 		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION)
+		{
+			num4 = 5;
+		}
 		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP)
 		{
 			num4 = 9;
@@ -2452,6 +2730,11 @@ public class SoldierBatch : IDisposable
 				num4 = (int)(12 / nCount + 1);
 			}
 		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			byte nCount2 = SoldierBatch.MYTHRAID_INFO.m_nCount;
+			num4 = (int)(12 / nCount2);
+		}
 		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
 		{
 			EXPEDITION_DATA expeditionDataFromGrade = BASE_EXPEDITION_DATA.GetExpeditionDataFromGrade((byte)SoldierBatch.EXPEDITION_INFO.m_eExpeditionGrade);
@@ -2464,9 +2747,9 @@ public class SoldierBatch : IDisposable
 				num4 = 15;
 			}
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
-			num4 = 5;
+			num4 = 6;
 		}
 		if (num3 >= num4)
 		{
@@ -2481,145 +2764,165 @@ public class SoldierBatch : IDisposable
 			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return false;
 		}
-		if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
 		{
-			if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+			if (SoldierBatch.BABELTOWER_INFO.IsReadyBattle(charPersonInfo.GetPersonID()))
 			{
-				int tempBattlePos = this.GetTempBattlePos(nSolID);
-				if (tempBattlePos > 0)
-				{
-					dictionary[tempBattlePos].SolID = 0L;
-					dictionary[tempBattlePos].CharKind = 0;
-					dictionary[tempBattlePos].PersonID = 0L;
-				}
-				int num5 = this.SetCalcBattlePos(nStartPos, nGridPos);
-				if (dictionary[num5].SolID != 0L)
-				{
-					return false;
-				}
-				dictionary[num5].SolID = nSolID;
-				dictionary[num5].CharKind = num;
-				dictionary[num5].PersonID = 0L;
-				this.SetTempBattlePos(nSolID, (byte)num5, num, false);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("171"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return false;
 			}
-			else if (!flag2)
+			GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
+			gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
+			gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
+			gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
+			gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = nSolID;
+			gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = num;
+			gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = nGridPos;
+			if (flag)
 			{
-				long solSubData = nkSoldierInfo.GetSolSubData(this.m_eSetMode);
-				if (solSubData > 0L)
-				{
-					dictionary[(int)solSubData].SolID = 0L;
-					dictionary[(int)solSubData].CharKind = 0;
-					dictionary[(int)solSubData].PersonID = 0L;
-				}
-				long num6 = (long)this.SetCalcBattlePos(nStartPos, nGridPos);
-				if (dictionary[(int)num6].SolID != 0L)
-				{
-					return false;
-				}
-				dictionary[(int)num6].SolID = nSolID;
-				dictionary[(int)num6].CharKind = num;
-				dictionary[(int)num6].PersonID = 0L;
-				nkSoldierInfo.SetSolSubData((int)this.m_eSetMode, num6);
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = nFriendPersonID;
 			}
 			else
 			{
-				NrTable_PlunderObjectinfo_Manager instance = NrTSingleton<NrTable_PlunderObjectinfo_Manager>.Instance;
-				if (instance == null)
-				{
-					return false;
-				}
-				long num7 = (long)this.m_DefenceObjectInfo[num2].m_nBattlePos;
-				if (num7 > 0L)
-				{
-					dictionary[(int)num7].SolID = 0L;
-					dictionary[(int)num7].CharKind = 0;
-					dictionary[(int)num7].PersonID = 0L;
-					dictionary[(int)num7].ObjID = 0;
-					long num8 = (long)this.SetCalcBattlePos(nStartPos, nGridPos);
-					if (dictionary[(int)num8].SolID != 0L)
-					{
-						return false;
-					}
-					dictionary[(int)num8].SolID = nSolID;
-					dictionary[(int)num8].CharKind = num;
-					dictionary[(int)num8].PersonID = 0L;
-					dictionary[(int)num8].ObjID = nObjID;
-					this.m_DefenceObjectInfo[num2].m_nBattlePos = (byte)num8;
-					this.m_DefenceObjectInfo[num2].m_nObjID = nObjID;
-				}
-				else
-				{
-					long num9 = (long)this.SetCalcBattlePos(nStartPos, nGridPos);
-					if (dictionary[(int)num9].SolID != 0L)
-					{
-						return false;
-					}
-					dictionary[(int)num9].SolID = nSolID;
-					dictionary[(int)num9].CharKind = num;
-					dictionary[(int)num9].PersonID = 0L;
-					dictionary[(int)num9].ObjID = nObjID;
-					this.m_DefenceObjectInfo[num2].m_nBattlePos = (byte)num9;
-					this.m_DefenceObjectInfo[num2].m_nObjID = nObjID;
-					PLUNDER_OBJECT_INFO pLUNDER_OBJECT_INFO = instance.Get_Value(this.m_DefenceObjectInfo[num2].m_nObjID);
-					string name = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(pLUNDER_OBJECT_INFO.nObject_Kind);
-					string empty2 = string.Empty;
-					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
-					{
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("131"),
-						"charname",
-						name,
-						"gold",
-						pLUNDER_OBJECT_INFO.nSpendGold.ToString()
-					});
-					this.msgBox = (NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG) as MsgBoxUI);
-					this.msgBox.SetMsg(new YesDelegate(this.OnRequestObjectBatchOk), num2, new NoDelegate(this.OnRequestObjectBatchCancle), num2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("130"), empty2, eMsgType.MB_OK_CANCEL);
-					this.m_lsUiID.Add(this.msgBox.WindowID);
-				}
+				gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = 0L;
 			}
-			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
-			{
-				PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
-				if (plunderSolListDlg != null && flag2)
-				{
-					plunderSolListDlg.SetSolNum(this.GetObjCount(), true);
-				}
-			}
-			Vector3 vector = bATTLE_POS_GRID.mListPos[(int)nGridPos];
-			SoldierBatchGridCell.PickTerrain(vector, ref vector);
-			if (charFromSolID != null)
-			{
-				TsPositionFollowerTerrain component = charFromSolID.GetComponent<TsPositionFollowerTerrain>();
-				if (component != null)
-				{
-					component.enabled = false;
-					TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
-				}
-			}
-			charFromSolID.transform.position = vector;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
 			return true;
-		}
-		if (SoldierBatch.BABELTOWER_INFO.IsReadyBattle(charPersonInfo.GetPersonID()))
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("171"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return false;
-		}
-		GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
-		gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
-		gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
-		gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
-		gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = nSolID;
-		gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = num;
-		gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = nGridPos;
-		if (flag)
-		{
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = nFriendPersonID;
 		}
 		else
 		{
-			gS_BABELTOWER_BATTLEPOS_SET_REQ.nFriendPersonID = 0L;
+			if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+			{
+				if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
+				{
+					int tempBattlePos = this.GetTempBattlePos(nSolID);
+					if (tempBattlePos > 0)
+					{
+						dictionary[tempBattlePos].SolID = 0L;
+						dictionary[tempBattlePos].CharKind = 0;
+						dictionary[tempBattlePos].PersonID = 0L;
+					}
+					int num5 = this.SetCalcBattlePos(nStartPos, nGridPos);
+					if (dictionary[num5].SolID != 0L)
+					{
+						return false;
+					}
+					dictionary[num5].SolID = nSolID;
+					dictionary[num5].CharKind = num;
+					dictionary[num5].PersonID = 0L;
+					this.SetTempBattlePos(nSolID, (byte)num5, num, false);
+				}
+				else if (!flag2)
+				{
+					long solSubData = nkSoldierInfo.GetSolSubData(this.m_eSetMode);
+					if (solSubData > 0L)
+					{
+						dictionary[(int)solSubData].SolID = 0L;
+						dictionary[(int)solSubData].CharKind = 0;
+						dictionary[(int)solSubData].PersonID = 0L;
+					}
+					long num6 = (long)this.SetCalcBattlePos(nStartPos, nGridPos);
+					if (dictionary[(int)num6].SolID != 0L)
+					{
+						return false;
+					}
+					dictionary[(int)num6].SolID = nSolID;
+					dictionary[(int)num6].CharKind = num;
+					dictionary[(int)num6].PersonID = 0L;
+					nkSoldierInfo.SetSolSubData((int)this.m_eSetMode, num6);
+				}
+				else
+				{
+					NrTable_PlunderObjectinfo_Manager instance = NrTSingleton<NrTable_PlunderObjectinfo_Manager>.Instance;
+					if (instance == null)
+					{
+						return false;
+					}
+					long num7 = (long)this.m_DefenceObjectInfo[num2].m_nBattlePos;
+					if (num7 > 0L)
+					{
+						dictionary[(int)num7].SolID = 0L;
+						dictionary[(int)num7].CharKind = 0;
+						dictionary[(int)num7].PersonID = 0L;
+						dictionary[(int)num7].ObjID = 0;
+						long num8 = (long)this.SetCalcBattlePos(nStartPos, nGridPos);
+						if (dictionary[(int)num8].SolID != 0L)
+						{
+							return false;
+						}
+						dictionary[(int)num8].SolID = nSolID;
+						dictionary[(int)num8].CharKind = num;
+						dictionary[(int)num8].PersonID = 0L;
+						dictionary[(int)num8].ObjID = nObjID;
+						this.m_DefenceObjectInfo[num2].m_nBattlePos = (byte)num8;
+						this.m_DefenceObjectInfo[num2].m_nObjID = nObjID;
+					}
+					else
+					{
+						long num9 = (long)this.SetCalcBattlePos(nStartPos, nGridPos);
+						if (dictionary[(int)num9].SolID != 0L)
+						{
+							return false;
+						}
+						dictionary[(int)num9].SolID = nSolID;
+						dictionary[(int)num9].CharKind = num;
+						dictionary[(int)num9].PersonID = 0L;
+						dictionary[(int)num9].ObjID = nObjID;
+						this.m_DefenceObjectInfo[num2].m_nBattlePos = (byte)num9;
+						this.m_DefenceObjectInfo[num2].m_nObjID = nObjID;
+						PLUNDER_OBJECT_INFO pLUNDER_OBJECT_INFO = instance.Get_Value(this.m_DefenceObjectInfo[num2].m_nObjID);
+						string name = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(pLUNDER_OBJECT_INFO.nObject_Kind);
+						string empty2 = string.Empty;
+						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+						{
+							NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("131"),
+							"charname",
+							name,
+							"gold",
+							pLUNDER_OBJECT_INFO.nSpendGold.ToString()
+						});
+						this.msgBox = (NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG) as MsgBoxUI);
+						this.msgBox.SetMsg(new YesDelegate(this.OnRequestObjectBatchOk), num2, new NoDelegate(this.OnRequestObjectBatchCancle), num2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("130"), empty2, eMsgType.MB_OK_CANCEL);
+						this.m_lsUiID.Add(this.msgBox.WindowID);
+					}
+				}
+				if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
+				{
+					PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
+					if (plunderSolListDlg != null && flag2)
+					{
+						plunderSolListDlg.SetSolNum(this.GetObjCount(), true);
+					}
+				}
+				Vector3 vector = bATTLE_POS_GRID.mListPos[(int)nGridPos];
+				SoldierBatchGridCell.PickTerrain(vector, ref vector);
+				if (charFromSolID != null)
+				{
+					TsPositionFollowerTerrain component = charFromSolID.GetComponent<TsPositionFollowerTerrain>();
+					if (component != null)
+					{
+						component.enabled = false;
+						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+					}
+				}
+				charFromSolID.transform.position = vector;
+				return true;
+			}
+			if (SoldierBatch.MYTHRAID_INFO.IsReadyBattle(charPersonInfo.GetPersonID()))
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("171"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return false;
+			}
+			GS_MYTHRAID_BATTLEPOS_SET_REQ gS_MYTHRAID_BATTLEPOS_SET_REQ = new GS_MYTHRAID_BATTLEPOS_SET_REQ();
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nType = 1;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nMythRaidRoomIndex = SoldierBatch.m_cMythRaidInfo.m_nMythRaidRoomIndex;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cMythRaidInfo.m_nLeaderPersonID;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nSolID = nSolID;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nCharKind = num;
+			gS_MYTHRAID_BATTLEPOS_SET_REQ.nBattlePos = nGridPos;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_BATTLEPOS_SET_REQ, gS_MYTHRAID_BATTLEPOS_SET_REQ);
+			return true;
 		}
-		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
-		return true;
 	}
 
 	public int GetMaxSolArray()
@@ -2651,13 +2954,9 @@ public class SoldierBatch : IDisposable
 		{
 			eSOL_SUBDATA = eSOL_SUBDATA.SOL_SUBDATA_PVP_BATTLEPOS;
 		}
-		else if (eMode == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP)
+		else if (eMode == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || eMode == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP)
 		{
 			eSOL_SUBDATA = eSOL_SUBDATA.SOL_SUBDATA_ATTACK_INFIBATTLE;
-		}
-		else if (eMode == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP)
-		{
-			eSOL_SUBDATA = eSOL_SUBDATA.SOL_SUBDATA_DEFENSE_INFIBATTLE;
 		}
 		else if (eMode == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
 		{
@@ -2746,7 +3045,7 @@ public class SoldierBatch : IDisposable
 		{
 			nCharKind = soldierInfoFromSolID.GetCharKind();
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			if (nFriendCharKind <= 0)
 			{
@@ -2771,7 +3070,7 @@ public class SoldierBatch : IDisposable
 				component.enabled = false;
 			}
 		}
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			long num = (long)this.GetPositionBabel_Tower(nSolID, nCharKind);
 			if (num > 0L)
@@ -2789,7 +3088,7 @@ public class SoldierBatch : IDisposable
 				this.RemoveCharFromSolID(nSolID);
 			}
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
 			long num2 = (long)this.GetTempBattlePos(nSolID);
 			if (num2 > 0L)
@@ -2860,7 +3159,7 @@ public class SoldierBatch : IDisposable
 
 	public bool IsHeroBatch()
 	{
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION)
 		{
 			return true;
 		}
@@ -2932,6 +3231,26 @@ public class SoldierBatch : IDisposable
 		return false;
 	}
 
+	public bool IsHeroDailyDungeonBatch()
+	{
+		if (NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1) == null)
+		{
+			return false;
+		}
+		for (int i = 0; i < 6; i++)
+		{
+			if (this.m_TempBattlePos[i].m_nSolID > 0L)
+			{
+				NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(this.m_TempBattlePos[i].m_nCharKind);
+				if (charKindInfo != null && charKindInfo.IsATB(1L))
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	public bool IsSameKindCharBatch(int nCharKind, long nSolID, bool bFriend)
 	{
 		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
@@ -2939,7 +3258,7 @@ public class SoldierBatch : IDisposable
 		{
 			return false;
 		}
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(nCharKind);
 			bool flag = charKindInfo.IsATB(1L);
@@ -2955,7 +3274,7 @@ public class SoldierBatch : IDisposable
 			for (int i = 0; i < this.m_dicBabel_Tower_BatchInfo.Count; i++)
 			{
 				int key = this.SetCalcBattlePos(0, (byte)i);
-				if (this.m_dicBabel_Tower_BatchInfo[key].nCharKind == nCharKind && this.m_dicBabel_Tower_BatchInfo[key].nSolID != nSolID)
+				if (this.m_dicBabel_Tower_BatchInfo[key].nCharKind == nCharKind && this.m_dicBabel_Tower_BatchInfo[key].nSolID != nSolID && this.m_dicBabel_Tower_BatchInfo[key].nPersonID == charPersonInfo.GetPersonID())
 				{
 					if (partyCount != 1 || this.m_dicBabel_Tower_BatchInfo[key].nPersonID == charPersonInfo.GetPersonID())
 					{
@@ -2964,7 +3283,7 @@ public class SoldierBatch : IDisposable
 				}
 			}
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
 		{
 			clTempBattlePos[] tempBattlePosInfo = this.GetTempBattlePosInfo();
 			for (int j = 0; j < 15; j++)
@@ -3094,16 +3413,21 @@ public class SoldierBatch : IDisposable
 		{
 			return;
 		}
-		BATTLE_POS_GRID bATTLE_POS_GRID = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0][0];
+		Dictionary<int, BATTLE_POS_GRID> dictionary = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		if (!dictionary.ContainsKey(0))
+		{
+			return;
+		}
+		BATTLE_POS_GRID bATTLE_POS_GRID = dictionary[0];
 		if (_ACK.nType == 2)
 		{
 			int positionBabel_Tower = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
 			if (positionBabel_Tower > 0)
 			{
-				Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
-				dictionary[positionBabel_Tower].SolID = 0L;
-				dictionary[positionBabel_Tower].PersonID = 0L;
-				dictionary[positionBabel_Tower].CharKind = 0;
+				Dictionary<int, SoldierBatchGrid> dictionary2 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+				dictionary2[positionBabel_Tower].SolID = 0L;
+				dictionary2[positionBabel_Tower].PersonID = 0L;
+				dictionary2[positionBabel_Tower].CharKind = 0;
 				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower].Init();
 			}
 			this.RemoveCharFromSolID(_ACK.nSolID);
@@ -3113,36 +3437,36 @@ public class SoldierBatch : IDisposable
 			GameObject charFromSolID = this.GetCharFromSolID(_ACK.nSolID);
 			if (charFromSolID == null)
 			{
-				Dictionary<int, SoldierBatchGrid> dictionary2 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+				Dictionary<int, SoldierBatchGrid> dictionary3 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
 				int positionBabel_Tower2 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
 				if (positionBabel_Tower2 > 0)
 				{
-					dictionary2[positionBabel_Tower2].SolID = 0L;
-					dictionary2[positionBabel_Tower2].PersonID = 0L;
-					dictionary2[positionBabel_Tower2].CharKind = 0;
+					dictionary3[positionBabel_Tower2].SolID = 0L;
+					dictionary3[positionBabel_Tower2].PersonID = 0L;
+					dictionary3[positionBabel_Tower2].CharKind = 0;
 					this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower2].Init();
 				}
-				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower);
+				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower, _ACK.nCostumeUnique);
 			}
 			else
 			{
-				Dictionary<int, SoldierBatchGrid> dictionary3 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+				Dictionary<int, SoldierBatchGrid> dictionary4 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
 				int positionBabel_Tower3 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
 				if (positionBabel_Tower3 > 0)
 				{
-					dictionary3[positionBabel_Tower3].SolID = 0L;
-					dictionary3[positionBabel_Tower3].CharKind = 0;
-					dictionary3[positionBabel_Tower3].PersonID = 0L;
+					dictionary4[positionBabel_Tower3].SolID = 0L;
+					dictionary4[positionBabel_Tower3].CharKind = 0;
+					dictionary4[positionBabel_Tower3].PersonID = 0L;
 					this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower3].Init();
 				}
 				int key = this.SetCalcBattlePos(0, _ACK.nBattlePos);
-				if (dictionary3[key].SolID != 0L)
+				if (dictionary4[key].SolID != 0L)
 				{
 					return;
 				}
-				dictionary3[key].SolID = _ACK.nSolID;
-				dictionary3[key].CharKind = _ACK.nCharKind;
-				dictionary3[key].PersonID = _ACK.nPersonID;
+				dictionary4[key].SolID = _ACK.nSolID;
+				dictionary4[key].CharKind = _ACK.nCharKind;
+				dictionary4[key].PersonID = _ACK.nPersonID;
 				this.m_dicBabel_Tower_BatchInfo[key].nSolID = _ACK.nSolID;
 				this.m_dicBabel_Tower_BatchInfo[key].nCharKind = _ACK.nCharKind;
 				this.m_dicBabel_Tower_BatchInfo[key].nPersonID = _ACK.nPersonID;
@@ -3166,19 +3490,19 @@ public class SoldierBatch : IDisposable
 			GameObject charFromSolID3 = this.GetCharFromSolID(_ACK.nMoveSolID);
 			int positionBabel_Tower4 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
 			int positionBabel_Tower5 = this.GetPositionBabel_Tower(_ACK.nMoveSolID, _ACK.nMoveCharKind);
-			Dictionary<int, SoldierBatchGrid> dictionary4 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+			Dictionary<int, SoldierBatchGrid> dictionary5 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
 			if (positionBabel_Tower4 > 0)
 			{
-				dictionary4[positionBabel_Tower4].SolID = _ACK.nMoveSolID;
-				dictionary4[positionBabel_Tower4].CharKind = _ACK.nMoveCharKind;
-				dictionary4[positionBabel_Tower4].PersonID = _ACK.nMovePersonID;
+				dictionary5[positionBabel_Tower4].SolID = _ACK.nMoveSolID;
+				dictionary5[positionBabel_Tower4].CharKind = _ACK.nMoveCharKind;
+				dictionary5[positionBabel_Tower4].PersonID = _ACK.nMovePersonID;
 				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower4].nSolID = _ACK.nMoveSolID;
 				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower4].nCharKind = _ACK.nMoveCharKind;
 				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower4].nPersonID = _ACK.nMovePersonID;
 			}
-			dictionary4[positionBabel_Tower5].SolID = _ACK.nSolID;
-			dictionary4[positionBabel_Tower5].CharKind = _ACK.nCharKind;
-			dictionary4[positionBabel_Tower5].PersonID = _ACK.nPersonID;
+			dictionary5[positionBabel_Tower5].SolID = _ACK.nSolID;
+			dictionary5[positionBabel_Tower5].CharKind = _ACK.nCharKind;
+			dictionary5[positionBabel_Tower5].PersonID = _ACK.nPersonID;
 			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower5].nSolID = _ACK.nSolID;
 			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower5].nCharKind = _ACK.nCharKind;
 			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower5].nPersonID = _ACK.nPersonID;
@@ -3199,7 +3523,7 @@ public class SoldierBatch : IDisposable
 			}
 			else
 			{
-				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower);
+				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower, _ACK.nCostumeUnique);
 			}
 			if (charFromSolID3 != null)
 			{
@@ -3218,7 +3542,7 @@ public class SoldierBatch : IDisposable
 			}
 			else
 			{
-				this.MakeBabelChar(_ACK.nMoveSolID, _ACK.nMoveCharKind, _ACK.nMovePersonID, _ACK.nMoveBattlePos, _ACK.nMoveFightPower);
+				this.MakeBabelChar(_ACK.nMoveSolID, _ACK.nMoveCharKind, _ACK.nMovePersonID, _ACK.nMoveBattlePos, _ACK.nMoveFightPower, _ACK.nMoveCostumeUnique);
 			}
 		}
 		else if (_ACK.nType == 4)
@@ -3226,18 +3550,18 @@ public class SoldierBatch : IDisposable
 			GameObject charFromSolID4 = this.GetCharFromSolID(_ACK.nSolID);
 			int positionBabel_Tower6 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
 			int positionBabel_Tower7 = this.GetPositionBabel_Tower(_ACK.nMoveSolID, _ACK.nMoveCharKind);
-			Dictionary<int, SoldierBatchGrid> dictionary5 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+			Dictionary<int, SoldierBatchGrid> dictionary6 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
 			if (positionBabel_Tower6 > 0)
 			{
-				dictionary5[positionBabel_Tower6].SolID = 0L;
-				dictionary5[positionBabel_Tower6].PersonID = 0L;
-				dictionary5[positionBabel_Tower6].CharKind = 0;
+				dictionary6[positionBabel_Tower6].SolID = 0L;
+				dictionary6[positionBabel_Tower6].PersonID = 0L;
+				dictionary6[positionBabel_Tower6].CharKind = 0;
 				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower6].Init();
 			}
 			this.RemoveCharFromSolID(_ACK.nMoveSolID);
-			dictionary5[positionBabel_Tower7].SolID = _ACK.nSolID;
-			dictionary5[positionBabel_Tower7].CharKind = _ACK.nCharKind;
-			dictionary5[positionBabel_Tower7].PersonID = _ACK.nPersonID;
+			dictionary6[positionBabel_Tower7].SolID = _ACK.nSolID;
+			dictionary6[positionBabel_Tower7].CharKind = _ACK.nCharKind;
+			dictionary6[positionBabel_Tower7].PersonID = _ACK.nPersonID;
 			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower7].nSolID = _ACK.nSolID;
 			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower7].nCharKind = _ACK.nCharKind;
 			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower7].nPersonID = _ACK.nPersonID;
@@ -3258,7 +3582,228 @@ public class SoldierBatch : IDisposable
 			}
 			else
 			{
-				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower);
+				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower, _ACK.nCostumeUnique);
+			}
+		}
+		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
+		{
+			PlunderSolListDlg plunderSolListDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLLIST_DLG) as PlunderSolListDlg;
+			if (plunderSolListDlg != null)
+			{
+				if (_ACK.nSolID > 0L)
+				{
+					plunderSolListDlg.UpdateSolList(_ACK.nSolID);
+				}
+				if (_ACK.nMoveSolID > 0L)
+				{
+					plunderSolListDlg.UpdateSolList(_ACK.nMoveSolID);
+				}
+				int solBatchNum = this.GetSolBatchNum();
+				plunderSolListDlg.SetSolNum(solBatchNum, false);
+			}
+		}
+	}
+
+	public void SetMythRaidSoldierBatch(GS_MYTHRAID_BATTLEPOS_SET_ACK _ACK)
+	{
+		if (_ACK.nResult != 0)
+		{
+			if (_ACK.nResult == 8003 || _ACK.nResult == 8006)
+			{
+				this.InitSelectMoveChar(_ACK.nSolID, _ACK.nPersonID, _ACK.nCharKind);
+			}
+			else
+			{
+				this.RemoveCharFromSolID(_ACK.nSolID);
+			}
+			if (_ACK.nResult == 8002 || _ACK.nResult == 8003)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("189"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+			else if (_ACK.nResult == 8004)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("209"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+			else if (_ACK.nResult == 8004)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("210"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+			return;
+		}
+		if (NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1) == null)
+		{
+			return;
+		}
+		Dictionary<int, BATTLE_POS_GRID> dictionary = this.m_SoldierBatchPosGrid[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		if (!dictionary.ContainsKey(0))
+		{
+			return;
+		}
+		BATTLE_POS_GRID bATTLE_POS_GRID = dictionary[0];
+		if (_ACK.nType == 2)
+		{
+			int positionBabel_Tower = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
+			if (positionBabel_Tower > 0)
+			{
+				Dictionary<int, SoldierBatchGrid> dictionary2 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+				dictionary2[positionBabel_Tower].SolID = 0L;
+				dictionary2[positionBabel_Tower].PersonID = 0L;
+				dictionary2[positionBabel_Tower].CharKind = 0;
+				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower].Init();
+			}
+			this.RemoveCharFromSolID(_ACK.nSolID);
+		}
+		else if (_ACK.nType == 1)
+		{
+			GameObject charFromSolID = this.GetCharFromSolID(_ACK.nSolID);
+			if (charFromSolID == null)
+			{
+				Dictionary<int, SoldierBatchGrid> dictionary3 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+				int positionBabel_Tower2 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
+				if (positionBabel_Tower2 > 0)
+				{
+					dictionary3[positionBabel_Tower2].SolID = 0L;
+					dictionary3[positionBabel_Tower2].PersonID = 0L;
+					dictionary3[positionBabel_Tower2].CharKind = 0;
+					this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower2].Init();
+				}
+				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower, _ACK.nCostumeUnique);
+			}
+			else
+			{
+				Dictionary<int, SoldierBatchGrid> dictionary4 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+				int positionBabel_Tower3 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
+				if (positionBabel_Tower3 > 0)
+				{
+					dictionary4[positionBabel_Tower3].SolID = 0L;
+					dictionary4[positionBabel_Tower3].CharKind = 0;
+					dictionary4[positionBabel_Tower3].PersonID = 0L;
+					this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower3].Init();
+				}
+				int key = this.SetCalcBattlePos(0, _ACK.nBattlePos);
+				if (dictionary4[key].SolID != 0L)
+				{
+					return;
+				}
+				dictionary4[key].SolID = _ACK.nSolID;
+				dictionary4[key].CharKind = _ACK.nCharKind;
+				dictionary4[key].PersonID = _ACK.nPersonID;
+				this.m_dicBabel_Tower_BatchInfo[key].nSolID = _ACK.nSolID;
+				this.m_dicBabel_Tower_BatchInfo[key].nCharKind = _ACK.nCharKind;
+				this.m_dicBabel_Tower_BatchInfo[key].nPersonID = _ACK.nPersonID;
+				Vector3 vector = bATTLE_POS_GRID.mListPos[(int)_ACK.nBattlePos];
+				SoldierBatchGridCell.PickTerrain(vector, ref vector);
+				if (charFromSolID != null)
+				{
+					TsPositionFollowerTerrain component = charFromSolID.GetComponent<TsPositionFollowerTerrain>();
+					if (component != null)
+					{
+						component.enabled = false;
+						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+					}
+				}
+				charFromSolID.transform.position = vector;
+			}
+		}
+		else if (_ACK.nType == 3)
+		{
+			GameObject charFromSolID2 = this.GetCharFromSolID(_ACK.nSolID);
+			GameObject charFromSolID3 = this.GetCharFromSolID(_ACK.nMoveSolID);
+			int positionBabel_Tower4 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
+			int positionBabel_Tower5 = this.GetPositionBabel_Tower(_ACK.nMoveSolID, _ACK.nMoveCharKind);
+			Dictionary<int, SoldierBatchGrid> dictionary5 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+			if (positionBabel_Tower4 > 0)
+			{
+				dictionary5[positionBabel_Tower4].SolID = _ACK.nMoveSolID;
+				dictionary5[positionBabel_Tower4].CharKind = _ACK.nMoveCharKind;
+				dictionary5[positionBabel_Tower4].PersonID = _ACK.nMovePersonID;
+				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower4].nSolID = _ACK.nMoveSolID;
+				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower4].nCharKind = _ACK.nMoveCharKind;
+				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower4].nPersonID = _ACK.nMovePersonID;
+			}
+			dictionary5[positionBabel_Tower5].SolID = _ACK.nSolID;
+			dictionary5[positionBabel_Tower5].CharKind = _ACK.nCharKind;
+			dictionary5[positionBabel_Tower5].PersonID = _ACK.nPersonID;
+			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower5].nSolID = _ACK.nSolID;
+			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower5].nCharKind = _ACK.nCharKind;
+			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower5].nPersonID = _ACK.nPersonID;
+			if (charFromSolID2 != null)
+			{
+				Vector3 vector2 = bATTLE_POS_GRID.mListPos[(int)_ACK.nBattlePos];
+				SoldierBatchGridCell.PickTerrain(vector2, ref vector2);
+				if (charFromSolID2 != null)
+				{
+					TsPositionFollowerTerrain component2 = charFromSolID2.GetComponent<TsPositionFollowerTerrain>();
+					if (component2 != null)
+					{
+						component2.enabled = false;
+						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+					}
+				}
+				charFromSolID2.transform.position = vector2;
+			}
+			else
+			{
+				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower, _ACK.nCostumeUnique);
+			}
+			if (charFromSolID3 != null)
+			{
+				Vector3 vector3 = bATTLE_POS_GRID.mListPos[(int)_ACK.nMoveBattlePos];
+				SoldierBatchGridCell.PickTerrain(vector3, ref vector3);
+				if (charFromSolID3 != null)
+				{
+					TsPositionFollowerTerrain component3 = charFromSolID3.GetComponent<TsPositionFollowerTerrain>();
+					if (component3 != null)
+					{
+						component3.enabled = false;
+						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+					}
+				}
+				charFromSolID3.transform.position = vector3;
+			}
+			else
+			{
+				this.MakeBabelChar(_ACK.nMoveSolID, _ACK.nMoveCharKind, _ACK.nMovePersonID, _ACK.nMoveBattlePos, _ACK.nMoveFightPower, _ACK.nMoveCostumeUnique);
+			}
+		}
+		else if (_ACK.nType == 4)
+		{
+			GameObject charFromSolID4 = this.GetCharFromSolID(_ACK.nSolID);
+			int positionBabel_Tower6 = this.GetPositionBabel_Tower(_ACK.nSolID, _ACK.nCharKind);
+			int positionBabel_Tower7 = this.GetPositionBabel_Tower(_ACK.nMoveSolID, _ACK.nMoveCharKind);
+			Dictionary<int, SoldierBatchGrid> dictionary6 = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+			if (positionBabel_Tower6 > 0)
+			{
+				dictionary6[positionBabel_Tower6].SolID = 0L;
+				dictionary6[positionBabel_Tower6].PersonID = 0L;
+				dictionary6[positionBabel_Tower6].CharKind = 0;
+				this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower6].Init();
+			}
+			this.RemoveCharFromSolID(_ACK.nMoveSolID);
+			dictionary6[positionBabel_Tower7].SolID = _ACK.nSolID;
+			dictionary6[positionBabel_Tower7].CharKind = _ACK.nCharKind;
+			dictionary6[positionBabel_Tower7].PersonID = _ACK.nPersonID;
+			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower7].nSolID = _ACK.nSolID;
+			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower7].nCharKind = _ACK.nCharKind;
+			this.m_dicBabel_Tower_BatchInfo[positionBabel_Tower7].nPersonID = _ACK.nPersonID;
+			if (charFromSolID4 != null)
+			{
+				Vector3 vector4 = bATTLE_POS_GRID.mListPos[(int)_ACK.nBattlePos];
+				SoldierBatchGridCell.PickTerrain(vector4, ref vector4);
+				if (charFromSolID4 != null)
+				{
+					TsPositionFollowerTerrain component4 = charFromSolID4.GetComponent<TsPositionFollowerTerrain>();
+					if (component4 != null)
+					{
+						component4.enabled = false;
+						TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "HERO-LAY", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+					}
+				}
+				charFromSolID4.transform.position = vector4;
+			}
+			else
+			{
+				this.MakeBabelChar(_ACK.nSolID, _ACK.nCharKind, _ACK.nPersonID, _ACK.nBattlePos, _ACK.nFightPower, _ACK.nCostumeUnique);
 			}
 		}
 		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERSOLLIST_DLG))
@@ -3425,13 +3970,25 @@ public class SoldierBatch : IDisposable
 		return num;
 	}
 
-	public void LoadBatchSolInfo()
+	public void LoadBatchSolInfo(eSOLDIER_BATCH_MODE batchType)
 	{
 		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-		for (byte b = 1; b <= 20; b += 1)
+		string str;
+		int num;
+		if (batchType == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
-			string str = "Babel Solpos";
-			if (b >= 17)
+			str = "MythRaid Solpos";
+			num = 20;
+		}
+		else
+		{
+			str = "Babel Solpos";
+			num = 20;
+		}
+		byte b = 1;
+		while ((int)b <= num)
+		{
+			if (b >= 17 && batchType != eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 			{
 				string value = "0";
 				PlayerPrefs.SetString(str + b.ToString(), value);
@@ -3441,36 +3998,164 @@ public class SoldierBatch : IDisposable
 				string @string = PlayerPrefs.GetString(str + b.ToString());
 				if (@string != string.Empty)
 				{
-					long num = long.Parse(@string);
-					TsLog.Log("(Get Babel Solpos {0}", new object[]
-					{
-						num
-					});
-					NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(num);
+					long num2 = long.Parse(@string);
+					NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(num2);
 					byte b2 = 0;
 					byte nBattlePos = 0;
 					SoldierBatch.GetCalcBattlePos((long)b, ref b2, ref nBattlePos);
 					if (soldierInfoFromSolID != null && !soldierInfoFromSolID.IsInjuryStatus())
 					{
-						GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
-						gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
-						gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
-						gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
-						gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = num;
-						gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = soldierInfoFromSolID.GetCharKind();
-						gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = nBattlePos;
-						SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
+						if (batchType == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+						{
+							GS_MYTHRAID_BATTLEPOS_SET_REQ gS_MYTHRAID_BATTLEPOS_SET_REQ = new GS_MYTHRAID_BATTLEPOS_SET_REQ();
+							gS_MYTHRAID_BATTLEPOS_SET_REQ.nType = 1;
+							gS_MYTHRAID_BATTLEPOS_SET_REQ.nMythRaidRoomIndex = SoldierBatch.m_cMythRaidInfo.m_nMythRaidRoomIndex;
+							gS_MYTHRAID_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cMythRaidInfo.m_nLeaderPersonID;
+							gS_MYTHRAID_BATTLEPOS_SET_REQ.nSolID = num2;
+							gS_MYTHRAID_BATTLEPOS_SET_REQ.nCharKind = soldierInfoFromSolID.GetCharKind();
+							gS_MYTHRAID_BATTLEPOS_SET_REQ.nBattlePos = nBattlePos;
+							SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_BATTLEPOS_SET_REQ, gS_MYTHRAID_BATTLEPOS_SET_REQ);
+						}
+						else
+						{
+							GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
+							gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
+							gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
+							gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
+							gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = num2;
+							gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = soldierInfoFromSolID.GetCharKind();
+							gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = nBattlePos;
+							SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
+						}
 					}
+				}
+			}
+			b += 1;
+		}
+	}
+
+	public void LoadBatchSolInfo_Party(GS_BABELTOWER_BATTLEPOS_SET_ACK[] allcateInfo)
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		for (byte b = 1; b <= 20; b += 1)
+		{
+			string str = "Babel Solpos_Party";
+			string @string = PlayerPrefs.GetString(str + b.ToString());
+			if (@string != string.Empty)
+			{
+				long num = long.Parse(@string);
+				TsLog.Log("(Get Babel Solpos {0}", new object[]
+				{
+					num
+				});
+				NkSoldierInfo nkSoldierInfo = charPersonInfo.GetSoldierInfoFromSolID(num);
+				byte b2 = 0;
+				byte b3 = 0;
+				SoldierBatch.GetCalcBattlePos((long)b, ref b2, ref b3);
+				if (allcateInfo != null)
+				{
+					for (int i = 0; i < allcateInfo.Length; i++)
+					{
+						if (allcateInfo[i].nBattlePos == b3)
+						{
+							nkSoldierInfo = null;
+							break;
+						}
+					}
+				}
+				if (nkSoldierInfo != null && !nkSoldierInfo.IsInjuryStatus())
+				{
+					GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = num;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = nkSoldierInfo.GetCharKind();
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = b3;
+					SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
 				}
 			}
 		}
 	}
 
-	public void SaveBatchSolInfo()
+	public void LoadBatchSolInfo_Party_MythRaid(GS_MYTHRAID_BATTLEPOS_SET_ACK[] allcateInfo)
 	{
 		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-		string str = "Babel Solpos";
 		for (byte b = 1; b <= 20; b += 1)
+		{
+			string str = "MythRaid Solpos_Party";
+			string @string = PlayerPrefs.GetString(str + b.ToString());
+			if (@string != string.Empty)
+			{
+				long num = long.Parse(@string);
+				NkSoldierInfo nkSoldierInfo = charPersonInfo.GetSoldierInfoFromSolID(num);
+				byte b2 = 0;
+				byte b3 = 0;
+				SoldierBatch.GetCalcBattlePos((long)b, ref b2, ref b3);
+				if (allcateInfo != null)
+				{
+					for (int i = 0; i < allcateInfo.Length; i++)
+					{
+						if (allcateInfo[i].nBattlePos == b3)
+						{
+							nkSoldierInfo = null;
+							break;
+						}
+					}
+				}
+				if (nkSoldierInfo != null && !nkSoldierInfo.IsInjuryStatus())
+				{
+					GS_MYTHRAID_BATTLEPOS_SET_REQ gS_MYTHRAID_BATTLEPOS_SET_REQ = new GS_MYTHRAID_BATTLEPOS_SET_REQ();
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nType = 1;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nMythRaidRoomIndex = SoldierBatch.m_cMythRaidInfo.m_nMythRaidRoomIndex;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cMythRaidInfo.m_nLeaderPersonID;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nSolID = num;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nCharKind = nkSoldierInfo.GetCharKind();
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nBattlePos = b3;
+					SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_BATTLEPOS_SET_REQ, gS_MYTHRAID_BATTLEPOS_SET_REQ);
+				}
+			}
+		}
+	}
+
+	public void SaveBatchSolInfo(eSOLDIER_BATCH_MODE batchType)
+	{
+		int partyCount;
+		if (batchType == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			partyCount = (int)SoldierBatch.MYTHRAID_INFO.GetPartyCount();
+		}
+		else
+		{
+			partyCount = (int)SoldierBatch.BABELTOWER_INFO.GetPartyCount();
+		}
+		if (partyCount == 1)
+		{
+			this.SaveBatchSolInfo_Solo(batchType);
+		}
+		else
+		{
+			this.SaveBatchSolInfo_Party(batchType);
+		}
+	}
+
+	private void SaveBatchSolInfo_Solo(eSOLDIER_BATCH_MODE batchType)
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		string str;
+		int num;
+		if (batchType == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			str = "MythRaid Solpos";
+			num = 20;
+		}
+		else
+		{
+			str = "Babel Solpos";
+			num = 20;
+		}
+		byte b = 1;
+		while ((int)b <= num)
 		{
 			if (this.m_dicBabel_Tower_BatchInfo[(int)b] != null)
 			{
@@ -3490,6 +4175,47 @@ public class SoldierBatch : IDisposable
 					PlayerPrefs.SetString(str + b.ToString(), value2);
 				}
 			}
+			b += 1;
+		}
+	}
+
+	private void SaveBatchSolInfo_Party(eSOLDIER_BATCH_MODE batchType)
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		string str;
+		int num;
+		if (batchType == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			str = "MythRaid Solpos_Party";
+			num = 20;
+		}
+		else
+		{
+			str = "Babel Solpos_Party";
+			num = 20;
+		}
+		byte b = 1;
+		while ((int)b <= num)
+		{
+			if (this.m_dicBabel_Tower_BatchInfo[(int)b] != null)
+			{
+				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(this.m_dicBabel_Tower_BatchInfo[(int)b].nSolID);
+				TsLog.Log("(Set Babel Solpos {0}", new object[]
+				{
+					this.m_dicBabel_Tower_BatchInfo[(int)b].nSolID
+				});
+				if (soldierInfoFromSolID != null)
+				{
+					string value = soldierInfoFromSolID.GetSolID().ToString();
+					PlayerPrefs.SetString(str + b.ToString(), value);
+				}
+				else
+				{
+					string value2 = "0";
+					PlayerPrefs.SetString(str + b.ToString(), value2);
+				}
+			}
+			b += 1;
 		}
 	}
 
@@ -3513,7 +4239,7 @@ public class SoldierBatch : IDisposable
 				SoldierBatch.GetCalcBattlePos((long)b, ref nStartPos, ref nGridPos);
 				if (soldierInfoFromSolID != null && !soldierInfoFromSolID.IsInjuryStatus())
 				{
-					this.MakePlunderCharFromUI(num, 0L, 0, 0L);
+					this.MakePlunderCharFromUI(num, 0L, 0, 0L, 0);
 					this.InsertEmptyGrid(nStartPos, nGridPos, num, 0L, 0, 0);
 				}
 			}
@@ -3543,6 +4269,92 @@ public class SoldierBatch : IDisposable
 				{
 					string value2 = soldierInfoFromSolID.GetSolID().ToString();
 					PlayerPrefs.SetString(str + tempBattlePosInfo[i].m_nBattlePos.ToString(), value2);
+				}
+			}
+		}
+	}
+
+	public void Save_DailyDungeonBatchSolInfo()
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		string arg = "DailyDungeon Solpos";
+		string arg2 = string.Empty;
+		arg2 = PublicMethod.GetNowTime().DayOfWeek.ToString();
+		for (byte b = 1; b <= 9; b += 1)
+		{
+			string value = "0";
+			PlayerPrefs.SetString(string.Format("{0}{1}{2}", arg2, arg, b.ToString()), value);
+		}
+		clTempBattlePos[] tempBattlePosInfo = SoldierBatch.SOLDIERBATCH.GetTempBattlePosInfo();
+		for (int i = 0; i < 9; i++)
+		{
+			if (tempBattlePosInfo[i].m_nSolID > 0L)
+			{
+				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(tempBattlePosInfo[i].m_nSolID);
+				TsLog.Log("(Set Babel Solpos {0}", new object[]
+				{
+					tempBattlePosInfo[i].m_nSolID
+				});
+				if (soldierInfoFromSolID != null)
+				{
+					string value2 = soldierInfoFromSolID.GetSolID().ToString();
+					PlayerPrefs.SetString(string.Format("{0}{1}{2}", arg2, arg, tempBattlePosInfo[i].m_nBattlePos.ToString()), value2);
+				}
+			}
+		}
+	}
+
+	public void Load_DailyDungeonBatchSolInfo()
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		string arg = "DailyDungeon Solpos";
+		string arg2 = string.Empty;
+		arg2 = PublicMethod.GetNowTime().DayOfWeek.ToString();
+		for (byte b = 1; b <= 9; b += 1)
+		{
+			string @string = PlayerPrefs.GetString(string.Format("{0}{1}{2}", arg2, arg, b.ToString()));
+			if (@string != string.Empty)
+			{
+				long num = long.Parse(@string);
+				TsLog.Log("(Get Babel Solpos {0}", new object[]
+				{
+					num
+				});
+				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(num);
+				byte nStartPos = 0;
+				byte nGridPos = 0;
+				SoldierBatch.GetCalcBattlePos((long)b, ref nStartPos, ref nGridPos);
+				if (soldierInfoFromSolID != null && !soldierInfoFromSolID.IsInjuryStatus())
+				{
+					this.MakePlunderCharFromUI(num, 0L, 0, 0L, 0);
+					this.InsertEmptyGrid(nStartPos, nGridPos, num, 0L, 0, 0);
+				}
+			}
+		}
+	}
+
+	public void LoadNewExplorationBatchSolInfo()
+	{
+		clTempBattlePos[] array = NrTSingleton<NewExplorationManager>.Instance.LoadSoldierBatch();
+		if (array == null)
+		{
+			return;
+		}
+		if (NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1) == null)
+		{
+			return;
+		}
+		for (byte b = 0; b < 5; b += 1)
+		{
+			if (array[(int)b] != null && array[(int)b].m_nSolID > 0L && array[(int)b].m_nBattlePos > 0 && array[(int)b].m_nCharKind > 0)
+			{
+				byte nStartPos = 0;
+				byte nGridPos = 0;
+				if (array[(int)b].m_nBattlePos > 0)
+				{
+					SoldierBatch.GetCalcBattlePos((long)array[(int)b].m_nBattlePos, ref nStartPos, ref nGridPos);
+					this.MakePlunderCharFromUI(array[(int)b].m_nSolID, 0L, 0, 0L, 0);
+					this.InsertEmptyGrid(nStartPos, nGridPos, array[(int)b].m_nSolID, 0L, 0, 0);
 				}
 			}
 		}
@@ -3605,9 +4417,13 @@ public class SoldierBatch : IDisposable
 		{
 			num2 = 15;
 		}
-		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDWAR_MAKEUP)
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION)
 		{
 			num2 = 5;
+		}
+		else if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
+		{
+			num2 = 6;
 		}
 		for (int i = 0; i < num2; i++)
 		{
@@ -3885,6 +4701,86 @@ public class SoldierBatch : IDisposable
 		this.RemoveCharFromSolID(solID);
 	}
 
+	public void ResetSolPosition()
+	{
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		if (dictionary == null)
+		{
+			return;
+		}
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID == current.PersonID)
+				{
+					this.InitCharBattlePos(current.SolID, 0L, 0);
+				}
+			}
+		}
+	}
+
+	public void ResetAllGrid()
+	{
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		if (dictionary == null)
+		{
+			return;
+		}
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (current.SolID != 0L)
+				{
+					this.InitCharBattlePos(current.SolID, 0L, 0);
+				}
+			}
+		}
+	}
+
+	public void ResetSelectStartPosGrid(int selectStartPosIndex)
+	{
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		if (dictionary == null)
+		{
+			return;
+		}
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (current.SolID != 0L)
+				{
+					if ((int)current.STARTPOS_INDEX == selectStartPosIndex)
+					{
+						this.InitCharBattlePos(current.SolID, 0L, 0);
+					}
+				}
+			}
+		}
+	}
+
+	public bool IsMyCharBatched()
+	{
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		if (dictionary == null)
+		{
+			return false;
+		}
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID == current.PersonID)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	public void SetChangeBabelBatchGrid()
 	{
 		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
@@ -3921,6 +4817,25 @@ public class SoldierBatch : IDisposable
 						this.InitCharBattlePos(current2.SolID, 0L, 0);
 						current2.GridShowHide(false);
 					}
+				}
+			}
+		}
+	}
+
+	public void SetChangeMythRaidBatchGrid()
+	{
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		if (dictionary == null)
+		{
+			return;
+		}
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (current.INDEX >= 16)
+				{
+					current.GridShowHide(true);
 				}
 			}
 		}
@@ -3987,5 +4902,266 @@ public class SoldierBatch : IDisposable
 			}
 		}
 		return num;
+	}
+
+	public List<int> GetBatchSolKindList(int STARTPOS_INDEX)
+	{
+		if (this.m_SoldierBatchGridObj == null || this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0] == null)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoliderBatch.cs, GetBatchCharKindList(), m_SoldierBatchGridObj is Null");
+			return null;
+		}
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		List<int> list = new List<int>();
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if ((int)current.STARTPOS_INDEX == STARTPOS_INDEX)
+				{
+					list.Add(current.CharKind);
+				}
+			}
+		}
+		return list;
+	}
+
+	public int GetBeAbleToBatchSoldier_InBabel()
+	{
+		byte nCount = SoldierBatch.BABELTOWER_INFO.m_nCount;
+		int result;
+		if (nCount == 1)
+		{
+			result = 9;
+		}
+		else
+		{
+			result = (int)(12 / nCount + 1);
+		}
+		return result;
+	}
+
+	public int GetBeAbleToBatchSoldier_InMythRaid()
+	{
+		byte nCount = SoldierBatch.MYTHRAID_INFO.m_nCount;
+		int result;
+		if (nCount == 1)
+		{
+			result = 12;
+		}
+		else
+		{
+			result = (int)(12 / nCount + 1);
+		}
+		return result;
+	}
+
+	public void InsertBabelEmptyGrid_At_MyChar(Queue<long> solIdQueue)
+	{
+		if (this.m_SoldierBatchGridObj == null || this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0] == null)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoliderBatch.cs, InsertBabelEmptyGrid_At_MyChar(), m_SoldierBatchGridObj is Null");
+			return;
+		}
+		if (solIdQueue == null || solIdQueue.Count == 0)
+		{
+			return;
+		}
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (current.SolID == 0L)
+				{
+					long num = solIdQueue.Dequeue();
+					GS_BABELTOWER_BATTLEPOS_SET_REQ gS_BABELTOWER_BATTLEPOS_SET_REQ = new GS_BABELTOWER_BATTLEPOS_SET_REQ();
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nType = 1;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nBabelRoomIndex = SoldierBatch.m_cBaberTowerInfo.m_nBabelRoomIndex;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cBaberTowerInfo.m_nLeaderPersonID;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nSolID = num;
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nCharKind = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1).GetSoldierInfoFromSolID(num).GetCharKind();
+					gS_BABELTOWER_BATTLEPOS_SET_REQ.nBattlePos = (byte)current.INDEX;
+					SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_BATTLEPOS_SET_REQ, gS_BABELTOWER_BATTLEPOS_SET_REQ);
+					if (solIdQueue.Count == 0)
+					{
+						break;
+					}
+				}
+			}
+		}
+		if (solIdQueue.Count != 0)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoldierBatch.cs, InsertEmptyGrid_At_MyChar(), solIdQueue.Count is Not 0");
+		}
+	}
+
+	public void InsertMythRaidEmptyGrid_At_MyChar(Queue<long> solIdQueue)
+	{
+		if (this.m_SoldierBatchGridObj == null || this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0] == null)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoliderBatch.cs, InsertMythRaidEmptyGrid_At_MyChar(), m_SoldierBatchGridObj is Null");
+			return;
+		}
+		if (solIdQueue == null || solIdQueue.Count == 0)
+		{
+			return;
+		}
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (current.SolID == 0L)
+				{
+					long num = solIdQueue.Dequeue();
+					GS_MYTHRAID_BATTLEPOS_SET_REQ gS_MYTHRAID_BATTLEPOS_SET_REQ = new GS_MYTHRAID_BATTLEPOS_SET_REQ();
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nType = 1;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nMythRaidRoomIndex = SoldierBatch.m_cMythRaidInfo.m_nMythRaidRoomIndex;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nLeaderPersonID = SoldierBatch.m_cMythRaidInfo.m_nLeaderPersonID;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nSolID = num;
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nCharKind = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1).GetSoldierInfoFromSolID(num).GetCharKind();
+					gS_MYTHRAID_BATTLEPOS_SET_REQ.nBattlePos = (byte)current.INDEX;
+					SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_BATTLEPOS_SET_REQ, gS_MYTHRAID_BATTLEPOS_SET_REQ);
+					if (solIdQueue.Count == 0)
+					{
+						break;
+					}
+				}
+			}
+		}
+		if (solIdQueue.Count != 0)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoldierBatch.cs, InsertMythRaidEmptyGrid_At_MyChar(), solIdQueue.Count is Not 0");
+		}
+	}
+
+	public void InsertInfiBattleEmptyGrid_At_MyChar(Queue<long> solIdQueue, int InfiBattleIndex)
+	{
+		if (this.m_SoldierBatchGridObj == null || this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0] == null)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoliderBatch.cs, InsertMythRaidEmptyGrid_At_MyChar(), m_SoldierBatchGridObj is Null");
+			return;
+		}
+		if (solIdQueue == null || solIdQueue.Count == 0)
+		{
+			return;
+		}
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if ((int)current.STARTPOS_INDEX == InfiBattleIndex)
+				{
+					if (current.SolID == 0L)
+					{
+						long nSolID = solIdQueue.Dequeue();
+						this.MakePlunderCharFromUI(nSolID, 0L, 0, 0L, 0);
+						this.InsertEmptyGrid((byte)InfiBattleIndex, (byte)current.INDEX, nSolID, 0L, 0, 0);
+						if (solIdQueue.Count == 0)
+						{
+							break;
+						}
+					}
+				}
+			}
+		}
+		if (solIdQueue.Count != 0)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoldierBatch.cs, InsertMythRaidEmptyGrid_At_MyChar(), solIdQueue.Count is Not 0");
+		}
+	}
+
+	public void InsertGuildBossEmptyGrid_At_MyChar(Queue<long> solIdQueue)
+	{
+		if (this.m_SoldierBatchGridObj == null || this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0] == null)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoliderBatch.cs, InsertMythRaidEmptyGrid_At_MyChar(), m_SoldierBatchGridObj is Null");
+			return;
+		}
+		if (solIdQueue == null || solIdQueue.Count == 0)
+		{
+			return;
+		}
+		Dictionary<int, SoldierBatchGrid> dictionary = this.m_SoldierBatchGridObj[eBATTLE_ALLY.eBATTLE_ALLY_0];
+		foreach (SoldierBatchGrid current in dictionary.Values)
+		{
+			if (!(current == null))
+			{
+				if (current.SolID == 0L)
+				{
+					long nSolID = solIdQueue.Dequeue();
+					this.MakePlunderCharFromUI(nSolID, 0L, 0, 0L, 0);
+					this.InsertEmptyGrid((byte)current.STARTPOS_INDEX, (byte)current.INDEX, nSolID, 0L, 0, 0);
+					if (solIdQueue.Count == 0)
+					{
+						break;
+					}
+				}
+			}
+		}
+		if (solIdQueue.Count != 0)
+		{
+			UnityEngine.Debug.LogError("ERROR, SoldierBatch.cs, InsertMythRaidEmptyGrid_At_MyChar(), solIdQueue.Count is Not 0");
+		}
+	}
+
+	private string GetCharBundlePath(NrCharKindInfo kindInfo, NkSoldierInfo solInfo)
+	{
+		if (kindInfo == null)
+		{
+			return string.Empty;
+		}
+		string bundlePath = kindInfo.GetBundlePath();
+		if (solInfo == null)
+		{
+			return bundlePath;
+		}
+		string costumeBundlePath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeBundlePath(solInfo);
+		if (string.IsNullOrEmpty(costumeBundlePath))
+		{
+			return bundlePath;
+		}
+		return costumeBundlePath;
+	}
+
+	private string GetCharBundlePath(string charKindBundlePath, int costumeUnique)
+	{
+		if (string.IsNullOrEmpty(charKindBundlePath))
+		{
+			return string.Empty;
+		}
+		string costumeBundlePath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeBundlePath(costumeUnique);
+		if (string.IsNullOrEmpty(costumeBundlePath))
+		{
+			return charKindBundlePath;
+		}
+		return costumeBundlePath;
+	}
+
+	public static eSOL_SUBDATA GetSubDataEnum()
+	{
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PLUNDER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_MAKEUP)
+		{
+			return eSOL_SUBDATA.SOL_SUBDATA_ATTACK_BATTLEPOS;
+		}
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENCE_MAKEUP)
+		{
+			return eSOL_SUBDATA.SOL_SUBDATA_DEFENCE_BATTLEPOS;
+		}
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP)
+		{
+			return eSOL_SUBDATA.SOL_SUBDATA_PVP_BATTLEPOS;
+		}
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MINE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_GUILDBOSS_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PVP_MAKEUP2 || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_NEWEXPLORATION || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON)
+		{
+			return eSOL_SUBDATA.SOL_SUBDATA_NONE;
+		}
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PRACTICE_INFIBATTLE || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP)
+		{
+			return eSOL_SUBDATA.SOL_SUBDATA_ATTACK_INFIBATTLE;
+		}
+		return eSOL_SUBDATA.SOL_SUBDATA_ATTACK_BATTLEPOS;
 	}
 }

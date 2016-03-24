@@ -90,6 +90,7 @@ public class SoldierBatchGrid : MonoBehaviour
 		set
 		{
 			this.m_CharKind = value;
+			this.NotifyPropertyChanged("CharacterKind");
 		}
 	}
 
@@ -215,7 +216,7 @@ public class SoldierBatchGrid : MonoBehaviour
 		}
 		if (SoldierBatch.SOLDIERBATCH.SelectGrid != this)
 		{
-			if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+			if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 			{
 				if (this.SolID > 0L)
 				{
@@ -239,5 +240,10 @@ public class SoldierBatchGrid : MonoBehaviour
 				this.SetMODE(E_RENDER_MODE.NORMAL);
 			}
 		}
+	}
+
+	private void NotifyPropertyChanged(string propertyName)
+	{
+		NrTSingleton<SoldierBatchGridInfo_ChangedCallbackManager>.Instance.PropertyChanged(this, propertyName, this.STARTPOS_INDEX);
 	}
 }

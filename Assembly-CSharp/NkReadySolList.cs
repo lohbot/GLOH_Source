@@ -1,12 +1,11 @@
 using GAME;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class NkReadySolList
 {
 	private Dictionary<long, NkSoldierInfo> ReadySolList = new Dictionary<long, NkSoldierInfo>();
-
-	private List<byte> MilitaryList;
 
 	public void Init()
 	{
@@ -20,6 +19,19 @@ public class NkReadySolList
 			return null;
 		}
 		return this.ReadySolList[solID];
+	}
+
+	public List<NkSoldierInfo> GetSolInfoListByKind(int charKind)
+	{
+		List<NkSoldierInfo> list = new List<NkSoldierInfo>();
+		foreach (NkSoldierInfo current in this.ReadySolList.Values)
+		{
+			if (current.GetCharKind() == charKind)
+			{
+				list.Add(current);
+			}
+		}
+		return list;
 	}
 
 	public NkSoldierInfo AddSolInfo(NkSoldierInfo solInfo)
@@ -126,21 +138,6 @@ public class NkReadySolList
 		return num;
 	}
 
-	public bool IsGuildWarApply(byte iMilitaryUnique)
-	{
-		foreach (NkSoldierInfo current in this.ReadySolList.Values)
-		{
-			if (current.GetSolPosType() == 7)
-			{
-				if (current.GetMilitaryUnique() == iMilitaryUnique)
-				{
-					return true;
-				}
-			}
-		}
-		return false;
-	}
-
 	public int ReadySoliderCount()
 	{
 		int num = 0;
@@ -152,10 +149,7 @@ public class NkReadySolList
 				{
 					if (current.GetSolPosType() != 2)
 					{
-						if (current.GetSolPosType() != 7)
-						{
-							num++;
-						}
+						num++;
 					}
 				}
 			}
@@ -163,61 +157,71 @@ public class NkReadySolList
 		return num;
 	}
 
-	public bool IsGuildWarApplyUser()
+	public List<int> GetReadySolKindList()
 	{
-		if (this.MilitaryList == null)
-		{
-			this.MilitaryList = new List<byte>();
-		}
-		this.MilitaryList.Clear();
+		List<int> list = new List<int>();
 		foreach (NkSoldierInfo current in this.ReadySolList.Values)
 		{
-			if (current.GetSolPosType() == 7)
+			if (current == null)
 			{
-				bool flag = true;
-				foreach (byte current2 in this.MilitaryList)
-				{
-					if (current2 == current.GetMilitaryUnique())
-					{
-						flag = false;
-						break;
-					}
-				}
-				if (flag)
-				{
-					this.MilitaryList.Add(current.GetMilitaryUnique());
-				}
+				Debug.LogError("ERROR, NrMyCharInfo.cs, GetReadySolKindList(), pkSolinfo is Null");
+			}
+			else if (!list.Contains(current.GetCharKind()))
+			{
+				list.Add(current.GetCharKind());
 			}
 		}
-		return this.MilitaryList.Count < (int)NrTSingleton<GuildWarManager>.Instance.GuildWarJoinCount;
+		return list;
 	}
 
-	public int GetGuildWarApplyMilitaryCount()
+	public List<int> GetMineBattlePossibleKindList()
 	{
-		if (this.MilitaryList == null)
+		List<NkSoldierInfo> mineBattlePossibleSolInfoList = this.GetMineBattlePossibleSolInfoList();
+		List<int> list = new List<int>();
+		foreach (NkSoldierInfo current in mineBattlePossibleSolInfoList)
 		{
-			this.MilitaryList = new List<byte>();
+			if (current == null)
+			{
+				Debug.LogError("ERROR, NrMyCharInfo.cs, GetReadySolKindList(), pkSolinfo is Null");
+			}
+			else if (!list.Contains(current.GetCharKind()))
+			{
+				list.Add(current.GetCharKind());
+			}
 		}
-		this.MilitaryList.Clear();
+		return list;
+	}
+
+	public List<NkSoldierInfo> GetMineBattlePossibleSolInfoList()
+	{
+		List<NkSoldierInfo> list = new List<NkSoldierInfo>();
+		int mineMoneyFromSolPossibleLevel = BASE_MINE_DATA.GetMineMoneyFromSolPossibleLevel(SoldierBatch.MINE_INFO.m_nMineGrade);
 		foreach (NkSoldierInfo current in this.ReadySolList.Values)
 		{
-			if (current.GetSolPosType() == 7)
+			if (current == null)
 			{
-				bool flag = true;
-				foreach (byte current2 in this.MilitaryList)
+				Debug.LogError("ERROR, NrMyCharInfo.cs, GetMineBattlePossibleSolInfoList(), pkSolinfo is Null");
+			}
+			else if (current.GetSolPosType() != 2 && current.GetSolPosType() != 6)
+			{
+				if ((int)current.GetLevel() >= mineMoneyFromSolPossibleLevel)
 				{
-					if (current2 == current.GetMilitaryUnique())
+					if (!list.Contains(current))
 					{
-						flag = false;
-						break;
+						list.Add(current);
 					}
-				}
-				if (flag)
-				{
-					this.MilitaryList.Add(current.GetMilitaryUnique());
 				}
 			}
 		}
-		return this.MilitaryList.Count;
+		return list;
+	}
+
+	public Dictionary<long, NkSoldierInfo> GetReadyAllSolList()
+	{
+		if (this.ReadySolList == null)
+		{
+			return null;
+		}
+		return this.ReadySolList;
 	}
 }

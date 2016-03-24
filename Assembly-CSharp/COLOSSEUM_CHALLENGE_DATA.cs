@@ -6,7 +6,7 @@ public class COLOSSEUM_CHALLENGE_DATA : NrTableBase
 {
 	public static Dictionary<int, BASE_COLOSSEUM_CHALLENGE_DATA> m_dicColosseumChallengeData = new Dictionary<int, BASE_COLOSSEUM_CHALLENGE_DATA>();
 
-	public COLOSSEUM_CHALLENGE_DATA() : base(CDefinePath.COLOSSEUM_CHALLENGE_URL, true)
+	public COLOSSEUM_CHALLENGE_DATA() : base(CDefinePath.COLOSSEUM_CHALLENGE_URL)
 	{
 	}
 

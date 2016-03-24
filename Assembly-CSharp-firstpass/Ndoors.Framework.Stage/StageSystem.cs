@@ -93,6 +93,16 @@ namespace Ndoors.Framework.Stage
 			return aStage.GetStageName();
 		}
 
+		public static Scene.Type GetCurrentStageType()
+		{
+			AStage aStage = StageSystem._stack.Peek();
+			if (aStage == null)
+			{
+				return Scene.Type.EMPTY;
+			}
+			return aStage.SceneType();
+		}
+
 		public static int GetCurrentStageCoTaskCount()
 		{
 			AStage aStage = StageSystem._stack.Peek();

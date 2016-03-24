@@ -50,9 +50,9 @@ public class ChannalList_Login
 	[DebuggerHidden]
 	public IEnumerable GetValue()
 	{
-		ChannalList_Login.<GetValue>c__Iterator6 <GetValue>c__Iterator = new ChannalList_Login.<GetValue>c__Iterator6();
+		ChannalList_Login.<GetValue>c__Iterator9 <GetValue>c__Iterator = new ChannalList_Login.<GetValue>c__Iterator9();
 		<GetValue>c__Iterator.<>f__this = this;
-		ChannalList_Login.<GetValue>c__Iterator6 expr_0E = <GetValue>c__Iterator;
+		ChannalList_Login.<GetValue>c__Iterator9 expr_0E = <GetValue>c__Iterator;
 		expr_0E.$PC = -2;
 		return expr_0E;
 	}

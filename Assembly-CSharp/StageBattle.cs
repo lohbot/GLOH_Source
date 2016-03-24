@@ -22,6 +22,7 @@ public class StageBattle : AStage
 
 	public override void OnPrepareSceneChange()
 	{
+		Application.targetFrameRate = -1;
 		NrTSingleton<NkCharManager>.Instance.DeleteBattleChar();
 		NrLoadPageScreen.DecideLoadingType(Scene.CurScene, this.SceneType());
 		NrLoadPageScreen.StepUpMain(1);
@@ -99,31 +100,31 @@ public class StageBattle : AStage
 	[DebuggerHidden]
 	private IEnumerator _UpdateBattleTemporal()
 	{
-		StageBattle.<_UpdateBattleTemporal>c__Iterator2D <_UpdateBattleTemporal>c__Iterator2D = new StageBattle.<_UpdateBattleTemporal>c__Iterator2D();
-		<_UpdateBattleTemporal>c__Iterator2D.<>f__this = this;
-		return <_UpdateBattleTemporal>c__Iterator2D;
+		StageBattle.<_UpdateBattleTemporal>c__Iterator30 <_UpdateBattleTemporal>c__Iterator = new StageBattle.<_UpdateBattleTemporal>c__Iterator30();
+		<_UpdateBattleTemporal>c__Iterator.<>f__this = this;
+		return <_UpdateBattleTemporal>c__Iterator;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _StageProcess()
 	{
-		StageBattle.<_StageProcess>c__Iterator2E <_StageProcess>c__Iterator2E = new StageBattle.<_StageProcess>c__Iterator2E();
-		<_StageProcess>c__Iterator2E.<>f__this = this;
-		return <_StageProcess>c__Iterator2E;
+		StageBattle.<_StageProcess>c__Iterator31 <_StageProcess>c__Iterator = new StageBattle.<_StageProcess>c__Iterator31();
+		<_StageProcess>c__Iterator.<>f__this = this;
+		return <_StageProcess>c__Iterator;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _StageAfterBattleMapLoadProcess()
 	{
-		StageBattle.<_StageAfterBattleMapLoadProcess>c__Iterator2F <_StageAfterBattleMapLoadProcess>c__Iterator2F = new StageBattle.<_StageAfterBattleMapLoadProcess>c__Iterator2F();
-		<_StageAfterBattleMapLoadProcess>c__Iterator2F.<>f__this = this;
-		return <_StageAfterBattleMapLoadProcess>c__Iterator2F;
+		StageBattle.<_StageAfterBattleMapLoadProcess>c__Iterator32 <_StageAfterBattleMapLoadProcess>c__Iterator = new StageBattle.<_StageAfterBattleMapLoadProcess>c__Iterator32();
+		<_StageAfterBattleMapLoadProcess>c__Iterator.<>f__this = this;
+		return <_StageAfterBattleMapLoadProcess>c__Iterator;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _StageStartBattle()
 	{
-		StageBattle.<_StageStartBattle>c__Iterator30 <_StageStartBattle>c__Iterator = new StageBattle.<_StageStartBattle>c__Iterator30();
+		StageBattle.<_StageStartBattle>c__Iterator33 <_StageStartBattle>c__Iterator = new StageBattle.<_StageStartBattle>c__Iterator33();
 		<_StageStartBattle>c__Iterator.<>f__this = this;
 		return <_StageStartBattle>c__Iterator;
 	}
@@ -192,7 +193,7 @@ public class StageBattle : AStage
 	[DebuggerHidden]
 	private IEnumerator DownLoadColosseumEffect()
 	{
-		StageBattle.<DownLoadColosseumEffect>c__Iterator31 <DownLoadColosseumEffect>c__Iterator = new StageBattle.<DownLoadColosseumEffect>c__Iterator31();
+		StageBattle.<DownLoadColosseumEffect>c__Iterator34 <DownLoadColosseumEffect>c__Iterator = new StageBattle.<DownLoadColosseumEffect>c__Iterator34();
 		<DownLoadColosseumEffect>c__Iterator.<>f__this = this;
 		return <DownLoadColosseumEffect>c__Iterator;
 	}

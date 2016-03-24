@@ -10,6 +10,8 @@ public class SolEquipItemSelectDlg : Form
 {
 	public const int QUALITYLEVEL_MIN = 1001;
 
+	private Button m_btClose;
+
 	private NewListBox m_nlbItem;
 
 	private List<ITEM> m_ItemList = new List<ITEM>();
@@ -46,6 +48,8 @@ public class SolEquipItemSelectDlg : Form
 	{
 		this.m_nlbItem = (base.GetControl("NewListBox_reduce1") as NewListBox);
 		this.m_nlbItem.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickItemSelectConfirm));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.InitData();
 	}
 
@@ -118,7 +122,7 @@ public class SolEquipItemSelectDlg : Form
 		{
 			for (int i = 0; i < this.m_ItemList.Count; i++)
 			{
-				NewListItem item2 = new NewListItem(this.m_nlbItem.ColumnNum, true);
+				NewListItem item2 = new NewListItem(this.m_nlbItem.ColumnNum, true, string.Empty);
 				this.SetItemColum(this.m_ItemList[i], i, ref item2);
 				this.m_nlbItem.Add(item2);
 			}

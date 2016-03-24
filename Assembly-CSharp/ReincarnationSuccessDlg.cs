@@ -178,11 +178,11 @@ public class ReincarnationSuccessDlg : Form
 		{
 			if (UIDataManager.IsUse256Texture())
 			{
-				strFaceImageKey = charKindInfo.GetPortraitFile1(-1) + "_256";
+				strFaceImageKey = charKindInfo.GetPortraitFile1(-1, string.Empty) + "_256";
 			}
 			else
 			{
-				strFaceImageKey = charKindInfo.GetPortraitFile1(-1) + "_512";
+				strFaceImageKey = charKindInfo.GetPortraitFile1(-1, string.Empty) + "_512";
 			}
 			if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(strFaceImageKey))
 			{

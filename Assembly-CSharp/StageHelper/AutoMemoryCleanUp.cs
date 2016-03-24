@@ -226,7 +226,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator Action()
 		{
-			return new AutoMemoryCleanUp.<Action>c__IteratorD();
+			return new AutoMemoryCleanUp.<Action>c__IteratorF();
 		}
 
 		private static void MemoryCleanUpReserved()

@@ -253,11 +253,11 @@ public class NmLocalFileList : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator StartMapLoad(string szurl)
 	{
-		NmLocalFileList.<StartMapLoad>c__Iterator6C <StartMapLoad>c__Iterator6C = new NmLocalFileList.<StartMapLoad>c__Iterator6C();
-		<StartMapLoad>c__Iterator6C.szurl = szurl;
-		<StartMapLoad>c__Iterator6C.<$>szurl = szurl;
-		<StartMapLoad>c__Iterator6C.<>f__this = this;
-		return <StartMapLoad>c__Iterator6C;
+		NmLocalFileList.<StartMapLoad>c__Iterator72 <StartMapLoad>c__Iterator = new NmLocalFileList.<StartMapLoad>c__Iterator72();
+		<StartMapLoad>c__Iterator.szurl = szurl;
+		<StartMapLoad>c__Iterator.<$>szurl = szurl;
+		<StartMapLoad>c__Iterator.<>f__this = this;
+		return <StartMapLoad>c__Iterator;
 	}
 
 	private void _GetAnimationList()

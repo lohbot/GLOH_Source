@@ -15,6 +15,8 @@ public class BabelTowerInviteFriendListDlg : Form
 
 	private Button m_btReset;
 
+	private Button m_btClose;
+
 	private Dictionary<long, COMMUNITY_USER_INFO> m_dicCommunityList = new Dictionary<long, COMMUNITY_USER_INFO>();
 
 	public List<long> m_RecentBabelPlayerList = new List<long>();
@@ -33,6 +35,8 @@ public class BabelTowerInviteFriendListDlg : Form
 		this.m_lbCommunityList = (base.GetControl("nlb_friendlist") as NewListBox);
 		this.m_btReset = (base.GetControl("BT_Reset") as Button);
 		this.m_btReset.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtnClickReset));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		base.ShowBlackBG(0.5f);
 		base.SetScreenCenter();
 	}
@@ -152,20 +156,35 @@ public class BabelTowerInviteFriendListDlg : Form
 			long key = this.m_RecentBabelPlayerList[i];
 			if (this.m_dicCommunityList.ContainsKey(key))
 			{
-				COMMUNITY_USER_INFO listItem = new COMMUNITY_USER_INFO();
-				this.m_dicCommunityList.TryGetValue(key, out listItem);
-				NewListItem item = this.SetListItem(listItem);
-				this.m_lbCommunityList.Add(item);
+				COMMUNITY_USER_INFO cOMMUNITY_USER_INFO = new COMMUNITY_USER_INFO();
+				this.m_dicCommunityList.TryGetValue(key, out cOMMUNITY_USER_INFO);
+				if (cOMMUNITY_USER_INFO.i32MapUnique > 0)
+				{
+					if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_MYTHRAID || cOMMUNITY_USER_INFO.i16Level >= 50)
+					{
+						if (cOMMUNITY_USER_INFO.i16BattleMatch < 10000 || cOMMUNITY_USER_INFO.i16BattleMatch > 31000)
+						{
+							NewListItem item = this.SetListItem(cOMMUNITY_USER_INFO);
+							this.m_lbCommunityList.Add(item);
+						}
+					}
+				}
 			}
 		}
 		foreach (COMMUNITY_USER_INFO current in this.m_dicCommunityList.Values)
 		{
 			if (current.i32MapUnique > 0)
 			{
-				if (!this.m_RecentBabelPlayerList.Contains(current.i64PersonID))
+				if (SoldierBatch.SOLDIER_BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_MYTHRAID || current.i16Level >= 50)
 				{
-					NewListItem item2 = this.SetListItem(current);
-					this.m_lbCommunityList.Add(item2);
+					if (current.i16BattleMatch < 10000 || current.i16BattleMatch > 31000)
+					{
+						if (!this.m_RecentBabelPlayerList.Contains(current.i64PersonID))
+						{
+							NewListItem item2 = this.SetListItem(current);
+							this.m_lbCommunityList.Add(item2);
+						}
+					}
 				}
 			}
 		}
@@ -175,7 +194,7 @@ public class BabelTowerInviteFriendListDlg : Form
 	private NewListItem SetListItem(COMMUNITY_USER_INFO info)
 	{
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		NewListItem newListItem = new NewListItem(this.m_lbCommunityList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_lbCommunityList.ColumnNum, true, string.Empty);
 		string text = string.Empty;
 		string text2 = string.Empty;
 		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1030");
@@ -231,10 +250,10 @@ public class BabelTowerInviteFriendListDlg : Form
 	{
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		COMMUNITY_USER_INFO cOMMUNITY_USER_INFO = obj.Data as COMMUNITY_USER_INFO;
-		if (cOMMUNITY_USER_INFO != null && SoldierBatch.BABELTOWER_INFO != null)
+		if (cOMMUNITY_USER_INFO != null && SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			int index = this.ListBox_Index(cOMMUNITY_USER_INFO.i64PersonID);
-			NewListItem newListItem = new NewListItem(this.m_lbCommunityList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbCommunityList.ColumnNum, true, string.Empty);
 			string text = string.Empty;
 			string text2 = string.Empty;
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1030");
@@ -269,6 +288,50 @@ public class BabelTowerInviteFriendListDlg : Form
 				newListItem.SetListItemData(6, false);
 			}
 			this.m_lbCommunityList.RemoveAdd(index, newListItem);
+			this.m_lbCommunityList.RepositionItems();
+			GS_MYTHRAID_INVITE_FRIEND_REQ gS_MYTHRAID_INVITE_FRIEND_REQ = new GS_MYTHRAID_INVITE_FRIEND_REQ();
+			gS_MYTHRAID_INVITE_FRIEND_REQ.InvitePersonID = cOMMUNITY_USER_INFO.i64PersonID;
+			gS_MYTHRAID_INVITE_FRIEND_REQ.raidType = (byte)NrTSingleton<MythRaidManager>.Instance.GetRaidType();
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MYTHRAID_INVITE_FRIEND_REQ, gS_MYTHRAID_INVITE_FRIEND_REQ);
+		}
+		else if (cOMMUNITY_USER_INFO != null && SoldierBatch.BABELTOWER_INFO != null)
+		{
+			int index2 = this.ListBox_Index(cOMMUNITY_USER_INFO.i64PersonID);
+			NewListItem newListItem2 = new NewListItem(this.m_lbCommunityList.ColumnNum, true, string.Empty);
+			string text3 = string.Empty;
+			string text4 = string.Empty;
+			text3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1030");
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text4, new object[]
+			{
+				text3,
+				"name",
+				cOMMUNITY_USER_INFO.strName
+			});
+			newListItem2.SetListItemData(0, text4, null, null, null);
+			text3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1031");
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text4, new object[]
+			{
+				text3,
+				"count",
+				cOMMUNITY_USER_INFO.i16Level
+			});
+			newListItem2.SetListItemData(1, text4, null, null, null);
+			text4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("575");
+			newListItem2.SetListItemData(2, text4, cOMMUNITY_USER_INFO, new EZValueChangedDelegate(this.BtnClickWhisper), null);
+			newListItem2.SetListItemEnable(3, false);
+			text4 = Client.GetInstance().Get_WorldServerName_InfoFromID(cOMMUNITY_USER_INFO.i32WorldID_Connect);
+			newListItem2.SetListItemData(4, text4, null, null, null);
+			if (kMyCharInfo.m_kFriendInfo.IsFriend(cOMMUNITY_USER_INFO.i64PersonID))
+			{
+				newListItem2.SetListItemData(5, true);
+				newListItem2.SetListItemData(6, true);
+			}
+			else
+			{
+				newListItem2.SetListItemData(5, false);
+				newListItem2.SetListItemData(6, false);
+			}
+			this.m_lbCommunityList.RemoveAdd(index2, newListItem2);
 			this.m_lbCommunityList.RepositionItems();
 			GS_BABELTOWER_INVITE_FRIEND_REQ gS_BABELTOWER_INVITE_FRIEND_REQ = new GS_BABELTOWER_INVITE_FRIEND_REQ();
 			gS_BABELTOWER_INVITE_FRIEND_REQ.InvitePersonID = cOMMUNITY_USER_INFO.i64PersonID;

@@ -79,4 +79,12 @@ public static class Protocol_Item_Box
 	public static void Roulette_Complete(int a_nItemUniuqe, int a_nItemNum)
 	{
 	}
+
+	public static void On_Sead_Box_Trade_Random(object a_oObject)
+	{
+	}
+
+	public static void Item_Box_Hearttype_Random_Show(ITEM a_cItem)
+	{
+	}
 }

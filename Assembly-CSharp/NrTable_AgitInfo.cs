@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_AgitInfo : NrTableBase
 {
-	public NrTable_AgitInfo() : base(CDefinePath.AGIT_INFO_URL, true)
+	public NrTable_AgitInfo() : base(CDefinePath.AGIT_INFO_URL)
 	{
 	}
 

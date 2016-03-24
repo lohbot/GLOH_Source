@@ -23,7 +23,21 @@ public class BillingManager_Google : BillingManager
 
 	private bool m_bRecovery;
 
+	private bool m_bSendQueryInventory;
+
 	private static BillingManager_Google s_instance;
+
+	public bool SendQueryInventory
+	{
+		get
+		{
+			return this.m_bSendQueryInventory;
+		}
+		set
+		{
+			this.m_bSendQueryInventory = value;
+		}
+	}
 
 	public static BillingManager_Google Instance
 	{
@@ -97,7 +111,7 @@ public class BillingManager_Google : BillingManager
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("664"));
 			return;
 		}
-		GoogleIAB.purchaseProduct(strItem, string.Format("0_{0:yyyyMMddHHmmss}", Convert.ToDateTime(DateTime.Now.ToString())));
+		GoogleIAB.purchaseProduct(strItem, string.Format("1{0:yyMMddHHmmss}_{1}", DateTime.Now, NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID));
 		this.BuyItem = strItem;
 	}
 
@@ -134,8 +148,12 @@ public class BillingManager_Google : BillingManager
 
 	public void CheckRestoreItem()
 	{
-		string[] items = NrTSingleton<ItemMallItemManager>.Instance.GetItems();
-		GoogleIAB.queryInventory(items);
+		if (!this.m_bSendQueryInventory)
+		{
+			string[] items = NrTSingleton<ItemMallItemManager>.Instance.GetItems();
+			GoogleIAB.queryInventory(items);
+			this.m_bSendQueryInventory = true;
+		}
 	}
 
 	public void RecoveryItem()

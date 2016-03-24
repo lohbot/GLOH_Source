@@ -219,11 +219,11 @@ public class Battle_ColosseumEmergency_SelectDlg : Form
 					string textureFromBundle = string.Empty;
 					if (UIDataManager.IsUse256Texture())
 					{
-						textureFromBundle = "UI/Soldier/256/" + charKindInfo.GetPortraitFile1((int)nkSoldierInfo.GetGrade()) + "_256";
+						textureFromBundle = "UI/Soldier/256/" + charKindInfo.GetPortraitFile1((int)nkSoldierInfo.GetGrade(), string.Empty) + "_256";
 					}
 					else
 					{
-						textureFromBundle = "UI/Soldier/512/" + charKindInfo.GetPortraitFile1((int)nkSoldierInfo.GetGrade()) + "_512";
+						textureFromBundle = "UI/Soldier/512/" + charKindInfo.GetPortraitFile1((int)nkSoldierInfo.GetGrade(), string.Empty) + "_512";
 					}
 					this.m_SoldierContoller[i].m_dwSolFace.SetTextureFromBundle(textureFromBundle);
 					if (charKindInfo.GetWeaponType() > 0)
@@ -263,7 +263,7 @@ public class Battle_ColosseumEmergency_SelectDlg : Form
 							NrCharKindInfo charKindInfo2 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(colosseumSupportSoldierdata.i32RivalCharKind[j]);
 							if (charKindInfo2 != null)
 							{
-								string textureFromBundle2 = "UI/Soldier/64/" + charKindInfo2.GetPortraitFile1((int)nkSoldierInfo.GetGrade()) + "_64";
+								string textureFromBundle2 = "UI/Soldier/64/" + charKindInfo2.GetPortraitFile1((int)nkSoldierInfo.GetGrade(), string.Empty) + "_64";
 								this.m_SoldierContoller[i].m_dtRelationFace[num].SetTextureFromBundle(textureFromBundle2);
 								num++;
 								bShowLabel = false;

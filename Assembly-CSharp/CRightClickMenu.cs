@@ -86,6 +86,8 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 
 	private string m_szCharName;
 
+	private bool m_isGuildUser;
+
 	private object m_oItem;
 
 	private Rect m_rcWindow = new Rect(0f, 0f, 0f, 0f);
@@ -154,12 +156,13 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 	{
 	}
 
-	public bool CreateUI(long personid, short charunique, string charname, CRightClickMenu.KIND formKind, CRightClickMenu.TYPE formType)
+	public bool CreateUI(long personid, short charunique, string charname, CRightClickMenu.KIND formKind, CRightClickMenu.TYPE formType, bool isGuildUser = false)
 	{
 		this.CloseUI();
 		this.m_nPersonID = personid;
 		this.m_i16CharUnique = charunique;
 		this.m_szCharName = charname;
+		this.m_isGuildUser = isGuildUser;
 		UI_RightClickMenu uI_RightClickMenu = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_RIGHTCLICK_MENU) as UI_RightClickMenu;
 		if (uI_RightClickMenu == null)
 		{
@@ -304,6 +307,10 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 				this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("22"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickFight));
 			}
 			this.AddList(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("464"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickAddFriend));
+			if (NrTSingleton<NewGuildManager>.Instance.GetGuildID() > 0L && NrTSingleton<NkCharManager>.Instance.GetCharName() != this.m_szCharName && NrTSingleton<NewGuildManager>.Instance.IsInviteMember(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID) && !this.m_isGuildUser)
+			{
+				this.AddList(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("467"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickInviteGuild));
+			}
 			this.m_bCloseOption[1] = true;
 			break;
 		case CRightClickMenu.KIND.MONSTER_CLICK:
@@ -316,6 +323,10 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 			this.AddList(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("229"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickShowDetailInfo));
 			this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("575"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickWhisper));
 			this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("354"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickPostSend));
+			if (NrTSingleton<NewGuildManager>.Instance.GetGuildID() > 0L && NrTSingleton<NkCharManager>.Instance.GetCharName() != this.m_szCharName && NrTSingleton<NewGuildManager>.Instance.IsInviteMember(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID) && !this.m_isGuildUser)
+			{
+				this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("467"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickInviteGuild));
+			}
 			this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("22"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickFight));
 			this.AddList(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("328"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickFriendDel));
 			this.m_bCloseOption[1] = true;
@@ -323,6 +334,10 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 		case CRightClickMenu.KIND.COMMUNITY_FRIEND_LOGOFF:
 			this.AddList(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("229"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickShowDetailInfo));
 			this.AddList(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("354"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickPostSend));
+			if (NrTSingleton<NewGuildManager>.Instance.GetGuildID() > 0L && NrTSingleton<NkCharManager>.Instance.GetCharName() != this.m_szCharName && NrTSingleton<NewGuildManager>.Instance.IsInviteMember(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID) && !this.m_isGuildUser)
+			{
+				this.AddList(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("467"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickInviteGuild));
+			}
 			this.AddList(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("328"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickFriendDel));
 			this.m_bCloseOption[1] = true;
 			break;
@@ -433,6 +448,10 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 			this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("354"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickPostSend));
 			this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("464"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickAddFriend));
 			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			if (NrTSingleton<NewGuildManager>.Instance.GetGuildID() > 0L && NrTSingleton<NewGuildManager>.Instance.IsInviteMember(kMyCharInfo.m_PersonID))
+			{
+				this.AddList(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("467"), CRightClickMenu.BASIC_FONT_COLOR, true, new CRightClickMenu._OnClickMenu(this.ClickInviteGuild));
+			}
 			short num = (short)COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_CHATLIMIT_LEVEL);
 			if (kMyCharInfo.GetLevel() > (int)num)
 			{
@@ -714,7 +733,7 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 					"charname",
 					this.m_szCharName
 				});
-				msgBoxUI.SetMsg(new YesDelegate(this.ReportCharYes), null, textFromInterface, empty, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.ReportCharYes), null, textFromInterface, empty, eMsgType.MB_OK_CANCEL, 2);
 			}
 		}
 	}
@@ -760,7 +779,7 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 					"Charname",
 					uI_RightClickMenu.GetTileCharName()
 				});
-				msgBoxUI.SetMsg(new YesDelegate(this.FriendDelYes), null, textFromInterface, empty, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.FriendDelYes), null, textFromInterface, empty, eMsgType.MB_OK_CANCEL, 2);
 			}
 		}
 	}
@@ -788,7 +807,7 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 	{
 		GS_CHAT_REPORT_USER_REQ gS_CHAT_REPORT_USER_REQ = new GS_CHAT_REPORT_USER_REQ();
 		TKString.StringChar(this.m_szCharName, ref gS_CHAT_REPORT_USER_REQ.szCharName);
-		SendPacket.GetInstance().SendObject(134, gS_CHAT_REPORT_USER_REQ);
+		SendPacket.GetInstance().SendObject(138, gS_CHAT_REPORT_USER_REQ);
 	}
 
 	public void ClickMonDetailInfo(object data)
@@ -1011,7 +1030,7 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 				"targetname",
 				this.m_szCharName
 			});
-			msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKNewGuildMemberKickOut), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("160"), empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKNewGuildMemberKickOut), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("160"), empty, eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 
@@ -1027,5 +1046,17 @@ public class CRightClickMenu : NrTSingleton<CRightClickMenu>
 			gS_NEWGUILD_MEMBER_DISCHARGE_REQ.i64DischargePersonID = this.m_nPersonID;
 			SendPacket.GetInstance().SendObject(1815, gS_NEWGUILD_MEMBER_DISCHARGE_REQ);
 		}
+	}
+
+	public void ClickInviteGuild(object Obj)
+	{
+		UI_RightClickMenu uI_RightClickMenu = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DLG_RIGHTCLICK_MENU) as UI_RightClickMenu;
+		if (uI_RightClickMenu == null)
+		{
+			return;
+		}
+		GS_NEWGUILD_INVITE_REQ gS_NEWGUILD_INVITE_REQ = new GS_NEWGUILD_INVITE_REQ();
+		TKString.StringChar(uI_RightClickMenu.GetTileCharName(), ref gS_NEWGUILD_INVITE_REQ.strCharName);
+		SendPacket.GetInstance().SendObject(1827, gS_NEWGUILD_INVITE_REQ);
 	}
 }

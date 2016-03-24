@@ -151,17 +151,17 @@ public class CharChangeDlg : Form
 			if (NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
 				string str = string.Format("{0}SOLINTRO/", Option.GetProtocolRootPath(Protocol.HTTP));
-				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false, true);
 			}
 			else
 			{
-				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false, true);
 			}
 		}
 		else
 		{
 			string str2 = string.Format("{0}SOLINTRO/", NrTSingleton<NrGlobalReference>.Instance.basePath);
-			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false);
+			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false, true);
 		}
 	}
 

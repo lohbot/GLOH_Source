@@ -1,11 +1,23 @@
+using GameMessage;
 using System;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
+using TsBundle;
 using UnityEngine;
+using UnityForms;
 
 public class NkUtil
 {
+	public struct REQUEST_CHAR_TEXTURE_INFO
+	{
+		public Texture2D _tex2D;
+
+		public string _imageKey;
+	}
+
+	public delegate void RequestCharPortraitCallback(Texture2D texture);
+
 	public static Color GetColor(int si32R, int si32G, int si32B)
 	{
 		return new Color((float)si32R / 255f, (float)si32G / 255f, (float)si32B / 255f);
@@ -564,5 +576,96 @@ public class NkUtil
 	{
 		byte[] bytes = Encoding.Unicode.GetBytes(Input);
 		return Convert.ToBase64String(bytes);
+	}
+
+	public static NkUtil.REQUEST_CHAR_TEXTURE_INFO RequestCharTexture(eCharImageType type, int kind, int solgrade, NkUtil.RequestCharPortraitCallback callbackDelegate, string costume = "")
+	{
+		NkUtil.REQUEST_CHAR_TEXTURE_INFO result = default(NkUtil.REQUEST_CHAR_TEXTURE_INFO);
+		string text = MsgHandler.HandleReturn<string>("PortraitFileName", new object[]
+		{
+			kind,
+			solgrade
+		});
+		if (string.Empty == text)
+		{
+			return result;
+		}
+		if (!string.IsNullOrEmpty(costume))
+		{
+			string text2 = MsgHandler.HandleReturn<string>("PortraitCostumeFileName", new object[]
+			{
+				kind,
+				solgrade,
+				costume
+			});
+			if (!string.IsNullOrEmpty(text2))
+			{
+				text = text2;
+			}
+		}
+		if (type == eCharImageType.SMALL)
+		{
+			result._imageKey = text + "_64";
+		}
+		else if (type == eCharImageType.MIDDLE)
+		{
+			result._imageKey = text + "_256";
+		}
+		else if (type == eCharImageType.LARGE)
+		{
+			if (UIDataManager.IsUse256Texture())
+			{
+				result._imageKey = text + "_256";
+			}
+			else
+			{
+				result._imageKey = text + "_512";
+			}
+		}
+		result._tex2D = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(result._imageKey);
+		if (result._tex2D != null)
+		{
+			return result;
+		}
+		object[] callBackParam = new object[]
+		{
+			callbackDelegate,
+			result._imageKey
+		};
+		NrTSingleton<UIImageBundleManager>.Instance.RequestCharImageCustomParam(result._imageKey, type, new PostProcPerItem(NkUtil.CharPortraitBundleCallback), callBackParam);
+		return result;
+	}
+
+	public static void CharPortraitBundleCallback(WWWItem item, object param)
+	{
+		if (item.isCanceled)
+		{
+			return;
+		}
+		if (item.GetSafeBundle() == null)
+		{
+			return;
+		}
+		Texture2D texture2D = item.GetSafeBundle().mainAsset as Texture2D;
+		if (texture2D == null)
+		{
+			return;
+		}
+		object[] array = param as object[];
+		if (array == null || array.Length != 2)
+		{
+			Debug.Log("NORMAL, NkUtil.cs, CharPortraitBundleCallback(). parameters is strange");
+			return;
+		}
+		NkUtil.RequestCharPortraitCallback requestCharPortraitCallback = array[0] as NkUtil.RequestCharPortraitCallback;
+		if (requestCharPortraitCallback != null)
+		{
+			requestCharPortraitCallback(texture2D);
+		}
+		string text = array[1] as string;
+		if (!string.IsNullOrEmpty(text))
+		{
+			NrTSingleton<UIImageBundleManager>.Instance.AddTexture(text, texture2D);
+		}
 	}
 }

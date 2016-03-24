@@ -15,6 +15,8 @@ public class ExplainTooltipDlg : Form
 
 	private Label m_laExplain;
 
+	private Button m_btClose;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -31,6 +33,8 @@ public class ExplainTooltipDlg : Form
 	{
 		this.m_laTitle = (base.GetControl("Label_Title") as Label);
 		this.m_laExplain = (base.GetControl("Label_TEXT") as Label);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.InitData();
 	}
 

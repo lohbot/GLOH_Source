@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_SolWarehouseInfo : NrTableBase
 {
-	public NrTable_SolWarehouseInfo() : base(CDefinePath.SOLWAREHOUSE_URL, true)
+	public NrTable_SolWarehouseInfo() : base(CDefinePath.SOLWAREHOUSE_URL)
 	{
 	}
 

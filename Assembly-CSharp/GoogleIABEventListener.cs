@@ -10,6 +10,8 @@ public class GoogleIABEventListener : MonoBehaviour
 {
 	private StringBuilder Receipt = new StringBuilder();
 
+	private int m_i32QueryInventoryCount;
+
 	private void OnEnable()
 	{
 		GoogleIABManager.billingSupportedEvent += new Action(this.billingSupportedEvent);
@@ -41,6 +43,11 @@ public class GoogleIABEventListener : MonoBehaviour
 		string[] items = NrTSingleton<ItemMallItemManager>.Instance.GetItems();
 		GoogleIAB.queryInventory(items);
 		Debug.Log("billingSupportedEvent skus :" + items.Length);
+		BillingManager_Google component = BillingManager_Google.Instance.GetComponent<BillingManager_Google>();
+		if (component != null)
+		{
+			component.SendQueryInventory = true;
+		}
 	}
 
 	private void billingNotSupportedEvent(string error)
@@ -50,23 +57,48 @@ public class GoogleIABEventListener : MonoBehaviour
 
 	private void queryInventorySucceededEvent(List<GooglePurchase> purchases, List<GoogleSkuInfo> skus)
 	{
-		if (purchases.Count > 0)
+		GameObject gameObject = GameObject.Find("BillingManager_Google");
+		if (gameObject != null)
 		{
-			GameObject gameObject = GameObject.Find("BillingManager_Google");
-			if (gameObject != null)
+			BillingManager_Google component = gameObject.GetComponent<BillingManager_Google>();
+			if (component != null)
 			{
-				BillingManager_Google component = gameObject.GetComponent<BillingManager_Google>();
-				if (component != null)
+				if (purchases.Count > 0)
 				{
 					component.AddPurchase(purchases);
 				}
+				component.SendQueryInventory = false;
 			}
 		}
+		this.m_i32QueryInventoryCount = 0;
 	}
 
 	private void queryInventoryFailedEvent(string error)
 	{
-		Debug.Log("queryInventoryFailedEvent: " + error);
+		BillingManager_Google component = BillingManager_Google.Instance.GetComponent<BillingManager_Google>();
+		if (component != null)
+		{
+			if (this.m_i32QueryInventoryCount < 5)
+			{
+				component.CheckRestoreItem();
+				this.m_i32QueryInventoryCount++;
+			}
+			else
+			{
+				GS_BILLING_ITEM_RECODE_REQ gS_BILLING_ITEM_RECODE_REQ = new GS_BILLING_ITEM_RECODE_REQ();
+				gS_BILLING_ITEM_RECODE_REQ.i8Type = 3;
+				gS_BILLING_ITEM_RECODE_REQ.i8Result = 0;
+				gS_BILLING_ITEM_RECODE_REQ.i64ItemMallIndex = 0L;
+				NrTSingleton<ItemMallItemManager>.Instance.RecodeErrorMessage(ref gS_BILLING_ITEM_RECODE_REQ, error);
+				SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BILLING_ITEM_RECODE_REQ, gS_BILLING_ITEM_RECODE_REQ);
+				this.m_i32QueryInventoryCount = 0;
+			}
+			component.SendQueryInventory = false;
+		}
+		TsLog.LogError("error :{0}", new object[]
+		{
+			error
+		});
 	}
 
 	private void purchaseCompleteAwaitingVerificationEvent(string purchaseData, string signature)

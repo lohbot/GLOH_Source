@@ -17,6 +17,8 @@ public class CONGRATULATORY_MESSAGE
 
 	public int[] i32params = new int[6];
 
+	public long i64Param;
+
 	public char[] szparam1 = new char[21];
 
 	public char[] szparam2 = new char[21];

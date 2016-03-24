@@ -6,9 +6,9 @@ public class LoginRating : Form
 {
 	private Label m_pkLableAPKVersion;
 
-	private DrawTexture m_txRating1;
+	private DrawTexture m_dtRating1;
 
-	private DrawTexture m_txRating2;
+	private DrawTexture m_dtRating2;
 
 	public override void InitializeComponent()
 	{
@@ -43,18 +43,18 @@ public class LoginRating : Form
 			});
 		}
 		this.m_pkLableAPKVersion.SetText("[#66cbff]" + empty);
-		this.m_txRating1 = (base.GetControl("DT_Rating1") as DrawTexture);
-		this.m_txRating2 = (base.GetControl("DT_Rating2") as DrawTexture);
+		this.m_dtRating1 = (base.GetControl("DT_Rating1") as DrawTexture);
+		this.m_dtRating2 = (base.GetControl("DT_Rating2") as DrawTexture);
 		eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
 		if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORTSTORE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_BANDNAVER || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORNAVER || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORKAKAO || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORKAKAO)
 		{
-			this.m_txRating1.SetTexture("Win_I_Deliberation04");
+			this.m_dtRating1.SetTexture("Win_I_Deliberation04");
 		}
 		else
 		{
-			this.m_txRating1.SetTexture("Win_I_Deliberation01");
+			this.m_dtRating1.SetTexture("Win_I_Deliberation01");
 		}
-		this.m_txRating1.Visible = false;
-		this.m_txRating2.Visible = false;
+		this.m_dtRating1.Visible = false;
+		this.m_dtRating2.Visible = false;
 	}
 }

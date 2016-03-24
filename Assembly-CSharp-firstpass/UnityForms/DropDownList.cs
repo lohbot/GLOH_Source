@@ -11,6 +11,10 @@ namespace UnityForms
 
 		private UIButton _Button;
 
+		private G_ID _ParentID;
+
+		private bool _ParentCheck;
+
 		public UIButton Button
 		{
 			get
@@ -32,6 +36,18 @@ namespace UnityForms
 			set
 			{
 				this._ListBox = value;
+			}
+		}
+
+		public G_ID ParentGID
+		{
+			get
+			{
+				return this._ParentID;
+			}
+			set
+			{
+				this._ParentID = value;
 			}
 		}
 
@@ -91,6 +107,17 @@ namespace UnityForms
 					position = pos
 				}
 			}.AddComponent(typeof(DropDownList));
+		}
+
+		public void SetParentList(G_ID ParentGID, bool bCheck)
+		{
+			this._ParentID = ParentGID;
+			this._ParentCheck = bCheck;
+		}
+
+		public bool GetParentCheck()
+		{
+			return this._ParentCheck;
 		}
 
 		public void Add(string name)
@@ -295,7 +322,7 @@ namespace UnityForms
 				}
 			}
 			uIListItemContainer.transform.position = Vector3.zero;
-			if (base.GetItem(this.startIndex) != null)
+			if (null != base.GetItem(this.startIndex))
 			{
 				base.RemoveItemDonotPositionUpdate(this.startIndex, true);
 				base.InsertItemDonotPosionUpdate(uIListItemContainer, this.startIndex, null, true);
@@ -440,6 +467,11 @@ namespace UnityForms
 			{
 				this._ListBox.clipWhenMoving = true;
 			}
+		}
+
+		public bool IsVisible()
+		{
+			return !(this._ListBox == null) && this._ListBox.Visible;
 		}
 
 		public void SetFunction()

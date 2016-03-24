@@ -15,5 +15,7 @@ namespace PROTOCOL.GAME
 		public int i32AddExp;
 
 		public bool bInjury;
+
+		public int i32CostumeUnique;
 	}
 }

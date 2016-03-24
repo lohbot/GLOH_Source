@@ -1,21 +1,27 @@
+using SimpleJSON;
 using System;
 
 public class NIAPResult
 {
-	private string requestType;
-
-	private string resultType;
-
 	private string result;
 
 	private string extraValue;
 
-	public NIAPResult(string requestType, string resultType, string result, string extraValue)
+	private string orignalString;
+
+	public NIAPResult(string _result, string _extraValue, string _orignalString)
 	{
-		this.requestType = requestType;
-		this.resultType = resultType;
-		this.result = result;
-		this.extraValue = extraValue;
+		this.result = _result;
+		this.extraValue = _extraValue;
+		this.orignalString = _orignalString;
+	}
+
+	public static NIAPResult Build(string resultString)
+	{
+		JSONNode jSONNode = JSON.Parse(resultString);
+		string text = jSONNode[NIAPConstant.result];
+		string text2 = jSONNode[NIAPConstant.Param.extraValue];
+		return new NIAPResult(text, text2, resultString);
 	}
 
 	public string getResult()
@@ -28,13 +34,13 @@ public class NIAPResult
 		return this.extraValue;
 	}
 
-	public string getRequestType()
+	public string getOrignalString()
 	{
-		return this.requestType;
+		return this.orignalString;
 	}
 
-	public string getResultType()
+	public override string ToString()
 	{
-		return this.resultType;
+		return "[NIAPResult] result : " + this.result + ", extra : " + this.extraValue;
 	}
 }

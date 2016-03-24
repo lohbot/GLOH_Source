@@ -101,7 +101,10 @@ namespace UnityForms
 				uIEmoticonInfo.delays[0] = float.Parse(array2[11]);
 				uIEmoticonInfo.delays[1] = float.Parse(array2[12]);
 				uIEmoticonInfo.delays[2] = float.Parse(array2[13]);
-				if (!this.uiEmoticonDictionary.ContainsKey(array2[0]))
+				if (!this.uiEmoticonDictionary.ContainsKey("^" + MsgHandler.HandleReturn<string>("GetTextFromInterface", new object[]
+				{
+					array2[0]
+				})))
 				{
 					this.uiEmoticonDictionary.Add("^" + MsgHandler.HandleReturn<string>("GetTextFromInterface", new object[]
 					{

@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableWeaponTypeInfo : NrTableBase
 {
-	public NkTableWeaponTypeInfo() : base(CDefinePath.WEAPONTYPE_INFO_URL, true)
+	public NkTableWeaponTypeInfo() : base(CDefinePath.WEAPONTYPE_INFO_URL)
 	{
 	}
 

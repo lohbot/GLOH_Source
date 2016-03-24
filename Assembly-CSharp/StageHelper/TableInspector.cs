@@ -83,7 +83,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		private IEnumerator _WaitUntileDone()
 		{
-			TableInspector.<_WaitUntileDone>c__Iterator24 <_WaitUntileDone>c__Iterator = new TableInspector.<_WaitUntileDone>c__Iterator24();
+			TableInspector.<_WaitUntileDone>c__Iterator27 <_WaitUntileDone>c__Iterator = new TableInspector.<_WaitUntileDone>c__Iterator27();
 			<_WaitUntileDone>c__Iterator.<>f__this = this;
 			return <_WaitUntileDone>c__Iterator;
 		}
@@ -91,7 +91,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		private IEnumerator _Progress()
 		{
-			TableInspector.<_Progress>c__Iterator25 <_Progress>c__Iterator = new TableInspector.<_Progress>c__Iterator25();
+			TableInspector.<_Progress>c__Iterator28 <_Progress>c__Iterator = new TableInspector.<_Progress>c__Iterator28();
 			<_Progress>c__Iterator.<>f__this = this;
 			return <_Progress>c__Iterator;
 		}
@@ -99,7 +99,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		private IEnumerator _LoadTable(NrTableBase kTable)
 		{
-			TableInspector.<_LoadTable>c__Iterator26 <_LoadTable>c__Iterator = new TableInspector.<_LoadTable>c__Iterator26();
+			TableInspector.<_LoadTable>c__Iterator29 <_LoadTable>c__Iterator = new TableInspector.<_LoadTable>c__Iterator29();
 			<_LoadTable>c__Iterator.kTable = kTable;
 			<_LoadTable>c__Iterator.<$>kTable = kTable;
 			<_LoadTable>c__Iterator.<>f__this = this;
@@ -109,60 +109,60 @@ namespace StageHelper
 		[DebuggerHidden]
 		private IEnumerator _LoadTable(NrTableBase kPreTable, NrTableBase kTable)
 		{
-			TableInspector.<_LoadTable>c__Iterator27 <_LoadTable>c__Iterator = new TableInspector.<_LoadTable>c__Iterator27();
-			<_LoadTable>c__Iterator.kPreTable = kPreTable;
-			<_LoadTable>c__Iterator.kTable = kTable;
-			<_LoadTable>c__Iterator.<$>kPreTable = kPreTable;
-			<_LoadTable>c__Iterator.<$>kTable = kTable;
-			<_LoadTable>c__Iterator.<>f__this = this;
-			return <_LoadTable>c__Iterator;
+			TableInspector.<_LoadTable>c__Iterator2A <_LoadTable>c__Iterator2A = new TableInspector.<_LoadTable>c__Iterator2A();
+			<_LoadTable>c__Iterator2A.kPreTable = kPreTable;
+			<_LoadTable>c__Iterator2A.kTable = kTable;
+			<_LoadTable>c__Iterator2A.<$>kPreTable = kPreTable;
+			<_LoadTable>c__Iterator2A.<$>kTable = kTable;
+			<_LoadTable>c__Iterator2A.<>f__this = this;
+			return <_LoadTable>c__Iterator2A;
 		}
 
 		[DebuggerHidden]
 		private IEnumerator _WaitUntilFinishPreTable(NrTableBase kPreTable)
 		{
-			TableInspector.<_WaitUntilFinishPreTable>c__Iterator28 <_WaitUntilFinishPreTable>c__Iterator = new TableInspector.<_WaitUntilFinishPreTable>c__Iterator28();
-			<_WaitUntilFinishPreTable>c__Iterator.kPreTable = kPreTable;
-			<_WaitUntilFinishPreTable>c__Iterator.<$>kPreTable = kPreTable;
-			return <_WaitUntilFinishPreTable>c__Iterator;
+			TableInspector.<_WaitUntilFinishPreTable>c__Iterator2B <_WaitUntilFinishPreTable>c__Iterator2B = new TableInspector.<_WaitUntilFinishPreTable>c__Iterator2B();
+			<_WaitUntilFinishPreTable>c__Iterator2B.kPreTable = kPreTable;
+			<_WaitUntilFinishPreTable>c__Iterator2B.<$>kPreTable = kPreTable;
+			return <_WaitUntilFinishPreTable>c__Iterator2B;
 		}
 
 		[DebuggerHidden]
 		private IEnumerator _LoadFromLocalNDTFile(NrTableBase kTable)
 		{
-			TableInspector.<_LoadFromLocalNDTFile>c__Iterator29 <_LoadFromLocalNDTFile>c__Iterator = new TableInspector.<_LoadFromLocalNDTFile>c__Iterator29();
-			<_LoadFromLocalNDTFile>c__Iterator.kTable = kTable;
-			<_LoadFromLocalNDTFile>c__Iterator.<$>kTable = kTable;
-			<_LoadFromLocalNDTFile>c__Iterator.<>f__this = this;
-			return <_LoadFromLocalNDTFile>c__Iterator;
+			TableInspector.<_LoadFromLocalNDTFile>c__Iterator2C <_LoadFromLocalNDTFile>c__Iterator2C = new TableInspector.<_LoadFromLocalNDTFile>c__Iterator2C();
+			<_LoadFromLocalNDTFile>c__Iterator2C.kTable = kTable;
+			<_LoadFromLocalNDTFile>c__Iterator2C.<$>kTable = kTable;
+			<_LoadFromLocalNDTFile>c__Iterator2C.<>f__this = this;
+			return <_LoadFromLocalNDTFile>c__Iterator2C;
 		}
 
 		[DebuggerHidden]
 		private IEnumerator _LoadFromPackedFile(NrTableBase kTable)
 		{
-			TableInspector.<_LoadFromPackedFile>c__Iterator2A <_LoadFromPackedFile>c__Iterator2A = new TableInspector.<_LoadFromPackedFile>c__Iterator2A();
-			<_LoadFromPackedFile>c__Iterator2A.<>f__this = this;
-			return <_LoadFromPackedFile>c__Iterator2A;
+			TableInspector.<_LoadFromPackedFile>c__Iterator2D <_LoadFromPackedFile>c__Iterator2D = new TableInspector.<_LoadFromPackedFile>c__Iterator2D();
+			<_LoadFromPackedFile>c__Iterator2D.<>f__this = this;
+			return <_LoadFromPackedFile>c__Iterator2D;
 		}
 
 		[DebuggerHidden]
 		private IEnumerator _DownloadAssetbundle(NrTableBase kTable)
 		{
-			TableInspector.<_DownloadAssetbundle>c__Iterator2B <_DownloadAssetbundle>c__Iterator2B = new TableInspector.<_DownloadAssetbundle>c__Iterator2B();
-			<_DownloadAssetbundle>c__Iterator2B.kTable = kTable;
-			<_DownloadAssetbundle>c__Iterator2B.<$>kTable = kTable;
-			<_DownloadAssetbundle>c__Iterator2B.<>f__this = this;
-			return <_DownloadAssetbundle>c__Iterator2B;
+			TableInspector.<_DownloadAssetbundle>c__Iterator2E <_DownloadAssetbundle>c__Iterator2E = new TableInspector.<_DownloadAssetbundle>c__Iterator2E();
+			<_DownloadAssetbundle>c__Iterator2E.kTable = kTable;
+			<_DownloadAssetbundle>c__Iterator2E.<$>kTable = kTable;
+			<_DownloadAssetbundle>c__Iterator2E.<>f__this = this;
+			return <_DownloadAssetbundle>c__Iterator2E;
 		}
 
 		[DebuggerHidden]
 		private IEnumerable<string> _ParseTableNDT(string strContext)
 		{
-			TableInspector.<_ParseTableNDT>c__Iterator2C <_ParseTableNDT>c__Iterator2C = new TableInspector.<_ParseTableNDT>c__Iterator2C();
-			<_ParseTableNDT>c__Iterator2C.strContext = strContext;
-			<_ParseTableNDT>c__Iterator2C.<$>strContext = strContext;
-			<_ParseTableNDT>c__Iterator2C.<>f__this = this;
-			TableInspector.<_ParseTableNDT>c__Iterator2C expr_1C = <_ParseTableNDT>c__Iterator2C;
+			TableInspector.<_ParseTableNDT>c__Iterator2F <_ParseTableNDT>c__Iterator2F = new TableInspector.<_ParseTableNDT>c__Iterator2F();
+			<_ParseTableNDT>c__Iterator2F.strContext = strContext;
+			<_ParseTableNDT>c__Iterator2F.<$>strContext = strContext;
+			<_ParseTableNDT>c__Iterator2F.<>f__this = this;
+			TableInspector.<_ParseTableNDT>c__Iterator2F expr_1C = <_ParseTableNDT>c__Iterator2F;
 			expr_1C.$PC = -2;
 			return expr_1C;
 		}

@@ -12,6 +12,8 @@ public class StoryChatLikeListDlg : Form
 
 	private NewListBox m_StoryChatLikeList;
 
+	private Button m_btConfirm;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -28,6 +30,8 @@ public class StoryChatLikeListDlg : Form
 	{
 		this.m_Title = (base.GetControl("LB_Title") as Label);
 		this.m_StoryChatLikeList = (base.GetControl("NLB_Like") as NewListBox);
+		this.m_btConfirm = (base.GetControl("BT_OK") as Button);
+		this.m_btConfirm.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		base.SetScreenCenter();
 	}
 
@@ -64,7 +68,7 @@ public class StoryChatLikeListDlg : Form
 					break;
 				}
 			}
-			NewListItem newListItem = new NewListItem(this.m_StoryChatLikeList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_StoryChatLikeList.ColumnNum, true, string.Empty);
 			Texture2D texture2D = null;
 			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.STORYCHAT_DLG))
 			{
@@ -86,7 +90,12 @@ public class StoryChatLikeListDlg : Form
 					newListItem.SetListItemData(0, "Win_I_EventSol", null, null, null);
 					newListItem.EventMark = true;
 				}
-				newListItem.SetListItemData(1, array[i].nCharKind, null, null, null);
+				newListItem.SetListItemData(1, new CostumeDrawTextureInfo
+				{
+					charKind = array[i].nCharKind,
+					costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(array[i].nFaceCharCostumeUnique),
+					grade = -1
+				}, null, null, null);
 			}
 			string text = TKString.NEWString(array[i].szName);
 			newListItem.SetListItemData(2, text, null, null, null);

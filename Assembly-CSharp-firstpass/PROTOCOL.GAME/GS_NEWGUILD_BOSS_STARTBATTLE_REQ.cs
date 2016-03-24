@@ -8,6 +8,8 @@ namespace PROTOCOL.GAME
 
 		public GS_GUILDBOSS_SOL_BATTLEPOS[] clSolBatchPosInfo = new GS_GUILDBOSS_SOL_BATTLEPOS[9];
 
+		public int nCombinationUnique;
+
 		public GS_NEWGUILD_BOSS_STARTBATTLE_REQ()
 		{
 			for (int i = 0; i < 9; i++)

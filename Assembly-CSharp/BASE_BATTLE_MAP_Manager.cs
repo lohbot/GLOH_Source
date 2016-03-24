@@ -8,7 +8,7 @@ public class BASE_BATTLE_MAP_Manager : NrTableBase
 
 	private static BASE_BATTLE_MAP_Manager Instance;
 
-	private BASE_BATTLE_MAP_Manager(string strFilePath) : base(strFilePath, true)
+	private BASE_BATTLE_MAP_Manager(string strFilePath) : base(strFilePath)
 	{
 	}
 

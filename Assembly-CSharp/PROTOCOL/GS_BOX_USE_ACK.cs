@@ -15,6 +15,12 @@ namespace PROTOCOL
 
 		public int m_nItemNum;
 
+		public byte m_byAllOpen;
+
+		public int[] m_nGetItemUnique = new int[12];
+
+		public int[] m_nGetItemNum = new int[12];
+
 		public int[] m_naAddItemNum = new int[12];
 
 		public ITEM[] m_caAddItem = new ITEM[12];

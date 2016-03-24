@@ -82,7 +82,7 @@ public class CTextParser : NrTSingleton<CTextParser>
 		return true;
 	}
 
-	public void ReplaceBattleSkillParam(ref string refReplaceText, string BaseString, BATTLESKILL_DETAIL BSkillDetail, NkSoldierInfo solInfo)
+	public void ReplaceBattleSkillParam(ref string refReplaceText, string BaseString, BATTLESKILL_DETAIL BSkillDetail, NkSoldierInfo solInfo, int costumeUnique = -1)
 	{
 		if (BSkillDetail == null)
 		{
@@ -108,7 +108,7 @@ public class CTextParser : NrTSingleton<CTextParser>
 			}
 			else if (BaseString[i] == this.m_szTag[13])
 			{
-				this.ReplaceParamValBattleSkill(ref i, ref this.replacedContent, BaseString, BSkillDetail, solInfo);
+				this.ReplaceParamValBattleSkill(ref i, ref this.replacedContent, BaseString, BSkillDetail, solInfo, costumeUnique);
 			}
 			else if (BaseString[i] == this.m_szTag[14])
 			{
@@ -136,7 +136,7 @@ public class CTextParser : NrTSingleton<CTextParser>
 					i++;
 					i++;
 					i++;
-					this.ReplaceParamValBattleSkill(ref i, ref this.replacedContent, BaseString, BSkillDetail, solInfo);
+					this.ReplaceParamValBattleSkill(ref i, ref this.replacedContent, BaseString, BSkillDetail, solInfo, costumeUnique);
 				}
 				else
 				{
@@ -387,7 +387,7 @@ public class CTextParser : NrTSingleton<CTextParser>
 		outReplaceText = this.reaplacedParam.ToString();
 	}
 
-	private void ReplaceParamValBattleSkill(ref int m_iTextCount, ref StringBuilder refReplaceText, string szContent, BATTLESKILL_DETAIL BSkillDetail, NkSoldierInfo solInfo)
+	private void ReplaceParamValBattleSkill(ref int m_iTextCount, ref StringBuilder refReplaceText, string szContent, BATTLESKILL_DETAIL BSkillDetail, NkSoldierInfo solInfo, int costumeUnique = -1)
 	{
 		int length = szContent.Length;
 		int i = m_iTextCount + 1;
@@ -430,7 +430,7 @@ public class CTextParser : NrTSingleton<CTextParser>
 			case eBATTLESKILL_DETAIL_CODE.PLUS_HEAL_P:
 			case eBATTLESKILL_DETAIL_CODE.MINUS_DAMAGE_P:
 			case eBATTLESKILL_DETAIL_CODE.PLUS_DAMAGE_P:
-				goto IL_26B;
+				goto IL_2C3;
 			case eBATTLESKILL_DETAIL_CODE.ADD_MIN_DAMAGE:
 			case eBATTLESKILL_DETAIL_CODE.ADD_MAX_DAMAGE:
 			case eBATTLESKILL_DETAIL_CODE.ADD_MAX_HP:
@@ -454,102 +454,123 @@ public class CTextParser : NrTSingleton<CTextParser>
 				IL_13A:
 				switch (eBATTLESKILL_DETAIL_CODE)
 				{
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_POISON_P:
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_FIRE_P:
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_ICE_P:
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_LIGHTNING_P:
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_BLEEDING_P:
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_HEAL_P:
-				case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE_P:
-					goto IL_1EC;
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_HEAL:
-				case eBATTLESKILL_DETAIL_CODE.ENDURE_ANGERLYPOINT:
-				case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE:
-				case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE_TYPE:
-				case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE_TARGET:
-				case eBATTLESKILL_DETAIL_CODE.AFTER_USED_HEAL:
-				case eBATTLESKILL_DETAIL_CODE.AFTER_USED_SKILL_LEVEL:
-				case eBATTLESKILL_DETAIL_CODE.DEL_BUFF_ALL:
-				case eBATTLESKILL_DETAIL_CODE.DEL_BUFF_TYPE:
-					IL_18C:
+				case eBATTLESKILL_DETAIL_CODE.EMPTY_P:
+				case eBATTLESKILL_DETAIL_CODE.INCREASE_WEPON_ACTIVE:
+				case eBATTLESKILL_DETAIL_CODE.DECREASE_PVP_DAMAGE:
+				case eBATTLESKILL_DETAIL_CODE.INCREASE_PVP_DAMAGE:
+				case eBATTLESKILL_DETAIL_CODE.INCREASE_BOSS_DAMAGE:
+				case eBATTLESKILL_DETAIL_CODE.DECREASE_MONSTER_DAMAGE:
+				case eBATTLESKILL_DETAIL_CODE.INCREASE_EXP_P:
+				case eBATTLESKILL_DETAIL_CODE.INCREASE_GOLD_P:
+				case eBATTLESKILL_DETAIL_CODE.INCREASE_ITEM_P:
+				case eBATTLESKILL_DETAIL_CODE.PHOENIX:
+				case eBATTLESKILL_DETAIL_CODE.EMPTY_P2:
+					goto IL_2C3;
+				case eBATTLESKILL_DETAIL_CODE.EMPTY_DAMAGE_P:
+				case eBATTLESKILL_DETAIL_CODE.EMPTY_DAMAGE_P2:
+					goto IL_230;
+				case eBATTLESKILL_DETAIL_CODE.IMMUNE_EQUAL_BOSS:
+				case eBATTLESKILL_DETAIL_CODE.INCREASE_DEFENCE_ACTIVE:
+				case eBATTLESKILL_DETAIL_CODE.DECREASE_CRITICAL_HIT:
+				case eBATTLESKILL_DETAIL_CODE.MAGIC_RESIST:
+				case eBATTLESKILL_DETAIL_CODE.PHYSICAL_RESIST:
+				case eBATTLESKILL_DETAIL_CODE.EMPTY_VALUE2:
+					IL_190:
 					switch (eBATTLESKILL_DETAIL_CODE)
 					{
-					case eBATTLESKILL_DETAIL_CODE.BLOOD_SUCKING_PER:
-					case eBATTLESKILL_DETAIL_CODE.ADD_BLOOD_SUCKING_PER:
-					case eBATTLESKILL_DETAIL_CODE.BLOOD_SUCKING_ALL_PER:
-						goto IL_26B;
-					case eBATTLESKILL_DETAIL_CODE.BLOOD_SUCKING_VALUE:
-					case eBATTLESKILL_DETAIL_CODE.ADD_BLOOD_SUCKING_VALUE:
-						IL_1AA:
-						if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.DAMAGE_P || eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.HEAL_P)
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_POISON_P:
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_FIRE_P:
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_ICE_P:
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_LIGHTNING_P:
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_DAMAGE_BLEEDING_P:
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_HEAL_P:
+					case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE_P:
+						goto IL_230;
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_HEAL:
+					case eBATTLESKILL_DETAIL_CODE.ENDURE_ANGERLYPOINT:
+					case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE:
+					case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE_TYPE:
+					case eBATTLESKILL_DETAIL_CODE.AFTER_USED_DAMAGE_TARGET:
+					case eBATTLESKILL_DETAIL_CODE.AFTER_USED_HEAL:
+					case eBATTLESKILL_DETAIL_CODE.AFTER_USED_SKILL_LEVEL:
+					case eBATTLESKILL_DETAIL_CODE.DEL_BUFF_ALL:
+					case eBATTLESKILL_DETAIL_CODE.DEL_BUFF_TYPE:
+						IL_1E2:
+						switch (eBATTLESKILL_DETAIL_CODE)
 						{
-							goto IL_1EC;
+						case eBATTLESKILL_DETAIL_CODE.BLOOD_SUCKING_PER:
+						case eBATTLESKILL_DETAIL_CODE.ADD_BLOOD_SUCKING_PER:
+						case eBATTLESKILL_DETAIL_CODE.BLOOD_SUCKING_ALL_PER:
+							goto IL_2C3;
+						case eBATTLESKILL_DETAIL_CODE.BLOOD_SUCKING_VALUE:
+						case eBATTLESKILL_DETAIL_CODE.ADD_BLOOD_SUCKING_VALUE:
+							IL_200:
+							if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.DAMAGE_P || eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.HEAL_P)
+							{
+								goto IL_230;
+							}
+							if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.SUMMON_LEVEL_P)
+							{
+								goto IL_2C3;
+							}
+							if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.PROTECT_SHIELD_VALUE_P)
+							{
+								goto IL_230;
+							}
+							if (eBATTLESKILL_DETAIL_CODE != eBATTLESKILL_DETAIL_CODE.PLUNDER_ANGERLYPOINT_P)
+							{
+								goto IL_385;
+							}
+							goto IL_2C3;
 						}
-						if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.EMPTY_P)
-						{
-							goto IL_26B;
-						}
-						if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.EMPTY_DAMAGE_P)
-						{
-							goto IL_1EC;
-						}
-						if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.SUMMON_LEVEL_P)
-						{
-							goto IL_26B;
-						}
-						if (eBATTLESKILL_DETAIL_CODE == eBATTLESKILL_DETAIL_CODE.PROTECT_SHIELD_VALUE_P)
-						{
-							goto IL_1EC;
-						}
-						if (eBATTLESKILL_DETAIL_CODE != eBATTLESKILL_DETAIL_CODE.PLUNDER_ANGERLYPOINT_P)
-						{
-							goto IL_32F;
-						}
-						goto IL_26B;
-					}
-					goto IL_1AA;
-				case eBATTLESKILL_DETAIL_CODE.AFTER_USED_SKILL:
-				{
-					int skillDetalParamValue2 = BSkillDetail.GetSkillDetalParamValue(74);
-					BATTLESKILL_DETAIL battleSkillDetail = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillDetail(skillDetalParamValue, skillDetalParamValue2);
-					if (battleSkillDetail != null)
+						goto IL_200;
+					case eBATTLESKILL_DETAIL_CODE.AFTER_USED_SKILL:
 					{
-						skillDetalParamValue = BSkillDetail.GetSkillDetalParamValue(3);
-						if (skillDetalParamValue > 0)
+						int skillDetalParamValue2 = BSkillDetail.GetSkillDetalParamValue(74);
+						BATTLESKILL_DETAIL battleSkillDetail = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillDetail(skillDetalParamValue, skillDetalParamValue2);
+						if (battleSkillDetail != null)
 						{
-							if (solInfo != null)
+							skillDetalParamValue = BSkillDetail.GetSkillDetalParamValue(3);
+							if (skillDetalParamValue > 0)
 							{
-								int num3 = (solInfo.GetMaxDamage() + solInfo.GetMinDamage()) / 2;
-								EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(solInfo.GetCharKind(), solInfo.GetGrade());
-								if (eventHeroCharCode != null)
+								if (solInfo != null)
 								{
-									int num4 = (int)((float)num3 * ((float)eventHeroCharCode.i32Attack * 0.01f));
-									num3 = num4;
+									int num3 = (solInfo.GetMaxDamage() + solInfo.GetMinDamage()) / 2;
+									EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(solInfo.GetCharKind(), solInfo.GetGrade());
+									if (eventHeroCharCode != null)
+									{
+										int num4 = (int)((float)num3 * ((float)eventHeroCharCode.i32Attack * 0.01f));
+										num3 = num4;
+									}
+									num2 = (long)((int)((float)num3 * ((float)skillDetalParamValue / 10000f)));
 								}
-								num2 = (long)num3 * (long)skillDetalParamValue;
-								num2 /= 10000L;
-							}
-							else
-							{
-								num = (float)skillDetalParamValue / 100f;
+								else
+								{
+									num = (float)skillDetalParamValue / 100f;
+								}
 							}
 						}
+						goto IL_385;
 					}
-					goto IL_32F;
+					case eBATTLESKILL_DETAIL_CODE.ACTION_HP_P:
+						goto IL_2C3;
+					}
+					goto IL_1E2;
 				}
-				case eBATTLESKILL_DETAIL_CODE.ACTION_HP_P:
-					goto IL_26B;
-				}
-				goto IL_18C;
+				goto IL_190;
 			case eBATTLESKILL_DETAIL_CODE.PLUS_MIN_DAMAGE_P:
 			case eBATTLESKILL_DETAIL_CODE.PLUS_MAX_DAMAGE_P:
-				goto IL_1EC;
+				goto IL_230;
 			}
 			goto IL_13A;
-			IL_1EC:
+			IL_230:
 			if (solInfo != null)
 			{
 				int num5 = (solInfo.GetMaxDamage() + solInfo.GetMinDamage()) / 2;
+				if (0 <= costumeUnique)
+				{
+					num5 = this.GetCostumeDamage(solInfo, costumeUnique);
+				}
 				EVENT_HERODATA eventHeroCharCode2 = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(solInfo.GetCharKind(), solInfo.GetGrade());
 				if (eventHeroCharCode2 != null)
 				{
@@ -563,10 +584,10 @@ public class CTextParser : NrTSingleton<CTextParser>
 			{
 				num = (float)skillDetalParamValue / 100f;
 			}
-			goto IL_32F;
-			IL_26B:
+			goto IL_385;
+			IL_2C3:
 			num = (float)skillDetalParamValue / 100f;
-			IL_32F:
+			IL_385:
 			string value;
 			if (num2 > 0L)
 			{
@@ -1107,5 +1128,26 @@ public class CTextParser : NrTSingleton<CTextParser>
 			}
 		}
 		m_iTextCount += num + 2;
+	}
+
+	private int GetCostumeDamage(NkSoldierInfo solInfo, int costumeUnique)
+	{
+		if (solInfo == null)
+		{
+			return 0;
+		}
+		int result = (solInfo.GetMinDamage_NotAdjustCostume() + solInfo.GetMaxDamage_NotAdjustCostume()) / 2;
+		CharCostumeInfo_Data costumeData = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeData(costumeUnique);
+		if (costumeData == null)
+		{
+			return result;
+		}
+		if (costumeData.IsNormalCostume())
+		{
+			return result;
+		}
+		double num = (double)((float)solInfo.GetMinDamage_NotAdjustCostume() + (float)(solInfo.GetMinDamage_NotAdjustCostume() * costumeData.m_ATKBonusRate) / 100f);
+		double num2 = (double)((float)solInfo.GetMaxDamage_NotAdjustCostume() + (float)(solInfo.GetMaxDamage_NotAdjustCostume() * costumeData.m_ATKBonusRate) / 100f);
+		return (int)((num + num2) / 2.0);
 	}
 }

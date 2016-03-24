@@ -97,7 +97,7 @@ public class BubbleGameGuideDlg : Form
 				}
 				zero.y = noticeIconDlg.GetLocationY() - noticeIconDlg.GetSizeY() - 25f;
 			}
-			base.SetLocation(zero.x, zero.y, noticeIconDlg.GetLocation().z);
+			base.SetLocation(zero.x, zero.y, noticeIconDlg.GetLocation().z - 1f);
 		}
 	}
 

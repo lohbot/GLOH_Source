@@ -75,7 +75,7 @@ public class FriendPush_DLG : Form
 			title = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1111");
 			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("122");
 			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			msgBoxUI.SetMsg(null, null, title, message, eMsgType.MB_OK);
+			msgBoxUI.SetMsg(null, null, title, message, eMsgType.MB_OK, 2);
 			return;
 		}
 		bool flag = false;

@@ -87,9 +87,9 @@ public class TsEffectTimeControl : MonoBehaviour
 		[DebuggerHidden]
 		public IEnumerator Update()
 		{
-			TsEffectTimeControl.cMeshType.<Update>c__Iterator68 <Update>c__Iterator = new TsEffectTimeControl.cMeshType.<Update>c__Iterator68();
-			<Update>c__Iterator.<>f__this = this;
-			return <Update>c__Iterator;
+			TsEffectTimeControl.cMeshType.<Update>c__Iterator6E <Update>c__Iterator6E = new TsEffectTimeControl.cMeshType.<Update>c__Iterator6E();
+			<Update>c__Iterator6E.<>f__this = this;
+			return <Update>c__Iterator6E;
 		}
 	}
 
@@ -162,9 +162,9 @@ public class TsEffectTimeControl : MonoBehaviour
 		[DebuggerHidden]
 		public IEnumerator Update()
 		{
-			TsEffectTimeControl.cParticleType.<Update>c__Iterator69 <Update>c__Iterator = new TsEffectTimeControl.cParticleType.<Update>c__Iterator69();
-			<Update>c__Iterator.<>f__this = this;
-			return <Update>c__Iterator;
+			TsEffectTimeControl.cParticleType.<Update>c__Iterator6F <Update>c__Iterator6F = new TsEffectTimeControl.cParticleType.<Update>c__Iterator6F();
+			<Update>c__Iterator6F.<>f__this = this;
+			return <Update>c__Iterator6F;
 		}
 	}
 
@@ -263,9 +263,9 @@ public class TsEffectTimeControl : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator StartEffect()
 	{
-		TsEffectTimeControl.<StartEffect>c__Iterator67 <StartEffect>c__Iterator = new TsEffectTimeControl.<StartEffect>c__Iterator67();
-		<StartEffect>c__Iterator.<>f__this = this;
-		return <StartEffect>c__Iterator;
+		TsEffectTimeControl.<StartEffect>c__Iterator6D <StartEffect>c__Iterator6D = new TsEffectTimeControl.<StartEffect>c__Iterator6D();
+		<StartEffect>c__Iterator6D.<>f__this = this;
+		return <StartEffect>c__Iterator6D;
 	}
 
 	private void Update()

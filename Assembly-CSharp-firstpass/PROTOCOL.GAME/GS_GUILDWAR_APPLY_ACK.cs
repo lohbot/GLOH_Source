@@ -4,22 +4,10 @@ namespace PROTOCOL.GAME
 {
 	public class GS_GUILDWAR_APPLY_ACK
 	{
-		public byte ui8RaidUnique;
+		public int i32Result;
 
-		public byte ui8RaidBattlePos;
+		public bool bIsApply;
 
-		public long[] i64SolID = new long[5];
-
-		public byte[] ui8SolPosIndex = new byte[5];
-
-		public short[] i16BattlePos = new short[5];
-
-		public byte ui8SolPosType;
-
-		public byte ui8MilitaryUnique;
-
-		public int i32Result = -1;
-
-		public long i64MilitaryID;
+		public bool bIsCancelReservation;
 	}
 }

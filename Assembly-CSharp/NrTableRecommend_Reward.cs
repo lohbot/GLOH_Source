@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableRecommend_Reward : NrTableBase
 {
-	public NrTableRecommend_Reward() : base(CDefinePath.RECOMMEND_REWARD_TABLE_PATH, true)
+	public NrTableRecommend_Reward() : base(CDefinePath.RECOMMEND_REWARD_TABLE_PATH)
 	{
 	}
 

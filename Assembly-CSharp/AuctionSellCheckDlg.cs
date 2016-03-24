@@ -96,7 +96,7 @@ public class AuctionSellCheckDlg : Form
 				{
 					return;
 				}
-				msgBoxUI.SetMsg(new YesDelegate(AuctionSellCheckDlg.MessageBoxEquipItem), this.m_SelectSoldierInfo, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("951"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("91"), eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(AuctionSellCheckDlg.MessageBoxEquipItem), this.m_SelectSoldierInfo, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1107"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("189"), eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("980"));
 				msgBoxUI.Show();
 				return;
@@ -108,7 +108,7 @@ public class AuctionSellCheckDlg : Form
 				{
 					return;
 				}
-				msgBoxUI2.SetMsg(new YesDelegate(this.MsgBoxOKUnsetSolHelp), this.m_SelectSoldierInfo, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("156"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("155"), eMsgType.MB_OK_CANCEL);
+				msgBoxUI2.SetMsg(new YesDelegate(this.MsgBoxOKUnsetSolHelp), this.m_SelectSoldierInfo, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("156"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("155"), eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI2.Show();
 				return;
 			}
@@ -272,6 +272,12 @@ public class AuctionSellCheckDlg : Form
 			}
 			if (this.m_SelectSoldierInfo.IsAwakening())
 			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("814"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return false;
+			}
+			if (this.m_SelectSoldierInfo.IsAtbCommonFlag(1L))
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("879"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 				return false;
 			}
 		}

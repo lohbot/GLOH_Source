@@ -6,10 +6,6 @@ namespace PROTOCOL.GAME
 	{
 		public short i16CurBountyHuntUnique;
 
-		public short i16ClearBountyHuntUnique;
-
-		public byte i8ClearRank;
-
 		public int i32Result = -1;
 	}
 }

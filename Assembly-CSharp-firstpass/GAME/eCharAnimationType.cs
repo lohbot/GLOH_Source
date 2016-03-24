@@ -44,6 +44,11 @@ namespace GAME
 		ActionEnd1,
 		Respawn1,
 		Event1,
+		Cinema_000,
+		Cinema_001,
+		Cinema_002,
+		Cinema_003,
+		Cinema_004,
 		END_ANITYPE
 	}
 }

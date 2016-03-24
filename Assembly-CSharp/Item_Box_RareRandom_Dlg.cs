@@ -74,6 +74,8 @@ public class Item_Box_RareRandom_Dlg : Form
 
 	private GameObject m_goBoxOpenEffect;
 
+	private eITEMMALL_BOXTRADE_TYPE m_eItemMall_BoxType = eITEMMALL_BOXTRADE_TYPE.ITEMMALL_TRADETYPE_GETBOX;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -220,7 +222,10 @@ public class Item_Box_RareRandom_Dlg : Form
 		this.m_nTime = (this.m_nItemChangeTime = Environment.TickCount);
 		this.m_bCompleted = false;
 		this.m_nArrayIndex = 0;
-		Protocol_Item_Box.On_Sead_Box_Use_Random(this.m_lMainBoxItem);
+		if (this.m_eItemMall_BoxType == eITEMMALL_BOXTRADE_TYPE.ITEMMALL_TRADETYPE_GETBOX)
+		{
+			Protocol_Item_Box.On_Sead_Box_Use_Random(this.m_lMainBoxItem);
+		}
 		if (this.m_goBoxOpenEffect != null)
 		{
 			this.m_goBoxOpenEffect.SetActive(false);
@@ -342,7 +347,7 @@ public class Item_Box_RareRandom_Dlg : Form
 						item.m_nItemUnique = num;
 						item.m_strText = NrTSingleton<UIDataManager>.Instance.GetString(num2.ToString(), " ", NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("442"));
 						list.Add(item);
-						NewListItem newListItem = new NewListItem(this.m_NlbItemListBox.ColumnNum, true);
+						NewListItem newListItem = new NewListItem(this.m_NlbItemListBox.ColumnNum, true, string.Empty);
 						newListItem.SetListItemData(0, true);
 						newListItem.SetListItemData(1, boxItemTemp, boxItemTemp, new EZValueChangedDelegate(this.OnItemToolTip), null);
 						this.m_NlbItemListBox.Add(newListItem);
@@ -351,7 +356,7 @@ public class Item_Box_RareRandom_Dlg : Form
 			}
 			this.m_NlbItemListBox.RepositionItems();
 			this.m_saRouletteItem = list.ToArray();
-			ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(a_cItem, null, false, false);
+			ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(a_cItem, null, false, false, G_ID.NONE);
 			if (array.Length > 0)
 			{
 				StringBuilder stringBuilder = new StringBuilder();
@@ -429,7 +434,7 @@ public class Item_Box_RareRandom_Dlg : Form
 		});
 		this.m_laSelectItemName.SetText(itemNameByItemUnique);
 		this.m_laSelectItemCount.SetText(empty);
-		ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(this.m_CompleteItem, null, false, false);
+		ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(this.m_CompleteItem, null, false, false, G_ID.NONE);
 		int num = 10;
 		if (array.Length > 0)
 		{

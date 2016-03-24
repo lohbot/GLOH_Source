@@ -52,7 +52,7 @@ public class SolDetailDlgTool
 		this.m_Label_SeasonNum.SetText(empty);
 	}
 
-	public void SetCharImg(byte bGrade)
+	public void SetCharImg(byte bGrade, string costumePortraitPath = "")
 	{
 		if (this.m_kSelectCharKindInfo == null)
 		{
@@ -62,7 +62,7 @@ public class SolDetailDlgTool
 		string legendName = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendName(this.m_kSelectCharKindInfo.GetCharKind(), (int)bGrade, this.m_kSelectCharKindInfo.GetName());
 		this.m_Label_Character_Name.SetText(legendName);
 		short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(this.m_kSelectCharKindInfo.GetCharKind(), (int)bGrade);
-		this.m_DrawTexture_Character.SetTextureEffect(eCharImageType.LARGE, this.m_kSelectCharKindInfo.GetCharKind(), (int)bGrade);
+		this.m_DrawTexture_Character.SetTextureEffect(eCharImageType.LARGE, this.m_kSelectCharKindInfo.GetCharKind(), (int)bGrade, costumePortraitPath);
 		UIBaseInfoLoader solLargeGradeImg = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolLargeGradeImg(this.m_kSelectCharKindInfo.GetCharKind(), (int)bGrade);
 		if (0 < legendType)
 		{
@@ -128,7 +128,7 @@ public class SolDetailDlgTool
 		if (this.m_ScrollLabel_SkillInfo != null)
 		{
 			SOL_GUIDE solGuild = NrTSingleton<NrTableSolGuideManager>.Instance.GetSolGuild(this.m_kSelectCharKindInfo.GetCharKind());
-			this.m_ScrollLabel_SkillInfo.SetScrollLabel(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(solGuild.m_i32SkillText.ToString()));
+			this.m_ScrollLabel_SkillInfo.SetScrollLabel(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface((solGuild.m_i32SkillText + 30000).ToString()));
 		}
 	}
 

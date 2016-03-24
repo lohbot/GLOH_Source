@@ -49,6 +49,20 @@ public class EventTrigger_Game : EventTrigger
 				}
 			}
 		}
+		if (this.BehaviorList != null)
+		{
+			foreach (GameObject current2 in this.BehaviorList)
+			{
+				if (!(current2 == null))
+				{
+					EventTriggerItem_Behavior component2 = current2.GetComponent<EventTriggerItem_Behavior>();
+					if (!(component2 == null))
+					{
+						component2.OnDisableTrigger();
+					}
+				}
+			}
+		}
 	}
 
 	public void Update()
@@ -99,7 +113,6 @@ public class EventTrigger_Game : EventTrigger
 
 	public void OnApplicationPause()
 	{
-		base.OffTrigger();
 	}
 
 	public override void OffTrigger()

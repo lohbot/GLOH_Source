@@ -58,6 +58,7 @@ public class New_Whisper_Dlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.Scale = true;
+		base.TopMost = true;
 		instance.LoadFileAll(ref form, "Whisper/DLG_Whisper", G_ID.WHISPER_DLG, true);
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
@@ -244,7 +245,7 @@ public class New_Whisper_Dlg : Form
 			EmoticonDlg emoticonDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.EMOTICON_DLG) as EmoticonDlg;
 			if (emoticonDlg != null)
 			{
-				emoticonDlg.SetLocation(base.GetLocation().x + base.GetSizeX() - emoticonDlg.GetSizeX() - 1f, base.GetLocationY() + base.GetSizeY() - emoticonDlg.GetSizeY());
+				emoticonDlg.SetLocation(base.GetLocation().x + base.GetSizeX() - emoticonDlg.GetSizeX() - 1f, base.GetLocationY() + base.GetSizeY() - emoticonDlg.GetSizeY() - 65f);
 				emoticonDlg.SetCharType(CHAT_TYPE.NUM);
 				base.InteractivePanel.twinFormID = G_ID.EMOTICON_DLG;
 			}

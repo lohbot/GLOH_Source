@@ -384,7 +384,7 @@ public class SelectItemDlg : Form
 			{
 				this._btSoldier[i].controlIsEnabled = true;
 				this._dtSoldierLine[i].Visible = true;
-				this._dtSoldierIcon[i].SetTexture(eCharImageType.SMALL, this.m_ShowList[num].CharKind, (int)this.m_ShowList[num].Grade);
+				this._dtSoldierIcon[i].SetTexture(eCharImageType.SMALL, this.m_ShowList[num].CharKind, (int)this.m_ShowList[num].Grade, string.Empty);
 				this._dtRepairIcon[i].Visible = false;
 				this._dtRepairIconBG[i].Visible = false;
 				string text = charKindInfo.GetName();

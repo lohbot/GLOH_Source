@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrFontColorTable : NrTableBase
 {
-	public NrFontColorTable(string strFilePath) : base(strFilePath, true)
+	public NrFontColorTable(string strFilePath) : base(strFilePath)
 	{
 	}
 

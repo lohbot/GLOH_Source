@@ -302,9 +302,9 @@ namespace UnityForms
 			}
 		}
 
-		public void SetTextureEffect(eCharImageType type, int kind, int solgrade)
+		public void SetTextureEffect(eCharImageType type, int kind, int solgrade, string costumePortraitPath = "")
 		{
-			this.SetTexture(type, kind, solgrade);
+			this.SetTexture(type, kind, solgrade, costumePortraitPath);
 			string s = MsgHandler.HandleReturn<string>("GetLegendTypeToString", new object[]
 			{
 				kind,
@@ -339,7 +339,7 @@ namespace UnityForms
 			}
 		}
 
-		public void SetTexture(eCharImageType type, int kind, int solgrade)
+		public void SetTexture(eCharImageType type, int kind, int solgrade, string costume = "")
 		{
 			this.imageKey = string.Empty;
 			this.reserve = false;
@@ -351,6 +351,19 @@ namespace UnityForms
 			if (string.Empty == text)
 			{
 				return;
+			}
+			if (!string.IsNullOrEmpty(costume))
+			{
+				string text2 = MsgHandler.HandleReturn<string>("PortraitCostumeFileName", new object[]
+				{
+					kind,
+					solgrade,
+					costume
+				});
+				if (!string.IsNullOrEmpty(text2))
+				{
+					text = text2;
+				}
 			}
 			this.m_etype = type;
 			if (type == eCharImageType.SMALL)
@@ -386,7 +399,7 @@ namespace UnityForms
 
 		public void SetTextureEvent(eCharImageType type, int kind, int solgrade)
 		{
-			this.SetTexture(type, kind, solgrade);
+			this.SetTexture(type, kind, solgrade, string.Empty);
 			UIListItemContainer uIListItemContainer = base.gameObject.AddComponent<UIListItemContainer>();
 			if (uIListItemContainer == null)
 			{
@@ -518,6 +531,68 @@ namespace UnityForms
 		{
 			this.SetImage(_item, _param);
 			FadeSprite.Do(this, EZAnimation.ANIM_MODE.FromTo, new Color(0f, 0f, 0f, 0f), new Color(1f, 1f, 1f, 1f), new EZAnimation.Interpolator(EZAnimation.linear), 0.5f, 0f, null, null);
+		}
+
+		public void AlphaAni(float startA, float destA, float time)
+		{
+			SpriteRoot[] componentsInChildren = base.transform.GetComponentsInChildren<SpriteRoot>(true);
+			if (componentsInChildren != null)
+			{
+				SpriteRoot[] array = componentsInChildren;
+				for (int i = 0; i < array.Length; i++)
+				{
+					SpriteRoot spriteRoot = array[i];
+					if (null != spriteRoot)
+					{
+						FadeSprite.Do(spriteRoot, EZAnimation.ANIM_MODE.FromTo, new Color(spriteRoot.color.r, spriteRoot.color.g, spriteRoot.color.b, startA), new Color(spriteRoot.color.r, spriteRoot.color.g, spriteRoot.color.b, destA), new EZAnimation.Interpolator(EZAnimation.linear), time, 0f, null, null);
+					}
+				}
+			}
+			SpriteText[] componentsInChildren2 = base.transform.GetComponentsInChildren<SpriteText>(true);
+			if (componentsInChildren2 != null)
+			{
+				SpriteText[] array2 = componentsInChildren2;
+				for (int j = 0; j < array2.Length; j++)
+				{
+					SpriteText spriteText = array2[j];
+					if (null != spriteText)
+					{
+						FadeText.Do(spriteText, EZAnimation.ANIM_MODE.FromTo, new Color(spriteText.color.r, spriteText.color.g, spriteText.color.b, startA), new Color(spriteText.color.r, spriteText.color.g, spriteText.color.b, destA), new EZAnimation.Interpolator(EZAnimation.linear), time, 0f, null, null);
+					}
+				}
+			}
+		}
+
+		public void StopAni()
+		{
+			SpriteRoot[] componentsInChildren = base.transform.GetComponentsInChildren<SpriteRoot>(true);
+			if (componentsInChildren != null)
+			{
+				SpriteRoot[] array = componentsInChildren;
+				for (int i = 0; i < array.Length; i++)
+				{
+					SpriteRoot spriteRoot = array[i];
+					if (null != spriteRoot)
+					{
+						EZAnimator.instance.Stop(spriteRoot.gameObject);
+						EZAnimator.instance.Stop(spriteRoot);
+					}
+				}
+			}
+			SpriteText[] componentsInChildren2 = base.transform.GetComponentsInChildren<SpriteText>(true);
+			if (componentsInChildren2 != null)
+			{
+				SpriteText[] array2 = componentsInChildren2;
+				for (int j = 0; j < array2.Length; j++)
+				{
+					SpriteText spriteText = array2[j];
+					if (null != spriteText)
+					{
+						EZAnimator.instance.Stop(spriteText.gameObject);
+						EZAnimator.instance.Stop(spriteText);
+					}
+				}
+			}
 		}
 	}
 }

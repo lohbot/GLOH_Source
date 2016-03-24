@@ -5,12 +5,15 @@ public class NpcAutoMove_DLG : Form
 {
 	private int[] AutoNpc = new int[]
 	{
+		4499,
 		68,
 		109,
 		125,
 		610,
 		640,
-		595
+		595,
+		4619,
+		23
 	};
 
 	private NewListBox m_NpcAutoMoveList;
@@ -22,6 +25,8 @@ public class NpcAutoMove_DLG : Form
 	private Label m_lbNPCInfoText;
 
 	private Label m_lbNPCNameText;
+
+	private Button m_btClose;
 
 	public override void InitializeComponent()
 	{
@@ -43,6 +48,8 @@ public class NpcAutoMove_DLG : Form
 		this.m_txNPCImage = (base.GetControl("DT_Npcimg01") as DrawTexture);
 		this.m_lbNPCInfoText = (base.GetControl("LB_Npcinfo") as Label);
 		this.m_lbNPCNameText = (base.GetControl("LB_NpcName02") as Label);
+		this.m_btClose = (base.GetControl("Close_Button") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.SetNpcList();
 	}
 
@@ -57,25 +64,30 @@ public class NpcAutoMove_DLG : Form
 				{
 					if (charKindInfo.IsATB(512L))
 					{
-						if (NrTSingleton<ContentsLimitManager>.Instance.IsPointExchage())
+						if (!NrTSingleton<ContentsLimitManager>.Instance.IsPointExchage())
 						{
-							NewListItem newListItem = new NewListItem(3, true);
-							newListItem.SetListItemData(1, charKindInfo.GetCharKind(), null, null, null);
-							newListItem.SetListItemData(2, charKindInfo.GetName(), null, null, null);
-							newListItem.Data = charKindInfo.GetCharKind();
-							this.m_NpcAutoMoveList.Add(newListItem);
+							goto IL_113;
 						}
 					}
-					else
+					else if (charKindInfo.IsATB(1152921504606846976L))
 					{
-						NewListItem newListItem2 = new NewListItem(3, true);
-						newListItem2.SetListItemData(1, charKindInfo.GetCharKind(), null, null, null);
-						newListItem2.SetListItemData(2, charKindInfo.GetName(), null, null, null);
-						newListItem2.Data = charKindInfo.GetCharKind();
-						this.m_NpcAutoMoveList.Add(newListItem2);
+						if (!NrTSingleton<ContentsLimitManager>.Instance.IsGuildWarExchangeLimit())
+						{
+							goto IL_113;
+						}
 					}
+					else if (charKindInfo.IsATB(549755813888L) && !NrTSingleton<ContentsLimitManager>.Instance.IsItemLevelCheckBlock() && !NrTSingleton<ContentsLimitManager>.Instance.IsItemEvolution(false))
+					{
+						goto IL_113;
+					}
+					NewListItem newListItem = new NewListItem(3, true, string.Empty);
+					newListItem.SetListItemData(1, charKindInfo.GetCharKind(), null, null, null);
+					newListItem.SetListItemData(2, charKindInfo.GetName(), null, null, null);
+					newListItem.Data = charKindInfo.GetCharKind();
+					this.m_NpcAutoMoveList.Add(newListItem);
 				}
 			}
+			IL_113:;
 		}
 		this.m_NpcAutoMoveList.RepositionItems();
 		this.m_NpcAutoMoveList.SetSelectedItem(0);
@@ -89,7 +101,18 @@ public class NpcAutoMove_DLG : Form
 			return;
 		}
 		int num = (int)this.m_NpcAutoMoveList.SelectedItem.Data;
-		if (num != 0)
+		if (num == 4619)
+		{
+			if (NrTSingleton<NewGuildManager>.Instance.IsExitAgit())
+			{
+				NrTSingleton<NewGuildManager>.Instance.Send_GS_NEWGUILD_AGIT_ENTER_REQ();
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("843"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+		}
+		else if (num != 0)
 		{
 			NrTSingleton<NkQuestManager>.Instance.NPCAutoMove(num);
 		}
@@ -110,10 +133,16 @@ public class NpcAutoMove_DLG : Form
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(num);
 			if (charKindInfo != null)
 			{
-				this.m_txNPCImage.SetTexture(eCharImageType.LARGE, num, -1);
+				this.m_txNPCImage.SetTexture(eCharImageType.LARGE, num, -1, string.Empty);
 				this.m_lbNPCNameText.SetText(charKindInfo.GetName());
 				this.m_lbNPCInfoText.SetText(charKindInfo.GetDesc());
 			}
 		}
+	}
+
+	public override void OnClose()
+	{
+		base.OnClose();
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.MAINMENU_DLG);
 	}
 }

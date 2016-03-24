@@ -123,7 +123,7 @@ public class ItemComposeDlg : Form
 				int itemCnt = NkUserInventory.GetInstance().GetItemCnt(nItemUnique);
 				if (nItemUnique > 0)
 				{
-					NewListItem newListItem = new NewListItem(this.m_nlbNeedItem.ColumnNum, true);
+					NewListItem newListItem = new NewListItem(this.m_nlbNeedItem.ColumnNum, true, string.Empty);
 					newListItem.SetListItemData(0, true);
 					newListItem.SetListItemData(1, this.m_NeedItemList[i].m_t2ItemIcon, null, null, null);
 					newListItem.SetListItemData(2, this.m_NeedItemList[i].m_strItemName, null, null, null);
@@ -224,7 +224,7 @@ public class ItemComposeDlg : Form
 					NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(this.m_BaseComposeData.m_nComposeItemUnique)
 				});
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI.SetMsg(new YesDelegate(this.OnSendComposeOk), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("1983"), empty, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.OnSendComposeOk), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("1983"), empty, eMsgType.MB_OK_CANCEL, 2);
 			}
 			else
 			{

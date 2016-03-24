@@ -37,7 +37,7 @@ public class GooglePlayDlg : Form
 
 	public override void SetComponent()
 	{
-		base.SetLocation(0f, 80f);
+		base.SetLocation(0f, 172f);
 		this.m_dwBG = (base.GetControl("DrawTexture_bg") as DrawTexture);
 		this.m_dwBG.Visible = false;
 		this.m_bGoogleGame = (base.GetControl("Button_GoogleGames") as Button);

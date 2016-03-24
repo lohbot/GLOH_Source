@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_Item_Supplies : NrTableBase
 {
-	public NrTable_Item_Supplies() : base(CDefinePath.s_strItemSuppliesURL, true)
+	public NrTable_Item_Supplies() : base(CDefinePath.s_strItemSuppliesURL)
 	{
 	}
 

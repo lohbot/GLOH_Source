@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class NrTableQuestMatch : NrTableBase
 {
-	public NrTableQuestMatch(string strFilePath) : base(strFilePath, true)
+	public NrTableQuestMatch(string strFilePath) : base(strFilePath)
 	{
 	}
 

@@ -25,11 +25,15 @@ public class PlunderRecordDlg : Form
 
 	private NewListBox m_infiLBRecordList;
 
+	private Label m_Label_winningrate;
+
+	private DrawTexture m_dtRankIcon;
+
+	private DrawTexture m_dtLateRankIcon;
+
 	private List<INFIBATTLE_RECORDINFO> infirecord_list = new List<INFIBATTLE_RECORDINFO>();
 
 	private int Rank;
-
-	private eMODE m_eMode;
 
 	public override void InitializeComponent()
 	{
@@ -51,6 +55,9 @@ public class PlunderRecordDlg : Form
 		this.m_Label_winningstreak2 = (base.GetControl("Label_winningstreak2") as Label);
 		this.m_Label_latelyrank2 = (base.GetControl("Label_latelyrank2") as Label);
 		this.m_infiLBRecordList = (base.GetControl("infipvp_recordlist") as NewListBox);
+		this.m_Label_winningrate = (base.GetControl("Label_winningrate") as Label);
+		this.m_dtRankIcon = (base.GetControl("DT_infiniteIcon") as DrawTexture);
+		this.m_dtLateRankIcon = (base.GetControl("DT_latelyIcon") as DrawTexture);
 		base.SetScreenCenter();
 		this.InitData();
 	}
@@ -75,18 +82,8 @@ public class PlunderRecordDlg : Form
 		this.infirecord_list.Add(info);
 	}
 
-	public void SetPlunderInfo(int _rank, int _win, int _lose)
-	{
-		this.m_eMode = eMODE.eMODE_PLUNDER;
-		base.SetShowLayer(1, true);
-		base.SetShowLayer(2, false);
-		this.Rank = _rank;
-		this.ShowPlunderInfo();
-	}
-
 	public void SetInfiBattleInfo()
 	{
-		this.m_eMode = eMODE.eMODE_INFIBATTLE;
 		base.SetShowLayer(1, false);
 		base.SetShowLayer(2, true);
 		this.ShowinfiBattleInfo();
@@ -132,7 +129,7 @@ public class PlunderRecordDlg : Form
 		{
 			string text = string.Empty;
 			string text2 = string.Empty;
-			NewListItem newListItem = new NewListItem(this.m_LBRecordList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_LBRecordList.ColumnNum, true, string.Empty);
 			DateTime dueDate = PublicMethod.GetDueDate(current.i64BattleTime);
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("293");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
@@ -233,6 +230,7 @@ public class PlunderRecordDlg : Form
 				myCharInfo.InfinityBattle_Rank
 			});
 		}
+		this.m_dtRankIcon.SetTexture(this.GetRankImg(myCharInfo.InfinityBattle_Rank));
 		this.m_Label_infiniterank2.SetText(text2);
 		num = 0;
 		if (instance != null)
@@ -254,14 +252,15 @@ public class PlunderRecordDlg : Form
 			});
 		}
 		this.m_Label_latelyrank2.SetText(text2);
-		if (myCharInfo.InfiBattleStraightWin > 0)
+		this.m_dtLateRankIcon.SetTexture(this.GetRankImg(myCharInfo.InfinityBattle_OldRank));
+		if (myCharInfo.InifBattle_WinCount > 0)
 		{
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2221");
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2759");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 			{
 				text,
 				"count",
-				myCharInfo.InfiBattleStraightWin
+				myCharInfo.InifBattle_WinCount
 			});
 			this.m_Label_winningstreak2.SetText(text2);
 		}
@@ -269,6 +268,15 @@ public class PlunderRecordDlg : Form
 		{
 			this.m_Label_winningstreak2.SetText(string.Empty);
 		}
+		float num2 = (float)myCharInfo.InifBattle_WinCount / (float)myCharInfo.InifBattle_TotalCount;
+		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2936");
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
+		{
+			text,
+			"count",
+			(int)(num2 * 100f)
+		});
+		this.m_Label_winningrate.SetText(text2);
 		this.ShowinfiBattleList();
 	}
 
@@ -280,7 +288,7 @@ public class PlunderRecordDlg : Form
 		{
 			string text = string.Empty;
 			string text2 = string.Empty;
-			NewListItem newListItem = new NewListItem(this.m_infiLBRecordList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_infiLBRecordList.ColumnNum, true, string.Empty);
 			DateTime dueDate = PublicMethod.GetDueDate(current.i64BattleTime);
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("293");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
@@ -303,28 +311,24 @@ public class PlunderRecordDlg : Form
 			{
 				if (current.ui8WinType == 0)
 				{
-					loader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_ArrowUP");
-					newListItem.SetListItemData(0, false);
+					loader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_ArrowUp2");
 					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2313");
 				}
 				else
 				{
 					loader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_ArrowMaintain");
-					newListItem.SetListItemData(0, true);
-					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2232");
+					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2314");
 				}
 			}
 			else if (current.ui8WinType == 0)
 			{
-				loader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_ArrowDown");
-				newListItem.SetListItemData(0, true);
+				loader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_ArrowDown2");
 				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2316");
 			}
 			else
 			{
 				loader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_ArrowMaintain");
-				newListItem.SetListItemData(0, false);
-				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2232");
+				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2315");
 			}
 			newListItem.SetListItemData(6, loader, null, null, null);
 			newListItem.SetListItemData(2, text2, null, null, null);
@@ -352,8 +356,8 @@ public class PlunderRecordDlg : Form
 				});
 			}
 			newListItem.SetListItemData(3, text2, null, null, null);
-			newListItem.SetListItemData(4, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("496"), current, new EZValueChangedDelegate(this.ClickShareReply), null);
-			newListItem.SetListItemData(5, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("289"), current, new EZValueChangedDelegate(this.ClickReplay), null);
+			newListItem.SetListItemData(4, string.Empty, current, new EZValueChangedDelegate(this.ClickShareReply), null);
+			newListItem.SetListItemData(5, string.Empty, current, new EZValueChangedDelegate(this.ClickReplay), null);
 			if (current.i64AttackPersonID == charPersonInfo.GetPersonID())
 			{
 				if (current.ui8WinType == 0)
@@ -398,9 +402,33 @@ public class PlunderRecordDlg : Form
 				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2232");
 			}
 			newListItem.SetListItemData(7, text2, null, null, null);
+			newListItem.SetListItemData(12, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("289"), null, null, null);
+			newListItem.SetListItemData(13, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("496"), null, null, null);
 			this.m_infiLBRecordList.Add(newListItem);
 		}
 		this.m_infiLBRecordList.RepositionItems();
+	}
+
+	public UIBaseInfoLoader GetRankImg(int i32Rank)
+	{
+		string key = string.Empty;
+		if (i32Rank == 1)
+		{
+			key = "Win_I_Rank03";
+		}
+		else if (i32Rank == 2)
+		{
+			key = "Win_I_Rank02";
+		}
+		else if (i32Rank == 3)
+		{
+			key = "Win_I_Rank01";
+		}
+		else
+		{
+			key = string.Empty;
+		}
+		return NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(key);
 	}
 
 	public void ClickOK(IUIObject obj)
@@ -414,51 +442,24 @@ public class PlunderRecordDlg : Form
 		{
 			return;
 		}
-		if (this.m_eMode == eMODE.eMODE_PLUNDER)
+		INFIBATTLE_RECORDINFO iNFIBATTLE_RECORDINFO = (INFIBATTLE_RECORDINFO)obj.Data;
+		if (iNFIBATTLE_RECORDINFO == null)
 		{
-			PLUNDER_RECORDINFO pLUNDER_RECORDINFO = (PLUNDER_RECORDINFO)obj.Data;
-			if (pLUNDER_RECORDINFO == null)
-			{
-				return;
-			}
-			Battle_ShareReplayDlg battle_ShareReplayDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_SHAREREPLAY_DLG) as Battle_ShareReplayDlg;
-			if (battle_ShareReplayDlg != null)
-			{
-				battle_ShareReplayDlg.SetReplayInfo(1, pLUNDER_RECORDINFO.PlunderUnique);
-			}
+			return;
 		}
-		else
+		Battle_ShareReplayDlg battle_ShareReplayDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_SHAREREPLAY_DLG) as Battle_ShareReplayDlg;
+		if (battle_ShareReplayDlg != null)
 		{
-			INFIBATTLE_RECORDINFO iNFIBATTLE_RECORDINFO = (INFIBATTLE_RECORDINFO)obj.Data;
-			if (iNFIBATTLE_RECORDINFO == null)
-			{
-				return;
-			}
-			Battle_ShareReplayDlg battle_ShareReplayDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_SHAREREPLAY_DLG) as Battle_ShareReplayDlg;
-			if (battle_ShareReplayDlg2 != null)
-			{
-				battle_ShareReplayDlg2.SetReplayInfo(3, iNFIBATTLE_RECORDINFO.i64InfinityBattleRecordID);
-			}
+			battle_ShareReplayDlg.SetReplayInfo(3, iNFIBATTLE_RECORDINFO.i64InfinityBattleRecordID);
 		}
 	}
 
 	public void ClickReplay(IUIObject obj)
 	{
-		if (this.m_eMode == eMODE.eMODE_PLUNDER)
+		INFIBATTLE_RECORDINFO iNFIBATTLE_RECORDINFO = obj.Data as INFIBATTLE_RECORDINFO;
+		if (iNFIBATTLE_RECORDINFO != null)
 		{
-			PLUNDER_RECORDINFO pLUNDER_RECORDINFO = obj.Data as PLUNDER_RECORDINFO;
-			if (pLUNDER_RECORDINFO != null)
-			{
-				NrTSingleton<NkBattleReplayManager>.Instance.RequestReplayHttp(pLUNDER_RECORDINFO.PlunderUnique);
-			}
-		}
-		else
-		{
-			INFIBATTLE_RECORDINFO iNFIBATTLE_RECORDINFO = obj.Data as INFIBATTLE_RECORDINFO;
-			if (iNFIBATTLE_RECORDINFO != null)
-			{
-				NrTSingleton<NkBattleReplayManager>.Instance.RequestReplayinfiBattleHttp(iNFIBATTLE_RECORDINFO.i64InfinityBattleRecordID);
-			}
+			NrTSingleton<NkBattleReplayManager>.Instance.RequestReplayinfiBattleHttp(iNFIBATTLE_RECORDINFO.i64InfinityBattleRecordID);
 		}
 	}
 }

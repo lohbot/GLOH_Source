@@ -1104,7 +1104,7 @@ public class Tooltip_Dlg : Form
 		item.m_nTextureType = 0;
 		int count = list.Count;
 		empty = string.Empty;
-		NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, solInfo);
+		NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, solInfo, -1);
 		item.m_strText = empty;
 		list.Add(item);
 		empty = string.Empty;
@@ -1152,7 +1152,7 @@ public class Tooltip_Dlg : Form
 			if (battleSkillDetail2 != null)
 			{
 				empty = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail2.m_nSkillTooltip), battleSkillDetail2, solInfo);
+				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail2.m_nSkillTooltip), battleSkillDetail2, solInfo, -1);
 				item.m_strText = empty;
 				list.Add(item);
 			}
@@ -1224,7 +1224,7 @@ public class Tooltip_Dlg : Form
 		list.Add(item);
 		item.m_nTextureType = 0;
 		empty = string.Empty;
-		NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, solInfo);
+		NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, solInfo, -1);
 		item.m_strText = empty;
 		list.Add(item);
 		empty = string.Empty;

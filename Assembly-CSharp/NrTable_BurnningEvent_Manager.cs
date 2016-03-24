@@ -1,4 +1,5 @@
 using GAME;
+using PROTOCOL;
 using System;
 using System.Collections.Generic;
 
@@ -6,7 +7,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 {
 	private SortedDictionary<eBUNNING_EVENT, BUNNING_EVENT_REFLASH_INFO> m_sdCollection;
 
-	private BUNNING_EVENT_INFO[] m_BunningEvent = new BUNNING_EVENT_INFO[35];
+	private BUNNING_EVENT_INFO[] m_BunningEvent = new BUNNING_EVENT_INFO[40];
 
 	private NkValueParse<eBUNNING_EVENT> m_kBunningEventCode;
 
@@ -14,7 +15,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	private int m_nEventWeek;
 
-	private EVENT_INFO[] m_EventInfo = new EVENT_INFO[6];
+	private EVENT_INFO[] m_EventInfo = new EVENT_INFO[7];
 
 	public sbyte m_nDifficult = -1;
 
@@ -22,7 +23,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 	{
 		this.m_sdCollection = new SortedDictionary<eBUNNING_EVENT, BUNNING_EVENT_REFLASH_INFO>();
 		this.m_kBunningEventCode = new NkValueParse<eBUNNING_EVENT>();
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			this.m_EventInfo[i] = new EVENT_INFO();
 		}
@@ -77,7 +78,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	public void InitEventInfo()
 	{
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			this.m_EventInfo[i].Init();
 		}
@@ -92,19 +93,22 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 		}
 		int level = kMyCharInfo.GetLevel();
 		int num = 0;
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			EVENT_INFO eventInfo = NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventInfo(i);
 			if (eventInfo != null)
 			{
 				if (eventInfo.m_nEventType != 0)
 				{
-					BUNNING_EVENT_INFO value = NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetValue((eBUNNING_EVENT)eventInfo.m_nEventType);
-					if (value != null)
+					if (NrTSingleton<ContentsLimitManager>.Instance.IsChallenge() || eventInfo.m_nEventType != 36)
 					{
-						if (level <= value.m_nLimitLevel)
+						BUNNING_EVENT_INFO value = NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetValue((eBUNNING_EVENT)eventInfo.m_nEventType);
+						if (value != null)
 						{
-							num++;
+							if (level <= value.m_nLimitLevel)
+							{
+								num++;
+							}
 						}
 					}
 				}
@@ -120,11 +124,15 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 			num++;
 		}
 		int num3 = 0;
-		for (int j = 0; j < 6; j++)
+		for (int j = 0; j < 7; j++)
 		{
 			if (this.m_EventInfo[j].m_nEventType > 0)
 			{
 				num3++;
+				if (this.m_EventInfo[j].m_nEventType == 1 || this.m_EventInfo[j].m_nEventType == 14 || this.m_EventInfo[j].m_nEventType == 18)
+				{
+					num3--;
+				}
 			}
 		}
 		return num3 - num;
@@ -132,7 +140,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	public void InitCurrentEventInfo()
 	{
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			this.m_EventInfo[i].Init();
 		}
@@ -140,11 +148,11 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	public void AddEvent(sbyte nEventInfoWeek, int nEventType, int nStartTime, int nTime, int nMaxLimitCount, long nLeftEventTime, int nDay, int nWeek, int nTitleText, int nExplain)
 	{
-		if (nEventType <= 0 || nEventType >= 35)
+		if (nEventType <= 0 || nEventType >= 40)
 		{
 			return;
 		}
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			if (this.m_EventInfo[i].m_nEventType == nEventType && (int)this.m_EventInfo[i].m_nEventInfoWeek == (int)nEventInfoWeek)
 			{
@@ -152,7 +160,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 				return;
 			}
 		}
-		for (int j = 0; j < 6; j++)
+		for (int j = 0; j < 7; j++)
 		{
 			if (this.m_EventInfo[j].m_nEventType <= 0)
 			{
@@ -166,7 +174,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	public EVENT_INFO GetEventInfo(int iIndex)
 	{
-		if (0 > iIndex || iIndex > 6)
+		if (0 > iIndex || iIndex > 7)
 		{
 			return null;
 		}
@@ -175,11 +183,11 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	public EVENT_INFO GetEventInfoFromType(int nEventType)
 	{
-		if (nEventType <= 0 || nEventType >= 35)
+		if (nEventType <= 0 || nEventType >= 40)
 		{
 			return null;
 		}
-		for (int i = 0; i < 35; i++)
+		for (int i = 0; i < 40; i++)
 		{
 			if (this.m_EventInfo[i].m_nEventType == nEventType)
 			{
@@ -191,11 +199,11 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	public void DeleteEvent(sbyte nEventInfoWeek, int nEventType)
 	{
-		if (nEventType <= 0 || nEventType >= 35)
+		if (nEventType <= 0 || nEventType >= 40)
 		{
 			return;
 		}
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			if (this.m_EventInfo[i].m_nEventType == nEventType)
 			{
@@ -244,6 +252,11 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 		this.m_kBunningEventCode.InsertCodeValue("BUFFDAMAGE18", eBUNNING_EVENT.eBUNNING_EVENT_BUFFDAMAGE18);
 		this.m_kBunningEventCode.InsertCodeValue("BUFFDAMAGE19", eBUNNING_EVENT.eBUNNING_EVENT_BUFFDAMAGE19);
 		this.m_kBunningEventCode.InsertCodeValue("BUFFDAMAGE20", eBUNNING_EVENT.eBUNNING_EVENT_BUFFDAMAGE20);
+		this.m_kBunningEventCode.InsertCodeValue("CHALLENGE", eBUNNING_EVENT.eBUNNING_CHALLENGE);
+		this.m_kBunningEventCode.InsertCodeValue("EXPEVENT", eBUNNING_EVENT.eBUNNING_EVENT_EXPEVENT);
+		this.m_kBunningEventCode.InsertCodeValue("GOLDEVENT", eBUNNING_EVENT.eBUNNING_EVENT_GOLDEVENT);
+		this.m_kBunningEventCode.InsertCodeValue("ITEMEVENT", eBUNNING_EVENT.eBUNNING_EVENT_ITEMEVENT);
+		this.m_kBunningEventCode.InsertCodeValue("SHOWEVENT", eBUNNING_EVENT.eBUNNING_EVENT_SHOWEVENT);
 	}
 
 	public eBUNNING_EVENT GetBurnningEventCode(string strBurnningEventCode)
@@ -263,7 +276,7 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 	public int GetEventCount()
 	{
 		int num = 0;
-		for (int i = 0; i < 35; i++)
+		for (int i = 0; i < 40; i++)
 		{
 			if (this.m_BunningEvent[i] != null)
 			{
@@ -349,33 +362,56 @@ public class NrTable_BurnningEvent_Manager : NrTSingleton<NrTable_BurnningEvent_
 
 	public bool SetBasicData()
 	{
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
 		{
 			return false;
 		}
-		sbyte b = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventDay();
-		sbyte b2 = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventWeek();
-		long charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_DAILY_DUNGEON);
-		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = charSubData;
-		if (charSubData != 0L && ((int)sUBDATA_UNION.n8SubData_2 != (int)b2 || (int)sUBDATA_UNION.n8SubData_3 != (int)b))
+		sbyte dayOfWeek = NrTSingleton<DailyDungeonManager>.Instance.GetDayOfWeek();
+		DAILYDUNGEON_INFO dailyDungeonInfo = NrTSingleton<DailyDungeonManager>.Instance.GetDailyDungeonInfo((int)dayOfWeek);
+		if (dailyDungeonInfo == null)
 		{
-			kMyCharInfo.SetCharSubData(26, 0L);
-			sUBDATA_UNION.nSubData = 0L;
-			sUBDATA_UNION.n8SubData_2 = b2;
-			sUBDATA_UNION.n8SubData_3 = b;
+			return false;
 		}
 		if ((int)this.m_nDifficult < 0)
 		{
-			this.m_nDifficult = sUBDATA_UNION.n8SubData_0;
+			this.m_nDifficult = dailyDungeonInfo.m_i8Diff;
 		}
 		if ((int)this.m_nDifficult == 0)
 		{
 			this.m_nDifficult = 1;
 		}
-		sUBDATA_UNION.n8SubData_0 = this.m_nDifficult;
-		EVENT_DAILY_DUNGEON_INFO dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(this.m_nDifficult, b2);
-		return dailyDungeonInfo != null && (int)sUBDATA_UNION.n8SubData_1 > (int)dailyDungeonInfo.i8TotalCount;
+		return EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(this.m_nDifficult, dayOfWeek) != null && (dailyDungeonInfo.m_i32IsClear > 1 || (int)dailyDungeonInfo.m_i8IsReward == 0);
+	}
+
+	public bool IsGet_DailyDungeonReward()
+	{
+		bool result = false;
+		sbyte dayOfWeek = NrTSingleton<DailyDungeonManager>.Instance.GetDayOfWeek();
+		DAILYDUNGEON_INFO dailyDungeonInfo = NrTSingleton<DailyDungeonManager>.Instance.GetDailyDungeonInfo((int)dayOfWeek);
+		if (dailyDungeonInfo != null)
+		{
+			sbyte b = dailyDungeonInfo.m_i8Diff;
+			if ((int)b == 0)
+			{
+				b = 1;
+			}
+			if (EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(b, dayOfWeek) == null)
+			{
+				return false;
+			}
+			if (dailyDungeonInfo.m_i32IsClear <= 1)
+			{
+				result = (dailyDungeonInfo.m_i32IsClear == 1);
+				if ((int)dailyDungeonInfo.m_i8IsReward == 1)
+				{
+					result = false;
+				}
+			}
+		}
+		else
+		{
+			result = false;
+		}
+		return result;
 	}
 }

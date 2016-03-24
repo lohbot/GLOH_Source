@@ -43,7 +43,7 @@ public class BATTLE_POS_GRID
 		}
 	}
 
-	public void Set(BATTLE_POS_GRID obj, int nRotate)
+	public void Set(BATTLE_POS_GRID obj, int nRotate, bool bInfinityBattle = false)
 	{
 		this.GRID_ID = obj.GRID_ID;
 		this.m_nWidthCount = obj.m_nWidthCount;
@@ -77,20 +77,35 @@ public class BATTLE_POS_GRID
 		}
 		else if (nRotate == 180)
 		{
-			for (int i = 0; i < this.m_veBUID.Length; i++)
+			if (bInfinityBattle)
 			{
-				this.mListPos[i] = obj.mListPos[this.mListPos.Length - i - 1];
+				int num2 = 0;
+				for (int i = 0; i < this.m_nHeightCount; i++)
+				{
+					for (int j = 0; j < this.m_nWidthCount; j++)
+					{
+						this.mListPos[num2] = obj.mListPos[this.mListPos.Length - this.m_nWidthCount * (i + 1) + j];
+						num2++;
+					}
+				}
+			}
+			else
+			{
+				for (int i = 0; i < this.m_veBUID.Length; i++)
+				{
+					this.mListPos[i] = obj.mListPos[this.mListPos.Length - i - 1];
+				}
 			}
 		}
 		else if (nRotate == 90)
 		{
-			int num2 = 0;
+			int num3 = 0;
 			for (int i = this.m_nWidthCount - 1; i >= 0; i--)
 			{
 				for (int j = 0; j < this.m_nHeightCount; j++)
 				{
-					this.mListPos[num2] = obj.mListPos[j * this.m_nHeightCount + i];
-					num2++;
+					this.mListPos[num3] = obj.mListPos[j * this.m_nHeightCount + i];
+					num3++;
 				}
 			}
 		}

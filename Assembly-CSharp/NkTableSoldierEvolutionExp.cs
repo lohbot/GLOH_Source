@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableSoldierEvolutionExp : NrTableBase
 {
-	public NkTableSoldierEvolutionExp() : base(CDefinePath.SOLDIER_EVOLUTIONEXP_URL, true)
+	public NkTableSoldierEvolutionExp() : base(CDefinePath.SOLDIER_EVOLUTIONEXP_URL)
 	{
 	}
 

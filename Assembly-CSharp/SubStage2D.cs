@@ -2,6 +2,7 @@ using GameMessage;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
+using SERVICE;
 using System;
 using TsBundle;
 using UnityEngine;
@@ -99,7 +100,7 @@ public class SubStage2D : ASubStage
 			MsgBoxUI msgBoxUI = (MsgBoxUI)NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG);
 			if (msgBoxUI != null)
 			{
-				msgBoxUI.SetMsg(new YesDelegate(this._OnMessageBoxOK_QuitGame), null, "경고", "personid가 0이다,,...\r\n어플을 재실행해주세요.", eMsgType.MB_OK);
+				msgBoxUI.SetMsg(new YesDelegate(this._OnMessageBoxOK_QuitGame), null, "경고", "personid가 0이다,,...\r\n어플을 재실행해주세요.", eMsgType.MB_OK, 2);
 			}
 			TsLog.LogWarning("_StartGame personid == 0", new object[0]);
 		}
@@ -115,7 +116,7 @@ public class SubStage2D : ASubStage
 	private void _OnMessageBoxOK_QuitGame(object a_oObject)
 	{
 		NrMobileAuthSystem.Instance.Auth.DeleteAuthInfo();
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 
 	public void CharacterSelect(NrCharUser pkChar, bool bConnectServer)
@@ -238,6 +239,12 @@ public class SubStage2D : ASubStage
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "CUSTOMOZING", "CREATE-SUCCESS", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 		TsAudioManager.Instance.AudioContainer.RemoveBGM("intro");
 		NmMainFrameWork.AddBGM();
+		eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
+		if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORQA)
+		{
+			NrTSingleton<AdWords>.Instance.CreateCharacterComplete();
+		}
+		NrTSingleton<MATEventManager>.Instance.MeasureEvent("Registration");
 	}
 
 	public void OnEventSystemOption(IUIObject obj)
@@ -320,7 +327,7 @@ public class SubStage2D : ASubStage
 				"Char_Name",
 				this.m_SelectForm.GetName(button.TabIndex)
 			});
-			this.m_Boxdeletemsg.SetMsg(new YesDelegate(this._OKCharDelete), obj, title, empty, eMsgType.MB_OK_CANCEL);
+			this.m_Boxdeletemsg.SetMsg(new YesDelegate(this._OKCharDelete), obj, title, empty, eMsgType.MB_OK_CANCEL, 2);
 			this.m_isConnectGameServer = false;
 		}
 	}

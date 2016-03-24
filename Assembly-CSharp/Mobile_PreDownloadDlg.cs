@@ -2,6 +2,7 @@ using GameMessage.Private;
 using Ndoors.Framework.Stage;
 using NPatch;
 using System;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
@@ -16,6 +17,8 @@ public class Mobile_PreDownloadDlg : Form
 	private DrawTexture ProgressBar_ProgressBar2;
 
 	private DrawTexture m_txTouchArea;
+
+	private DrawTexture DrawTexture_NameLine;
 
 	private Color BgColor = Color.black;
 
@@ -39,11 +42,7 @@ public class Mobile_PreDownloadDlg : Form
 
 	private DrawTexture DT_CharView;
 
-	private Button BT_Ani01;
-
-	private Button BT_Ani02;
-
-	private Button BT_Ani03;
+	private DrawTexture DT_DrawTexture_DrawTexture29;
 
 	private Label LB_CharName01;
 
@@ -60,6 +59,12 @@ public class Mobile_PreDownloadDlg : Form
 	private Toggle Toggle_Portrait02;
 
 	private Toggle Toggle_Portrait03;
+
+	private Button BT_PlayMovie;
+
+	private DrawTexture DT_IntroMovie;
+
+	private Label LB_Open;
 
 	private float m_fSize;
 
@@ -88,10 +93,6 @@ public class Mobile_PreDownloadDlg : Form
 	private GameObject pCharPrefab;
 
 	private GameObject pRealChar;
-
-	private string m_strVoicePath = string.Empty;
-
-	private int m_nVoice;
 
 	private Vector2 m_v2TouchStart = new Vector2(0f, 0f);
 
@@ -136,18 +137,24 @@ public class Mobile_PreDownloadDlg : Form
 		instance.CreateControl(ref this.DT_Portrait03, "DT_Portrait03");
 		instance.CreateControl(ref this.DT_CharVoice01, "DT_CharVoice01");
 		instance.CreateControl(ref this.DT_CharView, "DT_CharView");
+		instance.CreateControl(ref this.DT_DrawTexture_DrawTexture29, "DrawTexture_DrawTexture29");
 		instance.CreateControl(ref this.LB_CharName01, "LB_CharName01");
 		instance.CreateControl(ref this.LB_CVName01, "LB_CVName01");
 		instance.CreateControl(ref this.LB_CVName02, "LB_CVName02");
 		instance.CreateControl(ref this.BT_PlayVoice, "BT_PlayVoice");
 		instance.CreateControl(ref this.LB_Charinfo01, "LB_Charinfo01");
 		instance.CreateControl(ref this.m_txTouchArea, "TouchArea");
+		instance.CreateControl(ref this.DrawTexture_NameLine, "DrawTexture_NameLine");
 		instance.CreateControl(ref this.Toggle_Portrait01, "Toggle_Portrait01");
 		instance.CreateControl(ref this.Toggle_Portrait02, "Toggle_Portrait02");
 		instance.CreateControl(ref this.Toggle_Portrait03, "Toggle_Portrait03");
 		this.Toggle_Portrait01.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickTabControl));
 		this.Toggle_Portrait02.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickTabControl));
 		this.Toggle_Portrait03.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickTabControl));
+		instance.CreateControl(ref this.BT_PlayMovie, "BT_PlayMovie");
+		instance.CreateControl(ref this.DT_IntroMovie, "DT_IntroMovie");
+		instance.CreateControl(ref this.LB_Open, "Label_Opening");
+		this.BT_PlayMovie.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickPlayMovie));
 		this.ProgressBar_ProgressBar1.transform.localScale = new Vector3(1.2f, 1f, 1f);
 		this.m_fSize = this.ProgressBar_ProgressBar1.GetSize().x;
 		this.m_fMaxSize = this.ProgressBar_ProgressBar1.GetSize().x * 1.2f;
@@ -183,6 +190,18 @@ public class Mobile_PreDownloadDlg : Form
 		this.btnGameStart.Visible = false;
 	}
 
+	private void OnClickPlayMovie(IUIObject obj)
+	{
+		this.PlayMovie();
+	}
+
+	public void PlayMovie()
+	{
+		string str = "intro";
+		string str2 = string.Format("{0}GameDrama/", Option.GetProtocolRootPath(Protocol.HTTP));
+		NmMainFrameWork.PlayMovieURL(str2 + str + ".mp4", true, false, true);
+	}
+
 	private void OnClickTabControl(IUIObject obj)
 	{
 		if (this.Toggle_Portrait01.GetToggleState())
@@ -211,7 +230,7 @@ public class Mobile_PreDownloadDlg : Form
 		}
 	}
 
-	private void SetGui()
+	public void SetGui()
 	{
 		if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.SELECTSERVER_DLG))
 		{
@@ -280,6 +299,26 @@ public class Mobile_PreDownloadDlg : Form
 		this.LB_Charinfo01.SetText(text2);
 		Texture texture = this.LoadBGTexture(this.m_PatchLoadingData.strBG);
 		this.Drawtexture_DTBG03.SetTexture(texture);
+	}
+
+	public void SetBG(WWWItem _item, object _param)
+	{
+		if (this == null)
+		{
+			return;
+		}
+		if (_item.isCanceled)
+		{
+			return;
+		}
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.Drawtexture_DTBG03.SetTexture(texture2D);
+			}
+		}
 	}
 
 	private void LoadChar(string strfilename)
@@ -354,10 +393,20 @@ public class Mobile_PreDownloadDlg : Form
 		this.textureBG_Img1.Visible = true;
 		this.m_Percent.Text = strText;
 		this.m_FilePercent.Text = string.Empty;
+		float num = this.m_fSize * this.m_fValue;
+		if (num < 0f)
+		{
+			num = 0f;
+		}
 		this.ProgressBar_ProgressBar1.SetSize(this.m_fSize * this.m_fValue, this.ProgressBar_ProgressBar1.GetSize().y);
-		this.ProgressBar_ProgressBar1.SetTextureUVs(new Vector2(0f, 943f), new Vector2(this.m_fSize * this.m_fValue, 30f));
+		this.ProgressBar_ProgressBar1.SetTextureUVs(new Vector2(0f, 943f), new Vector2(num, 30f));
+		num = this.m_fSize * this.m_fSubValue;
+		if (num < 0f)
+		{
+			num = 0f;
+		}
 		this.ProgressBar_ProgressBar2.SetSize(this.m_fSize * this.m_fSubValue, this.ProgressBar_ProgressBar2.GetSize().y);
-		this.ProgressBar_ProgressBar2.SetTextureUVs(new Vector2(0f, 943f), new Vector2(this.m_fSize * this.m_fSubValue, 30f));
+		this.ProgressBar_ProgressBar2.SetTextureUVs(new Vector2(0f, 943f), new Vector2(num, 30f));
 		Mobile_PreDownloadDlg mobile_PreDownloadDlg = (Mobile_PreDownloadDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PREDOWNLOAD_DLG);
 		if (mobile_PreDownloadDlg != null)
 		{
@@ -406,6 +455,7 @@ public class Mobile_PreDownloadDlg : Form
 		this.textureBG_Img1.Visible = true;
 		this.ProgressBar_ProgressBar1.Visible = true;
 		this.ProgressBar_ProgressBar2.Visible = true;
+		this.DT_IntroMovie.Visible = true;
 		if (delta < 0f)
 		{
 			delta = 0f;
@@ -440,10 +490,20 @@ public class Mobile_PreDownloadDlg : Form
 		{
 			this.m_FilePercent.Text = strText;
 		}
+		float num = this.m_fSize * this.m_fValue;
+		if (num < 0f)
+		{
+			num = 0f;
+		}
 		this.ProgressBar_ProgressBar1.SetSize(this.m_fSize * this.m_fValue, this.ProgressBar_ProgressBar1.GetSize().y);
-		this.ProgressBar_ProgressBar1.SetTextureUVs(new Vector2(0f, 943f), new Vector2(this.m_fSize * this.m_fValue, 30f));
+		this.ProgressBar_ProgressBar1.SetTextureUVs(new Vector2(0f, 943f), new Vector2(num, 30f));
+		num = this.m_fSize * this.m_fSubValue;
+		if (num < 0f)
+		{
+			num = 0f;
+		}
 		this.ProgressBar_ProgressBar2.SetSize(this.m_fSize * this.m_fSubValue, this.ProgressBar_ProgressBar2.GetSize().y);
-		this.ProgressBar_ProgressBar2.SetTextureUVs(new Vector2(0f, 943f), new Vector2(this.m_fSize * this.m_fSubValue, 30f));
+		this.ProgressBar_ProgressBar2.SetTextureUVs(new Vector2(0f, 943f), new Vector2(num, 30f));
 		Mobile_PreDownloadDlg mobile_PreDownloadDlg = (Mobile_PreDownloadDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PREDOWNLOAD_DLG);
 		if (mobile_PreDownloadDlg != null)
 		{
@@ -451,7 +511,7 @@ public class Mobile_PreDownloadDlg : Form
 		}
 	}
 
-	public void UpdateTotalProgress(float delta, float fSubdelta, int totalCount, string strText)
+	public void UpdateTotalProgress(float delta, float fSubdelta, long totalCount, string strText)
 	{
 		if (this.btnGameStart.Visible)
 		{
@@ -463,6 +523,7 @@ public class Mobile_PreDownloadDlg : Form
 		this.ProgressBar_ProgressBar2.Visible = true;
 		this.textureBG_Img.Visible = true;
 		this.textureBG_Img1.Visible = true;
+		this.DT_IntroMovie.Visible = true;
 		if (delta < 0f)
 		{
 			delta = 0f;
@@ -502,11 +563,21 @@ public class Mobile_PreDownloadDlg : Form
 		this.m_fValue = num2;
 		this.m_Percent.Text = ((int)(this.m_fValue * 100f)).ToString() + "%";
 		this.m_FilePercent.Text = strText;
+		float num3 = this.m_fSize * this.m_fValue;
+		if (num3 < 0f)
+		{
+			num3 = 0f;
+		}
 		this.ProgressBar_ProgressBar1.SetSize(this.m_fSize * this.m_fValue, this.ProgressBar_ProgressBar1.GetSize().y);
-		this.ProgressBar_ProgressBar1.SetTextureUVs(new Vector2(0f, 943f), new Vector2(this.m_fSize * this.m_fValue, 30f));
+		this.ProgressBar_ProgressBar1.SetTextureUVs(new Vector2(0f, 943f), new Vector2(num3, 30f));
 		this.m_fSubValue = fSubdelta;
+		num3 = this.m_fSize * this.m_fSubValue;
+		if (num3 < 0f)
+		{
+			num3 = 0f;
+		}
 		this.ProgressBar_ProgressBar2.SetSize(this.m_fSize * this.m_fSubValue, this.ProgressBar_ProgressBar2.GetSize().y);
-		this.ProgressBar_ProgressBar2.SetTextureUVs(new Vector2(0f, 943f), new Vector2(this.m_fSize * this.m_fSubValue, 30f));
+		this.ProgressBar_ProgressBar2.SetTextureUVs(new Vector2(0f, 943f), new Vector2(num3, 30f));
 		this.oldDelta = delta;
 		Mobile_PreDownloadDlg mobile_PreDownloadDlg = (Mobile_PreDownloadDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PREDOWNLOAD_DLG);
 		if (mobile_PreDownloadDlg != null)
@@ -520,22 +591,60 @@ public class Mobile_PreDownloadDlg : Form
 		base.SetSize(GUICamera.width, GUICamera.height);
 		base.SetLocation(0f, 0f);
 		this.Drawtexture_DTBG03.SetSize(GUICamera.width, GUICamera.height);
-		float x = GUICamera.width * 0.9f;
-		float num = GUICamera.height * 0.1f;
-		this.Toggle_Portrait01.SetLocation(x, num);
-		this.Toggle_Portrait02.SetLocation(x, num + this.Toggle_Portrait01.GetSize().x);
-		this.Toggle_Portrait03.SetLocation(x, num + this.Toggle_Portrait01.GetSize().x * 2f);
+		this.DT_IntroMovie.SetLocation(0, 0);
+		float num = GUICamera.width * 0.9f;
+		float num2 = GUICamera.height * 0.05f;
+		this.DT_DrawTexture_DrawTexture29.SetLocation(num, num2);
+		this.BT_PlayMovie.SetLocation(num + 29f, num2 + 15f);
+		this.LB_Open.SetLocation(this.BT_PlayMovie.GetLocationX(), this.BT_PlayMovie.GetLocationY() + this.BT_PlayMovie.width - 18f);
+		this.Toggle_Portrait01.SetLocation(this.BT_PlayMovie.GetLocationX() - 22f, this.BT_PlayMovie.GetLocationY() + this.BT_PlayMovie.GetSize().y + 12f);
+		this.Toggle_Portrait02.SetLocation(this.Toggle_Portrait01.GetLocationX(), this.Toggle_Portrait01.GetLocationY() + this.Toggle_Portrait01.GetSize().y);
+		this.Toggle_Portrait03.SetLocation(this.Toggle_Portrait01.GetLocationX(), this.Toggle_Portrait02.GetLocationY() + this.Toggle_Portrait02.GetSize().y);
 		this.DT_Portrait01.SetLocation(this.Toggle_Portrait01.GetLocationX() + 22f, this.Toggle_Portrait01.GetLocationY() + 25f);
 		this.DT_Portrait02.SetLocation(this.Toggle_Portrait02.GetLocationX() + 22f, this.Toggle_Portrait02.GetLocationY() + 25f);
 		this.DT_Portrait03.SetLocation(this.Toggle_Portrait03.GetLocationX() + 22f, this.Toggle_Portrait03.GetLocationY() + 25f);
+		num2 = GUICamera.height * 0.65f;
+		this.LB_Open.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("2034");
 		this.SetLoadingSize(10f);
+		Texture texture = (Texture)CResources.Load(NrTSingleton<UIDataManager>.Instance.FilePath + "Texture/loginBG_mobile");
+		this.Drawtexture_DTBG03.SetTexture(texture);
 		this.SetGui();
+	}
+
+	private void ControlVisible(bool flag)
+	{
+		this.Toggle_Portrait01.Visible = flag;
+		this.Toggle_Portrait02.Visible = flag;
+		this.Toggle_Portrait03.Visible = flag;
+		this.DT_Portrait01.Visible = flag;
+		this.DT_Portrait02.Visible = flag;
+		this.DT_Portrait03.Visible = flag;
+		this.DT_IntroMovie.Visible = flag;
+		this.BT_PlayVoice.Visible = flag;
+		this.LB_CharName01.Visible = flag;
+		this.LB_CVName01.Visible = flag;
+		this.LB_CVName02.Visible = flag;
+		this.BT_PlayVoice.Visible = flag;
+		this.LB_Charinfo01.Visible = flag;
 	}
 
 	public override void Update()
 	{
 		if (TsPlatform.IsMobile)
 		{
+			if (this.m_FilePercent != null && this.m_Percent != null)
+			{
+				string text = string.Empty;
+				if (this.m_FilePercent.Visible)
+				{
+					text = this.m_FilePercent.Text;
+				}
+				if (this.m_Percent.Visible)
+				{
+					text = text + "\nTotal : " + this.m_Percent.Text;
+				}
+				NrTSingleton<NrUserDeviceInfo>.Instance.SetMovieText(text);
+			}
 			Vector3 mousePosition = Input.mousePosition;
 			if (NkInputManager.GetMouseButton(0) && this.m_v3TouchStart != Vector3.zero && this.m_v3TouchStart != mousePosition)
 			{
@@ -615,10 +724,6 @@ public class Mobile_PreDownloadDlg : Form
 		FacadeHandler.MoveStage(Scene.Type.INITIALIZE);
 	}
 
-	private void SetPotionSelectMarck(Button btn)
-	{
-	}
-
 	private void SetTouchEffcet(Vector2 ScreenPos)
 	{
 		GameObject gameObject = (GameObject)UnityEngine.Object.Instantiate(this.pTouchEffectPrefab, Vector3.zero, Quaternion.identity);
@@ -643,6 +748,7 @@ public class Mobile_PreDownloadDlg : Form
 		this.ProgressBar_ProgressBar2.Visible = !bShow;
 		this.textureBG_Img.Visible = !bShow;
 		this.textureBG_Img1.Visible = !bShow;
+		this.DT_IntroMovie.Visible = !bShow;
 	}
 
 	public override void OnClose()

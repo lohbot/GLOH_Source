@@ -16,6 +16,8 @@ namespace PROTOCOL.GAME
 
 		public int i32Result;
 
+		public bool bTargetShow;
+
 		public GS_INFIBATTLE_MATCH_ACK()
 		{
 			for (int i = 0; i < 15; i++)

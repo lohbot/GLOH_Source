@@ -211,13 +211,13 @@ namespace Ndoors.Memory
 		[DebuggerHidden]
 		public static IEnumerator RemoveDeleteOldFile()
 		{
-			return new WebFileCache.<RemoveDeleteOldFile>c__Iterator12();
+			return new WebFileCache.<RemoveDeleteOldFile>c__Iterator13();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator RemoveOldFile()
 		{
-			return new WebFileCache.<RemoveOldFile>c__Iterator13();
+			return new WebFileCache.<RemoveOldFile>c__Iterator14();
 		}
 
 		public static string GetDebugString()

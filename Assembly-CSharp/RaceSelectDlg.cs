@@ -30,7 +30,6 @@ public class RaceSelectDlg : Form
 	{
 		this._Back = (base.GetControl("Button_BackButton01") as Button);
 		this._Back.AddMouseOutDelegate(new EZValueChangedDelegate(this.OnMouseOut));
-		this._Back.AddMouseOverDelegate(new EZValueChangedDelegate(this.OnMouserOver));
 	}
 
 	private void OnMouserOver(IUIObject obj)

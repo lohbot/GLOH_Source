@@ -33,9 +33,15 @@ public class ChallengeTable
 
 	public List<ChallengeTable.RewardInfo> m_kRewardInfo = new List<ChallengeTable.RewardInfo>();
 
+	public bool m_bAutoReward;
+
 	public long m_nCheckRewardValue;
 
 	public int m_nDetailInfoIndex;
+
+	public short m_nSequence;
+
+	public string m_szOpenUI = string.Empty;
 
 	public ChallengeTable()
 	{
@@ -45,8 +51,11 @@ public class ChallengeTable
 		this.m_nLevel = 0;
 		this.m_szTitleTextKey = string.Empty;
 		this.m_kRewardInfo = new List<ChallengeTable.RewardInfo>();
+		this.m_bAutoReward = false;
 		this.m_nCheckRewardValue = 0L;
 		this.m_nDetailInfoIndex = 0;
+		this.m_nSequence = 0;
+		this.m_szOpenUI = string.Empty;
 	}
 
 	public void SetData(TsDataReader.Row row)
@@ -66,6 +75,9 @@ public class ChallengeTable
 		row.GetColumn(num++, out this.m_kInfo.m_nMoney);
 		row.GetColumn(num++, out this.m_kInfo.m_nItemUnique);
 		row.GetColumn(num++, out this.m_kInfo.m_nItemNum);
+		row.GetColumn(num++, out this.m_bAutoReward);
+		row.GetColumn(num++, out this.m_szOpenUI);
+		row.GetColumn(num++, out this.m_nSequence);
 		if (this.m_nUnique == 1010)
 		{
 			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_JOIN_EXPEDITION;
@@ -235,6 +247,56 @@ public class ChallengeTable
 		{
 			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_BABELTOWER;
 			this.m_nDetailInfoIndex = 18;
+		}
+		else if (this.m_nUnique == 1206)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_MANYINFIBATTLE;
+			this.m_nDetailInfoIndex = 16;
+		}
+		else if (this.m_nUnique == 1207)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_BABELTOWER15;
+			this.m_nDetailInfoIndex = 18;
+		}
+		else if (this.m_nUnique == 1208)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_BABELTOWER5;
+			this.m_nDetailInfoIndex = 18;
+		}
+		else if (this.m_nUnique == 1209)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_BOUNT_HUNT4;
+			this.m_nDetailInfoIndex = 17;
+		}
+		else if (this.m_nUnique == 1210)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_MYTHRAID;
+			this.m_nDetailInfoIndex = 19;
+		}
+		else if (this.m_nUnique == 1301)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_TIMESHOP_REFRESH10;
+			this.m_nDetailInfoIndex = 20;
+		}
+		else if (this.m_nUnique == 1302)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_TIMESHOP_REFRESH20;
+			this.m_nDetailInfoIndex = 20;
+		}
+		else if (this.m_nUnique == 1303)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_TIMESHOP_REFRESH30;
+			this.m_nDetailInfoIndex = 20;
+		}
+		else if (this.m_nUnique == 1211)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_DAILYDUNGEON;
+			this.m_nDetailInfoIndex = 21;
+		}
+		else if (this.m_nUnique == 1212)
+		{
+			this.m_nCheckRewardValue = ChallengeManager.CHALLENGEREWARD_DAY_USER_NEWEXPLORATION;
+			this.m_nDetailInfoIndex = 22;
 		}
 	}
 }

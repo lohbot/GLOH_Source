@@ -7,5 +7,11 @@ namespace PROTOCOL.GAME
 		public int i32TopRank;
 
 		public char[] szCharName = new char[21];
+
+		public int i32CharLevel;
+
+		public int i32BattleCnt;
+
+		public int i32WinCnt;
 	}
 }

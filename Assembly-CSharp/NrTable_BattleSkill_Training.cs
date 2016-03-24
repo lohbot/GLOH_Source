@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BattleSkill_Training : NrTableBase
 {
-	public NrTable_BattleSkill_Training() : base(CDefinePath.s_strBattleSkillTrainingURL, true)
+	public NrTable_BattleSkill_Training() : base(CDefinePath.s_strBattleSkillTrainingURL)
 	{
 	}
 

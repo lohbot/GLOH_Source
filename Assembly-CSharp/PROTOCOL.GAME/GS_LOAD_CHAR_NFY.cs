@@ -49,14 +49,8 @@ namespace PROTOCOL.GAME
 
 		public long m_nEquipPoint;
 
-		public int i32InfinityBattle_Rank;
-
-		public int i32InfinityBattle_OldRank;
-
-		public int i32InfiBattleStraightWin;
-
-		public int i32InfiBattleCount;
-
 		public int i32HP_Auth;
+
+		public byte m_i8RankingReward = 1;
 	}
 }

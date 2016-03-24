@@ -5,6 +5,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using TsBundle;
+using UnityEngine;
 using UnityForms;
 
 public class StagePrepareGame : AStage
@@ -53,6 +54,8 @@ public class StagePrepareGame : AStage
 		if (TsPlatform.IsWeb)
 		{
 		}
+		NrTSingleton<NkClientLogic>.Instance.SetLoginGameServer(false);
+		UnityEngine.Debug.LogWarning("========== GS_LOAD_CHAR_NFY : SetLoginGameServer false ----- ");
 	}
 
 	public override void OnExit()
@@ -63,6 +66,7 @@ public class StagePrepareGame : AStage
 		});
 		NrLoadPageScreen.LoginLatestChar = false;
 		NmMainFrameWork.RemoveBGM(true);
+		Application.targetFrameRate = PlayerPrefs.GetInt("SaveFps", NmMainFrameWork.MAX_FPS);
 	}
 
 	protected override void OnUpdateAfterStagePrework()
@@ -72,7 +76,7 @@ public class StagePrepareGame : AStage
 	[DebuggerHidden]
 	private IEnumerator _WaitToGoNextStage()
 	{
-		return new StagePrepareGame.<_WaitToGoNextStage>c__Iterator41();
+		return new StagePrepareGame.<_WaitToGoNextStage>c__Iterator44();
 	}
 
 	private void OnDownload_PredownloadMarking(IDownloadedItem wItem, object obj)
@@ -95,7 +99,7 @@ public class StagePrepareGame : AStage
 	[DebuggerHidden]
 	private IEnumerator _DownloadTables()
 	{
-		return new StagePrepareGame.<_DownloadTables>c__Iterator42();
+		return new StagePrepareGame.<_DownloadTables>c__Iterator45();
 	}
 
 	public bool OnGameServerConnected()
@@ -111,6 +115,6 @@ public class StagePrepareGame : AStage
 	[DebuggerHidden]
 	private IEnumerator _SetBilling()
 	{
-		return new StagePrepareGame.<_SetBilling>c__Iterator43();
+		return new StagePrepareGame.<_SetBilling>c__Iterator46();
 	}
 }

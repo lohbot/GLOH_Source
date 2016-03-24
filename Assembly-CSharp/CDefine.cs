@@ -8,6 +8,8 @@ public class CDefine
 
 	public const string COMPOSE_SOL_DDL_TYPE = "compose_sol_ddl_index";
 
+	public const string COMPOSE_NEW_SOL_DDL_TYPE = "compose_new_sol_ddl_index";
+
 	public const string COMPOSE_SOL_DDL_INSERT_TYPE = "compose_sol_ddl_insert_index";
 
 	public const string SOLDIER_SELECT_DLG_SORT01 = "soldierSelect_dlg_sort01";

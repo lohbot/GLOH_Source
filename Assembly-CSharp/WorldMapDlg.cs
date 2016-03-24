@@ -64,13 +64,28 @@ public class WorldMapDlg : Form
 
 	private bool m_bNowLocalMap;
 
+	private UIButton _GuideItem;
+
+	private float _ButtonZ;
+
+	private int m_nWinID;
+
+	public bool NowNightMode
+	{
+		get
+		{
+			return this.m_bNowNightMode;
+		}
+		private set
+		{
+		}
+	}
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
-		form.TopMost = true;
 		instance.LoadFileAll(ref form, "DLG_worldmap", G_ID.WORLD_MAP, true);
-		base.DonotDepthChange(NrTSingleton<FormsManager>.Instance.GetTopMostZ());
 		if (null != base.InteractivePanel)
 		{
 			base.InteractivePanel.draggable = false;
@@ -152,7 +167,8 @@ public class WorldMapDlg : Form
 			}
 			else
 			{
-				this.m_dtUser_Icon.SetTexture(eCharImageType.SMALL, num, solgrade);
+				string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(myCharInfo.GetFaceCostumeUnique());
+				this.m_dtUser_Icon.SetTexture(eCharImageType.SMALL, num, solgrade, costumePortraitPath);
 			}
 		}
 		this.m_btUser_User.Visible = false;
@@ -503,6 +519,7 @@ public class WorldMapDlg : Form
 
 	private void OnClickLocalMapReWorld(IUIObject obj)
 	{
+		this.CloseUIGuide();
 		this.m_selectLocalMap = null;
 		this.m_selectMap = null;
 		for (int i = 0; i < 20; i++)
@@ -524,9 +541,9 @@ public class WorldMapDlg : Form
 
 	private void OnClickLocalMapNpcAutoMove(IUIObject obj)
 	{
+		this.CloseUIGuide();
 		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.NPC_AUTOMOVE_DLG))
 		{
-			this.Close();
 			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NPC_AUTOMOVE_DLG);
 		}
 		else
@@ -537,14 +554,17 @@ public class WorldMapDlg : Form
 
 	private void OnClickLocalMapNight(IUIObject obj)
 	{
+		this.CloseUIGuide();
 		this.m_selectMap = null;
 		this.m_bNowNightMode = true;
 		this.SetLocalMapNightMode();
 		this.SetUserIcon();
+		NrTSingleton<EventConditionHandler>.Instance.WorldMapModeClick.OnTrigger();
 	}
 
 	private void OnClickLocalMapDay(IUIObject obj)
 	{
+		this.CloseUIGuide();
 		this.m_selectMap = null;
 		this.m_bNowNightMode = false;
 		this.SetLocalMapNightMode();
@@ -574,10 +594,11 @@ public class WorldMapDlg : Form
 				"mapname",
 				textFromMap
 			});
-			msgBoxUI.SetMsg(new YesDelegate(this.OnOKStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnOKStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL, 2);
 			msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"));
 			msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 		}
+		this.HideUIGuide();
 	}
 
 	public void OnOKStart(object a_oObject)
@@ -594,6 +615,7 @@ public class WorldMapDlg : Form
 	public override void OnClose()
 	{
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MAP", "CLOSE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+		this.CloseUIGuide();
 	}
 
 	public void UpdateTreasure()
@@ -630,5 +652,76 @@ public class WorldMapDlg : Form
 			}
 		}
 		return null;
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		int num = 0;
+		int.TryParse(param1, out num);
+		if (num != 0)
+		{
+			for (int i = 0; i < 20; i++)
+			{
+				int num2 = (int)this.m_btLocalMap_AreaIcon[i].data;
+				if (num2 == num)
+				{
+					this._GuideItem = this.m_btLocalMap_AreaIcon[i];
+				}
+			}
+		}
+		else
+		{
+			this._GuideItem = (base.GetControl(param1) as UIButton);
+		}
+		this.m_nWinID = winID;
+		if (null != this._GuideItem)
+		{
+			this._ButtonZ = this._GuideItem.GetLocation().z;
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				uI_UIGuide.CloseUI = false;
+				if (uI_UIGuide.GetLocation().z == base.GetLocation().z)
+				{
+					uI_UIGuide.SetLocation(uI_UIGuide.GetLocationX(), uI_UIGuide.GetLocationY(), uI_UIGuide.GetLocation().z - 10f);
+				}
+				this._GuideItem.EffectAni = false;
+				Vector2 x = new Vector2(base.GetLocationX() + this._GuideItem.GetLocationX() + 72f, base.GetLocationY() + this._GuideItem.GetLocationY() - 2f);
+				uI_UIGuide.Move(x, UI_UIGuide.eTIPPOS.LEFT);
+				this._ButtonZ = this._GuideItem.gameObject.transform.localPosition.z;
+				this._GuideItem.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+				this._GuideItem.AlphaAni(1f, 0.5f, -0.5f);
+			}
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+			this._GuideItem.StopAni();
+			this._GuideItem.AlphaAni(1f, 1f, 0f);
+		}
+		this._GuideItem = null;
+	}
+
+	public void CloseUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+			this._GuideItem.StopAni();
+			this._GuideItem.AlphaAni(1f, 1f, 0f);
+		}
+		this._GuideItem = null;
+		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+		if (uI_UIGuide != null)
+		{
+			uI_UIGuide.CloseUI = true;
+			uI_UIGuide.Close();
+		}
 	}
 }

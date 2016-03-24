@@ -1,7 +1,8 @@
 using GAME;
+using GameMessage.Private;
+using Ndoors.Framework.Stage;
 using PROTOCOL;
 using PROTOCOL.GAME;
-using PROTOCOL.GAME.ID;
 using System;
 using TsBundle;
 using UnityEngine;
@@ -11,9 +12,11 @@ public class DailyDungeon_Main_Dlg : Form
 {
 	private Label m_lbTitle;
 
-	private Label m_lbProgress;
+	private Label m_lbRewardName;
 
-	private Label m_lbReward;
+	private Label m_lbHeroInfo;
+
+	private Label m_lbMonsterInfo;
 
 	private ItemTexture m_itRewardItem;
 
@@ -25,29 +28,19 @@ public class DailyDungeon_Main_Dlg : Form
 
 	private Button m_btExit;
 
+	private Button m_btHeroInfo;
+
 	private DrawTexture m_dtBG;
 
 	private DrawTexture m_dtDifficulty;
 
-	private DrawTexture m_dtCleraDifficulty;
+	private DrawTexture m_dtRightBottomFrame;
 
-	private DrawTexture m_dtClearGage;
-
-	private DrawTexture m_dwActivity;
-
-	private Label m_lb_WillNum;
-
-	private Label m_lbActivityTime;
-
-	private Button m_btActivityCharge;
-
-	private float m_fActivityUpdateTime;
-
-	private long m_nBeforeActivity = -1L;
-
-	private int m_nBaseActivity;
+	private DrawTexture m_dtMonsterImage;
 
 	private sbyte m_nDifficult = -1;
+
+	private sbyte m_nDayOfWeek = -1;
 
 	private string m_szBackImage = string.Empty;
 
@@ -63,8 +56,6 @@ public class DailyDungeon_Main_Dlg : Form
 
 	private GameObject m_goRewardEffect;
 
-	private float m_fGageMax;
-
 	private GameObject m_goGageEffect;
 
 	private GameObject SlotEffect;
@@ -74,6 +65,14 @@ public class DailyDungeon_Main_Dlg : Form
 		get
 		{
 			return this.m_nDifficult;
+		}
+	}
+
+	public sbyte DayOfWeek
+	{
+		get
+		{
+			return this.m_nDayOfWeek;
 		}
 	}
 
@@ -109,41 +108,50 @@ public class DailyDungeon_Main_Dlg : Form
 	{
 		this.m_lbTitle = (base.GetControl("Title_Label") as Label);
 		this.m_dtDifficulty = (base.GetControl("DrawTexture_Difficulty") as DrawTexture);
-		this.m_lbProgress = (base.GetControl("Label_Progress2") as Label);
-		this.m_dtCleraDifficulty = (base.GetControl("DrawTexture_ClearDifficult") as DrawTexture);
-		this.m_lbReward = (base.GetControl("Label_Reward") as Label);
+		this.m_lbRewardName = (base.GetControl("LB_RewardName") as Label);
+		this.m_lbMonsterInfo = (base.GetControl("LB_MonsterInfo") as Label);
 		this.m_dtBG = (base.GetControl("Main_BG") as DrawTexture);
 		this.m_itRewardItem = (base.GetControl("ItemTexture_reward") as ItemTexture);
 		this.m_btChangeDifficulty = (base.GetControl("Button_Difficulty") as Button);
-		Button expr_B6 = this.m_btChangeDifficulty;
-		expr_B6.Click = (EZValueChangedDelegate)Delegate.Combine(expr_B6.Click, new EZValueChangedDelegate(this.OnClickChangeDifficulty));
+		Button expr_A0 = this.m_btChangeDifficulty;
+		expr_A0.Click = (EZValueChangedDelegate)Delegate.Combine(expr_A0.Click, new EZValueChangedDelegate(this.OnClickChangeDifficulty));
 		this.m_btReward = (base.GetControl("Btn_GetReward") as Button);
-		Button expr_F3 = this.m_btReward;
-		expr_F3.Click = (EZValueChangedDelegate)Delegate.Combine(expr_F3.Click, new EZValueChangedDelegate(this.OnRewardReq));
-		NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_STARTBUTTON_UI", this.m_btReward, this.m_btReward.GetSize());
-		this.m_btReward.AddGameObjectDelegate(new EZGameObjectDelegate(this.RewardEffectDelegate));
+		Button expr_DD = this.m_btReward;
+		expr_DD.Click = (EZValueChangedDelegate)Delegate.Combine(expr_DD.Click, new EZValueChangedDelegate(this.OnRewardReq));
+		this.m_btReward.AlphaAni(1f, 0.5f, -0.5f);
 		this.m_btStart = (base.GetControl("Start_Btn") as Button);
-		Button expr_167 = this.m_btStart;
-		expr_167.Click = (EZValueChangedDelegate)Delegate.Combine(expr_167.Click, new EZValueChangedDelegate(this.OnClickStart));
+		Button expr_134 = this.m_btStart;
+		expr_134.Click = (EZValueChangedDelegate)Delegate.Combine(expr_134.Click, new EZValueChangedDelegate(this.OnClickStart));
 		this.m_btExit = (base.GetControl("Exit_Btn") as Button);
-		Button expr_1A4 = this.m_btExit;
-		expr_1A4.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1A4.Click, new EZValueChangedDelegate(this.OnClickClose));
-		this.m_dtClearGage = (base.GetControl("DrawTexture_Prg") as DrawTexture);
-		this.m_fGageMax = this.m_dtClearGage.GetSize().x;
-		NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_STARTBUTTON_UI", this.m_dtClearGage, this.m_dtClearGage.GetSize());
-		this.m_dtClearGage.AddGameObjectDelegate(new EZGameObjectDelegate(this.ProgressDrawTextureDelegate));
-		this.m_btActivityCharge = (base.GetControl("Button_WillCharge1") as Button);
-		Button expr_247 = this.m_btActivityCharge;
-		expr_247.Click = (EZValueChangedDelegate)Delegate.Combine(expr_247.Click, new EZValueChangedDelegate(this.OnClickWillCharge));
-		COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
-		this.m_nBaseActivity = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BASE_ACTIVITY);
-		this.m_dwActivity = (base.GetControl("DrawTexture_will1") as DrawTexture);
-		this.m_lbActivityTime = (base.GetControl("Will_Time_Label") as Label);
-		this.m_lb_WillNum = (base.GetControl("Label_WillNum") as Label);
-		this.m_btActivityCharge = (base.GetControl("Button_WillCharge1") as Button);
+		Button expr_171 = this.m_btExit;
+		expr_171.Click = (EZValueChangedDelegate)Delegate.Combine(expr_171.Click, new EZValueChangedDelegate(this.OnClickClose));
+		this.m_btHeroInfo = (base.GetControl("Button_HeroInfo") as Button);
+		this.m_btHeroInfo.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickSoldierInfo));
+		this.m_dtRightBottomFrame = (base.GetControl("DrawTexture_RightBottom") as DrawTexture);
+		this.m_lbHeroInfo = (base.GetControl("Label_HeroInfo") as Label);
+		this.m_dtMonsterImage = (base.GetControl("DT_MonsterFace") as DrawTexture);
+		this.m_nDayOfWeek = NrTSingleton<DailyDungeonManager>.Instance.GetDayOfWeek();
+		DAILYDUNGEON_INFO dailyDungeonInfo = NrTSingleton<DailyDungeonManager>.Instance.GetDailyDungeonInfo((int)this.m_nDayOfWeek);
+		if (dailyDungeonInfo == null)
+		{
+			this.m_nDifficult = 1;
+		}
+		else
+		{
+			this.m_nDifficult = dailyDungeonInfo.m_i8Diff;
+		}
 		this._SetDialogPos();
 		this.SetBG();
-		this.SetBasicData();
+		base.SetScreenCenter();
+		sbyte dayOfWeek = NrTSingleton<DailyDungeonManager>.Instance.GetDayOfWeek();
+		if ((int)dayOfWeek <= 0)
+		{
+			this.OnClose();
+		}
+		else
+		{
+			this.SetBasicData(dayOfWeek, false);
+		}
 		string str = string.Format("{0}", "effect/instant/fx_direct_daydungeon" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
 		WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
 		wWWItem.SetItemType(ItemType.USER_ASSETB);
@@ -158,13 +166,6 @@ public class DailyDungeon_Main_Dlg : Form
 
 	public void _SetDialogPos()
 	{
-		base.SetLocation(0f, 0f);
-		float width = GUICamera.width;
-		float height = GUICamera.height;
-		if (this.m_dtBG != null)
-		{
-			this.m_dtBG.SetSize(width, height);
-		}
 	}
 
 	public override void OnClose()
@@ -200,17 +201,11 @@ public class DailyDungeon_Main_Dlg : Form
 		{
 			myCharInfoDlg.Update();
 		}
-		if (this.m_fActivityUpdateTime < Time.realtimeSinceStartup)
-		{
-			this.m_lbActivityTime.SetText(myCharInfoDlg.StrActivityTime);
-			this.m_fActivityUpdateTime = Time.realtimeSinceStartup + 0.5f;
-			this.SetActivityPointUI();
-		}
 		if (this.m_bAniPlay && !this.m_goAnimation.animation.isPlaying)
 		{
-			GS_EVENT_DAILYDUNGEON_OPEN_REQ gS_EVENT_DAILYDUNGEON_OPEN_REQ = new GS_EVENT_DAILYDUNGEON_OPEN_REQ();
-			gS_EVENT_DAILYDUNGEON_OPEN_REQ.nDifficulty = (byte)this.m_nDifficult;
-			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_EVENT_DAILYDUNGEON_OPEN_REQ, gS_EVENT_DAILYDUNGEON_OPEN_REQ);
+			SoldierBatch.DailyDungeonDifficulty = this.m_nDifficult;
+			SoldierBatch.SOLDIER_BATCH_MODE = eSOLDIER_BATCH_MODE.MODE_DAILYDUNGEON;
+			FacadeHandler.PushStage(Scene.Type.SOLDIER_BATCH);
 			this.m_bAniPlay = false;
 			this.m_bRestoreReserve = true;
 			UIDataManager.MuteSound(false);
@@ -225,7 +220,7 @@ public class DailyDungeon_Main_Dlg : Form
 		}
 		this.m_bRestoreReserve = false;
 		base.SetShowLayer(1, true);
-		this.SetBasicData();
+		this.SetBasicData(this.m_nDayOfWeek, false);
 		UIDataManager.MuteSound(false);
 	}
 
@@ -241,60 +236,9 @@ public class DailyDungeon_Main_Dlg : Form
 		}
 	}
 
-	public void SetActivityPointUI()
+	public void OnClickSoldierInfo(IUIObject obj)
 	{
-		MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
-		if (myCharInfoDlg == null)
-		{
-			return;
-		}
-		if (this.m_nBeforeActivity == myCharInfoDlg.CurrentActivity)
-		{
-			return;
-		}
-		this.m_nBeforeActivity = myCharInfoDlg.CurrentActivity;
-		string empty = string.Empty;
-		if (myCharInfoDlg.CurrentActivity > myCharInfoDlg.MaxActivity)
-		{
-			string textColor = NrTSingleton<CTextParser>.Instance.GetTextColor("1304");
-			string textColor2 = NrTSingleton<CTextParser>.Instance.GetTextColor("1002");
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2791"),
-				"CurrentNum",
-				textColor + myCharInfoDlg.CurrentActivity.ToString() + textColor2,
-				"MaxNum",
-				myCharInfoDlg.MaxActivity
-			});
-		}
-		else
-		{
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2791"),
-				"CurrentNum",
-				myCharInfoDlg.CurrentActivity,
-				"MaxNum",
-				myCharInfoDlg.MaxActivity
-			});
-		}
-		this.m_lb_WillNum.SetText(empty);
-	}
-
-	public void OnClickWillCharge(IUIObject obj)
-	{
-		MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
-		if (myCharInfoDlg == null)
-		{
-			return;
-		}
-		long num = (long)COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_CHARGE_ACTIVITY_MAX);
-		if (myCharInfoDlg.CurrentActivity >= num)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("135"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.WILLCHARGE_DLG);
+		NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.SOLMILITARYGROUP_DLG);
 	}
 
 	public void OnClickClose(IUIObject obj)
@@ -304,18 +248,23 @@ public class DailyDungeon_Main_Dlg : Form
 
 	public void OnClickChangeDifficulty(IUIObject obj)
 	{
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
 		{
 			this.Close();
 			return;
 		}
-		sbyte nDayOfWeek = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventWeek();
-		long charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_DAILY_DUNGEON);
-		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = charSubData;
-		EVENT_DAILY_DUNGEON_INFO dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(this.m_nDifficult, nDayOfWeek);
-		if ((int)sUBDATA_UNION.n8SubData_1 >= (int)dailyDungeonInfo.i8TotalCount)
+		sbyte dayOfWeek = NrTSingleton<DailyDungeonManager>.Instance.GetDayOfWeek();
+		DAILYDUNGEON_INFO dailyDungeonInfo = NrTSingleton<DailyDungeonManager>.Instance.GetDailyDungeonInfo((int)dayOfWeek);
+		int num;
+		if (dailyDungeonInfo == null)
+		{
+			num = 0;
+		}
+		else
+		{
+			num = dailyDungeonInfo.m_i32IsClear;
+		}
+		if (num >= 1)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("602"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
@@ -332,21 +281,18 @@ public class DailyDungeon_Main_Dlg : Form
 		{
 			return;
 		}
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
 		{
 			this.Close();
 			return;
 		}
 		this.m_nDifficult = nDifficult;
-		kMyCharInfo.SetCharSubData(26, 0L);
-		this.SetBasicData();
+		this.SetBasicData(this.m_nDayOfWeek, true);
 	}
 
 	public void SetBG()
 	{
-		sbyte nDayOfWeek = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventWeek();
-		EVENT_DAILY_DUNGEON_INFO dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(1, nDayOfWeek);
+		EVENT_DAILY_DUNGEON_INFO dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(1, this.m_nDayOfWeek);
 		if (dailyDungeonInfo == null)
 		{
 			this.Close();
@@ -372,162 +318,123 @@ public class DailyDungeon_Main_Dlg : Form
 		}
 	}
 
-	public void SetBasicData()
+	public void SetBasicData(sbyte nDayOfWeek, bool bCheck)
 	{
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
 		{
 			this.Close();
 			return;
 		}
-		sbyte b = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventDay();
-		sbyte b2 = (sbyte)NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.GetEventWeek();
-		long charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_DAILY_DUNGEON_CLEARINFO);
-		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = charSubData;
-		sbyte b3 = 0;
-		if ((int)b2 == 0)
+		DAILYDUNGEON_INFO dailyDungeonInfo = NrTSingleton<DailyDungeonManager>.Instance.GetDailyDungeonInfo((int)nDayOfWeek);
+		EVENT_DAILY_DUNGEON_INFO dailyDungeonInfo2;
+		if (dailyDungeonInfo != null)
 		{
-			b3 = sUBDATA_UNION.n8SubData_0;
-		}
-		else if ((int)b2 == 1)
-		{
-			b3 = sUBDATA_UNION.n8SubData_1;
-		}
-		else if ((int)b2 == 2)
-		{
-			b3 = sUBDATA_UNION.n8SubData_2;
-		}
-		else if ((int)b2 == 3)
-		{
-			b3 = sUBDATA_UNION.n8SubData_3;
-		}
-		else if ((int)b2 == 4)
-		{
-			b3 = sUBDATA_UNION.n8SubData_4;
-		}
-		else if ((int)b2 == 5)
-		{
-			b3 = sUBDATA_UNION.n8SubData_5;
-		}
-		else if ((int)b2 == 6)
-		{
-			b3 = sUBDATA_UNION.n8SubData_6;
-		}
-		if ((int)b3 > 0)
-		{
-			this.m_dtCleraDifficulty.SetTexture("Win_I_WorrGradeS" + b3.ToString());
-		}
-		long num = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_DAILY_DUNGEON);
-		SUBDATA_UNION sUBDATA_UNION2 = default(SUBDATA_UNION);
-		sUBDATA_UNION2.nSubData = num;
-		if (num != 0L && ((int)sUBDATA_UNION2.n8SubData_2 != (int)b2 || (int)sUBDATA_UNION2.n8SubData_3 != (int)b))
-		{
-			kMyCharInfo.SetCharSubData(26, 0L);
-			num = 0L;
-			sUBDATA_UNION2.nSubData = 0L;
-			sUBDATA_UNION2.n8SubData_2 = b2;
-			sUBDATA_UNION2.n8SubData_3 = b;
-		}
-		if ((int)this.m_nDifficult < 0)
-		{
-			if ((int)sUBDATA_UNION2.n8SubData_0 == 0)
+			this.m_nDayOfWeek = (sbyte)dailyDungeonInfo.m_i32DayOfWeek;
+			if (!bCheck)
 			{
-				this.m_nDifficult = b3;
+				this.m_nDifficult = dailyDungeonInfo.m_i8Diff;
 			}
-			else
+			dailyDungeonInfo2 = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(this.m_nDifficult, this.m_nDayOfWeek);
+			if (dailyDungeonInfo2 == null)
 			{
-				this.m_nDifficult = sUBDATA_UNION2.n8SubData_0;
+				this.Close();
+				return;
+			}
+			if (dailyDungeonInfo.m_i32IsClear <= 1)
+			{
+				if (dailyDungeonInfo.m_i32IsClear != 1)
+				{
+					this.m_btStart.Visible = true;
+					this.m_btReward.Visible = false;
+					if (this.m_goGageEffect != null)
+					{
+						this.m_goGageEffect.SetActive(false);
+					}
+				}
+				else
+				{
+					this.m_btStart.Visible = false;
+					this.m_btReward.Visible = true;
+					if (this.m_goGageEffect != null)
+					{
+						this.m_goGageEffect.SetActive(true);
+					}
+				}
+				if ((int)dailyDungeonInfo.m_i8IsReward == 1)
+				{
+					this.m_btStart.Visible = false;
+					this.m_btReward.Visible = false;
+					this.m_btHeroInfo.Visible = false;
+					this.m_lbHeroInfo.Visible = false;
+					this.m_dtRightBottomFrame.Visible = false;
+					if (this.m_goGageEffect != null)
+					{
+						this.m_goGageEffect.SetActive(true);
+					}
+					MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+					if (myCharInfoDlg != null)
+					{
+						myCharInfoDlg.UpdateNoticeInfo();
+					}
+				}
 			}
 		}
-		if ((int)this.m_nDifficult == 0)
+		else
 		{
-			this.m_nDifficult = 1;
+			this.m_nDayOfWeek = nDayOfWeek;
+			if ((int)this.m_nDifficult <= 0 || !bCheck)
+			{
+				this.m_nDifficult = 1;
+			}
+			dailyDungeonInfo2 = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(this.m_nDifficult, this.m_nDayOfWeek);
+			if (dailyDungeonInfo2 == null)
+			{
+				this.Close();
+				return;
+			}
+			this.m_btStart.Visible = true;
+			this.m_btReward.Visible = false;
+			if (this.m_goGageEffect != null)
+			{
+				this.m_goGageEffect.SetActive(false);
+			}
 		}
-		sUBDATA_UNION2.n8SubData_0 = this.m_nDifficult;
-		EVENT_DAILY_DUNGEON_INFO dailyDungeonInfo = EVENT_DAILY_DUNGEON_DATA.GetInstance().GetDailyDungeonInfo(this.m_nDifficult, b2);
-		if (dailyDungeonInfo == null)
+		if (dailyDungeonInfo2 == null)
 		{
 			this.Close();
 			return;
 		}
-		string textFromMap = NrTSingleton<NrTextMgr>.Instance.GetTextFromMap(dailyDungeonInfo.i32TextKey.ToString());
+		string textFromMap = NrTSingleton<NrTextMgr>.Instance.GetTextFromMap(dailyDungeonInfo2.i32TextKey.ToString());
 		this.m_lbTitle.SetText(textFromMap);
 		ITEM iTEM = new ITEM();
-		iTEM.m_nItemUnique = dailyDungeonInfo.i32RewardItemUnique;
-		iTEM.m_nItemNum = dailyDungeonInfo.i32RewardItemNum;
+		iTEM.m_nItemUnique = dailyDungeonInfo2.i32RewardItemUnique;
+		iTEM.m_nItemNum = dailyDungeonInfo2.i32RewardItemNum;
 		this.m_itRewardItem.SetItemTexture(iTEM);
 		string empty = string.Empty;
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 		{
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1697"),
 			"itemname",
-			NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(dailyDungeonInfo.i32RewardItemUnique),
+			NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(dailyDungeonInfo2.i32RewardItemUnique),
 			"count",
-			dailyDungeonInfo.i32RewardItemNum.ToString()
+			dailyDungeonInfo2.i32RewardItemNum.ToString()
 		});
-		this.m_lbReward.SetText(empty);
+		this.m_lbRewardName.SetText(empty);
 		this.m_dtDifficulty.SetTexture("Win_I_WorrGradeS" + this.m_nDifficult.ToString());
-		if ((int)sUBDATA_UNION2.n8SubData_1 <= (int)dailyDungeonInfo.i8TotalCount)
-		{
-			if ((int)sUBDATA_UNION2.n8SubData_1 != (int)dailyDungeonInfo.i8TotalCount)
-			{
-				this.m_btStart.Visible = true;
-				this.m_btReward.Visible = false;
-				float num2 = (float)sUBDATA_UNION2.n8SubData_1 / (float)dailyDungeonInfo.i8TotalCount;
-				int num3 = (int)(num2 * 100f);
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("672"),
-					"Count",
-					num3.ToString()
-				});
-				this.m_lbProgress.SetText(empty);
-				this.m_dtClearGage.SetSize(this.m_fGageMax * num2, this.m_dtClearGage.height);
-				if (this.m_goGageEffect != null)
-				{
-					this.m_goGageEffect.SetActive(false);
-				}
-			}
-			else
-			{
-				this.m_btStart.Visible = false;
-				this.m_btReward.Visible = true;
-				this.m_dtClearGage.SetSize(this.m_fGageMax, this.m_dtClearGage.height);
-				this.m_lbProgress.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2012"));
-				if (this.m_goGageEffect != null)
-				{
-					this.m_goGageEffect.SetActive(true);
-				}
-			}
-		}
-		else
-		{
-			this.m_btStart.Visible = false;
-			this.m_btReward.Visible = false;
-			this.m_lbProgress.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2012"));
-			this.m_dtClearGage.SetSize(this.m_fGageMax, this.m_dtClearGage.height);
-			if (this.m_goGageEffect != null)
-			{
-				this.m_goGageEffect.SetActive(true);
-			}
-			BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-			if (bookmarkDlg != null)
-			{
-				bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.MAINEVENT);
-			}
-		}
-		if (sUBDATA_UNION2.nSubData != num)
-		{
-			kMyCharInfo.SetCharSubData(26, sUBDATA_UNION2.nSubData);
-		}
+		this.m_lbMonsterInfo.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(dailyDungeonInfo2.i32ExplainText.ToString()));
+		this.m_dtMonsterImage.SetTextureFromBundle("ui/soldier/512/" + dailyDungeonInfo2.szMonIMG);
 	}
 
 	public void OnRewardReq(IUIObject obj)
 	{
-		GS_GET_EVENT_REWARD_REQ gS_GET_EVENT_REWARD_REQ = new GS_GET_EVENT_REWARD_REQ();
-		gS_GET_EVENT_REWARD_REQ.m_nEventType = 13;
-		SendPacket.GetInstance().SendObject(1664, gS_GET_EVENT_REWARD_REQ);
+		if ((int)this.m_nDayOfWeek < 0)
+		{
+			return;
+		}
+		this.m_btReward.enabled = true;
+		GS_CHARACTER_DAILYDUNGEON_REWARD_REQ gS_CHARACTER_DAILYDUNGEON_REWARD_REQ = new GS_CHARACTER_DAILYDUNGEON_REWARD_REQ();
+		gS_CHARACTER_DAILYDUNGEON_REWARD_REQ.i32DayOfWeek = (int)this.m_nDayOfWeek;
+		SendPacket.GetInstance().SendObject(2546, gS_CHARACTER_DAILYDUNGEON_REWARD_REQ);
 	}
 
 	public void OnClickStart(IUIObject obj)
@@ -544,65 +451,8 @@ public class DailyDungeon_Main_Dlg : Form
 			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 			return;
 		}
-		NrPersonInfoUser personInfoUser = nrCharUser.GetPersonInfoUser();
-		if (personInfoUser == null)
+		if (nrCharUser.GetPersonInfoUser() == null)
 		{
-			return;
-		}
-		bool flag = false;
-		int num = 0;
-		int num2 = 0;
-		for (int i = 0; i < 6; i++)
-		{
-			if (kMyCharInfo.IsAddBattleSoldier(i))
-			{
-				NkSoldierInfo soldierInfo = personInfoUser.GetSoldierInfo(i);
-				if (soldierInfo == null || !soldierInfo.IsValid())
-				{
-					if (!flag)
-					{
-						flag = true;
-					}
-				}
-				else
-				{
-					num++;
-				}
-				num2++;
-			}
-		}
-		if (flag)
-		{
-			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			string empty = string.Empty;
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("146"),
-				"currentnum",
-				num.ToString(),
-				"maxnum",
-				num2.ToString()
-			});
-			msgBoxUI.SetMsg(new YesDelegate(this.OnBattleOK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), empty, eMsgType.MB_OK_CANCEL);
-			return;
-		}
-		bool flag2 = false;
-		for (int i = 0; i < 6; i++)
-		{
-			NkSoldierInfo soldierInfo = personInfoUser.GetSoldierInfo(i);
-			if (soldierInfo != null && soldierInfo.IsValid())
-			{
-				if (soldierInfo.IsInjuryStatus())
-				{
-					flag2 = true;
-					break;
-				}
-			}
-		}
-		if (flag2)
-		{
-			MsgBoxUI msgBoxUI2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			msgBoxUI2.SetMsg(new YesDelegate(this.OnBattleInjuryOk), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("20"), eMsgType.MB_OK_CANCEL);
 			return;
 		}
 		this.OnBattleOK(null);
@@ -658,7 +508,7 @@ public class DailyDungeon_Main_Dlg : Form
 				NkUtil.SetAllChildLayer(this.m_goPlayAni, GUICamera.UILayer);
 				this.m_goAnimation = NkUtil.GetChild(this.m_goPlayAni.transform, "fx_dungeon").gameObject;
 				this.m_goBackTexture = NkUtil.GetChild(this.m_goPlayAni.transform, "fx_plan_background").gameObject;
-				if (this.m_goBackTexture != null)
+				if (this.m_goBackTexture != null && !string.IsNullOrEmpty(this.m_szBackImage))
 				{
 					Texture2D texture = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_szBackImage);
 					if (texture == null)
@@ -723,14 +573,6 @@ public class DailyDungeon_Main_Dlg : Form
 		}
 		this.m_goGageEffect = obj;
 		this.m_goGageEffect.transform.localScale = new Vector3(1f, 0.35f, 1f);
-		if (this.m_dtClearGage.GetSize().x != this.m_fGageMax)
-		{
-			this.m_goGageEffect.SetActive(false);
-		}
-		else
-		{
-			this.m_goGageEffect.SetActive(true);
-		}
 	}
 
 	private void _funcUIEffectDownloaded(IDownloadedItem wItem, object obj)
@@ -766,5 +608,10 @@ public class DailyDungeon_Main_Dlg : Form
 		{
 			UnityEngine.Object.DestroyObject(this.SlotEffect, 5f);
 		}
+	}
+
+	public void IsRewardCheck(bool bCheck)
+	{
+		this.m_btReward.enabled = bCheck;
 	}
 }

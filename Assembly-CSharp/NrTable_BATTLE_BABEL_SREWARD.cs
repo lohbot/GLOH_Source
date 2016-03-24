@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BATTLE_BABEL_SREWARD : NrTableBase
 {
-	public NrTable_BATTLE_BABEL_SREWARD() : base(CDefinePath.BATTLE_BABEL_SREWARD_URL, true)
+	public NrTable_BATTLE_BABEL_SREWARD() : base(CDefinePath.BATTLE_BABEL_SREWARD_URL)
 	{
 	}
 

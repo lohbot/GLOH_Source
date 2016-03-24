@@ -10,7 +10,7 @@ namespace UnityForms
 		{
 			NONE,
 			ITEM,
-			GENERAL,
+			GUILD,
 			MONSTER,
 			PLAYER,
 			NPC,

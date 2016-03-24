@@ -1,4 +1,5 @@
 using Ndoors.Framework.Stage;
+using PROTOCOL;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
@@ -24,11 +25,17 @@ public class NewLoaingDlg : Form
 
 	private float m_fRoateVal = 5f;
 
+	private Label m_lbLoadingStatus;
+
+	private Label m_lbPacketNum;
+
 	private List<NewLoadingText> m_LoadingText = new List<NewLoadingText>();
+
+	private int magicNum = -1;
 
 	private GameObject m_goLoadingEffect;
 
-	private float m_fProgressMax = 100f;
+	private float m_fProgressMax = 1f;
 
 	private float m_fProgressValue;
 
@@ -43,6 +50,7 @@ public class NewLoaingDlg : Form
 		base.DonotDepthChange(NrTSingleton<FormsManager>.Instance.GetTopMostZ());
 		this.m_LoadingText.Clear();
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
+		this.magicNum = 156782;
 	}
 
 	public override void SetComponent()
@@ -72,6 +80,8 @@ public class NewLoaingDlg : Form
 		this.m_BG.SetLocation(x, -(GUICamera.height - base.GetSizeY()) / 2f);
 		this.m_BG.SetSize(GUICamera.width, GUICamera.height);
 		this.m_BG.SetTexture((Texture2D)CResources.Load(str + NrTSingleton<UIDataManager>.Instance.AddFilePath));
+		this.m_lbLoadingStatus = (base.GetControl("LB_LoadingStatus1") as Label);
+		this.m_lbPacketNum = (base.GetControl("LB_LoadingStatus2") as Label);
 		this.Hide();
 	}
 
@@ -122,6 +132,8 @@ public class NewLoaingDlg : Form
 		if (base.Visible)
 		{
 			this.m_LoadingStage.Rotate(this.m_fRoateVal);
+			this.SetStageStatus();
+			this.SetPacketNum();
 		}
 	}
 
@@ -260,5 +272,97 @@ public class NewLoaingDlg : Form
 		}
 		this.m_fProgressValue = fValue;
 		this.m_Percent.Text = ((int)(this.m_fProgressValue * 100f)).ToString() + "%";
+	}
+
+	private void SetStageStatus()
+	{
+		if (this.m_lbLoadingStatus == null)
+		{
+			return;
+		}
+		Scene.Type currentStageType = StageSystem.GetCurrentStageType();
+		this.m_lbLoadingStatus.Text = this.GetSceneTypeParsingValue(currentStageType);
+	}
+
+	private void SetPacketNum()
+	{
+		if (this.m_lbPacketNum == null)
+		{
+			return;
+		}
+		this.m_lbPacketNum.Text = string.Empty;
+		long num = 0L;
+		if (SendPacket.GetInstance() != null)
+		{
+			num = SendPacket.GetInstance().m_nLastSendPacketNum;
+		}
+		long num2 = NrReceiveGame.m_LastReceivePacketNum;
+		num += (long)this.magicNum;
+		num2 += (long)this.magicNum;
+		if (num != (long)this.magicNum)
+		{
+			this.m_lbPacketNum.Text = num.ToString();
+		}
+		Label expr_7C = this.m_lbPacketNum;
+		expr_7C.Text += "\n";
+		if (num2 != (long)this.magicNum)
+		{
+			Label expr_A4 = this.m_lbPacketNum;
+			expr_A4.Text += num2.ToString();
+		}
+	}
+
+	private string GetSceneTypeParsingValue(Scene.Type sceneType)
+	{
+		string strTextKey = string.Empty;
+		switch (sceneType)
+		{
+		case Scene.Type.EMPTY:
+			strTextKey = "2047";
+			break;
+		case Scene.Type.ERROR:
+			strTextKey = "2048";
+			break;
+		case Scene.Type.SYSCHECK:
+			strTextKey = "2057";
+			break;
+		case Scene.Type.PREDOWNLOAD:
+			strTextKey = "2053";
+			break;
+		case Scene.Type.NPATCH_DOWNLOAD:
+			strTextKey = "2052";
+			break;
+		case Scene.Type.LOGIN:
+			strTextKey = "2051";
+			break;
+		case Scene.Type.INITIALIZE:
+			strTextKey = "2049";
+			break;
+		case Scene.Type.SELECTCHAR:
+			strTextKey = "2055";
+			break;
+		case Scene.Type.PREPAREGAME:
+			strTextKey = "2054";
+			break;
+		case Scene.Type.JUSTWAIT:
+			strTextKey = "2050";
+			break;
+		case Scene.Type.WORLD:
+			strTextKey = "2058";
+			break;
+		case Scene.Type.DUNGEON:
+			strTextKey = "2046";
+			break;
+		case Scene.Type.BATTLE:
+			strTextKey = "2044";
+			break;
+		case Scene.Type.CUTSCENE:
+			strTextKey = "2045";
+			break;
+		case Scene.Type.SOLDIER_BATCH:
+			strTextKey = "2056";
+			break;
+		}
+		return NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText(strTextKey);
 	}
 }

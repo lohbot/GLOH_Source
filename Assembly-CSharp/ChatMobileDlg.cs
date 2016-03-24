@@ -49,6 +49,7 @@ public class ChatMobileDlg : Form
 		base.ChangeSceneDestory = false;
 		base.AlwaysUpdate = true;
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
+		base.DonotDepthChange(UIPanelManager.UI_DEPTH);
 	}
 
 	public override void SetComponent()
@@ -151,11 +152,11 @@ public class ChatMobileDlg : Form
 
 	public override void Update()
 	{
-		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.CHAT_MOBILE_SUB_DLG))
+		if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.CHAT_MOBILE_SUB_DLG) != null)
 		{
 			return;
 		}
-		for (int i = 0; i < 6; i++)
+		for (int i = 0; i < 7; i++)
 		{
 			if (0 < this._Manager.GetChatMsgCount())
 			{

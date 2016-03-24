@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableItemTypeInfo : NrTableBase
 {
-	public NkTableItemTypeInfo() : base(CDefinePath.ITEMTYPE_INFO_URL, true)
+	public NkTableItemTypeInfo() : base(CDefinePath.ITEMTYPE_INFO_URL)
 	{
 	}
 

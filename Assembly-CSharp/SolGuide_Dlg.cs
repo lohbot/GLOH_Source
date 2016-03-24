@@ -2,6 +2,7 @@ using GAME;
 using PROTOCOL;
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 using UnityForms;
 
 public class SolGuide_Dlg : Form
@@ -26,6 +27,10 @@ public class SolGuide_Dlg : Form
 
 	private Button m_Button_RightArr;
 
+	private Button m_Button_solCombination;
+
+	private Button m_btBack;
+
 	private byte bCurrentSeason;
 
 	private byte bCurrentPage;
@@ -45,7 +50,7 @@ public class SolGuide_Dlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.Scale = true;
-		instance.LoadFileAll(ref form, "SolGuide/DLG_SolGuide", G_ID.SOLGUIDE_DLG, false);
+		instance.LoadFileAll(ref form, "SolGuide/DLG_SolGuide", G_ID.SOLGUIDE_DLG, false, true);
 	}
 
 	public override void SetComponent()
@@ -86,6 +91,10 @@ public class SolGuide_Dlg : Form
 		this.m_DropDownList_Setorder.AddValueChangedDelegate(new EZValueChangedDelegate(this.Change_Setorder));
 		this.m_Button_LeftArr.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_ClickLeftArr));
 		this.m_Button_RightArr.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_ClickRightArr));
+		this.m_Button_solCombination = (base.GetControl("Button_combination") as Button);
+		this.m_Button_solCombination.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_ClickCombination));
+		this.m_btBack = (base.GetControl("BT_back") as Button);
+		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBack));
 		base.Draggable = false;
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
@@ -242,6 +251,18 @@ public class SolGuide_Dlg : Form
 		this.SetViewSolGuide_Data(this.bCurrentSeason, this.bCurrentPage);
 	}
 
+	public void On_ClickCombination(IUIObject a_cObject)
+	{
+		SolCombination_Dlg solCombination_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMBINATION_DLG) as SolCombination_Dlg;
+		if (solCombination_Dlg == null)
+		{
+			Debug.LogError("ERROR, SolGuide_Dlg.cs, On_ClickCombination(), SolCombination_Dlg is Null");
+			return;
+		}
+		solCombination_Dlg.MakeCombinationSolUI(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetOwnBattleReadyAndReadySolKindList(), -1);
+		solCombination_Dlg.Show();
+	}
+
 	public void ChageClickText()
 	{
 		string @string = NrTSingleton<UIDataManager>.Instance.GetString(this.bCurrentPage.ToString(), "/", this.bMaxPage.ToString());
@@ -264,7 +285,14 @@ public class SolGuide_Dlg : Form
 	{
 		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
 		myCharInfo.InitCharSolGuide();
+		NrTSingleton<ChallengeManager>.Instance.ShowNotice();
 		base.CloseForm(obj);
+	}
+
+	public void OnClickBack(object a_oObject)
+	{
+		this.Close();
+		NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.MAINMENU_DLG);
 	}
 
 	private void InitGuideDataSet()
@@ -292,17 +320,20 @@ public class SolGuide_Dlg : Form
 							{
 								if (!NrTSingleton<ContentsLimitManager>.Instance.IsSolGuideCharKindInfo(sOL_GUIDE.m_i32CharKind))
 								{
-									SolSlotData slotData;
-									if (this.kCharKindInfo != null)
+									if (sOL_GUIDE.m_i8Legend != 2 || NrTSingleton<NrTableSolGuideManager>.Instance.FindSolInfo(sOL_GUIDE.m_i32CharKind))
 									{
-										slotData = new SolSlotData(this.kCharKindInfo.GetName(), sOL_GUIDE.m_i32CharKind, (byte)sOL_GUIDE.m_iSolGrade, sOL_GUIDE.m_bFlagSet, sOL_GUIDE.m_bFlagSetCount - 1, sOL_GUIDE.m_bSeason, sOL_GUIDE.m_i32SkillUnique, sOL_GUIDE.m_i32SkillText);
+										SolSlotData slotData;
+										if (this.kCharKindInfo != null)
+										{
+											slotData = new SolSlotData(this.kCharKindInfo.GetName(), sOL_GUIDE.m_i32CharKind, (byte)sOL_GUIDE.m_iSolGrade, sOL_GUIDE.m_bFlagSet, sOL_GUIDE.m_bFlagSetCount - 1, sOL_GUIDE.m_bSeason, sOL_GUIDE.m_i32SkillUnique, sOL_GUIDE.m_i32SkillText);
+										}
+										else
+										{
+											slotData = new SolSlotData(" ", 0, 0, 0, 0, 0, 0, 0);
+										}
+										this.SetGuideTableData(0, slotData);
+										this.SetGuideTableData(sOL_GUIDE.m_bSeason, slotData);
 									}
-									else
-									{
-										slotData = new SolSlotData(" ", 0, 0, 0, 0, 0, 0, 0);
-									}
-									this.SetGuideTableData(0, slotData);
-									this.SetGuideTableData(sOL_GUIDE.m_bSeason, slotData);
 								}
 							}
 						}
@@ -504,7 +535,7 @@ public class SolGuide_Dlg : Form
 					}
 					if (NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(charKindInfo.GetCharKind(), list[num].bSolGrade) == null)
 					{
-						UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(charKindInfo.GetCharKind(), (int)list[num].bSolGrade);
+						UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(charKindInfo.GetCharKind(), (int)(list[num].bSolGrade - 1));
 						if (legendFrame != null)
 						{
 							this.m_Sol_Slot[i].DT_Slot.SetTexture(legendFrame);
@@ -578,7 +609,12 @@ public class SolGuide_Dlg : Form
 						{
 							tf = true;
 						}
-						if (NrTSingleton<NrTableSolGuideManager>.Instance.GetCharKindLegend(list[num].i32KindInfo))
+						short charKindLegendInfo = NrTSingleton<NrTableSolGuideManager>.Instance.GetCharKindLegendInfo(list[num].i32KindInfo);
+						if (charKindLegendInfo == 0)
+						{
+							tf = true;
+						}
+						else if (charKindLegendInfo == 2 && NrTSingleton<NrTableSolGuideManager>.Instance.FindSolInfo(list[num].i32KindInfo))
 						{
 							tf = true;
 						}
@@ -649,5 +685,34 @@ public class SolGuide_Dlg : Form
 			}
 		}
 		return false;
+	}
+
+	public SolSlotData GetSolGuideData(int iCharKind)
+	{
+		SolSlotData result = null;
+		List<SOL_GUIDE> value = NrTSingleton<NrTableSolGuideManager>.Instance.GetValue();
+		if (value == null)
+		{
+			return result;
+		}
+		for (int i = 0; i < value.Count; i++)
+		{
+			SOL_GUIDE sOL_GUIDE = value[i];
+			if (sOL_GUIDE != null)
+			{
+				if (!this.IsSolGuideData(sOL_GUIDE.m_i32CharKind))
+				{
+					if (!NrTSingleton<ContentsLimitManager>.Instance.IsSolGuideCharKindInfo(sOL_GUIDE.m_i32CharKind))
+					{
+						if (sOL_GUIDE.m_i32CharKind == iCharKind)
+						{
+							result = new SolSlotData(this.kCharKindInfo.GetName(), sOL_GUIDE.m_i32CharKind, (byte)sOL_GUIDE.m_iSolGrade, sOL_GUIDE.m_bFlagSet, sOL_GUIDE.m_bFlagSetCount - 1, sOL_GUIDE.m_bSeason, sOL_GUIDE.m_i32SkillUnique, sOL_GUIDE.m_i32SkillText);
+							break;
+						}
+					}
+				}
+			}
+		}
+		return result;
 	}
 }

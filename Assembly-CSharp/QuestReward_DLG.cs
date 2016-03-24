@@ -35,8 +35,8 @@ public class QuestReward_DLG : Form
 		this.m_kReputeRewardList.touchScroll = false;
 		this.m_kReputeRewardList.SetColumnRect(0, new Rect(6f, 6f, 94f, 94f));
 		this.m_kReputeRewardList.SetColumnRect(1, new Rect(13f, 13f, 80f, 80f));
-		this.m_kReputeRewardList.SetColumnRect(2, new Rect(108f, 24f, 350f, 24f), SpriteText.Anchor_Pos.Middle_Left, 24f);
-		this.m_kReputeRewardList.SetColumnRect(3, new Rect(108f, 56f, 350f, 24f), SpriteText.Anchor_Pos.Middle_Left, 24f);
+		this.m_kReputeRewardList.SetColumnRect(2, new Rect(108f, 24f, 380f, 24f), SpriteText.Anchor_Pos.Middle_Left, 24f);
+		this.m_kReputeRewardList.SetColumnRect(3, new Rect(108f, 56f, 380f, 24f), SpriteText.Anchor_Pos.Middle_Left, 24f);
 		this.m_kReputeRewardList.Reserve = false;
 		if (this.m_kReputeRewardList.slider)
 		{

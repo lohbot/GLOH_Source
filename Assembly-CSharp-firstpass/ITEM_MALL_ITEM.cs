@@ -40,7 +40,7 @@ public class ITEM_MALL_ITEM : NrTableData
 
 	public string m_strSolKind = string.Empty;
 
-	public bool m_isEvent;
+	public byte m_isEvent;
 
 	public int m_nVipExp;
 
@@ -76,7 +76,7 @@ public class ITEM_MALL_ITEM : NrTableData
 		this.m_strItemTextKey = string.Empty;
 		this.m_strItemTooltip = string.Empty;
 		this.m_strSolKind = string.Empty;
-		this.m_isEvent = false;
+		this.m_isEvent = 0;
 		this.m_nVipExp = 0;
 		this.m_strGoogleQA = string.Empty;
 		this.m_strGoogle = string.Empty;
@@ -133,6 +133,7 @@ public class ITEM_MALL_ITEM : NrTableData
 		this.m_strItemTooltip = Data.m_strItemTooltip;
 		this.m_strSolKind = Data.m_strSolKind;
 		this.m_isEvent = Data.m_isEvent;
+		this.m_nVipExp = Data.m_nVipExp;
 		this.m_strGoogleQA = Data.m_strGoogleQA;
 		this.m_strGoogle = Data.m_strGoogle;
 		this.m_strApple = Data.m_strApple;

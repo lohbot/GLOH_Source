@@ -13,5 +13,7 @@ namespace GAME
 		public byte bySolGrade;
 
 		public int i32SolFightPower;
+
+		public int i32SolFaceCostumeUnique;
 	}
 }

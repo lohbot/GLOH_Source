@@ -383,15 +383,24 @@ namespace UnityForms
 				return null;
 			}
 			this.formList.Add((int)windowID, form);
+			this.formDepth.Add((int)windowID);
 			form.WindowID = (int)windowID;
 			form.Orignal_ID = windowID;
 			form.InitializeForm();
 			if (form.InteractivePanel == null)
 			{
+				if (this.formList.ContainsKey((int)windowID))
+				{
+					this.formList.Remove((int)windowID);
+				}
+				if (this.formDepth.Contains((int)windowID))
+				{
+					this.formDepth.Remove((int)windowID);
+				}
 				return null;
 			}
 			form.OnLoad();
-			this.formDepth.Add((int)windowID);
+			form.OnOpenCallback();
 			return form;
 		}
 
@@ -476,42 +485,42 @@ namespace UnityForms
 			for (int i = 0; i < this.formDepth.Count; i++)
 			{
 				int num = this.formDepth[i];
-				if (!this.formList.ContainsKey(num))
+				if (this.formList.ContainsKey(num))
 				{
 					G_ID g_ID = (G_ID)num;
 					switch (g_ID)
 					{
 					case G_ID.DLG_SYSTEMMESSAGE:
-						goto IL_13D;
+						goto IL_150;
 					case G_ID.DLG_MONSTER_DETAILINFO:
+					{
 						IL_49:
 						if (g_ID == G_ID.QUEST_REWARD)
 						{
-							goto IL_13D;
+							goto IL_150;
 						}
 						if (g_ID == G_ID.QUEST_GROUP_REWARD)
 						{
-							goto IL_13D;
+							goto IL_150;
 						}
-						if (g_ID != G_ID.WHISPER_DLG)
+						if (g_ID == G_ID.GAMEGUIDE_DLG)
 						{
-							goto IL_13D;
+							goto IL_150;
 						}
-						goto IL_13D;
-					case G_ID.DLG_LOADINGPAGE:
-						goto IL_13D;
-					}
-					goto IL_49;
-				}
-				Form form = this.formList[num];
-				if (form != null)
-				{
-					if (form.WindowID == (int)windowID)
-					{
-						form.Visible = true;
-					}
-					else
-					{
+						if (g_ID == G_ID.WHISPER_DLG)
+						{
+							goto IL_150;
+						}
+						Form form = this.formList[num];
+						if (form == null)
+						{
+							goto IL_150;
+						}
+						if (form.WindowID == (int)windowID)
+						{
+							form.Visible = true;
+							goto IL_150;
+						}
 						bool flag = false;
 						for (int j = 0; j < this.m_eaMainUI.Length; j++)
 						{
@@ -526,21 +535,25 @@ namespace UnityForms
 							{
 								form.Visible = false;
 							}
+							goto IL_150;
 						}
-						else if (!form.ChangeSceneDestory)
+						if (!form.ChangeSceneDestory)
 						{
 							if (form.Visible)
 							{
 								form.Visible = false;
 							}
+							goto IL_150;
 						}
-						else
-						{
-							list.Add(num);
-						}
+						list.Add(num);
+						goto IL_150;
 					}
+					case G_ID.DLG_LOADINGPAGE:
+						goto IL_150;
+					}
+					goto IL_49;
 				}
-				IL_13D:;
+				IL_150:;
 			}
 			foreach (int current in list)
 			{
@@ -590,7 +603,7 @@ namespace UnityForms
 					Form form = this.GetForm((G_ID)num);
 					if (form != null)
 					{
-						if (form.WindowID != 252)
+						if (form.WindowID != 282)
 						{
 							form.Visible = true;
 						}
@@ -610,7 +623,7 @@ namespace UnityForms
 					Form form = this.GetForm((G_ID)num);
 					if (form != null)
 					{
-						if (form.WindowID != 252)
+						if (form.WindowID != 282)
 						{
 							form.Visible = false;
 						}
@@ -693,7 +706,7 @@ namespace UnityForms
 						this.panelManager.RemoveChild(this.formList[key].InteractivePanel.gameObject);
 					}
 					this.formList[key].OnClose();
-					if (this.formList[key].InteractivePanel != null)
+					if (this.formList.ContainsKey(key) && this.formList[key].InteractivePanel != null)
 					{
 						this.formList[key].ClearDictionary();
 						UnityEngine.Object.Destroy(this.formList[key].InteractivePanel.gameObject);
@@ -721,37 +734,25 @@ namespace UnityForms
 			bool result = false;
 			if (Scene.CurScene == Scene.Type.WORLD || Scene.CurScene == Scene.Type.BATTLE || Scene.CurScene == Scene.Type.SOLDIER_BATCH)
 			{
-				for (int i = this.formDepth.Count - 1; i >= 0; i--)
-				{
-					int key = this.formDepth[i];
-					if (this.formList[key].Visible)
-					{
-						if (0 >= (FormsManager.FORM_TYPE_MAIN & this.formList[key].ShowSceneType))
-						{
-							if (this.panelManager.IsTopMost(this.formList[key].InteractivePanel))
-							{
-								this.formList[key].CloseForm(null);
-								result = true;
-								break;
-							}
-						}
-					}
-				}
+				result = this.CloseTopMostForm();
 				List<UIPanelBase> listPanel = this.PanelManager.GetListPanel();
-				for (int j = listPanel.Count - 1; j >= 0; j--)
+				for (int i = listPanel.Count - 1; i >= 0; i--)
 				{
 					foreach (int current in this.formDepth)
 					{
-						if (listPanel[j] == this.formList[current].InteractivePanel)
+						if (this.formList.ContainsKey(current))
 						{
-							if (!this.formList[current].Visible)
+							if (listPanel[i] == this.formList[current].InteractivePanel)
 							{
-								break;
-							}
-							if (0 >= (FormsManager.FORM_TYPE_MAIN & this.formList[current].ShowSceneType))
-							{
-								this.formList[current].Close();
-								return true;
+								if (!this.formList[current].Visible)
+								{
+									break;
+								}
+								if (0 >= (FormsManager.FORM_TYPE_MAIN & this.formList[current].ShowSceneType))
+								{
+									this.formList[current].Close();
+									return true;
+								}
 							}
 						}
 					}
@@ -768,7 +769,7 @@ namespace UnityForms
 		public void ClearShowHideForms()
 		{
 			Form form = this.GetForm(G_ID.SOLMILITARYGROUP_DLG);
-			if (form != null)
+			if (form != null && form.ChangeSceneDestory)
 			{
 				form.ShowHide = false;
 				this.CloseForm(G_ID.SOLMILITARYGROUP_DLG);
@@ -1046,6 +1047,124 @@ namespace UnityForms
 			gameObject2.transform.parent = key.gameObject.transform;
 			gameObject2.transform.localPosition = new Vector3(value.x / 2f, -value.y / 2f, key.gameObject.transform.localPosition.z - 0.1f);
 			key.ExcuteGameObjectDelegate(key, gameObject2);
+		}
+
+		public void AttachGameObject(GameObject wItem, KeyValuePair<AutoSpriteControlBase, Vector2> Data)
+		{
+			if (null == wItem)
+			{
+				TsLog.LogWarning("AttachGameObject is null ", new object[]
+				{
+					wItem
+				});
+				return;
+			}
+			GameObject gameObject = (GameObject)UnityEngine.Object.Instantiate(wItem, Vector3.zero, Quaternion.identity);
+			gameObject.name = NrTSingleton<UIDataManager>.Instance.AttachEffectKeyName;
+			if (null == gameObject)
+			{
+				return;
+			}
+			MsgHandler.Handle("SetAllChildLayer", new object[]
+			{
+				gameObject,
+				GUICamera.UILayer
+			});
+			if (null == Data.Key)
+			{
+				UnityEngine.Object.Destroy(gameObject.gameObject);
+				return;
+			}
+			AutoSpriteControlBase key = Data.Key;
+			if (null == key)
+			{
+				UnityEngine.Object.Destroy(gameObject.gameObject);
+				return;
+			}
+			if (null == key.gameObject)
+			{
+				UnityEngine.Object.Destroy(gameObject.gameObject);
+				return;
+			}
+			Vector2 value = Data.Value;
+			gameObject.transform.parent = key.gameObject.transform;
+			gameObject.transform.localPosition = new Vector3(value.x / 2f, -value.y / 2f, key.gameObject.transform.localPosition.z - 0.1f);
+			key.ExcuteGameObjectDelegate(key, gameObject);
+		}
+
+		public Form GetShowFormOrignal(G_ID ID)
+		{
+			foreach (Form current in this.formList.Values)
+			{
+				if (current.Orignal_ID == ID)
+				{
+					return current;
+				}
+			}
+			return null;
+		}
+
+		public bool IsPopUPDlgNotExist(int exceptionFormID)
+		{
+			if (this.formDepth == null)
+			{
+				return true;
+			}
+			if (this.formDepth.Count <= 0)
+			{
+				return true;
+			}
+			if (this.formList == null || this.formList.Count <= 0)
+			{
+				return true;
+			}
+			foreach (int current in this.formDepth)
+			{
+				if (this.formList.ContainsKey(current))
+				{
+					Form form = this.formList[current];
+					if (form != null)
+					{
+						if (form.WindowID != exceptionFormID)
+						{
+							if (form.ShowSceneType == FormsManager.FORM_TYPE_POPUP)
+							{
+								return false;
+							}
+						}
+					}
+				}
+			}
+			return true;
+		}
+
+		private bool CloseTopMostForm()
+		{
+			for (int i = this.formDepth.Count - 1; i >= 0; i--)
+			{
+				int num = this.formDepth[i];
+				if (!this.formList.ContainsKey(num))
+				{
+					Debug.LogError(string.Format(" formList.ContainsKey(key) = FALSE   KEY={0}  Depth={1}  I={2}", (G_ID)num, this.formDepth[i], i));
+				}
+				else if (this.formList[num].Visible)
+				{
+					if (0 >= (FormsManager.FORM_TYPE_MAIN & this.formList[num].ShowSceneType))
+					{
+						if (this.formList[num].WindowID == 253)
+						{
+							this.formList[num].CloseForm(null);
+							return true;
+						}
+						if (this.panelManager.IsTopMost(this.formList[num].InteractivePanel))
+						{
+							this.formList[num].CloseForm(null);
+							return true;
+						}
+					}
+				}
+			}
+			return false;
 		}
 	}
 }

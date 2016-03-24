@@ -1,6 +1,6 @@
-using GAME;
 using System;
 using System.Collections.Generic;
+using UnityForms;
 
 public class NrDailyGiftManager : NrTSingleton<NrDailyGiftManager>
 {
@@ -61,11 +61,10 @@ public class NrDailyGiftManager : NrTSingleton<NrDailyGiftManager>
 	public void SetDailyAttendNotify()
 	{
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo != null && kMyCharInfo.GetCharDetail(23) == 0L)
+		NoticeIconDlg noticeIconDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MAIN_UI_ICON) as NoticeIconDlg;
+		if (noticeIconDlg != null && kMyCharInfo != null && NrTSingleton<ContentsLimitManager>.Instance.IsAttend())
 		{
-			NoticeIconDlg.SetIcon(ICON_TYPE.ATTEND_REWARD, true);
 			return;
 		}
-		NoticeIconDlg.SetIcon(ICON_TYPE.ATTEND_REWARD, false);
 	}
 }

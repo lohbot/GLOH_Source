@@ -1,3 +1,4 @@
+using GAME;
 using System;
 using TsBundle;
 using UnityEngine;
@@ -143,13 +144,14 @@ public class Battle_Skill_Direction_Dlg : Form
 			Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
 			Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
 			this.m_goSkillDirecting.transform.position = effectUIPos;
+			string costumePortraitPath = this.GetCostumePortraitPath(pkTarget.GetSoldierInfo());
 			if (UIDataManager.IsUse256Texture())
 			{
-				this.faceImageKey = pkTarget.GetCharKindInfo().GetPortraitFile1((int)pkTarget.GetSoldierInfo().GetGrade()) + "_256";
+				this.faceImageKey = pkTarget.GetCharKindInfo().GetPortraitFile1((int)pkTarget.GetSoldierInfo().GetGrade(), costumePortraitPath) + "_256";
 			}
 			else
 			{
-				this.faceImageKey = pkTarget.GetCharKindInfo().GetPortraitFile1((int)pkTarget.GetSoldierInfo().GetGrade()) + "_512";
+				this.faceImageKey = pkTarget.GetCharKindInfo().GetPortraitFile1((int)pkTarget.GetSoldierInfo().GetGrade(), costumePortraitPath) + "_512";
 			}
 			if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.faceImageKey))
 			{
@@ -195,5 +197,15 @@ public class Battle_Skill_Direction_Dlg : Form
 		{
 			this.Close();
 		}
+	}
+
+	private string GetCostumePortraitPath(NkSoldierInfo solInfo)
+	{
+		if (solInfo == null)
+		{
+			return string.Empty;
+		}
+		int costumeUnique = (int)solInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+		return NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(costumeUnique);
 	}
 }

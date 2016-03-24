@@ -19,6 +19,14 @@ public class ReduceMainDlg : Form
 
 	public const int QUALITYLEVEL_MIN = 1001;
 
+	private Label m_lbtitle;
+
+	private Label m_lbSubtitle1;
+
+	private Label m_lbSubtitle2;
+
+	private Label m_lbGold;
+
 	private DrawTexture m_dtSubBG;
 
 	private DrawTexture m_dtSelectItemBG;
@@ -64,6 +72,10 @@ public class ReduceMainDlg : Form
 	private Label m_lbReduce;
 
 	private Label m_lbAgitNPCInfo;
+
+	private Button m_HelpButton;
+
+	private Label m_lbGold2;
 
 	private ReduceMainDlg.eTAB m_eTab;
 
@@ -122,6 +134,10 @@ public class ReduceMainDlg : Form
 	{
 		this.m_btEffectShowHelp = (base.GetControl("Help_Button") as Button);
 		this.m_btEffectShowHelp.Click = new EZValueChangedDelegate(this.BtnShowEffectHelpSol);
+		this.m_lbtitle = (base.GetControl("Label_title") as Label);
+		this.m_lbSubtitle1 = (base.GetControl("Label_subtitle1") as Label);
+		this.m_lbSubtitle2 = (base.GetControl("Label_subtitle2") as Label);
+		this.m_lbGold = (base.GetControl("Label_gold") as Label);
 		this.m_dtSubBG = (base.GetControl("DrawTexture_subbg") as DrawTexture);
 		this.m_dtSubBG.SetTextureFromBundle("UI/Etc/reforge");
 		this.m_dtSelectItemBG = (base.GetControl("DrawTexture_DrawTexture22") as DrawTexture);
@@ -150,17 +166,17 @@ public class ReduceMainDlg : Form
 		this.m_ivNeedItem.clipContents = false;
 		this.m_ivNeedItem.ListDrag = false;
 		this.m_ivNeedItem.AddMouseOutDelegate(new EZValueChangedDelegate(this.On_Mouse_Out));
-		this.m_ivNeedItem.AddMouseOverDelegate(new EZValueChangedDelegate(this.On_Mouse_Over));
+		this.m_ivNeedItem.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_Mouse_Over));
 		this.m_dtMaterial = (base.GetControl("DrawTexture_material") as DrawTexture);
 		this.m_lbNeedItemName = (base.GetControl("Label_text7") as Label);
 		this.m_lbNeedItemName.SetText(string.Empty);
 		this.m_tbTab = (base.GetControl("ToolBar_tab") as Toolbar);
 		this.m_tbTab.Control_Tab[0].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("204");
 		this.m_tbTab.Control_Tab[1].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1490");
-		UIPanelTab expr_30A = this.m_tbTab.Control_Tab[0];
-		expr_30A.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_30A.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
-		UIPanelTab expr_338 = this.m_tbTab.Control_Tab[1];
-		expr_338.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_338.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		UIPanelTab expr_362 = this.m_tbTab.Control_Tab[0];
+		expr_362.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_362.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		UIPanelTab expr_390 = this.m_tbTab.Control_Tab[1];
+		expr_390.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_390.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
 		this.m_dlList = (base.GetControl("DropDownList_DropDownList1") as DropDownList);
 		this.m_dlList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("121"), 1);
 		this.m_dlList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("123"), 0);
@@ -188,7 +204,6 @@ public class ReduceMainDlg : Form
 			this.m_ivSlot[i].ListDrag = false;
 			this.m_ivSlot[i].AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSolItem));
 			this.m_ivSlot[i].AddMouseOutDelegate(new EZValueChangedDelegate(this.On_Mouse_Out));
-			this.m_ivSlot[i].AddMouseOverDelegate(new EZValueChangedDelegate(this.On_Mouse_Over));
 			name = string.Format("DrawTexture_slot{0}", i + 1);
 			this.m_dtSlot[i] = (base.GetControl(name) as DrawTexture);
 			this.m_dtSlot[i].Hide(true);
@@ -199,7 +214,10 @@ public class ReduceMainDlg : Form
 		this.m_btConfirm.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickConfirm));
 		this.m_lbReduce = (base.GetControl("Label_reduce") as Label);
 		this.m_lbReduce.SetText(string.Empty);
+		this.m_HelpButton = (base.GetControl("Help_List") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
 		this.m_lbAgitNPCInfo = (base.GetControl("Label_AgitNPC") as Label);
+		this.m_lbGold2 = (base.GetControl("Label_gold2") as Label);
 		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.IsGuildAgit() && NrTSingleton<NewGuildManager>.Instance.IsAgitNPC(3))
 		{
 			AGIT_NPC_SUB_DATA agitNPCSubDataFromNPCType = NrTSingleton<NewGuildManager>.Instance.GetAgitNPCSubDataFromNPCType(3);
@@ -226,25 +244,129 @@ public class ReduceMainDlg : Form
 		base.ShowBlackBG(0.5f);
 		base.SetScreenCenter();
 		this.HideControl(true);
-		DirectionDLG directionDLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_DIRECTION) as DirectionDLG;
-		if (directionDLG != null)
+	}
+
+	public override void Show()
+	{
+		base.Show();
+		if (base.p_nSelectIndex == 100)
 		{
-			NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
-			if (myCharInfo.GetLevel() > 20)
-			{
-				directionDLG.SetDirection(DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE);
-			}
-			directionDLG.ShowDirection(DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE, 0);
+			base.SetShowLayer(2, false);
+			base.SetShowLayer(4, false);
+			base.SetShowLayer(5, true);
+			this.SetItemRepairShow();
 		}
+		else
+		{
+			base.SetShowLayer(5, false);
+		}
+	}
+
+	public void InitRepairData()
+	{
+		this.m_ivSelectItem.Clear();
+		this.m_lbItemText.Clear();
+		this.m_lbSelectItem.Clear();
+		string text = string.Empty;
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1721"),
+			"gold",
+			0
+		});
+		this.m_lbGold.SetText(text);
+		text = string.Empty;
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo != null)
+		{
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1721"),
+				"gold",
+				ANNUALIZED.Convert(kMyCharInfo.m_Money)
+			});
+		}
+		else
+		{
+			text = "0";
+		}
+		this.m_lbGold2.SetText(text);
+		this.m_lbSelectItem.SetText(string.Empty);
+		this.m_lbReduce.SetText(string.Empty);
+		this.m_SelectItem = null;
+		this.m_nlbItem.Clear();
+		this.ShowInvenItemList();
+	}
+
+	private void SetItemRepairShow()
+	{
+		this.m_lbtitle.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("421"));
+		this.m_lbSubtitle1.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("274"));
+		this.m_lbSubtitle2.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("278"));
+		this.m_tbTab.Control_Tab[1].Visible = false;
+		this.m_dlList.SetVisible(false);
+		this.m_HelpButton.Visible = false;
+		this.m_btEffectShowHelp.Visible = false;
+		this.m_btConfirm.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("275"));
+		this.m_btConfirm.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.ClickConfirm));
+		this.m_btConfirm.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickItemRepairConfirm));
+		this.InitRepairData();
 	}
 
 	private void BtnShowEffectHelpSol(IUIObject obj)
 	{
-		DirectionDLG directionDLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_DIRECTION) as DirectionDLG;
-		if (directionDLG != null)
+	}
+
+	public void ClickItemRepairConfirm(IUIObject obj)
+	{
+		if (this.m_SelectItem == null)
 		{
-			directionDLG.ReviewDirection(DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("552"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return;
 		}
+		int itemQuailtyLevel = NrTSingleton<ItemManager>.Instance.GetItemQuailtyLevel(this.m_SelectItem.m_nItemUnique);
+		int itemSkillLevel = this.m_SelectItem.m_nOption[9];
+		int num = this.m_SelectItem.m_nOption[7];
+		int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_ITEMREPAIR_LIMIT);
+		if (num > value)
+		{
+			return;
+		}
+		ITEMSKILLREINFORCE itemskillReinforceData = NrTSingleton<ITEMSKILLREINFORCE_Manager>.Instance.GetItemskillReinforceData(itemQuailtyLevel, itemSkillLevel);
+		if (itemskillReinforceData == null)
+		{
+			return;
+		}
+		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+		int num2 = 1;
+		if (num != 0)
+		{
+			for (int i = 1; i <= num; i++)
+			{
+				num2 *= 2;
+			}
+		}
+		num++;
+		long num3 = (long)itemskillReinforceData.nRestoreGold * (long)num2;
+		if (num3 > myCharInfo.m_Money)
+		{
+			string empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("213"),
+				"targetname",
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("676")
+			});
+			Main_UI_SystemMessage.ADDMessage(empty);
+			return;
+		}
+		GS_ITEMSKILL_REINFORCE_REQ gS_ITEMSKILL_REINFORCE_REQ = new GS_ITEMSKILL_REINFORCE_REQ();
+		gS_ITEMSKILL_REINFORCE_REQ.RepairType = 1;
+		gS_ITEMSKILL_REINFORCE_REQ.SrcPosType = this.m_SelectItem.m_nPosType;
+		gS_ITEMSKILL_REINFORCE_REQ.SrcItemPos = this.m_SelectItem.m_nItemPos;
+		gS_ITEMSKILL_REINFORCE_REQ.SrcItemUnique = this.m_SelectItem.m_nItemUnique;
+		gS_ITEMSKILL_REINFORCE_REQ.i8UseProtectitem = 0;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_ITEMSKILL_REINFORCE_REQ, gS_ITEMSKILL_REINFORCE_REQ);
 	}
 
 	public void ClickConfirm(IUIObject obj)
@@ -311,7 +433,7 @@ public class ReduceMainDlg : Form
 		{
 			return;
 		}
-		msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKConfirm), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("984"), this.m_strMessage, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKConfirm), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("984"), this.m_strMessage, eMsgType.MB_OK_CANCEL, 2);
 		msgBoxUI.Show();
 	}
 
@@ -347,19 +469,51 @@ public class ReduceMainDlg : Form
 	{
 		this.m_nlbItem.Visible = true;
 		this.m_ItemList.Clear();
-		for (int i = 1; i <= 4; i++)
+		int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_ITEMREPAIR_LIMIT);
+		if (base.p_nSelectIndex == 100)
 		{
-			for (int j = 0; j < ItemDefine.INVENTORY_ITEMSLOT_MAX; j++)
+			for (int i = 1; i <= 4; i++)
 			{
-				ITEM item = NkUserInventory.GetInstance().GetItem(i, j);
-				if (item != null)
+				for (int j = 0; j < ItemDefine.INVENTORY_ITEMSLOT_MAX; j++)
 				{
-					ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(item.m_nItemUnique);
-					if (itemInfo != null)
+					ITEM item = NkUserInventory.GetInstance().GetItem(i, j);
+					if (item != null)
 					{
-						if (1001 < itemInfo.m_nQualityLevel)
+						ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(item.m_nItemUnique);
+						if (itemInfo != null)
 						{
-							this.m_ItemList.Add(item);
+							if (item.m_nDurability <= 0)
+							{
+								int num = item.m_nOption[7];
+								if (num <= value)
+								{
+									if (itemInfo.IsItemATB(131072L) || itemInfo.IsItemATB(524288L))
+									{
+										this.m_ItemList.Add(item);
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			for (int k = 1; k <= 4; k++)
+			{
+				for (int j = 0; j < ItemDefine.INVENTORY_ITEMSLOT_MAX; j++)
+				{
+					ITEM item = NkUserInventory.GetInstance().GetItem(k, j);
+					if (item != null)
+					{
+						ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(item.m_nItemUnique);
+						if (itemInfo != null)
+						{
+							if (1001 < itemInfo.m_nQualityLevel)
+							{
+								this.m_ItemList.Add(item);
+							}
 						}
 					}
 				}
@@ -370,7 +524,7 @@ public class ReduceMainDlg : Form
 			this.m_ItemList.Sort(new Comparison<ITEM>(this.CompareItemLevel));
 			for (int j = 0; j < this.m_ItemList.Count; j++)
 			{
-				NewListItem item2 = new NewListItem(this.m_nlbItem.ColumnNum, true);
+				NewListItem item2 = new NewListItem(this.m_nlbItem.ColumnNum, true, string.Empty);
 				this.SetItemColum(this.m_ItemList[j], j, ref item2);
 				this.m_nlbItem.Add(item2);
 			}
@@ -385,7 +539,7 @@ public class ReduceMainDlg : Form
 
 	public void SetAddItemInfo(ITEM InvenItem, ITEMINFO Iteminfo)
 	{
-		NewListItem newListItem = new NewListItem(this.m_nlbItem.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbItem.ColumnNum, true, string.Empty);
 		this.m_Text.Remove(0, this.m_Text.Length);
 		string rankColorName = NrTSingleton<ItemManager>.Instance.GetRankColorName(InvenItem);
 		newListItem.SetListItemData(0, true);
@@ -662,7 +816,7 @@ public class ReduceMainDlg : Form
 
 	public void SetAddSolInfo(NkSoldierInfo kSolInfo, string strMessage, string strMsg)
 	{
-		NewListItem newListItem = new NewListItem(this.m_nlbSolList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbSolList.ColumnNum, true, string.Empty);
 		this.m_Text.Remove(0, this.m_Text.Length);
 		EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(kSolInfo.GetCharKind(), kSolInfo.GetGrade());
 		if (eventHeroCharCode != null)
@@ -699,12 +853,12 @@ public class ReduceMainDlg : Form
 
 	public void ClickItemList(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbItem.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbItem.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
@@ -713,13 +867,13 @@ public class ReduceMainDlg : Form
 		{
 			if (eTab == ReduceMainDlg.eTAB.eTAB_SOLDER)
 			{
-				NkSoldierInfo kSolInfo = uIListItemContainer.Data as NkSoldierInfo;
+				NkSoldierInfo kSolInfo = selectItem.Data as NkSoldierInfo;
 				this.SelectSolderList(kSolInfo);
 			}
 		}
 		else
 		{
-			ITEM item = uIListItemContainer.Data as ITEM;
+			ITEM item = selectItem.Data as ITEM;
 			this.SelectItemList(item, false, 0L);
 		}
 	}
@@ -747,86 +901,133 @@ public class ReduceMainDlg : Form
 		{
 			return;
 		}
-		if (1001 >= itemInfo.m_nQualityLevel)
+		if (base.p_nSelectIndex == 100)
 		{
-			Main_UI_SystemMessage.ADDMessage(this.m_strQualityLevel, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		this.HideControl(false);
-		ImageSlot slot = new ImageSlot();
-		ReforgeMainDlg.SetImageSlotFromItem(ref slot, Item, 0);
-		this.m_ivSelectItem.Clear();
-		this.m_ivSelectItem.SetImageSlot(0, slot, null, null, null, null);
-		this.m_ivSelectItem.RepositionItems();
-		int rank = Item.m_nOption[2];
-		string rankColorName = NrTSingleton<ItemManager>.Instance.GetRankColorName(Item);
-		this.m_lbSelectItem.SetText(rankColorName);
-		this.m_lbItemText.SetText(string.Empty);
-		this.m_dtSelectItemBG.SetTexture("Win_I_Frame" + ItemManager.ChangeRankToString(rank));
-		bool flag = false;
-		ItemReduceInfo itemReduceInfo = NrTSingleton<NrBaseTableManager>.Instance.GetItemReduceInfo(itemInfo.m_nQualityLevel.ToString());
-		if (itemReduceInfo != null)
-		{
-			int num = itemReduceInfo.iNeedItemNum;
-			if (Item.m_nOption[8] == 0 && 0 < itemReduceInfo.iFirstNum)
+			ImageSlot slot = new ImageSlot();
+			ReforgeMainDlg.SetImageSlotFromItem(ref slot, Item, 0);
+			this.m_ivSelectItem.Clear();
+			this.m_ivSelectItem.SetImageSlot(0, slot, null, null, null, null);
+			this.m_ivSelectItem.RepositionItems();
+			this.m_lbItemText.SetText(string.Empty);
+			string rankColorName = NrTSingleton<ItemManager>.Instance.GetRankColorName(Item);
+			this.m_lbSelectItem.SetText(rankColorName);
+			int itemQuailtyLevel = NrTSingleton<ItemManager>.Instance.GetItemQuailtyLevel(Item.m_nItemUnique);
+			int itemSkillLevel = Item.m_nOption[9];
+			int num = Item.m_nOption[7];
+			ITEMSKILLREINFORCE itemskillReinforceData = NrTSingleton<ITEMSKILLREINFORCE_Manager>.Instance.GetItemskillReinforceData(itemQuailtyLevel, itemSkillLevel);
+			if (itemskillReinforceData != null)
 			{
-				num = itemReduceInfo.iFirstNum;
+				this.m_strMessage = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
 				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2132"),
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2968"),
 					"count",
-					itemReduceInfo.iFirstPoint
+					num
 				});
-			}
-			else
-			{
+				this.m_lbReduce.SetText(this.m_strMessage);
+				int num2 = 1;
+				if (num != 0)
+				{
+					for (int i = 1; i <= num; i++)
+					{
+						num2 *= 2;
+					}
+				}
+				num++;
+				long num3 = (long)itemskillReinforceData.nRestoreGold * (long)num2;
+				this.m_strMessage = string.Empty;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
 				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2133"),
-					"count1",
-					itemReduceInfo.iNormalPoint,
-					"count2",
-					itemReduceInfo.iSpecialPoint
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1721"),
+					"gold",
+					ANNUALIZED.Convert(num3)
 				});
+				this.m_lbGold.SetText(this.m_strMessage);
 			}
-			this.m_lbReduce.SetText(this.m_strMessage);
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("571"),
-				"Count",
-				num
-			});
-			this.m_lbNeedItemNum.SetText(this.m_strMessage);
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("571"),
-				"Count",
-				NkUserInventory.GetInstance().Get_First_ItemCnt(itemReduceInfo.iNeedItemUnique)
-			});
-			this.m_lbCurItemNum.SetText(this.m_strMessage);
-			flag = true;
-			this.m_NeedItem.m_nItemUnique = itemReduceInfo.iNeedItemUnique;
-			this.m_NeedItem.m_nItemNum = num;
-			ImageSlot slot2 = new ImageSlot();
-			ReforgeMainDlg.SetImageSlotFromItem(ref slot2, this.m_NeedItem, 0);
-			this.m_ivNeedItem.Clear();
-			this.m_ivNeedItem.SetImageSlot(0, slot2, new EZDragDropDelegate(this.DragDrop), new EZValueChangedDelegate(this.On_Mouse_Over), new EZValueChangedDelegate(this.On_Mouse_Out), null);
-			this.m_ivNeedItem.RepositionItems();
-			this.m_lbNeedItemName.SetText(NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(itemReduceInfo.iNeedItemUnique));
 		}
 		else
 		{
-			this.m_lbReduce.SetText(string.Empty);
+			if (1001 >= itemInfo.m_nQualityLevel)
+			{
+				Main_UI_SystemMessage.ADDMessage(this.m_strQualityLevel, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return;
+			}
+			this.HideControl(false);
+			ImageSlot slot2 = new ImageSlot();
+			ReforgeMainDlg.SetImageSlotFromItem(ref slot2, Item, 0);
+			this.m_ivSelectItem.Clear();
+			this.m_ivSelectItem.SetImageSlot(0, slot2, null, null, null, null);
+			this.m_ivSelectItem.RepositionItems();
+			int rank = Item.m_nOption[2];
+			string rankColorName2 = NrTSingleton<ItemManager>.Instance.GetRankColorName(Item);
+			this.m_lbSelectItem.SetText(rankColorName2);
+			this.m_lbItemText.SetText(string.Empty);
+			this.m_dtSelectItemBG.SetTexture("Win_I_Frame" + ItemManager.ChangeRankToString(rank));
+			bool flag = false;
+			ItemReduceInfo itemReduceInfo = NrTSingleton<NrBaseTableManager>.Instance.GetItemReduceInfo(itemInfo.m_nQualityLevel.ToString());
+			if (itemReduceInfo != null)
+			{
+				int num4 = itemReduceInfo.iNeedItemNum;
+				if (Item.m_nOption[8] == 0 && 0 < itemReduceInfo.iFirstNum)
+				{
+					num4 = itemReduceInfo.iFirstNum;
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2132"),
+						"count",
+						itemReduceInfo.iFirstPoint
+					});
+				}
+				else
+				{
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2133"),
+						"count1",
+						itemReduceInfo.iNormalPoint,
+						"count2",
+						itemReduceInfo.iSpecialPoint
+					});
+				}
+				this.m_lbReduce.SetText(this.m_strMessage);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("571"),
+					"Count",
+					num4
+				});
+				this.m_lbNeedItemNum.SetText(this.m_strMessage);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strMessage, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("571"),
+					"Count",
+					NkUserInventory.GetInstance().Get_First_ItemCnt(itemReduceInfo.iNeedItemUnique)
+				});
+				this.m_lbCurItemNum.SetText(this.m_strMessage);
+				flag = true;
+				this.m_NeedItem.m_nItemUnique = itemReduceInfo.iNeedItemUnique;
+				this.m_NeedItem.m_nItemNum = num4;
+				ImageSlot slot3 = new ImageSlot();
+				ReforgeMainDlg.SetImageSlotFromItem(ref slot3, this.m_NeedItem, 0);
+				this.m_ivNeedItem.Clear();
+				this.m_ivNeedItem.SetImageSlot(0, slot3, new EZDragDropDelegate(this.DragDrop), new EZValueChangedDelegate(this.On_Mouse_Over), new EZValueChangedDelegate(this.On_Mouse_Out), null);
+				this.m_ivNeedItem.RepositionItems();
+				this.m_lbNeedItemName.SetText(NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(itemReduceInfo.iNeedItemUnique));
+			}
+			else
+			{
+				this.m_lbReduce.SetText(string.Empty);
+			}
+			if (!flag)
+			{
+				this.m_lbNeedItemNum.SetText(string.Empty);
+				this.m_lbCurItemNum.SetText(string.Empty);
+			}
+			this.m_Packet.i64SolID = i64SolID;
+			this.m_Packet.i32ItemUnique = Item.m_nItemUnique;
+			this.m_Packet.i32PosType = Item.m_nPosType;
+			this.m_Packet.i32ItemPos = Item.m_nItemPos;
 		}
-		if (!flag)
-		{
-			this.m_lbNeedItemNum.SetText(string.Empty);
-			this.m_lbCurItemNum.SetText(string.Empty);
-		}
-		this.m_Packet.i64SolID = i64SolID;
-		this.m_Packet.i32ItemUnique = Item.m_nItemUnique;
-		this.m_Packet.i32PosType = Item.m_nPosType;
-		this.m_Packet.i32ItemPos = Item.m_nItemPos;
 		this.m_SelectItem = Item;
 	}
 
@@ -949,22 +1150,22 @@ public class ReduceMainDlg : Form
 		{
 			return;
 		}
-		UIListItemContainer uIListItemContainer = imageView.GetItem(0) as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer item = imageView.GetItem(0);
+		if (null == item)
 		{
 			return;
 		}
-		ImageSlot imageSlot = uIListItemContainer.Data as ImageSlot;
+		ImageSlot imageSlot = item.Data as ImageSlot;
 		if (imageSlot == null)
 		{
 			return;
 		}
-		ITEM item = imageSlot.c_oItem as ITEM;
+		ITEM item2 = imageSlot.c_oItem as ITEM;
 		if (this.m_SelectSol == null)
 		{
 			return;
 		}
-		this.SelectItemList(item, false, this.m_SelectSol.GetSolID());
+		this.SelectItemList(item2, false, this.m_SelectSol.GetSolID());
 	}
 
 	public void MsgBoxOKConfirm(object a_oObject)
@@ -1103,12 +1304,12 @@ public class ReduceMainDlg : Form
 
 	public void ClickSolList(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbSolList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbSolList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
@@ -1117,13 +1318,13 @@ public class ReduceMainDlg : Form
 		{
 			if (eTab == ReduceMainDlg.eTAB.eTAB_SOLDER)
 			{
-				NkSoldierInfo kSolInfo = uIListItemContainer.Data as NkSoldierInfo;
+				NkSoldierInfo kSolInfo = selectItem.Data as NkSoldierInfo;
 				this.SelectSolderList(kSolInfo);
 			}
 		}
 		else
 		{
-			ITEM item = uIListItemContainer.Data as ITEM;
+			ITEM item = selectItem.Data as ITEM;
 			this.SelectItemList(item, false, 0L);
 		}
 	}
@@ -1172,7 +1373,7 @@ public class ReduceMainDlg : Form
 				if (iTEM.m_nItemPos == nItemPos && iTEM.m_nPosType == nItemType)
 				{
 					ITEM item = NkUserInventory.GetInstance().GetItem(nItemType, nItemPos);
-					NewListItem item2 = new NewListItem(this.m_nlbItem.ColumnNum, true);
+					NewListItem item2 = new NewListItem(this.m_nlbItem.ColumnNum, true, string.Empty);
 					this.SetItemColum(item, i, ref item2);
 					this.m_nlbItem.UpdateAdd(i, item2);
 					flag = true;
@@ -1222,6 +1423,15 @@ public class ReduceMainDlg : Form
 			}
 			ITEM pkItem = (ITEM)uIButton.data;
 			Protocol_Item.Item_ShowItemInfo((G_ID)base.WindowID, pkItem, Vector3.zero, null, 0L);
+		}
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null && NrTSingleton<ContentsLimitManager>.Instance.IsItemLevelCheckBlock())
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.Gear_Grinding.ToString());
 		}
 	}
 }

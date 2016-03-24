@@ -1,0 +1,11 @@
+using System;
+
+namespace GAME
+{
+	public enum eGUILDWAR_STATE
+	{
+		eGUILDWAR_STATE_NONE,
+		eGUILDWAR_STATE_WAR,
+		eGUILDWAR_STATE_RESERVATION_CANCEL
+	}
+}

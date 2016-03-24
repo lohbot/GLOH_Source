@@ -1,13 +1,20 @@
 using GAME;
 using Ndoors.Framework.Stage;
+using PROTOCOL;
+using PROTOCOL.GAME;
 using SERVICE;
 using System;
+using System.Text;
 using TsBundle;
 using UnityEngine;
 using UnityForms;
 
 public class System_Option_Dlg : Form
 {
+	private const int MAX_PUSH_BLOCK = 3;
+
+	private const float OPENINGTIME = 10f;
+
 	private static int MAX_OPTION_NUM = 3;
 
 	private Toolbar m_Tap;
@@ -25,6 +32,8 @@ public class System_Option_Dlg : Form
 	private Button m_Save;
 
 	private Button m_AutoQuality;
+
+	private Button m_btBack;
 
 	private HorizontalSlider m_EffectSound;
 
@@ -50,7 +59,13 @@ public class System_Option_Dlg : Form
 
 	private CheckBox m_BuffSkillText;
 
+	private CheckBox[] m_PushBlocks;
+
+	private CheckBox m_cbVibeAlarm;
+
 	private Button m_Credit;
+
+	private Button m_Opening;
 
 	private CheckBox m_HideBookmark;
 
@@ -60,15 +75,13 @@ public class System_Option_Dlg : Form
 
 	private Label m_lbEffect2;
 
+	private float openingPlayTime;
+
+	private bool isOpeningOn;
+
 	private float m_fMaxCameraRotate = 0.6f;
 
 	private float m_fMinCameraRotate = 0.15f;
-
-	private Label tempLabel;
-
-	private DrawTexture m_dtEffectTitle;
-
-	private DrawTexture m_dtEffectBG;
 
 	private float m_fOldBGM;
 
@@ -81,6 +94,26 @@ public class System_Option_Dlg : Form
 	public static bool m_bSaveMode;
 
 	private int tabIndex = 1;
+
+	public bool IsOpeningOn
+	{
+		get
+		{
+			return this.isOpeningOn;
+		}
+		set
+		{
+			this.isOpeningOn = value;
+			if (this.isOpeningOn)
+			{
+				this.openingPlayTime = Time.realtimeSinceStartup;
+			}
+			if (this.m_Opening != null && this.m_Opening.Visible)
+			{
+				this.m_Opening.enabled = !value;
+			}
+		}
+	}
 
 	public override void InitializeComponent()
 	{
@@ -99,14 +132,19 @@ public class System_Option_Dlg : Form
 		{
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("477"),
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("478"),
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3259"),
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("816"),
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("556")
 		};
 		for (int i = 0; i < array.Length; i++)
 		{
 			this.m_Tap.Control_Tab[i].Text = NrTSingleton<UIDataManager>.Instance.GetString(NrTSingleton<CTextParser>.Instance.GetTextColor("1002"), array[i]);
-			UIPanelTab expr_A7 = this.m_Tap.Control_Tab[i];
-			expr_A7.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_A7.ButtonClick, new EZValueChangedDelegate(this.ClickToolBar));
+			UIPanelTab expr_B9 = this.m_Tap.Control_Tab[i];
+			expr_B9.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_B9.ButtonClick, new EZValueChangedDelegate(this.ClickToolBar));
+		}
+		for (int j = array.Length; j < this.m_Tap.Control_Tab.Length; j++)
+		{
+			this.m_Tap.Control_Tab[j].Visible = false;
 		}
 		this.m_Tap.FirstSetting();
 		this.m_Quality[0] = (base.GetControl("Toggle_RadioBtn1") as Toggle);
@@ -139,15 +177,9 @@ public class System_Option_Dlg : Form
 			this.m_lbRating2.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1611"));
 		}
 		this.m_Credit = (base.GetControl("Button_Credit") as Button);
+		this.m_Opening = (base.GetControl("Button_Opening") as Button);
 		this.m_Credit.SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickCredit));
-		if (this.m_Credit != null)
-		{
-			this.m_Credit.Visible = false;
-		}
-		if (this.m_Tap.Control_Tab.Length >= 5 && this.m_Tap.Control_Tab[4] != null)
-		{
-			this.m_Tap.Control_Tab[4].Visible = false;
-		}
+		this.m_Opening.SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickOpening));
 		this.m_EffectSound = (base.GetControl("eftsound_HSlider") as HorizontalSlider);
 		this.m_EffectSound.SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickEffectSound));
 		this.m_BgmSound = (base.GetControl("bgm_HSlider") as HorizontalSlider);
@@ -164,34 +196,25 @@ public class System_Option_Dlg : Form
 		this.m_LocalPush_BattleMatchOpen.SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickLocalPush_BattleMatch));
 		this.m_cbColosseumInvite = (base.GetControl("CheckBox_Colosseum") as CheckBox);
 		this.m_cbColosseumInvite.SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickColosseumInvite));
+		this.m_btBack = (base.GetControl("BT_back") as Button);
+		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBack));
 		this.m_MobileRotate = (base.GetControl("Camera_HSlider") as HorizontalSlider);
 		this.m_Fps = (base.GetControl("HSlider_FPS") as HorizontalSlider);
-		if (PlayerPrefs.GetInt(NrPrefsKey.LOCALPUSH_ACTIVITY, 1) == 0)
-		{
-			this.m_LocalPush_Activity.SetCheckState(0);
-		}
-		else
-		{
-			this.m_LocalPush_Activity.SetCheckState(1);
-		}
-		if (PlayerPrefs.GetInt(NrPrefsKey.LOCALPUSH_INJURYTIME, 0) == 0)
-		{
-			this.m_LocalPush_Injury.SetCheckState(0);
-		}
-		else
-		{
-			this.m_LocalPush_Injury.SetCheckState(1);
-		}
-		if (PlayerPrefs.GetInt(NrPrefsKey.LOCALPUSH_MATCHOPEN, 0) == 0)
-		{
-			this.m_LocalPush_BattleMatchOpen.SetCheckState(0);
-		}
-		else
-		{
-			this.m_LocalPush_BattleMatchOpen.SetCheckState(1);
-		}
-		this.m_dtEffectTitle = (base.GetControl("DrawTexture_SubTitleBG03") as DrawTexture);
-		this.m_dtEffectBG = (base.GetControl("DrawTexture_AreaBg03") as DrawTexture);
+		this.m_PushBlocks = new CheckBox[3];
+		this.m_PushBlocks[0] = (base.GetControl("CheckBox_NoticePush") as CheckBox);
+		this.m_PushBlocks[0].SetCheckState(0);
+		this.m_PushBlocks[0].data = 0;
+		this.m_PushBlocks[0].SetValueChangedDelegate(new EZValueChangedDelegate(this.PushCheckClick));
+		this.m_PushBlocks[1] = (base.GetControl("CheckBox_GuildPush") as CheckBox);
+		this.m_PushBlocks[1].data = 1;
+		this.m_PushBlocks[1].SetCheckState(0);
+		this.m_PushBlocks[1].SetValueChangedDelegate(new EZValueChangedDelegate(this.PushCheckClick));
+		this.m_PushBlocks[2] = (base.GetControl("CheckBox_FriendPush") as CheckBox);
+		this.m_PushBlocks[2].data = 2;
+		this.m_PushBlocks[2].SetCheckState(0);
+		this.m_PushBlocks[2].SetValueChangedDelegate(new EZValueChangedDelegate(this.PushCheckClick));
+		this.m_cbVibeAlarm = (base.GetControl("CheckBox_VibePush") as CheckBox);
+		this.m_cbVibeAlarm.SetCheckState(0);
 		this.SetCameraRotate();
 		this.SetFps();
 		this.m_ReservedWord = (base.GetControl("CheckBox_Slang") as CheckBox);
@@ -233,11 +256,8 @@ public class System_Option_Dlg : Form
 		this.m_HideBookmark = (base.GetControl("CheckBox_HideBookmark") as CheckBox);
 		if (!PlayerPrefs.HasKey(NrPrefsKey.HIDE_BOOKMARK))
 		{
-			PlayerPrefs.SetInt(NrPrefsKey.HIDE_BOOKMARK, 1);
-			if (this.m_HideBookmark != null)
-			{
-				this.m_HideBookmark.SetCheckState(1);
-			}
+			PlayerPrefs.SetInt(NrPrefsKey.HIDE_BOOKMARK, 0);
+			this.m_HideBookmark.SetCheckState(0);
 		}
 		else if (PlayerPrefs.GetInt(NrPrefsKey.HIDE_BOOKMARK) == 0)
 		{
@@ -256,16 +276,16 @@ public class System_Option_Dlg : Form
 		this.m_ckEffect.SetCheckState(NrTSingleton<NrUserDeviceInfo>.Instance.GetHotKey());
 		this.m_ckEffect.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickEffect));
 		base.ShowLayer(1);
-		this.m_ckEffect.Visible = false;
-		this.m_lbEffect1.Visible = false;
-		this.m_lbEffect2.Visible = false;
-		this.m_dtEffectTitle.Visible = false;
-		this.m_dtEffectBG.Visible = false;
 		this.LoadOption();
 		base.SetScreenCenter();
 		if (Scene.CurScene == Scene.Type.WORLD)
 		{
 			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "SYSTEM", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+		}
+		if (Scene.CurScene >= Scene.Type.WORLD)
+		{
+			GS_PUSH_BLOCK_GET_REQ gS_PUSH_BLOCK_GET_REQ = default(GS_PUSH_BLOCK_GET_REQ);
+			SendPacket.GetInstance().SendObject(147, gS_PUSH_BLOCK_GET_REQ);
 		}
 	}
 
@@ -303,6 +323,18 @@ public class System_Option_Dlg : Form
 		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.CREDIT_DLG);
 	}
 
+	private void ClickOpening(IUIObject obj)
+	{
+		if (this.IsOpeningOn)
+		{
+			return;
+		}
+		string str = "intro";
+		string str2 = string.Format("{0}GameDrama/", Option.GetProtocolRootPath(Protocol.HTTP));
+		NmMainFrameWork.PlayMovieURL(str2 + str + ".mp4", true, false, true);
+		this.IsOpeningOn = true;
+	}
+
 	private void ClickEffect(IUIObject obj)
 	{
 		if (this.m_ckEffect.IsChecked())
@@ -312,6 +344,7 @@ public class System_Option_Dlg : Form
 		else
 		{
 			PlayerPrefs.SetInt(NrPrefsKey.HIDE_SOFT_KEY, 0);
+			NrTSingleton<NrUserDeviceInfo>.Instance.SaveHotKey(0);
 		}
 	}
 
@@ -320,10 +353,12 @@ public class System_Option_Dlg : Form
 		if (this.m_ckEffect.IsChecked())
 		{
 			PlayerPrefs.SetInt(NrPrefsKey.HIDE_SOFT_KEY, 1);
+			NrTSingleton<NrUserDeviceInfo>.Instance.SaveHotKey(1);
 		}
 		else
 		{
 			PlayerPrefs.SetInt(NrPrefsKey.HIDE_SOFT_KEY, 0);
+			NrTSingleton<NrUserDeviceInfo>.Instance.SaveHotKey(0);
 		}
 	}
 
@@ -414,9 +449,9 @@ public class System_Option_Dlg : Form
 		}
 		else
 		{
-			this.m_Fps.defaultValue = 1f;
-			this.m_Fps.Value = 1f;
-			this.SaveFps();
+			int num2 = Application.targetFrameRate;
+			this.m_Fps.defaultValue = (float)num2 / (float)num;
+			this.m_Fps.Value = (float)num2 / (float)num;
 		}
 	}
 
@@ -569,7 +604,7 @@ public class System_Option_Dlg : Form
 			{
 				float value;
 				bool flag;
-				if (eAudioType == EAudioType.BGM)
+				if (eAudioType == EAudioType.BGM || eAudioType == EAudioType.BGM_STREAM)
 				{
 					value = this.m_BgmSound.Value;
 					flag = this.m_MuteBgm.IsChecked();
@@ -588,6 +623,11 @@ public class System_Option_Dlg : Form
 		TsAudio.SavePlayerPrefs();
 		this.SaveCameraRotate();
 		this.SaveFps();
+		if (this.tabIndex == 8)
+		{
+			this.SavePushSetting(null);
+		}
+		this.SaveVibeSetting();
 		this.CloseForm(null);
 	}
 
@@ -662,12 +702,15 @@ public class System_Option_Dlg : Form
 			return;
 		}
 		this.tabIndex = uIPanelTab.panel.index + 1;
+		if (this.tabIndex == 6)
+		{
+			this.tabIndex = 8;
+		}
+		if (this.tabIndex == 5)
+		{
+			this.tabIndex = 8;
+		}
 		base.ShowLayer(this.tabIndex);
-		this.m_ckEffect.Visible = false;
-		this.m_lbEffect1.Visible = false;
-		this.m_lbEffect2.Visible = false;
-		this.m_dtEffectTitle.Visible = false;
-		this.m_dtEffectBG.Visible = false;
 	}
 
 	private void LoadOption()
@@ -731,6 +774,7 @@ public class System_Option_Dlg : Form
 		{
 			this.m_MuteBgm.SetCheckState(0);
 		}
+		this.m_cbVibeAlarm.SetCheckState(PlayerPrefs.GetInt(NrPrefsKey.OPTION_VIBE_ON_OFF, 0));
 	}
 
 	private void Graphic_Reset()
@@ -765,9 +809,9 @@ public class System_Option_Dlg : Form
 
 	private void Set_Sound()
 	{
-		for (int i = 0; i < 8; i++)
+		for (int i = 0; i < 10; i++)
 		{
-			if (i == 1)
+			if (i == 1 || i == 9)
 			{
 				if (this.m_MuteBgm.IsChecked())
 				{
@@ -838,5 +882,146 @@ public class System_Option_Dlg : Form
 			this.m_fOldSFX = this.m_EffectSound.Value;
 			this.Set_Sound();
 		}
+		if (this.IsOpeningOn && Time.realtimeSinceStartup - this.openingPlayTime >= 10f)
+		{
+			this.IsOpeningOn = false;
+		}
+	}
+
+	public void OnClickBack(object a_oObject)
+	{
+		this.Close();
+		NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.MAINMENU_DLG);
+	}
+
+	public void SetPushSetting(byte Notice, byte Friend, byte Guild, bool bNotice = false)
+	{
+		bool[] array = new bool[3];
+		bool flag = false;
+		array[0] = this.PushCheckBoxSetting(this.m_PushBlocks[0], Notice, 0, bNotice);
+		array[1] = this.PushCheckBoxSetting(this.m_PushBlocks[1], Friend, 1, bNotice);
+		array[2] = this.PushCheckBoxSetting(this.m_PushBlocks[2], Guild, 2, bNotice);
+		for (int i = 0; i < 3; i++)
+		{
+			if (array[i])
+			{
+				flag = true;
+				break;
+			}
+		}
+		if (bNotice && flag)
+		{
+			Debug.Log("Show MsgBox!!!");
+			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+			if (msgBoxUI != null)
+			{
+				StringBuilder stringBuilder = new StringBuilder();
+				string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("94");
+				string empty = string.Empty;
+				DateTime dueDate = PublicMethod.GetDueDate(PublicMethod.GetCurTime());
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("362"),
+					"time",
+					dueDate.ToString()
+				});
+				stringBuilder.Append(empty);
+				stringBuilder.Append("\n");
+				for (int j = 0; j < 3; j++)
+				{
+					if (array[j])
+					{
+						if (this.GetPushCheckSetting(this.m_PushBlocks[j]) == 0)
+						{
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+							{
+								NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("364"),
+								"target",
+								NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface((3388 + j).ToString())
+							});
+						}
+						else
+						{
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+							{
+								NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("363"),
+								"target",
+								NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface((3388 + j).ToString())
+							});
+						}
+						stringBuilder.Append(empty);
+						stringBuilder.Append("\n");
+					}
+				}
+				Debug.Log("ShowMsg : " + stringBuilder.ToString());
+				msgBoxUI.SetMsg(null, null, textFromMessageBox, stringBuilder.ToString(), eMsgType.MB_OK, 2);
+				msgBoxUI.Show();
+			}
+		}
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo != null)
+		{
+			for (int k = 0; k < 3; k++)
+			{
+				kMyCharInfo.PushBlock[k] = this.GetPushCheckSetting(this.m_PushBlocks[k]);
+			}
+		}
+	}
+
+	private void SavePushSetting(IUIObject obj)
+	{
+		GS_PUSH_BLOCK_SET_REQ gS_PUSH_BLOCK_SET_REQ = default(GS_PUSH_BLOCK_SET_REQ);
+		gS_PUSH_BLOCK_SET_REQ.byNotice = this.GetPushCheckSetting(this.m_PushBlocks[0]);
+		gS_PUSH_BLOCK_SET_REQ.byFriend = this.GetPushCheckSetting(this.m_PushBlocks[1]);
+		gS_PUSH_BLOCK_SET_REQ.byGuild = this.GetPushCheckSetting(this.m_PushBlocks[2]);
+		SendPacket.GetInstance().SendObject(149, gS_PUSH_BLOCK_SET_REQ);
+	}
+
+	private byte GetPushCheckSetting(CheckBox pCkBox)
+	{
+		if (pCkBox.IsChecked())
+		{
+			return 0;
+		}
+		return 1;
+	}
+
+	private bool PushCheckBoxSetting(CheckBox pCkBox, byte bActive, int index, bool Notice = false)
+	{
+		byte pushCheckValue = this.GetPushCheckValue(bActive);
+		if (Notice && this.GetPushSaveDataValue(index) == bActive)
+		{
+			return false;
+		}
+		pCkBox.SetCheckState((int)pushCheckValue);
+		return true;
+	}
+
+	private byte GetPushCheckValue(byte bActive)
+	{
+		if (bActive == 0)
+		{
+			return 1;
+		}
+		return 0;
+	}
+
+	private byte GetPushSaveDataValue(int index)
+	{
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo != null)
+		{
+			return kMyCharInfo.PushBlock[index];
+		}
+		return 0;
+	}
+
+	private void SaveVibeSetting()
+	{
+		PlayerPrefs.SetInt(NrPrefsKey.OPTION_VIBE_ON_OFF, (!this.m_cbVibeAlarm.IsChecked()) ? 0 : 1);
+	}
+
+	public void PushCheckClick(IUIObject obj)
+	{
 	}
 }

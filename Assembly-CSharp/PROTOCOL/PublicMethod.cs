@@ -20,7 +20,8 @@ namespace PROTOCOL
 
 		public static DateTime GetDueDate(long _time)
 		{
-			DateTime result = new DateTime(1970, 1, 1, 9, 0, 0);
+			DateTime result = new DateTime(1970, 1, 1, 0, 0, 0);
+			result = result.AddHours(-8.0);
 			result = result.AddSeconds((double)_time);
 			return result;
 		}
@@ -156,6 +157,12 @@ namespace PROTOCOL
 		{
 			long diffSecond = PublicMethod.GetDiffSecond(beforeSec);
 			return (int)(diffSecond / 60L);
+		}
+
+		public static int GetDayOfWeek()
+		{
+			DateTime dateTime = default(DateTime);
+			return (int)DateTime.Now.DayOfWeek;
 		}
 
 		public static string PassTime(long _time)

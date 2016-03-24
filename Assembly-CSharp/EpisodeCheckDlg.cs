@@ -21,6 +21,8 @@ public class EpisodeCheckDlg : Form
 
 	private Button m_Start;
 
+	private Button m_btClose;
+
 	private Adventure.AdventureInfo m_CurrentAdventureInfo;
 
 	private CQuest m_CurrentQuest;
@@ -73,6 +75,8 @@ public class EpisodeCheckDlg : Form
 		this.m_Image = (base.GetControl("DrawTexture_NPCFace") as DrawTexture);
 		this.m_Start = (base.GetControl("Button_StartBTN") as Button);
 		this.m_Start.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickStart));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		base.SetScreenCenter();
 		this.m_BackImage.SetTextureFromBundle("UI/Adventure/EpisodeBG");
 	}
@@ -160,6 +164,10 @@ public class EpisodeCheckDlg : Form
 				SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_CHAR_FINDPATH_REQ, gS_CHAR_FINDPATH_REQ);
 				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "QUEST", "AUTOMOVE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 			}
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ADVENTURECOLLECT_DLG))
+			{
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ADVENTURECOLLECT_DLG);
+			}
 			base.CloseForm(null);
 			NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ADVENTURE_DLG).CloseForm(null);
 		}
@@ -193,7 +201,7 @@ public class EpisodeCheckDlg : Form
 					"mapname",
 					mapName
 				});
-				msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"));
 				msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 				this.m_nAutoMoveMapIndex = num;
@@ -245,7 +253,7 @@ public class EpisodeCheckDlg : Form
 			{
 				return;
 			}
-			this.m_Image.SetTexture(eCharImageType.LARGE, nrCharKindInfo.GetCharKind(), -1);
+			this.m_Image.SetTexture(eCharImageType.LARGE, nrCharKindInfo.GetCharKind(), -1, string.Empty);
 		}
 		else
 		{
@@ -254,7 +262,7 @@ public class EpisodeCheckDlg : Form
 			{
 				return;
 			}
-			this.m_Image.SetTexture(eCharImageType.LARGE, nrCharKindInfo.GetCharKind(), -1);
+			this.m_Image.SetTexture(eCharImageType.LARGE, nrCharKindInfo.GetCharKind(), -1, string.Empty);
 		}
 		empty = string.Empty;
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
@@ -264,7 +272,6 @@ public class EpisodeCheckDlg : Form
 			nrCharKindInfo.GetName()
 		});
 		this.m_Start.Text = empty;
-		NrTSingleton<EventConditionHandler>.Instance.OpenUI.OnTrigger();
 	}
 
 	private void MapWarp(object obj)
@@ -272,6 +279,10 @@ public class EpisodeCheckDlg : Form
 		NrTSingleton<NkClientLogic>.Instance.SetWarp(true, this.m_nAutoMoveGateIndex, this.m_nAutoMoveMapIndex);
 		base.CloseForm(null);
 		NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ADVENTURE_DLG).CloseForm(null);
+		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ADVENTURECOLLECT_DLG))
+		{
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ADVENTURECOLLECT_DLG);
+		}
 	}
 
 	public override void OnClose()

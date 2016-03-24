@@ -23,6 +23,8 @@ public class StageNPatchLauncher : AStage
 
 	private string m_strWebPath = string.Empty;
 
+	private bool bPatchEnd;
+
 	private Mobile_PreDownloadDlg PreDownloadDlg;
 
 	private float fTime;
@@ -83,7 +85,7 @@ public class StageNPatchLauncher : AStage
 			}));
 			if (TsPlatform.IsAndroid)
 			{
-				NrTSingleton<NrMainSystem>.Instance.QuitGame();
+				NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 			}
 			else if (TsPlatform.IsIPhone)
 			{
@@ -96,7 +98,7 @@ public class StageNPatchLauncher : AStage
 		}
 		string text2 = string.Format("http://{0}", NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceAreaInfo().szOriginalDataCDNPath);
 		UnityEngine.Debug.LogError("======================== WebPath url : " + text2);
-		NPatchLauncherBehaviour.PatchStart(this.m_strLocalFilePath, text2, new NPatchLauncherHandler_forInGame(), num, false);
+		NPatchLauncherBehaviour.PatchStart(this.m_strLocalFilePath, text2, new NPatchLauncherHandler_forInGame(), false, num, false, string.Empty);
 		if (this.PreDownloadDlg != null)
 		{
 			this.PreDownloadDlg.SetText("Check File...");
@@ -105,6 +107,15 @@ public class StageNPatchLauncher : AStage
 		base.StartTaskSerial(CommonTasks.InitializeChangeScene());
 		base.StartTaskPararell(this._PatchWorkflow());
 		base.StartTaskSerial(CommonTasks.FinalizeChangeScene(true));
+		this.bPatchEnd = false;
+		if (!Launcher.Instance.IsFullPatchLevel)
+		{
+			NrTSingleton<MATEventManager>.Instance.MeasureEvent("Content DL Start");
+		}
+		else
+		{
+			NrTSingleton<MATEventManager>.Instance.MeasureEvent("Add Content DL start");
+		}
 	}
 
 	public override void OnExit()
@@ -121,13 +132,13 @@ public class StageNPatchLauncher : AStage
 
 	private void _OnMessageBoxOk(IntroMsgBoxDlg a_cthis, object a_oObject)
 	{
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 		TsLog.LogError("StageNPatch - Reset", new object[0]);
 	}
 
 	private void Exit(IntroMsgBoxDlg a_cthis, object a_oObject)
 	{
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 
 	protected override void OnUpdateAfterStagePrework()
@@ -139,6 +150,18 @@ public class StageNPatchLauncher : AStage
 				if ((int)Launcher.Instance._status.totalSize > 0)
 				{
 					FacadeHandler.EndNPATCHDownLoad(true);
+					if (!this.bPatchEnd)
+					{
+						if (!Launcher.Instance.IsFullPatchLevel)
+						{
+							NrTSingleton<MATEventManager>.Instance.MeasureEvent("Content DL end");
+						}
+						else
+						{
+							NrTSingleton<MATEventManager>.Instance.MeasureEvent("Add Content DL end");
+						}
+					}
+					this.bPatchEnd = true;
 				}
 				else
 				{
@@ -158,23 +181,23 @@ public class StageNPatchLauncher : AStage
 		{
 			float num = 0f;
 			this.PreDownloadDlg.SetTotalProgress(0f, 0f, string.Empty);
-			int num2 = (int)Launcher.Instance._status.totalSize;
-			int num3 = (int)Launcher.Instance._status.totalProcessedSize;
+			long num2 = Launcher.Instance._status.totalSize;
+			long num3 = Launcher.Instance._status.totalProcessedSize;
 			string taskStatus = Launcher.Instance._status.taskStatus;
-			if (num2 == 0 || num3 == 0)
+			if (num2 == 0L || num3 == 0L)
 			{
 			}
-			num3 = (int)Launcher.Instance._status.taskProcessedSize;
-			num2 = (int)Launcher.Instance._status.taskSize;
+			num3 = Launcher.Instance._status.taskProcessedSize;
+			num2 = Launcher.Instance._status.taskSize;
 			float num4 = (float)num3 / (float)num2;
 			if (Launcher.Instance._status.fullPackCount * 2 > Launcher.Instance._status.totalTaskProcessedCount)
 			{
 				int fullPackCount = Launcher.Instance._status.fullPackCount;
 				float num5 = 1f / (float)fullPackCount;
-				if (Launcher.Instance._status.taskType == TASKTYPE.DOWNLOADPACK)
+				if (Launcher.Instance._status.taskType == TASKTYPE.DOWNLOAD)
 				{
-					num3 = Launcher.Instance._status.totalTaskProcessedCount;
-					num2 = Launcher.Instance._status.fullPackCount;
+					num3 = (long)Launcher.Instance._status.totalTaskProcessedCount;
+					num2 = (long)Launcher.Instance._status.fullPackCount;
 					if (Launcher.Instance._status.totalTaskProcessedCount <= 0)
 					{
 						num = num4 * num5 * 0.8f;
@@ -203,8 +226,8 @@ public class StageNPatchLauncher : AStage
 			}
 			else
 			{
-				num2 = Launcher.Instance._status.totalTaskCount - Launcher.Instance._status.fullPackCount * 2;
-				num3 = Launcher.Instance._status.totalTaskProcessedCount - Launcher.Instance._status.fullPackCount * 2;
+				num2 = (long)(Launcher.Instance._status.totalTaskCount - Launcher.Instance._status.fullPackCount * 2);
+				num3 = (long)(Launcher.Instance._status.totalTaskProcessedCount - Launcher.Instance._status.fullPackCount * 2);
 				num = (float)num3 / (float)num2 * 0.1f + 0.9f;
 				if (num > 1f)
 				{
@@ -229,7 +252,7 @@ public class StageNPatchLauncher : AStage
 	[DebuggerHidden]
 	private IEnumerator _PatchWorkflow()
 	{
-		return new StageNPatchLauncher.<_PatchWorkflow>c__Iterator3C();
+		return new StageNPatchLauncher.<_PatchWorkflow>c__Iterator3F();
 	}
 
 	public void SetPlatformPath()

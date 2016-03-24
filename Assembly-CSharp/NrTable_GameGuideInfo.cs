@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_GameGuideInfo : NrTableBase
 {
-	public NrTable_GameGuideInfo() : base(CDefinePath.GAMEGUIDE_INFO_URL, true)
+	public NrTable_GameGuideInfo() : base(CDefinePath.GAMEGUIDE_INFO_URL)
 	{
 	}
 

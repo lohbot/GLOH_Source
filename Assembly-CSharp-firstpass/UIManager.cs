@@ -381,8 +381,22 @@ public class UIManager : NrTSingleton<UIManager>
 				{
 					if (!Application.isEditor)
 					{
-						this.iKeyboard = TsPlatform.TouchScreenKeyboard.Open(this.controlText, this.kbInfo.type, this.kbInfo.autoCorrect, this.kbInfo.multiline, this.kbInfo.secure, this.kbInfo.alert, this.controlText);
-						this.iKeyboard.text = this.controlText;
+						if (TsPlatform.IsIPhone)
+						{
+							if (this.kbInfo.secure)
+							{
+								TsPlatform.Operator.ShowIMEKeyboard(string.Empty, string.Empty, true);
+							}
+							else
+							{
+								TsPlatform.Operator.ShowIMEKeyboard(string.Empty, this.controlText, false);
+							}
+						}
+						else
+						{
+							this.iKeyboard = TsPlatform.TouchScreenKeyboard.Open(this.controlText, this.kbInfo.type, this.kbInfo.autoCorrect, this.kbInfo.multiline, this.kbInfo.secure, this.kbInfo.alert, this.controlText);
+							this.iKeyboard.text = this.controlText;
+						}
 						this.m_bMobileKeyboard = true;
 					}
 				}
@@ -472,7 +486,7 @@ public class UIManager : NrTSingleton<UIManager>
 		}
 		if (TsPlatform.IsMobile)
 		{
-			if (TsPlatform.IsEditor)
+			if (TsPlatform.IsEditor || TsPlatform.IsAndroid)
 			{
 				this.pointerType = UIManager.POINTER_TYPE.MOUSE;
 			}

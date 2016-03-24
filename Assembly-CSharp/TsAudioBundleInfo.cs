@@ -271,13 +271,25 @@ public class TsAudioBundleInfo
 		}
 		if (!this.m_bMuteAudio)
 		{
-			string text = this.DownloadPath;
-			if (TsAudioContainer.PatchCombine && TsPlatform.IsMobile)
+			string text = string.Empty;
+			if (requestData.baseData.AudioType == EAudioType.BGM_STREAM)
 			{
-				text = text.Replace(TsAudioBundleInfo.Ext, string.Empty) + "_mobile" + TsAudioBundleInfo.Ext;
+				text = this.m_assetPathOfAudioClip.Replace("Assets/", string.Empty);
+				text = text.Replace("wav", "mp3");
+			}
+			else
+			{
+				text = string.Format("{0}_mobile{1}", this.DownloadPath.Replace(TsAudioBundleInfo.Ext, string.Empty), TsAudioBundleInfo.Ext);
 			}
 			WWWItem wWWItem = Holder.TryGetOrCreateBundle(text, stackName);
-			wWWItem.SetItemType(ItemType.AUDIO);
+			if (requestData.baseData.AudioType == EAudioType.BGM_STREAM)
+			{
+				wWWItem.SetItemType(ItemType.USER_AUDIO);
+			}
+			else
+			{
+				wWWItem.SetItemType(ItemType.AUDIO);
+			}
 			wWWItem.SetCallback(onEvent, requestData);
 			wWWItem.SetLoadAll(true);
 			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, unloadAfterPostProcess);

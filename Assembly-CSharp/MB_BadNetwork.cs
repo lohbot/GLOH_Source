@@ -11,6 +11,6 @@ internal class MB_BadNetwork : MessageBox
 
 	public override void OnOK()
 	{
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 }

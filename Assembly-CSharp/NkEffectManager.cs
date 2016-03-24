@@ -503,6 +503,28 @@ public class NkEffectManager : NrTSingleton<NkEffectManager>
 		}
 	}
 
+	public void DeleteEffectFromKindAndTarget(string szEffectKind, string effectTarget)
+	{
+		List<uint> list = new List<uint>();
+		foreach (KeyValuePair<uint, NkEffectUnit> current in this.m_kEffectList)
+		{
+			if (!(current.Value.EffectKind != szEffectKind))
+			{
+				if (!(current.Value.m_goParent == null))
+				{
+					if (current.Value.m_goParent.name.Contains(effectTarget))
+					{
+						list.Add(current.Key);
+					}
+				}
+			}
+		}
+		foreach (uint current2 in list)
+		{
+			this.DeleteEffect(current2);
+		}
+	}
+
 	public void DeleteEffect(GameObject ParentTarget)
 	{
 		if (ParentTarget == null)

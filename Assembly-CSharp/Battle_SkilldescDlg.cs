@@ -20,7 +20,7 @@ public class Battle_SkilldescDlg : Form
 
 	private NewListBox m_nlDeadSolList;
 
-	private string[] m_nCheckBuffIconCode = new string[122];
+	private string[] m_nCheckBuffIconCode = new string[139];
 
 	private int[] m_nCheckBattleSkillUnique;
 
@@ -90,7 +90,7 @@ public class Battle_SkilldescDlg : Form
 
 	public void InitBuffIconUnique()
 	{
-		for (int i = 0; i < 122; i++)
+		for (int i = 0; i < 139; i++)
 		{
 			this.m_nCheckBuffIconCode[i] = string.Empty;
 		}
@@ -106,7 +106,7 @@ public class Battle_SkilldescDlg : Form
 
 	public bool CheckBuffIconUnique(string nBuffIconCode)
 	{
-		for (int i = 0; i < 122; i++)
+		for (int i = 0; i < 139; i++)
 		{
 			if (this.m_nCheckBuffIconCode[i] == nBuffIconCode)
 			{
@@ -130,7 +130,7 @@ public class Battle_SkilldescDlg : Form
 
 	public void SetBuffIconUnique(string nBuffIconCode)
 	{
-		for (int i = 0; i < 122; i++)
+		for (int i = 0; i < 139; i++)
 		{
 			if (this.m_nCheckBuffIconCode[i] == string.Empty)
 			{
@@ -247,6 +247,10 @@ public class Battle_SkilldescDlg : Form
 		{
 			return;
 		}
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+		{
+			return;
+		}
 		BATTLE_CONSTANT_Manager instance = BATTLE_CONSTANT_Manager.GetInstance();
 		if (instance == null)
 		{
@@ -275,7 +279,7 @@ public class Battle_SkilldescDlg : Form
 		{
 			this.m_nlDeadSolList.RemoveItem(0, true);
 		}
-		NewListItem newListItem = new NewListItem(this.m_nlDeadSolList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlDeadSolList.ColumnNum, true, string.Empty);
 		newListItem.Data = soldierInfoFromSolID.GetSolID();
 		NkListSolInfo nkListSolInfo = new NkListSolInfo();
 		nkListSolInfo.SolCharKind = soldierInfoFromSolID.GetCharKind();
@@ -283,6 +287,7 @@ public class Battle_SkilldescDlg : Form
 		nkListSolInfo.SolLevel = soldierInfoFromSolID.GetLevel();
 		nkListSolInfo.FightPower = soldierInfoFromSolID.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_FIGHTINGPOWER);
 		nkListSolInfo.ShowLevel = false;
+		nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(soldierInfoFromSolID);
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(soldierInfoFromSolID.GetCharKind());
 		if (charKindInfo != null)
 		{
@@ -312,11 +317,11 @@ public class Battle_SkilldescDlg : Form
 		{
 			return;
 		}
-		int num = 0;
+		long num = 0L;
 		charSpend charSpend = NrTSingleton<NrBaseTableManager>.Instance.GetCharSpend(nkSoldierInfo.GetLevel().ToString());
 		if (charSpend != null)
 		{
-			num = (int)charSpend.iResurrection_spend;
+			num = charSpend.iResurrection_spend;
 		}
 		string empty = string.Empty;
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
@@ -328,7 +333,7 @@ public class Battle_SkilldescDlg : Form
 			num.ToString()
 		});
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnReviveCharOk), nkSoldierInfo, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("174"), empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnReviveCharOk), nkSoldierInfo, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("174"), empty, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnReviveCharOk(object a_oObject)
@@ -338,16 +343,15 @@ public class Battle_SkilldescDlg : Form
 		{
 			return;
 		}
-		int num = NkUserInventory.GetInstance().Get_First_ItemCnt(70000);
-		int num2 = 0;
+		long num = 0L;
 		charSpend charSpend = NrTSingleton<NrBaseTableManager>.Instance.GetCharSpend(nkSoldierInfo.GetLevel().ToString());
 		if (charSpend != null)
 		{
-			num2 = (int)charSpend.iResurrection_spend;
+			num = charSpend.iResurrection_spend;
 		}
-		if (num2 > num)
+		if (num > NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money)
 		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("273"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("89"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 			return;
 		}
 		long solID = nkSoldierInfo.GetSolID();

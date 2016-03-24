@@ -47,7 +47,7 @@ public class PlunderAgreeDlg : Form
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 		if (msgBoxUI != null)
 		{
-			msgBoxUI.SetMsg(new YesDelegate(this.OnAgreeOK), null, textFromInterface, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("38"), eMsgType.MB_OK);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnAgreeOK), null, textFromInterface, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("38"), eMsgType.MB_OK, 2);
 		}
 	}
 

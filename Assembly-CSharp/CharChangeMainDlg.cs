@@ -1,3 +1,4 @@
+using GAME;
 using Ndoors.Memory;
 using PROTOCOL;
 using PROTOCOL.GAME;
@@ -27,6 +28,8 @@ public class CharChangeMainDlg : Form
 	private Button m_btChange;
 
 	private DrawTexture m_dtSelect;
+
+	private Button m_HelpButton;
 
 	private E_CHAR_TRIBE m_eCharTribe;
 
@@ -96,6 +99,8 @@ public class CharChangeMainDlg : Form
 			this.m_lNeedMoney = charSpend.lCharChangeGold;
 		}
 		this.m_lbMoney.SetText(ANNUALIZED.Convert(this.m_lNeedMoney));
+		this.m_HelpButton = (base.GetControl("Help_Button") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
 		this.m_btChange = (base.GetControl("BT_Change") as Button);
 		this.m_btChange.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickChange));
 		text = string.Format("UI/charselect/ChaSelect_BG" + NrTSingleton<UIDataManager>.Instance.AddFilePath, new object[0]);
@@ -292,7 +297,7 @@ public class CharChangeMainDlg : Form
 		{
 			return;
 		}
-		msgBoxUI.SetMsg(new YesDelegate(CharChangeMainDlg.MessageBoxEquipItem), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("951"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("91"), eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(CharChangeMainDlg.MessageBoxEquipItem), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("951"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("91"), eMsgType.MB_OK_CANCEL, 2);
 		msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("980"));
 		msgBoxUI.Show();
 	}
@@ -388,7 +393,7 @@ public class CharChangeMainDlg : Form
 			"targetname",
 			CharChangeMainDlg.GetClassName(eCharTribe)
 		});
-		msgBoxUI.SetMsg(new YesDelegate(CharChangeMainDlg.MessageBoxClassChangeOK), eCharTribe, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("951"), empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(CharChangeMainDlg.MessageBoxClassChangeOK), eCharTribe, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("951"), empty, eMsgType.MB_OK_CANCEL, 2);
 		msgBoxUI.Show();
 	}
 
@@ -547,5 +552,14 @@ public class CharChangeMainDlg : Form
 			this.m_btDetail[i].SetEnabled(bEnable);
 		}
 		this.m_btChange.SetEnabled(bEnable);
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.Hero_Change.ToString());
+		}
 	}
 }

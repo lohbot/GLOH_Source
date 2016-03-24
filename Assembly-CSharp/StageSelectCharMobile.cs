@@ -30,6 +30,7 @@ public class StageSelectCharMobile : AStage
 		NrLoadPageScreen.StepUpMain(1);
 		NrLoadPageScreen.ShowHideLoadingImg(true);
 		NrTSingleton<NkClientLogic>.Instance.SetLoginGameServer(false);
+		UnityEngine.Debug.LogWarning("========== StageSelectCharMobile : SetLoginGameServer false ----- ");
 	}
 
 	public override void OnEnter()
@@ -44,7 +45,7 @@ public class StageSelectCharMobile : AStage
 		this._InitSubStages();
 		TsSceneSwitcher.Instance.ClearAllScene();
 		CommonTasks.ClearAssetBundleResources(true);
-		this.scenePath = string.Format("Map/fx_charactercreate_mobile{0}", Option.extAsset);
+		this.scenePath = string.Format("map/fx_charactercreate_mobile{0}", Option.extAsset);
 		base.StartTaskSerial(CommonTasks.InitializeChangeScene());
 		base.StartTaskSerial(CommonTasks.LoadEmptyMainScene());
 		base.StartTaskSerial(CommonTasks.LoadLevelSubScene(this.scenePath, Option.defaultStackName));
@@ -73,6 +74,7 @@ public class StageSelectCharMobile : AStage
 		}
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SELECTCHAR_DLG);
 		NrTSingleton<NkClientLogic>.Instance.SetLoginGameServer(true);
+		UnityEngine.Debug.LogWarning("========== StageSelectCharMobile : SetLoginGameServer true ----- ");
 	}
 
 	protected override void OnUpdateAfterStagePrework()
@@ -86,7 +88,7 @@ public class StageSelectCharMobile : AStage
 	[DebuggerHidden]
 	private IEnumerator _LoginCheck()
 	{
-		StageSelectCharMobile.<_LoginCheck>c__Iterator46 <_LoginCheck>c__Iterator = new StageSelectCharMobile.<_LoginCheck>c__Iterator46();
+		StageSelectCharMobile.<_LoginCheck>c__Iterator49 <_LoginCheck>c__Iterator = new StageSelectCharMobile.<_LoginCheck>c__Iterator49();
 		<_LoginCheck>c__Iterator.<>f__this = this;
 		return <_LoginCheck>c__Iterator;
 	}
@@ -101,15 +103,15 @@ public class StageSelectCharMobile : AStage
 	[DebuggerHidden]
 	private IEnumerator _MoveSubStageSelect()
 	{
-		StageSelectCharMobile.<_MoveSubStageSelect>c__Iterator47 <_MoveSubStageSelect>c__Iterator = new StageSelectCharMobile.<_MoveSubStageSelect>c__Iterator47();
-		<_MoveSubStageSelect>c__Iterator.<>f__this = this;
-		return <_MoveSubStageSelect>c__Iterator;
+		StageSelectCharMobile.<_MoveSubStageSelect>c__Iterator4A <_MoveSubStageSelect>c__Iterator4A = new StageSelectCharMobile.<_MoveSubStageSelect>c__Iterator4A();
+		<_MoveSubStageSelect>c__Iterator4A.<>f__this = this;
+		return <_MoveSubStageSelect>c__Iterator4A;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _PostProcessSelectCharScene()
 	{
-		return new StageSelectCharMobile.<_PostProcessSelectCharScene>c__Iterator48();
+		return new StageSelectCharMobile.<_PostProcessSelectCharScene>c__Iterator4B();
 	}
 
 	protected void MoveSubStage(Type kType)

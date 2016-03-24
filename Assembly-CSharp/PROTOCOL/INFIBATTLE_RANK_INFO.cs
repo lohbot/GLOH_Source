@@ -13,5 +13,9 @@ namespace PROTOCOL
 		public short i16Level;
 
 		public int i32StraightWin;
+
+		public int i32BattleTotalCount;
+
+		public int i32BattleWinCount;
 	}
 }

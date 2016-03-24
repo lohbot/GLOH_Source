@@ -409,17 +409,17 @@ public class NrCharKindInfoManager : NrTSingleton<NrCharKindInfoManager>
 
 	public UIBaseInfoLoader GetLegendFrame(int kind, int solgrade)
 	{
-		short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(kind, solgrade);
-		if (0 < legendType)
+		if (solgrade < 0 || solgrade >= 15)
 		{
-			if (legendType == 1)
-			{
-				return NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_LegendFrame");
-			}
-			if (legendType == 2)
-			{
-				return NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_MythFrame");
-			}
+			return null;
+		}
+		if (solgrade > 5 && solgrade < 10)
+		{
+			return NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_LegendFrame");
+		}
+		if (solgrade > 9)
+		{
+			return NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Win_I_MythFrame");
 		}
 		return null;
 	}
@@ -465,19 +465,19 @@ public class NrCharKindInfoManager : NrTSingleton<NrCharKindInfoManager>
 		eLEGENDTYPE legendType = (eLEGENDTYPE)charKindInfo.GetLegendType(solgrade);
 		if (legendType == eLEGENDTYPE.LEGEND || legendType == eLEGENDTYPE.MYTHOLOGY)
 		{
-			if (solgrade == 6)
+			if (solgrade == 10 || solgrade == 6)
 			{
 				key = "Win_I_LankOrbA";
 			}
-			else if (solgrade == 7)
+			else if (solgrade == 11 || solgrade == 7)
 			{
 				key = "Win_I_LankOrbS";
 			}
-			else if (solgrade == 8)
+			else if (solgrade == 12 || solgrade == 8)
 			{
 				key = "Win_I_LankOrbSS";
 			}
-			else if (solgrade == 9)
+			else if (solgrade == 13 || solgrade == 9)
 			{
 				key = "Win_I_LankOrbEX";
 			}
@@ -492,49 +492,41 @@ public class NrCharKindInfoManager : NrTSingleton<NrCharKindInfoManager>
 	public UIBaseInfoLoader GetSolLargeGradeImg(int kind, int solgrade)
 	{
 		string key = string.Empty;
-		NrCharKindInfo charKindInfo = this.GetCharKindInfo(kind);
-		if (charKindInfo == null)
+		if (this.GetCharKindInfo(kind) == null)
 		{
 			return null;
 		}
-		eLEGENDTYPE legendType = (eLEGENDTYPE)charKindInfo.GetLegendType(solgrade);
-		if (legendType == eLEGENDTYPE.LEGEND)
+		if (solgrade == 6)
 		{
-			if (solgrade == 6)
-			{
-				key = "Win_I_LegendRankA";
-			}
-			else if (solgrade == 7)
-			{
-				key = "Win_I_LegendRankS";
-			}
-			else if (solgrade == 8)
-			{
-				key = "Win_I_LegendRankSS";
-			}
-			else if (solgrade == 9)
-			{
-				key = "Win_I_LegendRankEX";
-			}
+			key = "Win_I_LegendRankA";
 		}
-		else if (legendType == eLEGENDTYPE.MYTHOLOGY)
+		else if (solgrade == 7)
 		{
-			if (solgrade == 6)
-			{
-				key = "Win_I_MythRankA";
-			}
-			else if (solgrade == 7)
-			{
-				key = "Win_I_MythRankS";
-			}
-			else if (solgrade == 8)
-			{
-				key = "Win_I_MythRankSS";
-			}
-			else if (solgrade == 9)
-			{
-				key = "Win_I_MythRankEX";
-			}
+			key = "Win_I_LegendRankS";
+		}
+		else if (solgrade == 8)
+		{
+			key = "Win_I_LegendRankSS";
+		}
+		else if (solgrade == 9)
+		{
+			key = "Win_I_LegendRankEX";
+		}
+		else if (solgrade == 10)
+		{
+			key = "Win_I_MythRankA";
+		}
+		else if (solgrade == 11)
+		{
+			key = "Win_I_MythRankS";
+		}
+		else if (solgrade == 12)
+		{
+			key = "Win_I_MythRankSS";
+		}
+		else if (solgrade == 13)
+		{
+			key = "Win_I_MythRankEX";
 		}
 		else
 		{
@@ -606,5 +598,17 @@ public class NrCharKindInfoManager : NrTSingleton<NrCharKindInfoManager>
 	public bool IsUserCharKind(NrCharKindInfo CharKindInfo)
 	{
 		return CharKindInfo != null && CharKindInfo.IsATB(1L);
+	}
+
+	public int GetCharKindbyMythSkillUnique(int iCharKind, int i32Idx)
+	{
+		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(iCharKind);
+		return charKindInfo.GetMythBattleSkillUniqueByIndex(i32Idx);
+	}
+
+	public int GetCharKindbyMythSkillUniqueMaxCount(int iCharKind, int i32Idx)
+	{
+		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(iCharKind);
+		return charKindInfo.GetMythBattleSkillUniqueMaxCount();
 	}
 }

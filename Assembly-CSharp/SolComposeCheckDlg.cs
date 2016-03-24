@@ -7,23 +7,25 @@ using UnityForms;
 
 public class SolComposeCheckDlg : Form
 {
-	private DrawTexture dtSoldier;
+	protected DrawTexture dtSoldier;
 
-	private Label lbName;
+	protected Label lbName;
 
-	private Label lbLevel;
+	protected Label lbLevel;
 
-	private Label lbSubNum;
+	protected Label lbSubNum;
 
-	private Label lbGold;
+	protected Label lbGold;
 
-	private Button btnOk;
+	protected Button btnOk;
 
-	private Label lbTitle;
+	protected Button m_btClose;
 
-	private Label lbExplain;
+	protected Label lbTitle;
 
-	private Label lbMoneyName;
+	protected Label lbExplain;
+
+	protected Label lbMoneyName;
 
 	private NkSoldierInfo mBaseSolInfo;
 
@@ -56,10 +58,12 @@ public class SolComposeCheckDlg : Form
 		this.lbTitle = (base.GetControl("Label_Title") as Label);
 		this.lbExplain = (base.GetControl("Label_Explain") as Label);
 		this.lbMoneyName = (base.GetControl("Label_ComposeText") as Label);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		base.SetScreenCenter();
 	}
 
-	public void SetData(NkSoldierInfo kBase, List<long> kSubList, SOLCOMPOSE_TYPE _Type = SOLCOMPOSE_TYPE.COMPOSE)
+	public virtual void SetData(NkSoldierInfo kBase, List<long> kSubList, SOLCOMPOSE_TYPE _Type = SOLCOMPOSE_TYPE.COMPOSE)
 	{
 		if (SolComposeMainDlg.Instance == null)
 		{
@@ -110,7 +114,7 @@ public class SolComposeCheckDlg : Form
 			});
 			this.lbName.SetText(text);
 			this.lbLevel.SetText(text2);
-			this.dtSoldier.SetTexture(eCharImageType.SMALL, kind, (int)nkSoldierInfo.GetGrade());
+			this.dtSoldier.SetTexture(eCharImageType.SMALL, kind, (int)nkSoldierInfo.GetGrade(), string.Empty);
 			this.lbSubNum.SetText(text3);
 			this.lbSubNum.Visible = (0 < num);
 			this.lbGold.SetText(string.Format("{0:###,###,###,##0}", SolComposeMainDlg.Instance.COST));
@@ -137,7 +141,7 @@ public class SolComposeCheckDlg : Form
 		this.Close();
 	}
 
-	private void BtnClickOk(IUIObject obj)
+	protected virtual void BtnClickOk(IUIObject obj)
 	{
 		if (this.m_SolType == SOLCOMPOSE_TYPE.COMPOSE)
 		{
@@ -168,7 +172,7 @@ public class SolComposeCheckDlg : Form
 			{
 				gS_SOLDIERS_SELL_REQ.i64SolID[j] = this.mSubSolList[j];
 			}
-			SendPacket.GetInstance().SendObject(128, gS_SOLDIERS_SELL_REQ);
+			SendPacket.GetInstance().SendObject(132, gS_SOLDIERS_SELL_REQ);
 			if (SolComposeMainDlg.Instance != null)
 			{
 				SolComposeMainDlg.Instance.ClearList();

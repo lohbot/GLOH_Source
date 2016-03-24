@@ -33,13 +33,18 @@ public class Battle_Emergency_CallDlg : Form
 			}
 			this.OnClickShowSolList(null);
 		}
-		NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_UI_EMERGENCY", this.m_btShowSelectList, this.m_btShowSelectList.GetSize());
 		this._SetDialogPos();
 		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
 		{
 			this.Hide();
 			this.Close();
 		}
+		if (this.CheckMythRaidUIOff())
+		{
+			this.Hide();
+			this.Close();
+		}
+		this.m_btShowSelectList.AlphaAni(1f, 0.5f, -0.5f);
 	}
 
 	public override void OnClose()
@@ -122,5 +127,15 @@ public class Battle_Emergency_CallDlg : Form
 			this.m_fEnableTime = 0f;
 			this.SetEnableControl(true);
 		}
+	}
+
+	private bool CheckMythRaidUIOff()
+	{
+		if (Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			return false;
+		}
+		int num = (int)BATTLE_CONSTANT_Manager.GetInstance().GetValue(eBATTLE_CONSTANT.eBATTLE_CONSTANT_MYTHRAID_EMERGENCY_COUNT);
+		return num <= Battle.BATTLE.ChangeSolCount || Battle.BATTLE.DieSolCount <= Battle.BATTLE.ChangeSolCount || !NrTSingleton<NkBattleCharManager>.Instance.MyCharExist() || Battle.BATTLE.UseEmergencyHelpByThisTurn;
 	}
 }

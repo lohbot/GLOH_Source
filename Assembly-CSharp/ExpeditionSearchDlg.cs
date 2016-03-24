@@ -183,7 +183,7 @@ public class ExpeditionSearchDlg : Form
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(expeditionDataFromGrade.Expedition_GRADE_INTERFACEKEY)
 		});
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnSearch), b, title, message, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnSearch), b, title, message, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnSearch(object obj)

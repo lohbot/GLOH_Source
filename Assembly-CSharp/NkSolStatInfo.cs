@@ -36,33 +36,13 @@ public class NkSolStatInfo
 
 	public int m_nMaxHP;
 
-	public int m_nBS_SumSTR;
+	public int m_nMaxHP_NotAdjustCostume;
 
-	public int m_nBS_SumDEX;
+	public int m_MinDamage_NotAdjustCostume;
 
-	public int m_nBS_SumINT;
+	public int m_MaxDamage_NotAdjustCostume;
 
-	public int m_nBS_SumVIT;
-
-	public int m_nBS_HitRate;
-
-	public int m_nBS_Evasion;
-
-	public int m_nBS_Critical;
-
-	public int m_nBS_AttackSpeed;
-
-	public int m_nBS_PhysicalDefense;
-
-	public int m_nBS_MagicDefense;
-
-	public int m_nBS_MinDamage;
-
-	public int m_nBS_MaxDamage;
-
-	public int m_nBS_RecoveryHP;
-
-	public int m_nBS_MaxHP;
+	public int m_nPhysicalDefense_NotAdjustCostume;
 
 	public NkSolStatInfo()
 	{
@@ -88,37 +68,5 @@ public class NkSolStatInfo
 		this.m_nMaxDamage = 0;
 		this.m_nRecoveryHP = 0;
 		this.m_nMaxHP = 0;
-		this.m_nBS_SumSTR = 0;
-		this.m_nBS_SumDEX = 0;
-		this.m_nBS_SumINT = 0;
-		this.m_nBS_SumVIT = 0;
-		this.m_nBS_HitRate = 0;
-		this.m_nBS_Evasion = 0;
-		this.m_nBS_Critical = 0;
-		this.m_nBS_AttackSpeed = 0;
-		this.m_nBS_PhysicalDefense = 0;
-		this.m_nBS_MagicDefense = 0;
-		this.m_nBS_MinDamage = 0;
-		this.m_nBS_MaxDamage = 0;
-		this.m_nBS_RecoveryHP = 0;
-		this.m_nBS_MaxHP = 0;
-	}
-
-	public void Init_BS_Stat()
-	{
-		this.m_nBS_SumSTR = 0;
-		this.m_nBS_SumDEX = 0;
-		this.m_nBS_SumINT = 0;
-		this.m_nBS_SumVIT = 0;
-		this.m_nBS_HitRate = 0;
-		this.m_nBS_Evasion = 0;
-		this.m_nBS_Critical = 0;
-		this.m_nBS_AttackSpeed = 0;
-		this.m_nBS_PhysicalDefense = 0;
-		this.m_nBS_MagicDefense = 0;
-		this.m_nBS_MinDamage = 0;
-		this.m_nBS_MaxDamage = 0;
-		this.m_nBS_RecoveryHP = 0;
-		this.m_nBS_MaxHP = 0;
 	}
 }

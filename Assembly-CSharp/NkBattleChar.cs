@@ -53,6 +53,8 @@ public class NkBattleChar : INrCharInput, ICloneable
 
 	public List<Vector3> m_NavPath = new List<Vector3>();
 
+	public Dictionary<string, List<string>> m_DCharEffect = new Dictionary<string, List<string>>();
+
 	private NkCharPartControl m_kPartControl;
 
 	private bool m_bSetFirstAction;
@@ -134,6 +136,8 @@ public class NkBattleChar : INrCharInput, ICloneable
 	private bool m_bChangePos;
 
 	private bool m_bRivalAttack;
+
+	private bool m_bReservationCurSceneCamera;
 
 	private static int[] m_nHitType = new int[]
 	{
@@ -315,6 +319,18 @@ public class NkBattleChar : INrCharInput, ICloneable
 		get
 		{
 			return this.m_bLastAttacker;
+		}
+	}
+
+	public bool ReservationCurSceneCamera
+	{
+		get
+		{
+			return this.m_bReservationCurSceneCamera;
+		}
+		set
+		{
+			this.m_bReservationCurSceneCamera = value;
 		}
 	}
 
@@ -789,7 +805,6 @@ public class NkBattleChar : INrCharInput, ICloneable
 		this.m_vReservedMoveTarget = Vector3.zero;
 		this.m_bMyChar = false;
 		this.SetCurrentOrder(eBATTLE_ORDER.eBATTLE_ORDER_NONE);
-		this.SetCurrentOrder(eBATTLE_ORDER.eBATTLE_ORDER_NONE);
 		for (int i = 0; i < 12; i++)
 		{
 			this.m_BattleSkillBufData[i].init();
@@ -1070,6 +1085,16 @@ public class NkBattleChar : INrCharInput, ICloneable
 		return eWEAPON_TYPE.WEAPON_SWORD.ToString();
 	}
 
+	public NkItem GetValidEquipItem(int itempos)
+	{
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo != null)
+		{
+			return soldierInfo.GetValidEquipItem(itempos);
+		}
+		return null;
+	}
+
 	public int GetWeaponType()
 	{
 		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
@@ -1288,7 +1313,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 			{
 				this.m_kAnimation.ProcessAnimation(Time.deltaTime);
 			}
-			if (Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PLUNDER && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY && this.Ally == Battle.BATTLE.MyAlly && !this.MyChar && this.IsMonster)
+			if (Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PLUNDER && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW && this.Ally == Battle.BATTLE.MyAlly && !this.MyChar && this.IsMonster)
 			{
 				NrTSingleton<NkEffectManager>.Instance.AddEffect("FX_AI_MARK", this, true, false);
 			}
@@ -1556,12 +1581,23 @@ public class NkBattleChar : INrCharInput, ICloneable
 				this.m_HpDlg.Set(this);
 			}
 		}
-		if (this.IsCharKindATB(128L) && Battle.BATTLE != null && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MINE && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_EXPEDITION && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
+		if (this.IsCharKindATB(128L) && Battle.BATTLE != null)
 		{
-			Battle_BossAggro_DLG battle_BossAggro_DLG = (Battle_BossAggro_DLG)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_BOSSAGGRO_DLG);
-			if (battle_BossAggro_DLG != null)
+			if (Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MINE && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_EXPEDITION && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
 			{
-				battle_BossAggro_DLG.SetBossData(this);
+				Battle_BossAggro_DLG battle_BossAggro_DLG = (Battle_BossAggro_DLG)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_BOSSAGGRO_DLG);
+				if (battle_BossAggro_DLG != null)
+				{
+					battle_BossAggro_DLG.SetBossData(this);
+				}
+			}
+			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+			{
+				Battle_GuildBossBattleInfo_DLG battle_GuildBossBattleInfo_DLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GUILDBOSS_BATTLEINFO_DLG) as Battle_GuildBossBattleInfo_DLG;
+				if (battle_GuildBossBattleInfo_DLG != null)
+				{
+					battle_GuildBossBattleInfo_DLG.SetBossData(this);
+				}
 			}
 		}
 		return true;
@@ -1685,6 +1721,11 @@ public class NkBattleChar : INrCharInput, ICloneable
 
 	public void SetAnimation(eCharAnimationType anitype, bool bForceAction, bool bBlend)
 	{
+		if (this.m_bReservationCurSceneCamera && NkCutScene_Camera_Manager.Instance.ReservationAni == anitype)
+		{
+			NkCutScene_Camera_Manager.Instance.StartCutScene();
+			this.m_bReservationCurSceneCamera = false;
+		}
 		bool bForceReserved = true;
 		if (this.IsReadyCharAction())
 		{
@@ -1966,7 +2007,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 			{
 				this.m_HpDlg.SetImmuneBuffIcon(true, 1024);
 			}
-			else if (this.IsBattleCharATB(32768))
+			else if (this.IsBattleCharATB(32768) || this.IsBattleCharATB(262144))
 			{
 				this.m_HpDlg.SetImmuneBuffIcon(true, 32768);
 			}
@@ -2087,7 +2128,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 				{
 					this.m_HpDlg.SetImmuneBuffIcon(true, 1024);
 				}
-				else if (this.IsBattleCharATB(32768))
+				else if (this.IsBattleCharATB(32768) || this.IsBattleCharATB(262144))
 				{
 					this.m_HpDlg.SetImmuneBuffIcon(true, 32768);
 				}
@@ -2142,7 +2183,10 @@ public class NkBattleChar : INrCharInput, ICloneable
 			{
 				return num;
 			}
-			Debug.LogError("Err :SetHitBattleSkill No SkillEffect:" + bSkillBuffEffectCode);
+			if (TsPlatform.IsEditor)
+			{
+				Debug.LogError("Err :SetHitBattleSkill No SkillEffect:" + bSkillBuffEffectCode + "  Char:" + this.Get3DChar().GetName());
+			}
 		}
 		return 0u;
 	}
@@ -2158,12 +2202,38 @@ public class NkBattleChar : INrCharInput, ICloneable
 			{
 				return num;
 			}
-			Debug.LogError("Err :SetBuffBattleSkillEndEffect No SkillEffect:" + bSkillBuffEndEffectCode);
+			Debug.LogError("Err :SetBuffBattleSkillEndEffect No SkillEffect:" + bSkillBuffEndEffectCode + "  Char:" + this.Get3DChar().GetName());
 		}
 		return 0u;
 	}
 
-	public void SetHitBattleSkill(BATTLESKILL_BASE BattleSkillBase, BATTLESKILL_DETAIL BSkillDetail, int HitEffectGridPos, bool bEndureDamage)
+	private bool CheckLimitCharEffect(NkBattleChar pkFromChar, string EffectName)
+	{
+		if (pkFromChar == null)
+		{
+			Debug.Log("Genetated Faild by pkFromChar is Null");
+			return false;
+		}
+		if (NrTSingleton<NkBattleCharManager>.Instance.GetCharCount() < 11)
+		{
+			return false;
+		}
+		string key = pkFromChar.Get3DName();
+		if (!this.m_DCharEffect.ContainsKey(key))
+		{
+			this.m_DCharEffect.Add(key, new List<string>());
+			this.m_DCharEffect[key].Add(EffectName);
+			return false;
+		}
+		if (this.m_DCharEffect[key].Contains(EffectName))
+		{
+			return true;
+		}
+		this.m_DCharEffect[key].Add(EffectName);
+		return false;
+	}
+
+	public void SetHitBattleSkill(NkBattleChar pkFromChar, BATTLESKILL_BASE BattleSkillBase, BATTLESKILL_DETAIL BSkillDetail, int HitEffectGridPos, bool bEndureDamage)
 	{
 		string text;
 		if (!bEndureDamage)
@@ -2184,15 +2254,26 @@ public class NkBattleChar : INrCharInput, ICloneable
 					if (HitEffectGridPos > -1 && battleGrid.m_nWidthCount * battleGrid.m_nHeightCount >= HitEffectGridPos)
 					{
 						Vector3 v3Target = battleGrid.mListPos[HitEffectGridPos];
-						if (NrTSingleton<NkEffectManager>.Instance.AddEffect(text, v3Target) == 0u && !NrTSingleton<NkEffectManager>.Instance.isEffectLimit(text))
+						if (this.CheckLimitCharEffect(pkFromChar, text))
 						{
-							Debug.LogError("Err :SetHitBattleSkill No SkillEffect:" + text);
+							return;
+						}
+						if (NrTSingleton<NkEffectManager>.Instance.AddEffect(text, v3Target) == 0u && !NrTSingleton<NkEffectManager>.Instance.isEffectLimit(text) && TsPlatform.IsEditor)
+						{
+							Debug.LogError("Err :SetHitBattleSkill No SkillEffect:" + text + "  Char:" + this.Get3DChar().GetName());
 						}
 					}
 				}
-				else if (NrTSingleton<NkEffectManager>.Instance.AddEffect(text, this) == 0u && !NrTSingleton<NkEffectManager>.Instance.isEffectLimit(text))
+				else
 				{
-					Debug.LogError("Err :SetHitBattleSkill No SkillEffect:" + text);
+					if (this.CheckLimitCharEffect(pkFromChar, text))
+					{
+						return;
+					}
+					if (NrTSingleton<NkEffectManager>.Instance.AddEffect(text, this) == 0u && !NrTSingleton<NkEffectManager>.Instance.isEffectLimit(text) && TsPlatform.IsEditor)
+					{
+						Debug.LogError("Err :SetHitBattleSkill No SkillEffect:" + text + "  Char:" + this.Get3DChar().GetName());
+					}
 				}
 			}
 		}
@@ -2215,7 +2296,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 			}
 			if (flag && !NrTSingleton<NkEffectManager>.Instance.isEffectLimit(bSkillHitCenterGridEffectCode))
 			{
-				Debug.LogError("Err :SetHitCenterGridEffectBattleSkill No HitCenterGridEffect:" + bSkillHitCenterGridEffectCode);
+				Debug.LogError("Err :SetHitCenterGridEffectBattleSkill No HitCenterGridEffect:" + bSkillHitCenterGridEffectCode + "  Char:" + this.Get3DChar().GetName());
 			}
 		}
 	}
@@ -2232,7 +2313,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 			}
 			if (flag && !NrTSingleton<NkEffectManager>.Instance.isEffectLimit(bSkillGridEffectCode))
 			{
-				Debug.LogError("Err :GetBSkillGridEffectCode No SkillEffect:" + bSkillGridEffectCode);
+				Debug.LogError("Err :GetBSkillGridEffectCode No SkillEffect:" + bSkillGridEffectCode + "  Char:" + this.Get3DChar().GetName());
 			}
 		}
 	}
@@ -2454,16 +2535,9 @@ public class NkBattleChar : INrCharInput, ICloneable
 			}
 			break;
 		}
-		if (this.m_bProcessMouseEvent)
+		if (this.m_bProcessMouseEvent && Battle.BATTLE.MyAlly == this.Ally)
 		{
-			if (Battle.BATTLE.MyAlly == this.Ally)
-			{
-				TBSUTIL.SetShaderPropertyColor(this.m_k3DChar.GetRootGameObject(), PMSHADER.SELECT_COLOR, CHAR_SHADER_COLOR.SELECT_COLOR_GREEN);
-			}
-			else
-			{
-				TBSUTIL.SetShaderPropertyColor(this.m_k3DChar.GetRootGameObject(), PMSHADER.SELECT_COLOR, CHAR_SHADER_COLOR.SELECT_COLOR_RED);
-			}
+			TBSUTIL.SetShaderPropertyColor(this.m_k3DChar.GetRootGameObject(), PMSHADER.SELECT_COLOR, CHAR_SHADER_COLOR.SELECT_COLOR_GREEN);
 		}
 	}
 
@@ -2597,6 +2671,10 @@ public class NkBattleChar : INrCharInput, ICloneable
 			{
 				return;
 			}
+			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+			{
+				return;
+			}
 			Battle.BATTLE.PushBattleDamage(this, iDamage, false, 0, nSkillInfoNum);
 			this.SetAnimation(eCharAnimationType.Evade1);
 		}
@@ -2610,7 +2688,18 @@ public class NkBattleChar : INrCharInput, ICloneable
 			{
 				this.m_nAttackCharWeaponType = 0;
 			}
-			this.GetSoldierInfo().AddHP(iDamage, this.AddHP);
+			if (NrTSingleton<MythRaidManager>.Instance.IsMythRaidBossCharKind(this.GetSoldierInfo().GetCharKind()))
+			{
+				Battle.BATTLE.BossCurrentHP += (long)iDamage;
+				if (Battle.BATTLE.BossCurrentHP <= 0L)
+				{
+					this.GetSoldierInfo().AddHP(-this.GetSoldierInfo().GetHP(), 0);
+				}
+			}
+			else
+			{
+				this.GetSoldierInfo().AddHP(iDamage, this.AddHP);
+			}
 			if (this.m_HpDlg != null)
 			{
 				this.m_HpDlg.UpdateHP();
@@ -2627,6 +2716,11 @@ public class NkBattleChar : INrCharInput, ICloneable
 			if (battle_BossAggro_DLG != null)
 			{
 				battle_BossAggro_DLG.UpdateBossHP();
+			}
+			Battle_GuildBossBattleInfo_DLG battle_GuildBossBattleInfo_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.GUILDBOSS_BATTLEINFO_DLG) as Battle_GuildBossBattleInfo_DLG;
+			if (battle_GuildBossBattleInfo_DLG != null)
+			{
+				battle_GuildBossBattleInfo_DLG.UpdateDamage();
 			}
 			if (pkFromChar != null && iDamage < 0)
 			{
@@ -2820,7 +2914,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 		{
 			this.m_HpDlg.SetImmuneBuffIcon(true, 1024);
 		}
-		else if (this.IsBattleCharATB(32768))
+		else if (this.IsBattleCharATB(32768) || this.IsBattleCharATB(262144))
 		{
 			this.m_HpDlg.SetImmuneBuffIcon(true, 32768);
 		}
@@ -2875,6 +2969,11 @@ public class NkBattleChar : INrCharInput, ICloneable
 			NrTSingleton<NkEffectManager>.Instance.DeleteEffect(this.m_nFaceSolGradeEffectNum);
 			this.m_nFaceSolGradeEffectNum = 0u;
 		}
+	}
+
+	public bool isUpdateAngerlyPoint()
+	{
+		return Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID || this.MyChar;
 	}
 
 	public int GetBattleSkillBuffData(int BuffSkillType)
@@ -3788,7 +3887,6 @@ public class NkBattleChar : INrCharInput, ICloneable
 		gS_BF_ORDER_REQ.iPara[0] = (int)nGridPos;
 		this.SendRequestBattleOrder(ref gS_BF_ORDER_REQ);
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "BATTLE", "FORMATION-CLICK", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
-		this.m_bChangePos = false;
 		return iOrderUnique;
 	}
 
@@ -4065,10 +4163,6 @@ public class NkBattleChar : INrCharInput, ICloneable
 		if (this.GetSoldierInfo().GetHP() <= 0)
 		{
 			return -4;
-		}
-		if (Target.IsCharKindATB(256L))
-		{
-			return -1;
 		}
 		if (!this.CanAttackRange((int)this.GetAttackInfo().CANATTACKRANGE, Target, -1))
 		{
@@ -4348,7 +4442,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 			}
 			this.SetBattleSkillCoolTurn(false);
 			int num = _OrderACK.iPara[4];
-			if (num >= 0)
+			if (num >= 0 && this.isUpdateAngerlyPoint())
 			{
 				if (!Battle.BATTLE.ColosseumObserver)
 				{
@@ -4476,7 +4570,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 			this.m_OrderStartTime = Time.time;
 			this.m_bCreateBullet = false;
 			int weaponType = this.GetSoldierInfo().GetWeaponType();
-			this.m_nTotalHitCount = this.GetCharKindInfo().GetHitAniCount(weaponType, (int)this.m_eAttackTypeAniEvent);
+			this.m_nTotalHitCount = this.GetCharKindInfo().GetHitAniCount(weaponType, (int)this.m_eAttackTypeAniEvent, this.m_k3DChar.GetBattleCharCostumeBundleName());
 			if (this.m_nTotalHitCount <= 0)
 			{
 				this.m_nTotalHitCount = 1;
@@ -4515,9 +4609,9 @@ public class NkBattleChar : INrCharInput, ICloneable
 			float num = 0f;
 			if (!this.m_bCreateBullet)
 			{
-				num = this.GetCharKindInfo().GetAnimationEvent(weaponType2, (int)this.m_eAttackTypeAniEvent, NkBattleChar.m_nHitType[this.m_nProcessHitCount]);
+				num = this.GetCharKindInfo().GetAnimationEvent(weaponType2, (int)this.m_eAttackTypeAniEvent, NkBattleChar.m_nHitType[this.m_nProcessHitCount], this.m_k3DChar.GetBattleCharCostumeBundleName());
 			}
-			float animationEvent = this.GetCharKindInfo().GetAnimationEvent(weaponType2, (int)this.m_eAttackTypeAniEvent, 0);
+			float animationEvent = this.GetCharKindInfo().GetAnimationEvent(weaponType2, (int)this.m_eAttackTypeAniEvent, 0, this.m_k3DChar.GetBattleCharCostumeBundleName());
 			if (num == 0f)
 			{
 				num = 0.3f;
@@ -4584,7 +4678,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 			}
 			if (this.m_OrderStartTime == 0f)
 			{
-				if (this.MyChar && this.m_CurrentBattleSkillBase.m_nSkillItemType == 0)
+				if (this.MyChar && this.m_CurrentBattleSkillBase.m_nSkillItemType == 0 && this.m_CurrentBattleSkillBase.m_nMythSkillType == 0)
 				{
 					Battle_Skill_Direction_Dlg battle_Skill_Direction_Dlg = (Battle_Skill_Direction_Dlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BATTLE_SKILL_DIRECTION_DLG);
 					battle_Skill_Direction_Dlg.SetMagic(this, this.m_CurrentBattleSkillBase.m_nSkillUnique, this.m_bRivalAttack);
@@ -4680,7 +4774,7 @@ public class NkBattleChar : INrCharInput, ICloneable
 					{
 						weapontype = this.m_CurrentBattleSkillBase.m_nSkilNeedWeapon;
 					}
-					this.m_nTotalHitCount = this.GetCharKindInfo().GetHitAniCount(weapontype, (int)this.m_eAttackTypeAniEvent);
+					this.m_nTotalHitCount = this.GetCharKindInfo().GetHitAniCount(weapontype, (int)this.m_eAttackTypeAniEvent, this.m_k3DChar.GetBattleCharCostumeBundleName());
 					if (this.m_nTotalHitCount <= 0)
 					{
 						this.m_nTotalHitCount = 1;
@@ -4729,9 +4823,9 @@ public class NkBattleChar : INrCharInput, ICloneable
 						}
 						this.SetLookAt(v3Direction2, false);
 					}
-					num = this.GetCharKindInfo().GetAnimationEvent(weapontype2, (int)this.m_eAttackTypeAniEvent, NkBattleChar.m_nHitType[this.m_nProcessHitCount]);
+					num = this.GetCharKindInfo().GetAnimationEvent(weapontype2, (int)this.m_eAttackTypeAniEvent, NkBattleChar.m_nHitType[this.m_nProcessHitCount], this.m_k3DChar.GetBattleCharCostumeBundleName());
 				}
-				float animationEvent = this.GetCharKindInfo().GetAnimationEvent(weapontype2, (int)this.m_eAttackTypeAniEvent, 0);
+				float animationEvent = this.GetCharKindInfo().GetAnimationEvent(weapontype2, (int)this.m_eAttackTypeAniEvent, 0, this.m_k3DChar.GetBattleCharCostumeBundleName());
 				this.m_fSkillAniEndtime = animationEvent;
 				if (num == 0f)
 				{

@@ -14,6 +14,8 @@ public class NewGuildRankChangeDlg : Form
 
 	private Button m_btOK;
 
+	private Button m_btClose;
+
 	private NewGuildMember m_GuildMember;
 
 	private NewGuildDefine.eNEWGUILD_MEMBER_RANK m_eSelectRank;
@@ -37,6 +39,8 @@ public class NewGuildRankChangeDlg : Form
 		}
 		this.m_btOK = (base.GetControl("Button_OK") as Button);
 		this.m_btOK.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickOK));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.NEWGUILD_MEMBER_DLG);
 		base.SetScreenCenter();
 	}

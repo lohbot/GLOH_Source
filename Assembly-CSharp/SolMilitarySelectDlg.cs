@@ -1,4 +1,7 @@
 using GAME;
+using PROTOCOL;
+using PROTOCOL.GAME;
+using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
 using TsBundle;
@@ -27,13 +30,36 @@ public class SolMilitarySelectDlg : Form
 		SORTORDER_FIGHTINGPOWERASC
 	}
 
-	private DropDownList SolSortTypeList;
+	private enum eSelectType
+	{
+		SELECTTYPE_NONE,
+		SELECTTYPE_NORMAL,
+		SELECTTYPE_ELEMENT,
+		SELECTTYPE_MAX
+	}
 
-	private DropDownList SolSortOrderList;
+	public enum LoadType
+	{
+		NONE,
+		EXPLORATION,
+		SOLAWAKENING,
+		SOLDETAIL,
+		SOLMILITARYGROUP_HEROSETTING,
+		SOLMILITARYGROUP_LEADERCHANGE,
+		COMMUNITY
+	}
 
-	private NewListBox SoldierList;
+	private SolMilitarySelectDlg.LoadType loadType;
+
+	protected DropDownList SolSortTypeList;
+
+	protected DropDownList SolSortOrderList;
+
+	protected NewListBox SoldierList;
 
 	private Button SolSelectConfirm;
+
+	private Button m_btClose;
 
 	private int m_nSearch_SolSortType = 1;
 
@@ -46,6 +72,14 @@ public class SolMilitarySelectDlg : Form
 	private List<NkSoldierInfo> m_kSolSortList = new List<NkSoldierInfo>();
 
 	private Form m_pkParentDlg;
+
+	private SolMilitarySelectDlg.eSelectType m_eSelectType = SolMilitarySelectDlg.eSelectType.SELECTTYPE_NORMAL;
+
+	private int m_i32CharKind;
+
+	private byte m_bCount;
+
+	private long[] m_i64SelectSolID = new long[5];
 
 	private bool m_SortwithoutHelpsol;
 
@@ -89,12 +123,13 @@ public class SolMilitarySelectDlg : Form
 		this.SolSortOrderList.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnChangeSortOrder));
 		this.SoldierList = (base.GetControl("NewListBox_MilitarySelect") as NewListBox);
 		this.SoldierList.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickSoldierSelect));
-		this.SoldierList.AddDoubleClickDelegate(new EZValueChangedDelegate(this.OnClickSoldierSelectConfirm));
+		this.SoldierList.AddDoubleClickDelegate(new EZValueChangedDelegate(this.OnClickSoldierSelectConfirmOK));
 		this.SoldierList.AutoListBox = false;
 		this.SolSelectConfirm = (base.GetControl("btn_ok") as Button);
 		this.SolSelectConfirm.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickSoldierSelectConfirmOK));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.InitData();
-		this.SetSortList();
 		base.SetScreenCenter();
 	}
 
@@ -118,6 +153,17 @@ public class SolMilitarySelectDlg : Form
 		}
 		this.m_pkParentDlg = pkTargetDlg;
 		base.SetScreenCenter();
+		this.m_eSelectType = SolMilitarySelectDlg.eSelectType.SELECTTYPE_NORMAL;
+	}
+
+	public void SetLegendElement(int i32CharKind, long[] i64SolID, byte bCount)
+	{
+		this.m_eSelectType = SolMilitarySelectDlg.eSelectType.SELECTTYPE_ELEMENT;
+		this.m_i32CharKind = i32CharKind;
+		this.m_bCount = bCount;
+		this.m_i64SelectSolID = i64SolID;
+		this.SolSortOrderList.SetVisible(false);
+		this.loadType = SolMilitarySelectDlg.LoadType.SOLDETAIL;
 	}
 
 	public void Refresh()
@@ -127,8 +173,16 @@ public class SolMilitarySelectDlg : Form
 
 	private void SetData()
 	{
-		this.MakeSolListAndSort();
-		this.SetSoldierList();
+		if (this.m_eSelectType == SolMilitarySelectDlg.eSelectType.SELECTTYPE_NORMAL)
+		{
+			this.MakeSolListAndSort();
+			this.SetSoldierList();
+		}
+		else if (this.m_eSelectType == SolMilitarySelectDlg.eSelectType.SELECTTYPE_ELEMENT)
+		{
+			this.ElementMakeSolListAndSort();
+			this.SetSoldierElementList();
+		}
 	}
 
 	private void SetSoldierList()
@@ -137,7 +191,7 @@ public class SolMilitarySelectDlg : Form
 		int i = 0;
 		while (i < this.m_kSolSortList.Count)
 		{
-			if (this.m_pkParentDlg == null || this.m_pkParentDlg.WindowID != 107)
+			if (this.m_pkParentDlg == null || this.m_pkParentDlg.WindowID != 117)
 			{
 				goto IL_6F;
 			}
@@ -148,22 +202,46 @@ public class SolMilitarySelectDlg : Form
 					goto IL_6F;
 				}
 			}
-			IL_DE:
+			IL_11F:
 			i++;
 			continue;
 			IL_6F:
-			if (this.m_pkParentDlg != null && this.m_pkParentDlg.WindowID == 344 && (this.m_kSolSortList[i].IsLeader() || (int)this.m_kSolSortList[i].GetLevel() < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_AWAKENING_LIMIT_LEVEL)))
+			if (this.m_pkParentDlg != null && this.m_pkParentDlg.WindowID == 382)
 			{
-				goto IL_DE;
+				if (this.m_kSolSortList[i].IsLeader() || (int)this.m_kSolSortList[i].GetLevel() < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_AWAKENING_LIMIT_LEVEL))
+				{
+					goto IL_11F;
+				}
+			}
+			else if (this.m_kSolSortList[i].GetSolPosType() == 2 && (this.m_pkParentDlg == null || this.m_pkParentDlg.WindowID != 219))
+			{
+				goto IL_11F;
 			}
 			this.SetSolListInfo(this.m_kSolSortList[i]);
-			goto IL_DE;
+			goto IL_11F;
 		}
 		this.SoldierList.RepositionItems();
 		this.SoldierList.SetSelectedItem(0);
 	}
 
-	private void SetSolListInfo(NkSoldierInfo pkSolinfo)
+	private void SetSoldierElementList()
+	{
+		this.SoldierList.Clear();
+		for (int i = 0; i < this.m_kSolSortList.Count; i++)
+		{
+			if (this.m_kSolSortList[i] != null)
+			{
+				if (!this.m_kSolSortList[i].IsCostumeEquip())
+				{
+					this.SetSolListInfo(this.m_kSolSortList[i]);
+				}
+			}
+		}
+		this.SoldierList.RepositionItems();
+		this.SoldierList.SetSelectedItem(0);
+	}
+
+	protected void SetSolListInfo(NkSoldierInfo pkSolinfo)
 	{
 		long num = pkSolinfo.GetExp() - pkSolinfo.GetCurBaseExp();
 		long num2 = pkSolinfo.GetNextExp() - pkSolinfo.GetCurBaseExp();
@@ -181,7 +259,7 @@ public class SolMilitarySelectDlg : Form
 			num3 = 1f;
 		}
 		string text = string.Empty;
-		NewListItem newListItem = new NewListItem(this.SoldierList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.SoldierList.ColumnNum, true, string.Empty);
 		EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(pkSolinfo.GetCharKind(), pkSolinfo.GetGrade());
 		newListItem.SetListItemData(9, false);
 		if (eventHeroCharCode != null)
@@ -219,9 +297,13 @@ public class SolMilitarySelectDlg : Form
 		{
 			newListItem.SetListItemData(4, "Win_I_Weapon" + num4.ToString(), null, null, null);
 		}
+		if (pkSolinfo.IsAwakening())
+		{
+			newListItem.SetListItemData(5, "Win_I_DarkAlchemy", null, null, null);
+		}
 		else
 		{
-			newListItem.SetListItemData(5, "Com_I_Transparent", null, null, null);
+			newListItem.SetListItemData(5, false);
 		}
 		newListItem.SetListItemData(7, NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Com_T_GauWaPr4"), 250f * num3, null, null);
 		if (pkSolinfo.IsMaxLevel())
@@ -259,8 +341,8 @@ public class SolMilitarySelectDlg : Form
 		this.SolSortTypeList.SetViewArea(this.SolSortTypeList.Count);
 		this.SolSortTypeList.RepositionItems();
 		this.SolSortTypeList.SetFirstItem();
-		this.SolSortOrderList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1886"), 0);
-		this.SolSortOrderList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1887"), 1);
+		this.SolSortOrderList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1886"), 7);
+		this.SolSortOrderList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1887"), 8);
 		this.SolSortOrderList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1888"), 2);
 		this.SolSortOrderList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1889"), 3);
 		this.SolSortOrderList.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1890"), 4);
@@ -282,11 +364,11 @@ public class SolMilitarySelectDlg : Form
 		{
 			NkSoldierInfo nkSoldierInfo = kSolInfo[i];
 			bool flag = true;
-			if (this.m_pkParentDlg != null && this.m_pkParentDlg.WindowID == 344)
+			if (this.m_pkParentDlg != null && this.m_pkParentDlg.WindowID == 382)
 			{
 				flag = false;
 			}
-			if (!flag || nkSoldierInfo.GetFriendPersonID() <= 0L)
+			if (!flag || this.loadType == SolMilitarySelectDlg.LoadType.SOLMILITARYGROUP_LEADERCHANGE || nkSoldierInfo.GetFriendPersonID() <= 0L)
 			{
 				this.AddSolList(nkSoldierInfo, eSOL_POSTYPE.SOLPOS_BATTLE);
 			}
@@ -294,7 +376,7 @@ public class SolMilitarySelectDlg : Form
 		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 		foreach (NkSoldierInfo current in readySolList.GetList().Values)
 		{
-			if (current.GetSolPosType() != 2 && current.GetSolPosType() != 6)
+			if (current.GetSolPosType() != 6)
 			{
 				this.AddSolList(current, eSOL_POSTYPE.SOLPOS_READY);
 			}
@@ -326,9 +408,77 @@ public class SolMilitarySelectDlg : Form
 		{
 			if (!this.SortwithoutHelpsol || current.GetFriendPersonID() <= 0L)
 			{
-				if (current.GetSolPosType() != 2 && current.GetSolPosType() != 6)
+				if (current.GetSolPosType() != 6)
 				{
 					this.AddSolList(current, eSOL_POSTYPE.SOLPOS_READY);
+				}
+			}
+		}
+	}
+
+	private void ElementMakeReadySolList()
+	{
+		this.SolSortTypeList.SetVisible(false);
+		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+		int num = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_LEGEND_ADVENT_HERO);
+		if (num < 0)
+		{
+			num = 0;
+		}
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsSolGuideCharKindInfo(num))
+		{
+			num = 0;
+		}
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsSolGuideCharKindInfo(this.m_i32CharKind))
+		{
+			this.m_i32CharKind = 0;
+		}
+		foreach (NkSoldierInfo current in readySolList.GetList().Values)
+		{
+			if (current.GetSolPosType() != 6)
+			{
+				if (!current.IsAtbCommonFlag(1L))
+				{
+					if (this.m_i32CharKind > 0 && this.m_i32CharKind == current.GetCharKind())
+					{
+						bool flag = true;
+						for (int i = 0; i < 5; i++)
+						{
+							if (this.m_i64SelectSolID[i] == current.GetSolID())
+							{
+								flag = false;
+								break;
+							}
+						}
+						if (current.GetLegendType() > 0)
+						{
+							continue;
+						}
+						if (current.GetGrade() > 5)
+						{
+							continue;
+						}
+						if (flag)
+						{
+							this.AddSolList(current, eSOL_POSTYPE.SOLPOS_READY);
+						}
+					}
+					if (num > 0 && num == current.GetCharKind())
+					{
+						bool flag = true;
+						for (int j = 0; j < 5; j++)
+						{
+							if (this.m_i64SelectSolID[j] == current.GetSolID())
+							{
+								flag = false;
+								break;
+							}
+						}
+						if (flag)
+						{
+							this.AddSolList(current, eSOL_POSTYPE.SOLPOS_READY);
+						}
+					}
 				}
 			}
 		}
@@ -340,6 +490,10 @@ public class SolMilitarySelectDlg : Form
 		{
 			return;
 		}
+		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLDETAIL_DLG) && pkSolinfo.GetSolID() == NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().GetFaceSolID())
+		{
+			return;
+		}
 		if (eAddPosType == eSOL_POSTYPE.SOLPOS_BATTLE)
 		{
 			if (pkSolinfo.GetSolPosType() != (byte)eAddPosType)
@@ -347,11 +501,30 @@ public class SolMilitarySelectDlg : Form
 				return;
 			}
 		}
-		else if (pkSolinfo.GetSolPosType() != 0)
+		else if (pkSolinfo.GetSolPosType() != 0 && pkSolinfo.GetSolPosType() != 2)
 		{
 			return;
 		}
 		this.m_kSolList.Add(pkSolinfo);
+	}
+
+	private void ElementMakeSolListAndSort()
+	{
+		if (NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1) == null)
+		{
+			return;
+		}
+		this.m_kSolList.Clear();
+		this.m_kSolSortList.Clear();
+		this.ElementMakeReadySolList();
+		if (this.m_kSolList.Count > 0)
+		{
+			this.m_kSolList.Sort(new Comparison<NkSoldierInfo>(this.CompareName));
+		}
+		for (int i = 0; i < this.m_kSolList.Count; i++)
+		{
+			this.m_kSolSortList.Add(this.m_kSolList[i]);
+		}
 	}
 
 	private void MakeSolListAndSort()
@@ -462,7 +635,7 @@ public class SolMilitarySelectDlg : Form
 		return a.GetFightPower().CompareTo(b.GetFightPower());
 	}
 
-	private void OnChangeSortType(IUIObject obj)
+	protected virtual void OnChangeSortType(IUIObject obj)
 	{
 		this.m_nSearch_SolSortType = 2;
 		if (this.SolSortTypeList.Count > 0 && this.SolSortTypeList.SelectedItem != null)
@@ -503,17 +676,10 @@ public class SolMilitarySelectDlg : Form
 		}
 	}
 
-	private void OnClickSoldierSelectConfirmOK(IUIObject obj)
+	protected virtual void OnClickSoldierSelectConfirmOK(IUIObject obj)
 	{
-		this.OnClickSoldierSelectConfirm(null);
-		base.CloseNow();
-	}
-
-	private void OnClickSoldierSelectConfirm(IUIObject obj)
-	{
-		if (null == this.SolSortOrderList.SelectedItem || null == this.SoldierList.SelectedItem)
+		if (!this.OnClickSoldierSelectConfirm())
 		{
-			this.CloseForm(null);
 			return;
 		}
 		NkSoldierInfo nkSoldierInfo = this.SoldierList.SelectedItem.Data as NkSoldierInfo;
@@ -521,52 +687,127 @@ public class SolMilitarySelectDlg : Form
 		{
 			return;
 		}
+		switch (this.loadType)
+		{
+		case SolMilitarySelectDlg.LoadType.EXPLORATION:
+			this.ClickConfirm_Exploration(nkSoldierInfo);
+			break;
+		case SolMilitarySelectDlg.LoadType.SOLAWAKENING:
+			this.ClickConfirm_SolAwakening(nkSoldierInfo);
+			break;
+		case SolMilitarySelectDlg.LoadType.SOLDETAIL:
+			this.ClickConfirm_SolDetail(nkSoldierInfo);
+			break;
+		case SolMilitarySelectDlg.LoadType.SOLMILITARYGROUP_HEROSETTING:
+			this.ClickConfirm_SolmilitaryGroupHeroSetting(nkSoldierInfo);
+			break;
+		case SolMilitarySelectDlg.LoadType.SOLMILITARYGROUP_LEADERCHANGE:
+			this.ClickConfirm_SolMilitaryGroup_LeaderChange(nkSoldierInfo);
+			break;
+		case SolMilitarySelectDlg.LoadType.COMMUNITY:
+			this.ClickConfirm_Community(nkSoldierInfo);
+			break;
+		}
+		base.CloseNow();
+	}
+
+	private bool OnClickSoldierSelectConfirm()
+	{
+		if (null == this.SolSortOrderList.SelectedItem || null == this.SoldierList.SelectedItem)
+		{
+			this.CloseForm(null);
+			return false;
+		}
 		if (this.m_pkParentDlg == null || !this.m_pkParentDlg.Visible)
 		{
 			this.CloseForm(null);
+			return false;
+		}
+		return true;
+	}
+
+	private void ClickConfirm_Exploration(NkSoldierInfo pkSolinfo)
+	{
+		if (pkSolinfo.IsInjuryStatus())
+		{
 			return;
 		}
-		if (this.m_pkParentDlg != null && this.m_pkParentDlg.WindowID == 107)
+		ExplorationDlg explorationDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXPLORATION_DLG) as ExplorationDlg;
+		if (explorationDlg != null)
 		{
-			if (nkSoldierInfo.IsInjuryStatus())
-			{
-				return;
-			}
-			ExplorationDlg explorationDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EXPLORATION_DLG) as ExplorationDlg;
-			if (explorationDlg != null)
-			{
-				NrTSingleton<ExplorationManager>.Instance.AddCheckSolInfo(nkSoldierInfo);
-				NrTSingleton<ExplorationManager>.Instance.SortSolInfo();
-				explorationDlg.SetSolList();
-			}
-			this.Refresh();
+			NrTSingleton<ExplorationManager>.Instance.AddCheckSolInfo(pkSolinfo);
+			NrTSingleton<ExplorationManager>.Instance.SortSolInfo();
+			explorationDlg.SetSolList();
 		}
-		else if (this.m_pkParentDlg != null && this.m_pkParentDlg.WindowID == 344)
+		this.Refresh();
+	}
+
+	private void ClickConfirm_SolAwakening(NkSoldierInfo pkSolinfo)
+	{
+		SolAwakeningDlg solAwakeningDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLAWAKENING_DLG) as SolAwakeningDlg;
+		if (solAwakeningDlg != null)
 		{
-			SolAwakeningDlg solAwakeningDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLAWAKENING_DLG) as SolAwakeningDlg;
-			if (solAwakeningDlg != null)
-			{
-				solAwakeningDlg.SelelctSoldier(ref nkSoldierInfo);
-			}
+			solAwakeningDlg.SelelctSoldier(ref pkSolinfo);
 		}
-		else if (!this.SortwithoutHelpsol)
+	}
+
+	private void ClickConfirm_SolDetail(NkSoldierInfo pkSolinfo)
+	{
+		Myth_Legend_Info_DLG myth_Legend_Info_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_LEGEND_INFO_DLG) as Myth_Legend_Info_DLG;
+		if (myth_Legend_Info_DLG != null)
 		{
-			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
-			if (solMilitaryGroupDlg != null)
-			{
-				solMilitaryGroupDlg.ToBattleOrMilitary(ref nkSoldierInfo);
-			}
+			myth_Legend_Info_DLG.AddLegendElement(pkSolinfo, (int)this.m_bCount);
+			this.CloseForm(null);
 		}
-		else
+	}
+
+	private void ClickConfirm_SolmilitaryGroupHeroSetting(NkSoldierInfo pkSolinfo)
+	{
+		SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+		if (solMilitaryGroupDlg != null)
 		{
-			CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
-			if (communityUI_DLG != null && communityUI_DLG.Visible)
-			{
-				communityUI_DLG.SetSelectHelpSol(nkSoldierInfo);
-				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY", "SUPPORT", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
-				this.CloseForm(null);
-			}
+			solMilitaryGroupDlg.ToBattleOrMilitary(ref pkSolinfo);
 		}
+	}
+
+	private void ClickConfirm_SolMilitaryGroup_LeaderChange(NkSoldierInfo pkSolinfo)
+	{
+		long num = (long)((int)NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_FACE_SOLINDEX));
+		if (num == pkSolinfo.GetSolID())
+		{
+			return;
+		}
+		SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+		if (solMilitaryGroupDlg == null)
+		{
+			return;
+		}
+		GS_CHARACTER_SUBDATA_REQ gS_CHARACTER_SUBDATA_REQ = new GS_CHARACTER_SUBDATA_REQ();
+		gS_CHARACTER_SUBDATA_REQ.kCharSubData.nSubDataType = 0;
+		gS_CHARACTER_SUBDATA_REQ.kCharSubData.nSubDataValue = pkSolinfo.GetSolID();
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_CHARACTER_SUBDATA_REQ, gS_CHARACTER_SUBDATA_REQ);
+		solMilitaryGroupDlg.SetLaderChangeInfo(pkSolinfo.GetCharKind());
+	}
+
+	private void ClickConfirm_Community(NkSoldierInfo pkSolinfo)
+	{
+		CommunityUI_DLG communityUI_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.COMMUNITY_DLG) as CommunityUI_DLG;
+		if (communityUI_DLG != null && communityUI_DLG.Visible)
+		{
+			communityUI_DLG.SetSelectHelpSol(pkSolinfo);
+			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY", "SUPPORT", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+			this.CloseForm(null);
+		}
+	}
+
+	private void ClickConfirm_None(IUIObject obj)
+	{
+		this.CloseForm(null);
+	}
+
+	public void SetLoadType(SolMilitarySelectDlg.LoadType _loadType)
+	{
+		this.loadType = _loadType;
 	}
 
 	public void CloseByParent(int pkParentDlgID)

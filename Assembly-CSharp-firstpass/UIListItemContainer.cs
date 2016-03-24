@@ -36,11 +36,15 @@ public class UIListItemContainer : ControlBase, IUIListObject, IEZDragDrop, IUIC
 
 	private UIScrollList list;
 
-	protected int index;
+	public int index;
 
 	private bool m_selected;
 
 	private bool m_locked;
+
+	private bool m_Dlsable;
+
+	private bool m_Break;
 
 	private bool autoFindOuterEdges = true;
 
@@ -526,17 +530,12 @@ public class UIListItemContainer : ControlBase, IUIListObject, IEZDragDrop, IUIC
 			{
 				return;
 			}
-			Component component = transform.GetComponent<UIButton>();
+			UIButton component = transform.GetComponent<UIButton>();
 			if (null == component)
 			{
 				return;
 			}
-			UIButton uIButton = (UIButton)component;
-			if (null == uIButton)
-			{
-				return;
-			}
-			uIButton.SetControlState((UIButton.CONTROL_STATE)s);
+			component.SetControlState((UIButton.CONTROL_STATE)s);
 		}
 	}
 
@@ -775,6 +774,36 @@ public class UIListItemContainer : ControlBase, IUIListObject, IEZDragDrop, IUIC
 		}
 	}
 
+	public bool IsDisable()
+	{
+		return this.m_Dlsable;
+	}
+
+	public void SetDisable(bool value)
+	{
+		this.m_Dlsable = value;
+		Transform transform = base.transform.FindChild(UIScrollList.backButtonName);
+		if (transform != null && transform.gameObject != null)
+		{
+			transform.gameObject.SetActive(value);
+		}
+	}
+
+	public bool IsBreak()
+	{
+		return this.m_Break;
+	}
+
+	public void SetBreak(bool value)
+	{
+		this.m_Break = value;
+		Transform transform = base.transform.FindChild(UIScrollList.BreakItemImageName);
+		if (transform != null && transform.gameObject != null)
+		{
+			transform.gameObject.SetActive(value);
+		}
+	}
+
 	public void Delete()
 	{
 		for (int i = 0; i < this.uiObjs.Count; i++)
@@ -980,5 +1009,14 @@ public class UIListItemContainer : ControlBase, IUIListObject, IEZDragDrop, IUIC
 				}
 			}
 		}
+	}
+
+	public int GetObjCount()
+	{
+		if (this.uiObjs == null)
+		{
+			return 0;
+		}
+		return this.uiObjs.Count;
 	}
 }

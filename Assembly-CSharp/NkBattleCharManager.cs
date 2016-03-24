@@ -2,11 +2,14 @@ using GAME;
 using Ndoors.Framework.Stage;
 using PROTOCOL;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class NkBattleCharManager : NrTSingleton<NkBattleCharManager>
 {
 	private NkBattleChar[] m_arChar;
+
+	private BATTLE_SOLDIER_SUBDATA_INFO[] m_BattleSoldier_SubDatas;
 
 	private bool m_bShowCharUnique;
 
@@ -42,6 +45,19 @@ public class NkBattleCharManager : NrTSingleton<NkBattleCharManager>
 	public NkBattleChar[] GetCharArray()
 	{
 		return this.m_arChar;
+	}
+
+	public int GetCharCount()
+	{
+		int num = 0;
+		for (int i = 1; i < 120; i++)
+		{
+			if (this.m_arChar[i] != null && this.m_arChar[i].Ally == eBATTLE_ALLY.eBATTLE_ALLY_0)
+			{
+				num++;
+			}
+		}
+		return num;
 	}
 
 	public void Init()
@@ -209,6 +225,29 @@ public class NkBattleCharManager : NrTSingleton<NkBattleCharManager>
 			}
 		}
 		return null;
+	}
+
+	public List<NkBattleChar> GetCharListByKind(int charKind)
+	{
+		NkBattleChar[] charArray = this.GetCharArray();
+		if (charArray == null)
+		{
+			return null;
+		}
+		List<NkBattleChar> list = new List<NkBattleChar>();
+		NkBattleChar[] array = charArray;
+		for (int i = 0; i < array.Length; i++)
+		{
+			NkBattleChar nkBattleChar = array[i];
+			if (nkBattleChar != null && nkBattleChar.GetCharKindInfo() != null)
+			{
+				if (charKind == nkBattleChar.GetCharKindInfo().GetCharKind())
+				{
+					list.Add(nkBattleChar);
+				}
+			}
+		}
+		return list;
 	}
 
 	public NkBattleChar GetChar(int id)
@@ -446,6 +485,66 @@ public class NkBattleCharManager : NrTSingleton<NkBattleCharManager>
 				{
 					nkBattleChar.SetShowHeadUp(bShow, !bShow, true);
 				}
+			}
+		}
+	}
+
+	public void ChangeCharLayer(eBATTLE_ALLY eBattleAlly, short nExceptBUID, bool bShow, bool bNameCheck)
+	{
+		NkBattleChar[] arChar = this.m_arChar;
+		for (int i = 0; i < arChar.Length; i++)
+		{
+			NkBattleChar nkBattleChar = arChar[i];
+			if (nkBattleChar != null && nkBattleChar.m_k3DChar != null)
+			{
+				if (nkBattleChar.Ally == eBattleAlly && nkBattleChar.GetBUID() != nExceptBUID)
+				{
+					if (!bShow)
+					{
+						nkBattleChar.Get3DChar().SetLayer(TsLayer.BLOCK);
+					}
+					else
+					{
+						switch (nkBattleChar.GetCharKindType())
+						{
+						case eCharKindType.CKT_USER:
+							nkBattleChar.Get3DChar().SetLayer(TsLayer.PC);
+							break;
+						case eCharKindType.CKT_SOLDIER:
+							nkBattleChar.Get3DChar().SetLayer(TsLayer.NPC, TsTag.NPC_MOB.ToString());
+							break;
+						case eCharKindType.CKT_MONSTER:
+							nkBattleChar.Get3DChar().SetLayer(TsLayer.NPC, TsTag.NPC_MOB.ToString());
+							break;
+						case eCharKindType.CKT_NPC:
+							nkBattleChar.Get3DChar().SetLayer(TsLayer.NPC, TsTag.NPC_QUEST.ToString());
+							break;
+						case eCharKindType.CKT_OBJECT:
+							nkBattleChar.Get3DChar().SetLayer(TsLayer.NPC, TsTag.NPC_EXTRA.ToString());
+							break;
+						default:
+							nkBattleChar.Get3DChar().SetLayer(TsLayer.NPC, TsTag.NPC_EXTRA.ToString());
+							break;
+						}
+					}
+				}
+				if (nkBattleChar.Ally != eBattleAlly)
+				{
+					nkBattleChar.SetShowHeadUp(bShow, !bShow, true);
+				}
+			}
+		}
+	}
+
+	public void AllCharNameHide(bool bShow)
+	{
+		NkBattleChar[] arChar = this.m_arChar;
+		for (int i = 0; i < arChar.Length; i++)
+		{
+			NkBattleChar nkBattleChar = arChar[i];
+			if (nkBattleChar != null && nkBattleChar.m_k3DChar != null)
+			{
+				nkBattleChar.SetShowHeadUp(bShow, !bShow, true);
 			}
 		}
 	}
@@ -790,5 +889,92 @@ public class NkBattleCharManager : NrTSingleton<NkBattleCharManager>
 			}
 		}
 		this.m_bFakeShadowEnable = bEnable;
+	}
+
+	public bool MyCharExist()
+	{
+		if (this.m_arChar == null)
+		{
+			return false;
+		}
+		NkBattleChar[] charArray = this.GetCharArray();
+		for (int i = 0; i < charArray.Length; i++)
+		{
+			NkBattleChar nkBattleChar = charArray[i];
+			if (nkBattleChar != null)
+			{
+				if (nkBattleChar.MyChar)
+				{
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	public bool IsSameKindSolInBattle(int charkind)
+	{
+		if (this.m_arChar == null)
+		{
+			return false;
+		}
+		NkBattleChar[] arChar = this.m_arChar;
+		for (int i = 0; i < arChar.Length; i++)
+		{
+			NkBattleChar nkBattleChar = arChar[i];
+			if (nkBattleChar != null)
+			{
+				if (nkBattleChar.GetCharKindInfo().GetCharKind() == charkind)
+				{
+					if (nkBattleChar.MyChar)
+					{
+						if (!nkBattleChar.m_bDeadReaservation)
+						{
+							return true;
+						}
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	public void ClearSolSubDataList()
+	{
+		if (this.m_BattleSoldier_SubDatas == null)
+		{
+			return;
+		}
+		this.m_BattleSoldier_SubDatas = null;
+	}
+
+	public void SetSolSubDataList(BATTLE_SOLDIER_SUBDATA_INFO[] soldierSubDatas)
+	{
+		if (soldierSubDatas == null)
+		{
+			return;
+		}
+		this.m_BattleSoldier_SubDatas = soldierSubDatas;
+	}
+
+	public BATTLE_SOLDIER_SUBDATA_INFO GetBattleSoldierSubDataInfo(long solID)
+	{
+		if (this.m_BattleSoldier_SubDatas == null)
+		{
+			return null;
+		}
+		BATTLE_SOLDIER_SUBDATA_INFO[] battleSoldier_SubDatas = this.m_BattleSoldier_SubDatas;
+		for (int i = 0; i < battleSoldier_SubDatas.Length; i++)
+		{
+			BATTLE_SOLDIER_SUBDATA_INFO bATTLE_SOLDIER_SUBDATA_INFO = battleSoldier_SubDatas[i];
+			if (bATTLE_SOLDIER_SUBDATA_INFO != null)
+			{
+				if (bATTLE_SOLDIER_SUBDATA_INFO.SolID == solID)
+				{
+					return bATTLE_SOLDIER_SUBDATA_INFO;
+				}
+			}
+		}
+		return null;
 	}
 }

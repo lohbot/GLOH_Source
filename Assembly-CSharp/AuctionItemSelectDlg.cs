@@ -11,6 +11,8 @@ public class AuctionItemSelectDlg : Form
 
 	private Button m_btOK;
 
+	private Button m_btClose;
+
 	private string m_strText = string.Empty;
 
 	private AuctionDefine.eAUCTIONREGISTERTYPE m_eAuctionRegisterType;
@@ -41,6 +43,8 @@ public class AuctionItemSelectDlg : Form
 		this.m_nlbItemList.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickList));
 		this.m_btOK = (base.GetControl("Button_OK") as Button);
 		this.m_btOK.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickOK));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.SelectTab(this.m_eAuctionRegisterType);
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
@@ -72,7 +76,7 @@ public class AuctionItemSelectDlg : Form
 						ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(item.m_nItemUnique);
 						if (itemInfo != null)
 						{
-							if (!itemInfo.IsItemATB(131072L) && !itemInfo.IsItemATB(524288L))
+							if (!itemInfo.IsItemATB(131072L) && !itemInfo.IsItemATB(524288L) && !itemInfo.IsItemATB(2097152L))
 							{
 								this.SetAddItemInfo(item, itemInfo);
 							}
@@ -86,18 +90,18 @@ public class AuctionItemSelectDlg : Form
 
 	public void SelectItem()
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbItemList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbItemList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
 		if (this.m_eAuctionRegisterType == AuctionDefine.eAUCTIONREGISTERTYPE.eAUCTIONREGISTERTYPE_ITEM)
 		{
-			ITEM iTEM = uIListItemContainer.data as ITEM;
+			ITEM iTEM = selectItem.data as ITEM;
 			if (iTEM.IsLock())
 			{
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("726"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
@@ -111,11 +115,18 @@ public class AuctionItemSelectDlg : Form
 		}
 		else if (this.m_eAuctionRegisterType == AuctionDefine.eAUCTIONREGISTERTYPE.eAUCTIONREGISTERTYPE_SOL)
 		{
-			NkSoldierInfo selectSol = uIListItemContainer.data as NkSoldierInfo;
-			AuctionMainDlg auctionMainDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.AUCTION_MAIN_DLG) as AuctionMainDlg;
-			if (auctionMainDlg2 != null)
+			NkSoldierInfo nkSoldierInfo = selectItem.data as NkSoldierInfo;
+			if (nkSoldierInfo.IsAtbCommonFlag(1L))
 			{
-				auctionMainDlg2.SetSelectSol(selectSol);
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("879"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+			else
+			{
+				AuctionMainDlg auctionMainDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.AUCTION_MAIN_DLG) as AuctionMainDlg;
+				if (auctionMainDlg2 != null)
+				{
+					auctionMainDlg2.SetSelectSol(nkSoldierInfo);
+				}
 			}
 		}
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.AUCTION_ITEMSELECT_DLG);
@@ -123,7 +134,7 @@ public class AuctionItemSelectDlg : Form
 
 	public void SetAddItemInfo(ITEM InvenItem, ITEMINFO Iteminfo)
 	{
-		NewListItem newListItem = new NewListItem(this.m_nlbItemList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbItemList.ColumnNum, true, string.Empty);
 		string rankColorName = NrTSingleton<ItemManager>.Instance.GetRankColorName(InvenItem);
 		newListItem.SetListItemData(0, true);
 		newListItem.SetListItemData(1, InvenItem, null, null, null);
@@ -143,23 +154,23 @@ public class AuctionItemSelectDlg : Form
 
 	public void ClickDetailInfo(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbItemList.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_nlbItemList.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
-		ITEM iTEM = uIListItemContainer.data as ITEM;
+		ITEM iTEM = selectItem.data as ITEM;
 		if (iTEM != null)
 		{
 			AuctionMainDlg.ShowItemDetailInfo(iTEM, (G_ID)base.WindowID);
 		}
 		else
 		{
-			NkSoldierInfo nkSoldierInfo = uIListItemContainer.data as NkSoldierInfo;
+			NkSoldierInfo nkSoldierInfo = selectItem.data as NkSoldierInfo;
 			if (nkSoldierInfo != null)
 			{
 				AuctionMainDlg.ShowSolDetailInfo(nkSoldierInfo, this);
@@ -206,7 +217,10 @@ public class AuctionItemSelectDlg : Form
 		{
 			if (0L < this.m_kSolList[i].GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_TRADE_COUNT))
 			{
-				this.SetAddSolInfo(this.m_kSolList[i], this.m_strMessage, this.m_strMsg);
+				if (0L >= this.m_kSolList[i].GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME))
+				{
+					this.SetAddSolInfo(this.m_kSolList[i], this.m_strMessage, this.m_strMsg);
+				}
 			}
 		}
 		this.m_nlbItemList.RepositionItems();
@@ -237,7 +251,7 @@ public class AuctionItemSelectDlg : Form
 
 	public void SetAddSolInfo(NkSoldierInfo kSolInfo, string strMessage, string strMsg)
 	{
-		NewListItem newListItem = new NewListItem(this.m_nlbItemList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbItemList.ColumnNum, true, string.Empty);
 		newListItem.SetListItemData(0, true);
 		newListItem.SetListItemData(1, kSolInfo.GetListSolInfo(true), null, null, null);
 		newListItem.SetListItemData(2, kSolInfo.GetName(), null, null, null);
@@ -249,7 +263,7 @@ public class AuctionItemSelectDlg : Form
 		});
 		newListItem.SetListItemData(3, strMessage, null, null, null);
 		newListItem.SetListItemData(4, string.Empty, null, new EZValueChangedDelegate(this.ClickDetailInfo), null);
-		newListItem.SetListItemData(5, false);
+		newListItem.SetListItemData(5, kSolInfo.IsAtbCommonFlag(1L));
 		newListItem.Data = kSolInfo;
 		this.m_nlbItemList.Add(newListItem);
 	}

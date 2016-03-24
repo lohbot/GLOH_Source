@@ -29,6 +29,7 @@ public class UI_MiniDramaCaption : Form
 		Form form = this;
 		base.TopMost = true;
 		instance.LoadFileAll(ref form, "MiniDrama/DLG_MiniDramaCaption", G_ID.MINIDRAMACAPTION_DLG, false);
+		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
 	}
 
 	public override void SetComponent()
@@ -137,6 +138,16 @@ public class UI_MiniDramaCaption : Form
 						current.StartBehavior(current2);
 						this.skip = true;
 						break;
+					}
+				}
+			}
+			foreach (EventTrigger_Game current3 in onTrigger)
+			{
+				foreach (GameObject current4 in current3.BehaviorList)
+				{
+					if (current4.GetComponent<Behavior_uSequencer>() != null)
+					{
+						current4.GetComponent<Behavior_uSequencer>().SkipUSequencer();
 					}
 				}
 			}

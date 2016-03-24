@@ -2,9 +2,11 @@ using SERVICE;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Text;
 using System.Xml;
 using TsBundle;
+using TsLibs;
 using UnityEngine;
 
 public class TsAudioContainer
@@ -657,7 +659,7 @@ public class TsAudioContainer
 				return "AudioContainer";
 			}
 			eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
-			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USLOCAL || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USGOOGLE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USAMAZON || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_GLOBALENGLOCAL || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_GLOBALENGQA)
+			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USLOCAL || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USGOOGLE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USAMAZON || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_GLOBALENGLOCAL || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_GLOBALENGQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USIOS)
 			{
 				return "AudioContainer_ENG";
 			}
@@ -686,13 +688,13 @@ public class TsAudioContainer
 			string text = string.Empty;
 			if (NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
-				if (TsPlatform.IsMobile)
+				if (TsPlatform.IsMobile && NrTSingleton<NrGlobalReference>.Instance.isLoadWWW)
 				{
 					text = text + CDefinePath.XMLBundlePath() + this.XML_FILE_NAME + "_mobile.assetbundle";
 				}
 				else
 				{
-					text = text + CDefinePath.XMLBundlePath() + this.XML_FILE_NAME + ".assetbundle";
+					text = text + CDefinePath.XMLPath() + this.XML_FILE_NAME + ".xml";
 				}
 			}
 			else
@@ -967,7 +969,7 @@ public class TsAudioContainer
 	{
 		this._isComplatedDownloadXML = false;
 		bool result;
-		if (Application.isPlaying)
+		if (Application.isPlaying && NrTSingleton<NrGlobalReference>.Instance.isLoadWWW)
 		{
 			result = this._LoadXML_FromServer();
 		}
@@ -1062,19 +1064,34 @@ public class TsAudioContainer
 
 	private bool _LoadXML_FromLocal()
 	{
-		TsLog.Log("Start Download AudioContainer~! = " + this.XML_FILE_PATH, new object[0]);
-		XmlDocument xmlDocument = new XmlDocument();
-		try
+		if (NrTSingleton<NrGlobalReference>.Instance.isLoadWWW)
 		{
-			xmlDocument.Load(this.XML_FILE_PATH);
+			TsLog.Log("Start Download AudioContainer~! = " + this.XML_FILE_PATH, new object[0]);
+			XmlDocument xmlDocument = new XmlDocument();
+			try
+			{
+				xmlDocument.Load(this.XML_FILE_PATH);
+			}
+			catch (Exception ex)
+			{
+				TsLog.LogError("Failed~! TsAudioContainer._LoadXML_FromLocal()   Exception~!= " + ex.ToString(), new object[0]);
+				bool result = false;
+				return result;
+			}
+			if (!this._LoadXml(xmlDocument, this.XML_FILE_PATH))
+			{
+				TsLog.LogError(this._lastLoadResult, new object[0]);
+				return false;
+			}
+			return true;
 		}
-		catch (Exception ex)
-		{
-			TsLog.LogError("Failed~! TsAudioContainer._LoadXML_FromLocal()   Exception~!= " + ex.ToString(), new object[0]);
-			bool result = false;
-			return result;
-		}
-		if (!this._LoadXml(xmlDocument, this.XML_FILE_PATH))
+		TsDataReader tsDataReader = new TsDataReader();
+		tsDataReader.UseMD5 = true;
+		string text = Path.Combine(NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceAreaInfo().szOriginalDataCDNPath, this.XML_FILE_PATH);
+		string fileString = tsDataReader.GetFileString(this.XML_FILE_PATH);
+		XmlDocument xmlDocument2 = new XmlDocument();
+		xmlDocument2.LoadXml(fileString);
+		if (!this._LoadXml(xmlDocument2, this.XML_FILE_PATH))
 		{
 			TsLog.LogError(this._lastLoadResult, new object[0]);
 			return false;
@@ -1131,7 +1148,7 @@ public class TsAudioContainer
 
 	private bool _LoadXML_VolumeScale(XmlNodeList elementList)
 	{
-		bool[] array = new bool[8];
+		bool[] array = new bool[10];
 		float[] array2 = new float[]
 		{
 			0.7f,
@@ -1141,7 +1158,9 @@ public class TsAudioContainer
 			0.45f,
 			0.7f,
 			0.6f,
-			0.6f
+			0.6f,
+			0.7f,
+			1f
 		};
 		foreach (XmlNode xmlNode in elementList)
 		{

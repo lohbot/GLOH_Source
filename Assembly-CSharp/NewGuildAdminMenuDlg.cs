@@ -1,3 +1,4 @@
+using GameMessage;
 using Ndoors.Memory;
 using PROTOCOL;
 using PROTOCOL.GAME;
@@ -9,15 +10,15 @@ using UnityForms;
 
 public class NewGuildAdminMenuDlg : Form
 {
-	private DrawTexture m_dtBG;
-
 	private Button m_btBack;
 
 	private DrawTexture m_dtGuildMark;
 
 	private Button m_btRefreshGuildMark;
 
-	private TextField m_tfGuildMessage;
+	private TextArea m_tfGuildMessage;
+
+	private Label m_lbGuildMessageDefault;
 
 	private Button m_btGuildMessage;
 
@@ -31,9 +32,17 @@ public class NewGuildAdminMenuDlg : Form
 
 	private Button m_btPost;
 
-	private TextField m_tfGuildNotice;
+	private TextArea m_tfGuildNotice;
+
+	private Label m_lbGuildNoticeDefault;
 
 	private Button m_btGuildNotice;
+
+	private Label m_lbWatingCount;
+
+	private Label m_lbGuildName;
+
+	private DrawTexture m_dxGuildBG;
 
 	private float m_fRefreshTime;
 
@@ -46,15 +55,17 @@ public class NewGuildAdminMenuDlg : Form
 
 	public override void SetComponent()
 	{
-		this.m_dtBG = (base.GetControl("DrawTexture_DrawTextureBG") as DrawTexture);
-		this.m_dtBG.SetTextureFromBundle("UI/Etc/GuildBG");
 		this.m_btBack = (base.GetControl("Button_Back") as Button);
 		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickBack));
 		this.m_dtGuildMark = (base.GetControl("DrawTexture_GMark") as DrawTexture);
 		this.m_btRefreshGuildMark = (base.GetControl("Button_Refresh") as Button);
 		this.m_btRefreshGuildMark.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickRefreshGuildMark));
-		this.m_btRefreshGuildMark.Visible = false;
-		this.m_tfGuildMessage = (base.GetControl("TextField_GuildNotice") as TextField);
+		this.m_tfGuildMessage = (base.GetControl("TextField_GuildNotice") as TextArea);
+		this.m_tfGuildMessage.maxLength = 50;
+		this.m_tfGuildMessage.AddCommitDelegate(new EZKeyboardCommitDelegate(this.OnInputText));
+		this.m_tfGuildMessage.AddFocusDelegate(new UITextField.FocusDelegate(this.OnFocusText));
+		this.m_tfGuildMessage.MultiLine = true;
+		this.m_lbGuildMessageDefault = (base.GetControl("Label_GuildNoticeDefaultText") as Label);
 		this.m_btGuildMessage = (base.GetControl("Button_GuildNotice") as Button);
 		this.m_btGuildMessage.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickGuildMessage));
 		this.m_nlbApllicant = (base.GetControl("NLB_Awaiter") as NewListBox);
@@ -75,11 +86,21 @@ public class NewGuildAdminMenuDlg : Form
 		{
 			this.m_btPost.SetEnabled(false);
 		}
-		this.m_tfGuildNotice = (base.GetControl("TextField_GuildNotice2") as TextField);
+		this.m_tfGuildNotice = (base.GetControl("TextField_GuildNotice2") as TextArea);
+		this.m_tfGuildNotice.maxLength = 50;
+		this.m_tfGuildNotice.AddFocusDelegate(new UITextField.FocusDelegate(this.OnFocusText2));
+		this.m_tfGuildNotice.MultiLine = true;
 		this.m_btGuildNotice = (base.GetControl("Button_GuildNotice2") as Button);
 		this.m_btGuildNotice.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickGuildNotice));
+		this.m_lbGuildNoticeDefault = (base.GetControl("Label_GuildNotice2DefaultText") as Label);
+		this.m_lbWatingCount = (base.GetControl("Label_WaitCount") as Label);
+		this.m_lbGuildName = (base.GetControl("Label_GuildName") as Label);
+		this.m_lbGuildName.SetText(NrTSingleton<NewGuildManager>.Instance.GetGuildName());
+		this.m_dxGuildBG = (base.GetControl("DrawTexture_GuildMarkBG") as DrawTexture);
+		this.m_dxGuildBG.SetTextureFromBundle("ui/etc/guildimg03");
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
+		this.WaitCount();
 		this.Send_NewGuildInfo();
 		if (!NrTSingleton<NewGuildManager>.Instance.IsMaster(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID))
 		{
@@ -93,6 +114,14 @@ public class NewGuildAdminMenuDlg : Form
 		if (!NrTSingleton<NewGuildManager>.Instance.IsInviteMember(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID))
 		{
 			this.m_btGuildInvite.SetEnabled(false);
+		}
+		if (!string.IsNullOrEmpty(NrTSingleton<NewGuildManager>.Instance.GetGuildMessage()))
+		{
+			this.m_lbGuildMessageDefault.Visible = false;
+		}
+		if (!string.IsNullOrEmpty(NrTSingleton<NewGuildManager>.Instance.GetGuildNotice()))
+		{
+			this.m_lbGuildNoticeDefault.Visible = false;
 		}
 		this.m_tfGuildMessage.SetText(NrTSingleton<NewGuildManager>.Instance.GetGuildMessage());
 		this.m_tfGuildNotice.SetText(NrTSingleton<NewGuildManager>.Instance.GetGuildNotice());
@@ -108,7 +137,7 @@ public class NewGuildAdminMenuDlg : Form
 				GS_GETPORTRAIT_INFO_REQ gS_GETPORTRAIT_INFO_REQ = new GS_GETPORTRAIT_INFO_REQ();
 				gS_GETPORTRAIT_INFO_REQ.bDataType = 1;
 				gS_GETPORTRAIT_INFO_REQ.i64DataID = NrTSingleton<NewGuildManager>.Instance.GetGuildID();
-				SendPacket.GetInstance().SendObject(1716, gS_GETPORTRAIT_INFO_REQ);
+				SendPacket.GetInstance().SendObject(1726, gS_GETPORTRAIT_INFO_REQ);
 				this.m_fRefreshTime = Time.time;
 			}
 		}
@@ -132,7 +161,7 @@ public class NewGuildAdminMenuDlg : Form
 			NewGuildApplicant applicantInfoFromIndex = NrTSingleton<NewGuildManager>.Instance.GetApplicantInfoFromIndex(i);
 			if (applicantInfoFromIndex != null)
 			{
-				NewListItem newListItem = new NewListItem(this.m_nlbApllicant.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_nlbApllicant.ColumnNum, true, string.Empty);
 				string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1639");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref textFromInterface, new object[]
 				{
@@ -143,12 +172,15 @@ public class NewGuildAdminMenuDlg : Form
 					applicantInfoFromIndex.GetCharName()
 				});
 				newListItem.SetListItemData(0, textFromInterface, null, null, null);
-				newListItem.SetListItemData(1, string.Empty, applicantInfoFromIndex, new EZValueChangedDelegate(this.ClickShowMessageBox), null);
+				newListItem.SetListItemData(1, string.Empty, applicantInfoFromIndex, new EZValueChangedDelegate(this.ApplicantDetailInfo), null);
+				newListItem.SetListItemData(2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("318"), applicantInfoFromIndex, new EZValueChangedDelegate(this.ClickReject), null);
+				newListItem.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("317"), applicantInfoFromIndex, new EZValueChangedDelegate(this.ClickApproval), null);
 				newListItem.Data = applicantInfoFromIndex;
 				this.m_nlbApllicant.Add(newListItem);
 			}
 		}
 		this.m_nlbApllicant.RepositionItems();
+		this.WaitCount();
 	}
 
 	public void ClickGuildMessage(IUIObject obj)
@@ -165,6 +197,17 @@ public class NewGuildAdminMenuDlg : Form
 		if (text == NrTSingleton<NewGuildManager>.Instance.GetGuildMessage())
 		{
 			return;
+		}
+		if ("true" == MsgHandler.HandleReturn<string>("ReservedWordManagerIsUse", new object[0]))
+		{
+			text = MsgHandler.HandleReturn<string>("ReservedWordManagerReplaceWord", new object[]
+			{
+				text
+			});
+		}
+		if (text.Contains("*"))
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("797"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 		}
 		long num = (long)text.Length;
 		if (num > 50L)
@@ -224,37 +267,17 @@ public class NewGuildAdminMenuDlg : Form
 		SendPacket.GetInstance().SendObject(1811, gS_NEWGUILD_MEMBER_JOIN_REQ);
 	}
 
-	public void ClickShowMessageBox(IUIObject obj)
+	public void ApplicantDetailInfo(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_nlbApllicant.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
-		{
-			return;
-		}
-		if (uIListItemContainer.Data == null)
-		{
-			return;
-		}
-		NewGuildApplicant newGuildApplicant = uIListItemContainer.Data as NewGuildApplicant;
+		NewGuildApplicant newGuildApplicant = obj.Data as NewGuildApplicant;
 		if (newGuildApplicant == null)
 		{
 			return;
 		}
-		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1846");
-		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("219");
-		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref textFromMessageBox, new object[]
-		{
-			textFromMessageBox,
-			"targetname",
-			newGuildApplicant.GetCharName()
-		});
-		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		if (msgBoxUI != null)
-		{
-			msgBoxUI.SetMsg(new YesDelegate(this.ClickApproval), null, new NoDelegate(this.ClickReject), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL);
-			msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("317"));
-			msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("318"));
-		}
+		GS_OTHERCHAR_INFO_PERMIT_REQ gS_OTHERCHAR_INFO_PERMIT_REQ = new GS_OTHERCHAR_INFO_PERMIT_REQ();
+		gS_OTHERCHAR_INFO_PERMIT_REQ.nPersonID = newGuildApplicant.GetPersonID();
+		TKString.StringChar(newGuildApplicant.GetCharName().Trim(), ref gS_OTHERCHAR_INFO_PERMIT_REQ.szCharName);
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_OTHERCHAR_INFO_PERMIT_REQ, gS_OTHERCHAR_INFO_PERMIT_REQ);
 	}
 
 	public void ClickChangeMark(IUIObject obj)
@@ -292,9 +315,8 @@ public class NewGuildAdminMenuDlg : Form
 	{
 		if (NrTSingleton<NewGuildManager>.Instance.IsInviteMember(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID))
 		{
-			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_INVITE_DLG);
+			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_INVITE_MENU_DLG);
 		}
-		base.CloseNow();
 	}
 
 	public void ClickGuildDelete(IUIObject obj)
@@ -320,7 +342,6 @@ public class NewGuildAdminMenuDlg : Form
 		if (postDlg != null)
 		{
 			postDlg.SetSendState(PostDlg.eSEND_STATE.eSEND_STATE_NEWGUILD);
-			base.CloseNow();
 		}
 	}
 
@@ -360,6 +381,17 @@ public class NewGuildAdminMenuDlg : Form
 		{
 			return;
 		}
+		if ("true" == MsgHandler.HandleReturn<string>("ReservedWordManagerIsUse", new object[0]))
+		{
+			text = MsgHandler.HandleReturn<string>("ReservedWordManagerReplaceWord", new object[]
+			{
+				text
+			});
+		}
+		if (text.Contains("*"))
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("797"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+		}
 		long num = (long)text.Length;
 		if (num > 50L)
 		{
@@ -374,5 +406,31 @@ public class NewGuildAdminMenuDlg : Form
 	public void RefreshGuildNotice(string strGuildNotice)
 	{
 		this.m_tfGuildNotice.SetText(strGuildNotice);
+	}
+
+	private void WaitCount()
+	{
+		string empty = string.Empty;
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3226"),
+			"count1",
+			NrTSingleton<NewGuildManager>.Instance.GetApplicantCount()
+		});
+		this.m_lbWatingCount.SetText(empty);
+	}
+
+	private void OnInputText(IKeyFocusable obj)
+	{
+	}
+
+	private void OnFocusText(IKeyFocusable obj)
+	{
+		this.m_lbGuildMessageDefault.Visible = false;
+	}
+
+	private void OnFocusText2(IKeyFocusable obj)
+	{
+		this.m_lbGuildNoticeDefault.Visible = false;
 	}
 }

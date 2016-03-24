@@ -23,6 +23,8 @@ namespace PROTOCOL
 
 		private long m_nPacketSizeLog;
 
+		public long m_nLastSendPacketNum;
+
 		private SendPacket()
 		{
 			this.mBuffer = new SendBuffer(SendBuffer.SEND_BUFFER_SIZE);
@@ -69,6 +71,7 @@ namespace PROTOCOL
 			{
 				return;
 			}
+			this.m_nLastSendPacketNum = (long)_eType;
 			this.SendObject((int)_eType, _Obj);
 		}
 
@@ -127,6 +130,14 @@ namespace PROTOCOL
 						Time.realtimeSinceStartup,
 						" sec)"
 					}));
+					Debug.LogError(string.Concat(new object[]
+					{
+						"SEND ===> Total SendPacket Size : ",
+						this.m_nTotalSendPacketSize.ToString(),
+						" (startup : ",
+						Time.realtimeSinceStartup,
+						" sec)"
+					}));
 					this.m_nPacketSizeLog = this.m_nTotalSendPacketSize;
 				}
 			}
@@ -145,6 +156,11 @@ namespace PROTOCOL
 		public bool IsBlockSendPacket()
 		{
 			return this.m_bBlockSendPacket;
+		}
+
+		public bool IsConnected()
+		{
+			return this.m_Socket != null && this.m_Socket.Connected;
 		}
 
 		public long GetTotalSendPacketSize()

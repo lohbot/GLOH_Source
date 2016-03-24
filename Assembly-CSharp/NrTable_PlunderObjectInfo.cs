@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_PlunderObjectInfo : NrTableBase
 {
-	public NrTable_PlunderObjectInfo() : base(CDefinePath.s_strPlunderObjectInfoURL, true)
+	public NrTable_PlunderObjectInfo() : base(CDefinePath.s_strPlunderObjectInfoURL)
 	{
 	}
 

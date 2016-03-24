@@ -11,10 +11,10 @@ public class DirectionDLG : Form
 		eDIRECTION_BABEL,
 		eDIRECTION_PLUNDER,
 		eDIRECTION_ITEMSKILL,
-		eDIRECTION_REDUCE,
 		eDIRECTION_MINESEARCH,
 		eDIRECTION_MINETUTORIAL,
-		eDIRECTION_EXPLORATION
+		eDIRECTION_EXPLORATION,
+		eDIRECTION_MYTHRAID
 	}
 
 	private const string PLAYERPREF_COMMUNITY = "Community DLG Effect";
@@ -51,15 +51,20 @@ public class DirectionDLG : Form
 		Form form = this;
 		instance.LoadFileAll(ref form, "DLG_Direction", G_ID.DLG_DIRECTION, true);
 		base.TopMost = true;
+		base.ShowUpperBG(-1000f);
+		base.ShowDownBG(-1000f);
+		base.ShowLeftBG(-1000f);
+		base.ShowRightBG(-1000f);
 		base.ShowBlackBG(1f);
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
 	}
 
 	public override void SetComponent()
 	{
+		base.SetScreenCenter();
 		this.m_btSkipDirectionDlg = (base.GetControl("Button_Button0") as Button);
-		Button expr_1C = this.m_btSkipDirectionDlg;
-		expr_1C.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C.Click, new EZValueChangedDelegate(this.BtnClickClose));
+		Button expr_22 = this.m_btSkipDirectionDlg;
+		expr_22.Click = (EZValueChangedDelegate)Delegate.Combine(expr_22.Click, new EZValueChangedDelegate(this.BtnClickClose));
 		this.m_btSkipDirectionDlg.Visible = false;
 		this.m_lSkip = (base.GetControl("Label_SKIP") as Label);
 		this.m_lSkip.Visible = true;
@@ -100,10 +105,15 @@ public class DirectionDLG : Form
 		{
 			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.EXPLORATION_DLG);
 		}
+		else if (this.m_direction_type == DirectionDLG.eDIRECTIONTYPE.eDIRECTION_MYTHRAID)
+		{
+			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.MYTHRAID_MODESELECT_DLG);
+		}
 		else
 		{
 			UIDataManager.MuteSound(false);
 		}
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.CHALLENGE_DLG);
 	}
 
 	private void CloseAction()
@@ -152,9 +162,6 @@ public class DirectionDLG : Form
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_ITEMSKILL:
 			PlayerPrefs.SetInt("ItemSkill Effect", 1);
 			break;
-		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE:
-			PlayerPrefs.SetInt("Reduce Effect", 1);
-			break;
 		}
 	}
 
@@ -174,14 +181,14 @@ public class DirectionDLG : Form
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_ITEMSKILL:
 			this.IsCheckShowDirection = (PlayerPrefs.GetInt("ItemSkill Effect") != 1);
 			break;
-		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE:
-			this.IsCheckShowDirection = (PlayerPrefs.GetInt("Reduce Effect") != 1);
-			break;
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_MINESEARCH:
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_MINETUTORIAL:
 			this.IsCheckShowDirection = true;
 			break;
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_EXPLORATION:
+			this.IsCheckShowDirection = true;
+			break;
+		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_MYTHRAID:
 			this.IsCheckShowDirection = true;
 			break;
 		}
@@ -200,9 +207,6 @@ public class DirectionDLG : Form
 			break;
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_ITEMSKILL:
 			PlayerPrefs.SetInt("ItemSkill Effect", 0);
-			break;
-		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE:
-			PlayerPrefs.SetInt("Reduce Effect", 0);
 			break;
 		}
 		this.ShowDirection(type, 0);
@@ -253,10 +257,6 @@ public class DirectionDLG : Form
 			arg = string.Format("{0}", "UI/item/fx_direct_improvemagic" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
 			this.m_EffectShowTime = 22.2f;
 			break;
-		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE:
-			arg = string.Format("{0}{1}{2}", "UI/item/", "fx_direct_improveweapon", NrTSingleton<UIDataManager>.Instance.AddFilePath);
-			this.m_EffectShowTime = 38f;
-			break;
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_MINESEARCH:
 		{
 			if (sub_data == 1)
@@ -279,6 +279,11 @@ public class DirectionDLG : Form
 				arg = "UI/Mine/fx_direct_goldroad" + NrTSingleton<UIDataManager>.Instance.AddFilePath;
 				this.m_EffectShowTime = 5f;
 			}
+			else if (sub_data == 5)
+			{
+				arg = "UI/Mine/fx_direct_goldroad" + NrTSingleton<UIDataManager>.Instance.AddFilePath;
+				this.m_EffectShowTime = 5f;
+			}
 			Vector3 position2 = new Vector3(0f, 0f, 0f);
 			position2.z = 200f;
 			position2.x = this.m_lSkip.transform.position.x;
@@ -292,6 +297,15 @@ public class DirectionDLG : Form
 			break;
 		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_EXPLORATION:
 			arg = string.Format("{0}{1}{2}", "UI/Exploration/", "fx_direct_exploreloding", NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			this.m_EffectShowTime = 3f;
+			break;
+		case DirectionDLG.eDIRECTIONTYPE.eDIRECTION_MYTHRAID:
+			UIDataManager.MuteSound(false);
+			TsAudio.StoreMuteAllAudio();
+			TsAudio.SetExceptMuteAllAudio(EAudioType.UI, true);
+			TsAudio.RefreshAllMuteAudio();
+			TsAudioManager.Instance.AudioContainer.RequestAudioClip("BGM", "MYTH", "START", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay), string.Empty, true);
+			arg = string.Format("{0}{1}{2}", "ui/mythicraid/", "fx_direct_mythraid", NrTSingleton<UIDataManager>.Instance.AddFilePath);
 			this.m_EffectShowTime = 3f;
 			break;
 		}

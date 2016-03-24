@@ -121,7 +121,7 @@ public class ExpeditionCurrentStatusInfoDlg : Form
 		int num = 0;
 		foreach (EXPEDITION_CURRENT_STATE_INFO current in this.m_listExpedition_CurrentStatus)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbCurrentStatus.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbCurrentStatus.ColumnNum, true, string.Empty);
 			if ((current.ui8ExpeditionState == 1 || current.ui8ExpeditionState == 3) && current.i64Time == current.i64CheckBattleTime)
 			{
 				newListItem.SetListItemData(0, true);

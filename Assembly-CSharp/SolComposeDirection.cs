@@ -1,3 +1,4 @@
+using GAME;
 using System;
 using TsBundle;
 using UnityEngine;
@@ -33,9 +34,11 @@ public class SolComposeDirection : Form
 
 	private SOLCOMPOSE_TYPE m_SolComposeMainType;
 
-	private bool m_bGreat;
+	public int[] m_ExtractItemNum = new int[10];
 
-	private int m_ExtractItemNum;
+	public bool[] m_bGreat = new bool[10];
+
+	private int m_ExtractCount;
 
 	private GameObject ExtractResultrootGameObject;
 
@@ -44,6 +47,8 @@ public class SolComposeDirection : Form
 	private Button btnOk;
 
 	private bool bPlayExtractResult;
+
+	public OnCloseCallback _closeCallback;
 
 	public Shader SHADER
 	{
@@ -83,14 +88,18 @@ public class SolComposeDirection : Form
 			this.bgImage.SetTexture(texture2D);
 		}
 		this.lbExtractItemCount = (base.GetControl("Label_Extract_Result") as Label);
-		this.lbExtractItemCount.SetLocation(this.lbExtractItemCount.GetLocationX(), this.lbExtractItemCount.GetLocationY(), -90f);
+		this.lbExtractItemCount.SetLocation(GUICamera.width / 2f - this.lbExtractItemCount.GetSize().x / 2f, this.lbExtractItemCount.GetLocationY(), -90f);
 		this.lbExtractItemCount.Visible = false;
 		this.btnOk = (base.GetControl("Button_Confirm") as Button);
-		Button expr_C6 = this.btnOk;
-		expr_C6.Click = (EZValueChangedDelegate)Delegate.Combine(expr_C6.Click, new EZValueChangedDelegate(this.BtnClickOk));
-		this.btnOk.SetLocation(this.btnOk.GetLocationX(), this.btnOk.GetLocationY(), -90f);
-		this.btnOk.Visible = false;
+		Button expr_E1 = this.btnOk;
+		expr_E1.Click = (EZValueChangedDelegate)Delegate.Combine(expr_E1.Click, new EZValueChangedDelegate(this.BtnClickOk));
+		this.btnOk.SetLocation(GUICamera.width / 2f - this.btnOk.GetSize().x / 2f, this.btnOk.GetLocationY(), -90f);
+		this.btnOk.Hide(true);
 		SolComposeMainDlg solComposeMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_DLG) as SolComposeMainDlg;
+		if (solComposeMainDlg == null)
+		{
+			solComposeMainDlg = (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_CHALLENGEQUEST_DLG) as SolComposeMainDlg);
+		}
 		if (solComposeMainDlg != null)
 		{
 			this.m_SolComposeMainType = solComposeMainDlg.GetSolComposeType();
@@ -120,10 +129,32 @@ public class SolComposeDirection : Form
 		this.Hide();
 	}
 
-	public void SetExtractData(bool bGreat, int ExtractItemNum)
+	public void SetBG(WWWItem _item, object _param)
+	{
+		if (this == null)
+		{
+			return;
+		}
+		if (_item.isCanceled)
+		{
+			return;
+		}
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.bgImage.SetSize(GUICamera.width, GUICamera.height);
+				this.bgImage.SetTexture(texture2D);
+			}
+		}
+	}
+
+	public void SetExtractData(bool[] bGreat, int[] ExtractItemNum)
 	{
 		this.m_bGreat = bGreat;
 		this.m_ExtractItemNum = ExtractItemNum;
+		this.m_ExtractCount = 0;
 	}
 
 	public void SetExtractResultData()
@@ -133,16 +164,34 @@ public class SolComposeDirection : Form
 		{
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2837"),
 			"Count",
-			this.m_ExtractItemNum.ToString()
+			this.m_ExtractItemNum[this.m_ExtractCount].ToString()
 		});
 		this.lbExtractItemCount.SetText(empty);
+		TsLog.LogWarning("!!!! TEXT : {0} = {1} = ", new object[]
+		{
+			this.m_ExtractCount,
+			empty,
+			this.m_ExtractItemNum[this.m_ExtractCount]
+		});
+		this.m_ExtractCount++;
 		this.lbExtractItemCount.Visible = true;
-		this.btnOk.Visible = true;
+		this.btnOk.Hide(false);
 	}
 
 	private void BtnClickOk(IUIObject obj)
 	{
-		this.Close();
+		if (this.m_ExtractCount >= 10 || this.m_ExtractItemNum[this.m_ExtractCount] == 0)
+		{
+			this.Close();
+		}
+		else
+		{
+			this.lbExtractItemCount.Visible = false;
+			this.btnOk.Hide(true);
+			this.SetExtractBundlePlay();
+			this.bPlayExtractResult = true;
+			this.bUpdate = true;
+		}
 	}
 
 	private void SolComposeExtractResult(WWWItem _item, object _param)
@@ -163,41 +212,54 @@ public class SolComposeDirection : Form
 				effectUIPos.z = 300f;
 				this.ExtractResultrootGameObject.transform.position = effectUIPos;
 				NkUtil.SetAllChildLayer(this.ExtractResultrootGameObject, GUICamera.UILayer);
-				string strName = "fx_many";
-				string strName2 = "fx_small";
-				if (this.m_bGreat)
-				{
-					Transform child = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName2);
-					if (child != null && child.gameObject.activeInHierarchy)
-					{
-						child.gameObject.SetActive(false);
-					}
-					Transform child2 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName);
-					if (child2 != null && !child2.gameObject.activeInHierarchy)
-					{
-						child2.gameObject.SetActive(true);
-					}
-				}
-				else
-				{
-					Transform child3 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName);
-					if (child3 != null && child3.gameObject.activeInHierarchy)
-					{
-						child3.gameObject.SetActive(false);
-					}
-					Transform child4 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName2);
-					if (child4 != null && !child4.gameObject.activeInHierarchy)
-					{
-						child4.gameObject.SetActive(true);
-					}
-				}
-				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
-				{
-					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.ExtractResultrootGameObject);
-				}
-				this.Show();
+				this.SetExtractBundlePlay();
 			}
 		}
+	}
+
+	private void SetExtractBundlePlay()
+	{
+		string strName = "fx_many";
+		string strName2 = "fx_small";
+		if (this.m_bGreat[this.m_ExtractCount])
+		{
+			Transform child = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName2);
+			if (child != null && child.gameObject.activeInHierarchy)
+			{
+				child.gameObject.SetActive(false);
+			}
+			Transform child2 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName);
+			if (child2 != null)
+			{
+				if (child2.gameObject.activeInHierarchy)
+				{
+					child2.gameObject.SetActive(false);
+				}
+				child2.gameObject.SetActive(true);
+			}
+		}
+		else
+		{
+			Transform child3 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName);
+			if (child3 != null && child3.gameObject.activeInHierarchy)
+			{
+				child3.gameObject.SetActive(false);
+			}
+			Transform child4 = NkUtil.GetChild(this.ExtractResultrootGameObject.transform, strName2);
+			if (child4 != null)
+			{
+				if (child4.gameObject.activeInHierarchy)
+				{
+					child4.gameObject.SetActive(false);
+				}
+				child4.gameObject.SetActive(true);
+			}
+		}
+		if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.ExtractResultrootGameObject);
+		}
+		this.Show();
 	}
 
 	private void SolComposeExtract(WWWItem _item, object _param)
@@ -331,13 +393,16 @@ public class SolComposeDirection : Form
 			});
 			return text;
 		}
+		int costumeUnique = (int)kSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+		string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(costumeUnique);
+		string portraitFile = charKindInfo.GetPortraitFile1((int)kSol.GetGrade(), costumePortraitPath);
 		if (UIDataManager.IsUse256Texture())
 		{
-			text = charKindInfo.GetPortraitFile1((int)kSol.GetGrade()) + "_256";
+			text = portraitFile + "_256";
 		}
 		else
 		{
-			text = charKindInfo.GetPortraitFile1((int)kSol.GetGrade()) + "_512";
+			text = portraitFile + "_512";
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(text))
 		{
@@ -414,6 +479,10 @@ public class SolComposeDirection : Form
 			NrSound.ImmedatePlay("UI_SFX", "MERCENARY-COMPOSE", "SUCCESS");
 		}
 		UIDataManager.MuteSound(false);
+		if (this._closeCallback != null)
+		{
+			this._closeCallback();
+		}
 		base.OnClose();
 	}
 
@@ -482,5 +551,10 @@ public class SolComposeDirection : Form
 	private void ClickSkipButton(IUIObject obj)
 	{
 		this.Close();
+	}
+
+	public void AddCloseCallback(OnCloseCallback callback)
+	{
+		this._closeCallback = (OnCloseCallback)Delegate.Combine(this._closeCallback, callback);
 	}
 }

@@ -4,7 +4,7 @@ namespace PROTOCOL.GAME
 {
 	public class GS_MINE_SEARCH_REQ
 	{
-		public byte bySearchMineGrade;
+		public byte bSearchMineGrade;
 
 		public long m_nMineID;
 

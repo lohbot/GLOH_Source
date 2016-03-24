@@ -14,6 +14,8 @@ public class WhisperFriendsDlg : Form
 
 	private Button m_btnConfirm;
 
+	private Button m_btClose;
+
 	private int m_RoomUnique;
 
 	public int RoomUnique
@@ -35,6 +37,8 @@ public class WhisperFriendsDlg : Form
 		Form form = this;
 		base.Scale = true;
 		instance.LoadFileAll(ref form, "Whisper/dlg_whisper_friend", G_ID.WHISPER_USERLIST_DLG, true);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
 	}
@@ -67,7 +71,7 @@ public class WhisperFriendsDlg : Form
 			COMMUNITY_USER_INFO cOMMUNITY_USER_INFO = this.m_CommunityUserList[i];
 			if (cOMMUNITY_USER_INFO != null && !list.Contains(cOMMUNITY_USER_INFO.i64PersonID) && cOMMUNITY_USER_INFO.bConnect)
 			{
-				NewListItem newListItem = new NewListItem(3, true);
+				NewListItem newListItem = new NewListItem(this.m_ListBox.ColumnNum, true, string.Empty);
 				newListItem.SetListItemData(0, cOMMUNITY_USER_INFO.strName, null, null, null);
 				newListItem.SetListItemData(1, NrTSingleton<UIDataManager>.Instance.GetString("Lv ", cOMMUNITY_USER_INFO.i16Level.ToString()), null, null, null);
 				newListItem.SetListItemData(2, CommunityUI_DLG.CommunityIcon(cOMMUNITY_USER_INFO), null, null, null);

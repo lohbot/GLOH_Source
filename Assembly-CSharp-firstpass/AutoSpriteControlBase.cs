@@ -16,6 +16,8 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 
 	protected bool bUseDefaultSound = true;
 
+	protected Vector3 vStartPosition = Vector3.zero;
+
 	protected bool nullCamera;
 
 	protected string text;
@@ -1769,6 +1771,11 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 		this.inputDelegate = (EZInputDelegate)Delegate.Remove(this.inputDelegate, del);
 	}
 
+	public virtual void SetGameObjectDelegate(EZGameObjectDelegate del)
+	{
+		this.gameObjectDelegate = del;
+	}
+
 	public virtual void AddGameObjectDelegate(EZGameObjectDelegate del)
 	{
 		this.gameObjectDelegate = (EZGameObjectDelegate)Delegate.Combine(this.gameObjectDelegate, del);
@@ -2123,24 +2130,26 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 		return eMode == this.m_eInverseMode;
 	}
 
-	public void Inverse(INVERSE_MODE eMode)
+	public Vector3 Inverse(INVERSE_MODE eMode)
 	{
+		Vector3 result = Vector3.zero;
 		switch (eMode)
 		{
 		case INVERSE_MODE.LEFT_TO_RIGHT:
-			this.InverseLeftToRight();
+			result = this.InverseLeftToRight();
 			break;
 		case INVERSE_MODE.TOP_TO_BOTTOM:
-			this.InverseTopToBottom();
+			result = this.InverseTopToBottom();
 			break;
 		case INVERSE_MODE.TOPLEFT_TO_BOTTOMRIGHT:
-			this.InverseTopLeftToBottomRight();
+			result = this.InverseTopLeftToBottomRight();
 			break;
 		}
 		this.m_eInverseMode = eMode;
+		return result;
 	}
 
-	private void InverseLeftToRight()
+	private Vector3 InverseLeftToRight()
 	{
 		Vector3 localScale = base.transform.localScale;
 		localScale.x *= -1f;
@@ -2155,9 +2164,10 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 			localPosition.x += this.width;
 		}
 		base.transform.localPosition = localPosition;
+		return localPosition;
 	}
 
-	private void InverseTopToBottom()
+	private Vector3 InverseTopToBottom()
 	{
 		Vector3 localScale = base.transform.localScale;
 		localScale.y *= -1f;
@@ -2172,9 +2182,10 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 			localPosition.y -= this.height;
 		}
 		base.transform.localPosition = localPosition;
+		return localPosition;
 	}
 
-	private void InverseTopLeftToBottomRight()
+	private Vector3 InverseTopLeftToBottomRight()
 	{
 		Vector3 localScale = base.transform.localScale;
 		localScale.x *= -1f;
@@ -2198,6 +2209,7 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 			localPosition.y -= this.height;
 		}
 		base.transform.localPosition = localPosition;
+		return localPosition;
 	}
 
 	public void Rotate(float fAngle)
@@ -2509,6 +2521,7 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 		}
 		this.bStartAni = true;
 		this.bStartScale = base.transform.localScale;
+		this.vStartPosition = base.transform.localPosition;
 	}
 
 	protected void EffectAniCompletionDelegate(EZAnimation anim)
@@ -2519,6 +2532,7 @@ public abstract class AutoSpriteControlBase : AutoSpriteBase, IEZDragDrop, ICont
 		}
 		this.bStartAni = false;
 		base.transform.localScale = this.bStartScale;
+		base.transform.localPosition = this.vStartPosition;
 	}
 
 	public void DeleteChildEffect()

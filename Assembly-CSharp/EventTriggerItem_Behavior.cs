@@ -36,4 +36,8 @@ public abstract class EventTriggerItem_Behavior : EventTriggerItem
 	{
 		return 0f;
 	}
+
+	public virtual void OnDisableTrigger()
+	{
+	}
 }

@@ -21,6 +21,24 @@ public class EVENT_DAILY_DUNGEON_INFO : NrTableData
 
 	public int i32TextKey;
 
+	public int i32ResetSoulGem;
+
+	public string szOpen = string.Empty;
+
+	public string szClose = string.Empty;
+
+	public int i32MapIDX;
+
+	public float fGridX;
+
+	public float fGridY;
+
+	public float fGridZ;
+
+	public string szMonIMG = string.Empty;
+
+	public int i32ExplainText;
+
 	public EVENT_DAILY_DUNGEON_INFO()
 	{
 		this.Init();
@@ -39,6 +57,15 @@ public class EVENT_DAILY_DUNGEON_INFO : NrTableData
 		this.i32RewardItemUnique = 0;
 		this.i32RewardItemNum = 0;
 		this.szBGIMG = string.Empty;
+		this.i32ResetSoulGem = 0;
+		this.szOpen = string.Empty;
+		this.szClose = string.Empty;
+		this.i32MapIDX = 0;
+		this.fGridX = 0f;
+		this.fGridY = 0f;
+		this.fGridZ = 0f;
+		this.szMonIMG = string.Empty;
+		this.i32ExplainText = 0;
 	}
 
 	public override void SetData(TsDataReader.Row row)
@@ -57,5 +84,14 @@ public class EVENT_DAILY_DUNGEON_INFO : NrTableData
 		row.GetColumn(num++, out this.i32RewardItemNum);
 		row.GetColumn(num++, out this.szBGIMG);
 		row.GetColumn(num++, out this.i32TextKey);
+		row.GetColumn(num++, out this.i32ResetSoulGem);
+		row.GetColumn(num++, out this.szOpen);
+		row.GetColumn(num++, out this.szClose);
+		row.GetColumn(num++, out this.i32MapIDX);
+		row.GetColumn(num++, out this.fGridX);
+		row.GetColumn(num++, out this.fGridY);
+		row.GetColumn(num++, out this.fGridZ);
+		row.GetColumn(num++, out this.szMonIMG);
+		row.GetColumn(num++, out this.i32ExplainText);
 	}
 }

@@ -298,7 +298,7 @@ public class NkInputManager : NrBehaviour
 		this.inputType = NkInputManager.INPUT_TYPE.MOUSE;
 		if (TsPlatform.IsMobile)
 		{
-			if (TsPlatform.IsEditor)
+			if (TsPlatform.IsEditor || TsPlatform.IsAndroid)
 			{
 				this.inputType = NkInputManager.INPUT_TYPE.MOUSE;
 			}
@@ -369,6 +369,7 @@ public class NkInputManager : NrBehaviour
 			curPtr.origPos = Input.mousePosition;
 			curPtr.isTap = true;
 			curPtr.clickTime = Time.time;
+			curPtr.isDrag = false;
 			return true;
 		}
 		if (this.leftMouseDown && !curPtr.active)
@@ -481,7 +482,7 @@ public class NkInputManager : NrBehaviour
 	{
 		if (Input.mousePosition != curPtr.devicePos)
 		{
-			if (curPtr.active)
+			if (curPtr.active && curPtr.isDrag)
 			{
 				curPtr.evt = INPUT_INFO.INPUT_EVENT.DRAG;
 				curPtr.inputDelta = NkInputManager.mousePosition - curPtr.devicePos;
@@ -497,9 +498,16 @@ public class NkInputManager : NrBehaviour
 			}
 			else
 			{
+				curPtr.isDrag = true;
+				Vector3 devicePos = NkInputManager.mousePosition;
+				if (curPtr.getResolution() != INPUT_INFO.ResolutionType.Normal && 3f > Mathf.Abs(NkInputManager.mousePosition.x - curPtr.devicePos.x) && 3f > Mathf.Abs(NkInputManager.mousePosition.y - curPtr.devicePos.y))
+				{
+					curPtr.isDrag = false;
+					devicePos = curPtr.devicePos;
+				}
 				curPtr.evt = INPUT_INFO.INPUT_EVENT.MOVE;
 				curPtr.inputDelta = NkInputManager.mousePosition - curPtr.devicePos;
-				curPtr.devicePos = NkInputManager.mousePosition;
+				curPtr.devicePos = devicePos;
 			}
 		}
 		else if (!this.leftMouseDown || !this.rightMouseDown)

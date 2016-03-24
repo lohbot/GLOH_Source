@@ -39,6 +39,16 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 
 	private bool m_bBattleSpeedCheck;
 
+	private string babel_solpos_string = "Babel Solpos";
+
+	private bool m_bAutoBattle;
+
+	private int m_iMacroWinCount;
+
+	private int m_iMacroDefeatCount;
+
+	private bool m_bOpenMacro;
+
 	public int MacroCount
 	{
 		get
@@ -82,11 +92,9 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 		if (babelTowerMainDlg != null)
 		{
 			this.m_nFloorType = babelTowerMainDlg.FloorType;
+			PlayerPrefs.SetInt(NrPrefsKey.LASTPLAY_BABELTYPE, (int)this.m_nFloorType);
 		}
-		if (this.m_nFloorType == 0 && NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_RESULT_DLG))
-		{
-			this.m_nFloorType = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELTYPE, 1);
-		}
+		this.m_nFloorType = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELTYPE, 1);
 		if (this.m_nFloorType == 2)
 		{
 			this.m_nSelectStage = (short)PlayerPrefs.GetInt(NrPrefsKey.LASTPLAY_BABELFLOOR_HARD, 0);
@@ -128,8 +136,15 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 		{
 			this.m_eStatus = eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_INIT;
 			this.m_nMacroCount = 0;
+			this.m_iMacroWinCount = 0;
+			this.m_iMacroDefeatCount = 0;
+			this.m_bOpenMacro = true;
 			this.m_bAutoRevive = bAutoReviveCheck;
 			this.m_bBattleSpeedCheck = bBattleSpeedCheck;
+		}
+		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLE_RESULT_CONTENT_DLG))
+		{
+			this.m_bAutoBattle = true;
 		}
 	}
 
@@ -225,7 +240,42 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 					num = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BATTLE_REPEAT) + vipLevelAddBattleRepeat;
 				}
 			}
-			this.m_nMacroCount++;
+			if (this.m_bAutoBattle)
+			{
+				this.m_bAutoBattle = false;
+			}
+			else
+			{
+				this.m_nMacroCount++;
+			}
+			if (this.m_bBattleSpeedCheck)
+			{
+				NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+				if (kMyCharInfo != null)
+				{
+					long charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_BATTLESPEED_COUNT);
+					if (charSubData > 0L)
+					{
+						int @int = PlayerPrefs.GetInt(NrPrefsKey.AUTOSELLGRADE, 0);
+						int int2 = PlayerPrefs.GetInt(NrPrefsKey.AUTOSELLRANK, 0);
+						TsLog.LogWarning("!!!!!!!!!!!!!!!!!! Macro Grade : {0}", new object[]
+						{
+							@int
+						});
+						TsLog.LogWarning("!!!!!!!!!!!!!!!!!! Macro Rank : {0}", new object[]
+						{
+							int2
+						});
+						if (@int > 0 || int2 > 0)
+						{
+							GS_ITEM_SELL_AUTO_BABEL_REQ gS_ITEM_SELL_AUTO_BABEL_REQ = new GS_ITEM_SELL_AUTO_BABEL_REQ();
+							gS_ITEM_SELL_AUTO_BABEL_REQ.i16BabelAutoSellGrade = (short)@int;
+							gS_ITEM_SELL_AUTO_BABEL_REQ.i16BabelAutoSellRank = (short)int2;
+							SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_ITEM_SELL_AUTO_BABEL_REQ, gS_ITEM_SELL_AUTO_BABEL_REQ);
+						}
+					}
+				}
+			}
 			if (this.m_nMacroCount < num)
 			{
 				this.m_eStatus = eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_CHECK_BATTLEPOS;
@@ -233,10 +283,42 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 			else
 			{
 				this.SetStatus(eBABEL_MACRO_STATUS.eBABEL_MACRO_STATUS_NONE, 0f);
+				BabelTowerMainDlg babelTowerMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABELTOWERMAIN_DLG) as BabelTowerMainDlg;
+				if (babelTowerMainDlg != null)
+				{
+					babelTowerMainDlg.FloorType = this.m_nFloorType;
+					babelTowerMainDlg.ShowList();
+				}
+				if (PlayerPrefs.GetInt(NrPrefsKey.OPTION_VIBE_ON_OFF) == 1)
+				{
+					Handheld.Vibrate();
+				}
+				this.ShowMacroResult();
 			}
 			break;
 		}
 		}
+	}
+
+	public List<int> GetBatchedSolKindList()
+	{
+		List<int> list = new List<int>();
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		for (int i = 1; i <= 20; i++)
+		{
+			string @string = PlayerPrefs.GetString(this.babel_solpos_string + i.ToString());
+			if (!string.IsNullOrEmpty(@string))
+			{
+				long solid = long.Parse(@string);
+				NkSoldierInfo soldierInfoFromSolID = charPersonInfo.GetSoldierInfoFromSolID(solid);
+				if (soldierInfoFromSolID != null)
+				{
+					Debug.Log("BabelBatchedSolKindList : " + soldierInfoFromSolID.GetName());
+					list.Add(soldierInfoFromSolID.GetCharKind());
+				}
+			}
+		}
+		return list;
 	}
 
 	private bool CheckBattlePos()
@@ -290,15 +372,14 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 			{
 				break;
 			}
-			string str = "Babel Solpos";
 			if (b >= 17)
 			{
 				string value = "0";
-				PlayerPrefs.SetString(str + b.ToString(), value);
+				PlayerPrefs.SetString(this.babel_solpos_string + b.ToString(), value);
 			}
 			else
 			{
-				string @string = PlayerPrefs.GetString(str + b.ToString());
+				string @string = PlayerPrefs.GetString(this.babel_solpos_string + b.ToString());
 				if (@string != string.Empty)
 				{
 					long num = long.Parse(@string);
@@ -364,7 +445,7 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 			list.Remove(b3);
 			num2++;
 		}
-		if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWER_REPEAT_MAIN_DLG) == null)
+		if (NrTSingleton<NkClientLogic>.Instance.IsWorldScene() && NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWER_REPEAT_MAIN_DLG) == null)
 		{
 			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BABELTOWER_REPEAT_MAIN_DLG);
 		}
@@ -485,12 +566,19 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 
 	public bool StartBabelMacroBattle()
 	{
+		Battle.BabelPartyCount = 1;
 		GS_BABELTOWER_MACRO_BATTLE_START_REQ gS_BABELTOWER_MACRO_BATTLE_START_REQ = new GS_BABELTOWER_MACRO_BATTLE_START_REQ();
+		gS_BABELTOWER_MACRO_BATTLE_START_REQ.nCombinationUnique = NrTSingleton<SolCombination_RecentBattleStartInfoManager>.Instance.GetRecentBattleSolCombinationInfo(eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER, 0);
 		gS_BABELTOWER_MACRO_BATTLE_START_REQ.nFloorType = this.m_nFloorType;
 		gS_BABELTOWER_MACRO_BATTLE_START_REQ.nBabelStage = this.m_nSelectStage;
 		gS_BABELTOWER_MACRO_BATTLE_START_REQ.nSubFloor = this.m_nSubFloor;
 		gS_BABELTOWER_MACRO_BATTLE_START_REQ.nAutoRevive = ((!this.m_bAutoRevive) ? 0 : 1);
 		gS_BABELTOWER_MACRO_BATTLE_START_REQ.nBattleSpeedCheck = ((!this.m_bBattleSpeedCheck) ? 0 : 1);
+		if (this.m_bOpenMacro)
+		{
+			gS_BABELTOWER_MACRO_BATTLE_START_REQ.bOpenMacro = true;
+			this.m_bOpenMacro = false;
+		}
 		for (int i = 0; i < this.MYSOL_NUM_MAX; i++)
 		{
 			if (this.m_BatchUserSol[i].m_nSolID > 0L)
@@ -501,8 +589,8 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 				}
 				gS_BABELTOWER_MACRO_BATTLE_START_REQ.nSolID[i] = this.m_BatchUserSol[i].m_nSolID;
 				gS_BABELTOWER_MACRO_BATTLE_START_REQ.nBattlePos[i] = this.m_BatchUserSol[i].m_nGridPos;
-				GS_BABELTOWER_MACRO_BATTLE_START_REQ expr_B4 = gS_BABELTOWER_MACRO_BATTLE_START_REQ;
-				expr_B4.nMySolCount += 1;
+				GS_BABELTOWER_MACRO_BATTLE_START_REQ expr_E5 = gS_BABELTOWER_MACRO_BATTLE_START_REQ;
+				expr_E5.nMySolCount += 1;
 			}
 			else
 			{
@@ -517,8 +605,8 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 				gS_BABELTOWER_MACRO_BATTLE_START_REQ.nFriendPersonID[i] = this.m_FriendBatch[i].m_nPersonID;
 				gS_BABELTOWER_MACRO_BATTLE_START_REQ.nFriendSolID[i] = this.m_FriendBatch[i].m_nSolID;
 				gS_BABELTOWER_MACRO_BATTLE_START_REQ.nFriendBattlePos[i] = this.m_FriendBatch[i].m_nGridPos;
-				GS_BABELTOWER_MACRO_BATTLE_START_REQ expr_145 = gS_BABELTOWER_MACRO_BATTLE_START_REQ;
-				expr_145.nFriendSolCount += 1;
+				GS_BABELTOWER_MACRO_BATTLE_START_REQ expr_176 = gS_BABELTOWER_MACRO_BATTLE_START_REQ;
+				expr_176.nFriendSolCount += 1;
 			}
 			else
 			{
@@ -528,7 +616,71 @@ public class NkBabelMacroManager : NrTSingleton<NkBabelMacroManager>
 			}
 		}
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_MACRO_BATTLE_START_REQ, gS_BABELTOWER_MACRO_BATTLE_START_REQ);
-		Battle.BabelPartyCount = 1;
 		return true;
+	}
+
+	public void SaveBattleResult(bool bWin)
+	{
+		if (bWin)
+		{
+			this.m_iMacroWinCount++;
+		}
+		else
+		{
+			this.m_iMacroDefeatCount++;
+		}
+	}
+
+	private void ShowMacroResult()
+	{
+		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+		if (msgBoxUI == null)
+		{
+			return;
+		}
+		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3600");
+		string text = string.Empty;
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3601"),
+			"count1",
+			this.m_iMacroWinCount,
+			"count2",
+			this.m_iMacroDefeatCount
+		});
+		string macroResultSubMessage = this.GetMacroResultSubMessage(this.m_iMacroWinCount, this.m_iMacroDefeatCount);
+		if (!string.IsNullOrEmpty(macroResultSubMessage))
+		{
+			text = text + "\n\n" + macroResultSubMessage;
+		}
+		msgBoxUI.SetMessageFontSize(32);
+		msgBoxUI.SetMsg(null, null, null, null, textFromInterface, text, eMsgType.MB_OK);
+		msgBoxUI.Show();
+	}
+
+	private string GetMacroResultSubMessage(int iWinCount, int iDefeatCount)
+	{
+		string result = string.Empty;
+		if (iDefeatCount == 0 && 0 < iWinCount)
+		{
+			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3602");
+		}
+		else if (iDefeatCount < iWinCount)
+		{
+			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3603");
+		}
+		else if (iWinCount == iDefeatCount)
+		{
+			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3604");
+		}
+		else if (iWinCount < iDefeatCount)
+		{
+			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3605");
+		}
+		else if (iWinCount == 0 && 0 < iDefeatCount)
+		{
+			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3606");
+		}
+		return result;
 	}
 }

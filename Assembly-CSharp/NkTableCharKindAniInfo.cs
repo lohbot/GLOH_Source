@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableCharKindAniInfo : NrTableBase
 {
-	public NkTableCharKindAniInfo() : base(CDefinePath.CHARKIND_ANIMATIONINFO_URL, true)
+	public NkTableCharKindAniInfo() : base(CDefinePath.CHARKIND_ANIMATIONINFO_URL)
 	{
 	}
 

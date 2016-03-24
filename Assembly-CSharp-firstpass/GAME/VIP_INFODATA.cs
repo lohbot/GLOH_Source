@@ -6,7 +6,7 @@ namespace GAME
 	{
 		public byte i8VipLevel;
 
-		public int i32NeedExp;
+		public long i64NeedExp;
 
 		public byte i8MaxWill;
 
@@ -19,5 +19,15 @@ namespace GAME
 		public short i16FastBattle;
 
 		public byte i8Battle_Repeat_Add;
+
+		public byte i8TimeShopCount;
+
+		public byte i8TimeShopFreeRefresh;
+
+		public byte i8DailyDungeonReset;
+
+		public byte i8DailyDungeonDc;
+
+		public byte i8NewExplorationReset;
 	}
 }

@@ -88,7 +88,10 @@ public class CharMoveCommandLayer : InputCommandLayer
 		switch (evt)
 		{
 		case INPUT_INFO.INPUT_EVENT.NO_CHANGE:
-			this.NoChangeMove();
+			if (!CharMoveCommandLayer.bDragMove)
+			{
+				this.NoChangeMove();
+			}
 			return false;
 		case INPUT_INFO.INPUT_EVENT.PRESS:
 			return false;
@@ -214,7 +217,7 @@ public class CharMoveCommandLayer : InputCommandLayer
 				string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("168");
 				string textFromMessageBox2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("240");
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI.SetMsg(new YesDelegate(this.OnAutoMoveStop), null, textFromMessageBox, textFromMessageBox2, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.OnAutoMoveStop), null, textFromMessageBox, textFromMessageBox2, eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
 				msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
 				return;

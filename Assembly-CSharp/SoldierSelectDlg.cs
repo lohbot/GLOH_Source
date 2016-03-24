@@ -32,6 +32,8 @@ public class SoldierSelectDlg : Form
 
 	private NewListBox SoldierSelectList;
 
+	private Button m_btClose;
+
 	private int m_nSearch_ItemUnique;
 
 	private ITEM m_pkEquipItem;
@@ -89,6 +91,8 @@ public class SoldierSelectDlg : Form
 		this.SolSortList02.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnChangeSolt_SolSortTypeList02));
 		this.SoldierSelectList = (base.GetControl("NewListBox_sol") as NewListBox);
 		this.SoldierSelectList.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickSoldierSelect));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.SetSortList();
 		if (TsPlatform.IsMobile)
 		{
@@ -170,7 +174,7 @@ public class SoldierSelectDlg : Form
 		for (int i = 0; i < this.m_kSolSortList.Count; i++)
 		{
 			NkSoldierInfo nkSoldierInfo = this.m_kSolSortList[i];
-			NewListItem newListItem = new NewListItem(this.SoldierSelectList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.SoldierSelectList.ColumnNum, true, string.Empty);
 			EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(nkSoldierInfo.GetCharKind(), nkSoldierInfo.GetGrade());
 			if (eventHeroCharCode != null)
 			{

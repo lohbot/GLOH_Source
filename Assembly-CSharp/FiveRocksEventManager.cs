@@ -1,8 +1,8 @@
-using FiveRocksUnity;
 using GAME;
 using Ndoors.Framework.Stage;
 using System;
 using System.Collections.Generic;
+using TapjoyUnity;
 using UnityEngine;
 
 public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
@@ -32,7 +32,7 @@ public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
 		if (!this.m_StageInitStack.Contains(CurrentScene))
 		{
 			this.m_StageInitStack.Add(CurrentScene);
-			FiveRocks.TrackEvent("GameProgress", "STAGE", CurrentScene.ToString(), "StageInitialize", 0L);
+			Tapjoy.TrackEvent("GameProgress", "STAGE", CurrentScene.ToString(), "StageInitialize", 0L);
 		}
 	}
 
@@ -41,7 +41,7 @@ public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
 		if (!this.m_StageFinalizeStack.Contains(CurrentScene))
 		{
 			this.m_StageFinalizeStack.Add(CurrentScene);
-			FiveRocks.TrackEvent("GameProgress", "STAGE", CurrentScene.ToString(), "m_StageFinalizeStack", 0L);
+			Tapjoy.TrackEvent("GameProgress", "STAGE", CurrentScene.ToString(), "m_StageFinalizeStack", 0L);
 		}
 	}
 
@@ -49,7 +49,7 @@ public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
 	{
 		if (PlayerPrefs.GetInt(CurrentScene.ToString(), 0) == 0)
 		{
-			FiveRocks.TrackEvent("GameProgress", "Funnels", CurrentScene.ToString(), null, 0L);
+			Tapjoy.TrackEvent("GameProgress", "Funnels", CurrentScene.ToString(), null, 0L);
 			PlayerPrefs.SetInt(CurrentScene.ToString(), 1);
 		}
 	}
@@ -59,7 +59,7 @@ public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
 		CQuest questByQuestUnique = NrTSingleton<NkQuestManager>.Instance.GetQuestByQuestUnique(strQuestUnique);
 		if (questByQuestUnique != null)
 		{
-			FiveRocks.TrackEvent("Play", "Quest", questByQuestUnique.GetQuestTitle(), "QuestAccept", 0L);
+			Tapjoy.TrackEvent("Play", "Quest", questByQuestUnique.GetQuestTitle(), "QuestAccept", 0L);
 		}
 	}
 
@@ -68,7 +68,7 @@ public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
 		CQuest questByQuestUnique = NrTSingleton<NkQuestManager>.Instance.GetQuestByQuestUnique(strQuestUnique);
 		if (questByQuestUnique != null)
 		{
-			FiveRocks.TrackEvent("Play", "Quest", questByQuestUnique.GetQuestTitle(), "QuestComplete", 0L);
+			Tapjoy.TrackEvent("Play", "Quest", questByQuestUnique.GetQuestTitle(), "QuestComplete", 0L);
 			this.Placement("quest_end");
 		}
 	}
@@ -76,37 +76,37 @@ public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
 	public void BattleResult(eBATTLE_ROOMTYPE RoomType, float fBattleTime, int InjurySolCount)
 	{
 		string text = RoomType.ToString().Substring(17);
-		FiveRocks.TrackEvent("Play", "Battle", text, text, "BattleTime", (long)fBattleTime, "InjurySol", (long)InjurySolCount, null, 0L);
+		Tapjoy.TrackEvent("Play", "Battle", text, text, "BattleTime", (long)fBattleTime, "InjurySol", (long)InjurySolCount, null, 0L);
 	}
 
 	public void BabelTowerParty(int nCount)
 	{
-		FiveRocks.TrackEvent("Play", "BabelTowerParty", (long)nCount);
+		Tapjoy.TrackEvent("Play", "BabelTowerParty", (long)nCount);
 	}
 
 	public void SolCompose(int nDelSolCnt)
 	{
-		FiveRocks.TrackEvent("HERO", "SOL_COMPOSE", (long)nDelSolCnt);
+		Tapjoy.TrackEvent("HERO", "SOL_COMPOSE", (long)nDelSolCnt);
 	}
 
 	public void SolSell(int nDelSolCnt)
 	{
-		FiveRocks.TrackEvent("HERO", "SOL_SELL", (long)nDelSolCnt);
+		Tapjoy.TrackEvent("HERO", "SOL_SELL", (long)nDelSolCnt);
 	}
 
 	public void SolRecruit(int nSolRecruit)
 	{
-		FiveRocks.TrackEvent("HERO", "SOL_RECRUIT", (long)nSolRecruit);
+		Tapjoy.TrackEvent("HERO", "SOL_RECRUIT", (long)nSolRecruit);
 	}
 
 	public void FriendDel()
 	{
-		FiveRocks.TrackEvent("Friend", "FriendDel", 1L);
+		Tapjoy.TrackEvent("Friend", "FriendDel", 1L);
 	}
 
 	public void FriendHelpHero()
 	{
-		FiveRocks.TrackEvent("Friend", "FriendHelpHero", 1L);
+		Tapjoy.TrackEvent("Friend", "FriendHelpHero", 1L);
 	}
 
 	public void PurchaseItem(long ItemMallIndex)
@@ -115,29 +115,34 @@ public class FiveRocksEventManager : NrTSingleton<FiveRocksEventManager>
 		string textFromItem = NrTSingleton<NrTextMgr>.Instance.GetTextFromItem(item.m_strTextKey);
 		if (item.m_nMoneyType == 1)
 		{
-			FiveRocks.TrackPurchase(textFromItem, "USD", (double)item.m_fPrice, null);
+			Tapjoy.TrackPurchase(textFromItem, "USD", (double)item.m_fPrice, null);
 		}
-		FiveRocks.TrackEvent("Item", "Item", "Purchase", textFromItem, ((eITEMMALL_TYPE)item.m_nGroup).ToString(), 1L, "Price", (long)item.m_fPrice, null, 0L);
+		Tapjoy.TrackEvent("Item", "Item", "Purchase", textFromItem, ((eITEMMALL_TYPE)item.m_nGroup).ToString(), 1L, "Price", (long)item.m_fPrice, null, 0L);
 	}
 
 	public void ItemMallOpen()
 	{
-		FiveRocks.TrackEvent("Item", "ItemMallOpen", 1L);
+		Tapjoy.TrackEvent("Item", "ItemMallOpen", 1L);
 		this.Placement("store_enter");
 	}
 
 	public void Placement(string comment)
 	{
-		FiveRocks.RequestPlacementContent(comment);
+		if (this.m_Listener == null)
+		{
+			Debug.LogError("_listener is null");
+			return;
+		}
+		this.m_Listener.RequestPlacementContent(comment);
 	}
 
 	public void HeartsConsume(eHEARTS_CONSUME eConsume, long Value)
 	{
-		FiveRocks.TrackEvent("Hearts", "Hearts_Consume", "1", eConsume.ToString(), Value);
+		Tapjoy.TrackEvent("Hearts", "Hearts_Consume", "1", eConsume.ToString(), Value);
 	}
 
 	public void HeartsInflow(eHEARTS_INFLOW eInflow, long Value)
 	{
-		FiveRocks.TrackEvent("Hearts", "Hearts_Inflow", "1", eInflow.ToString(), Value);
+		Tapjoy.TrackEvent("Hearts", "Hearts_Inflow", "1", eInflow.ToString(), Value);
 	}
 }

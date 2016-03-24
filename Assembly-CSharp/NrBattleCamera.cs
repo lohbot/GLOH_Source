@@ -485,6 +485,16 @@ public class NrBattleCamera
 			{
 				return;
 			}
+			if (pkTarget.Get3DChar() == null)
+			{
+				Debug.LogError("ERROR, SetLastAttackCamera(), pkTarget.Get3DChar() is Null");
+				return;
+			}
+			if (pkTarget.Get3DChar().GetRootGameObject() == null)
+			{
+				Debug.LogError("ERROR, SetLastAttackCamera(), pkTarget.Get3DChar().GetRootGameObject() is Null");
+				return;
+			}
 			GameObject gameObject = TsSceneSwitcher.Instance._GetSwitchData_RootSceneGO(TsSceneSwitcher.ESceneType.BattleScene);
 			if (gameObject == null)
 			{
@@ -507,6 +517,10 @@ public class NrBattleCamera
 				if (child3 != null)
 				{
 					Camera component2 = child3.GetComponent<Camera>();
+					if (component2 == null)
+					{
+						return;
+					}
 					if (component2.renderingPath != RenderingPath.Forward)
 					{
 						component2.renderingPath = RenderingPath.Forward;
@@ -516,14 +530,25 @@ public class NrBattleCamera
 					{
 						component.enabled = false;
 						Camera component3 = child.GetComponent<Camera>();
+						if (component3 == null)
+						{
+							return;
+						}
 						int cullingMask = component3.cullingMask;
 						component3.CopyFrom(component2);
 						component3.cullingMask = cullingMask;
+						if (NrBattleCamera.m_BackupCameraData == null)
+						{
+							return;
+						}
 						NrBattleCamera.m_BackupCameraData.trParent = child.parent;
 						child.parent = child2;
 						NrBattleCamera.m_BackupCameraData.CameraLevel = component.m_nCameraLevel;
 						NrBattleCamera.m_BackupCameraData.checkbackup = true;
-						this.m_veTriggerStartPos = this.m_TargetGo.transform.position;
+						if (this.m_TargetGo != null)
+						{
+							this.m_veTriggerStartPos = this.m_TargetGo.transform.position;
+						}
 						this.SetcameraPos(pkTarget.GetCharPos());
 						Transform child4 = NkUtil.GetChild(gameObject.transform, "@battlemap");
 						if (child4 != null)
@@ -552,57 +577,64 @@ public class NrBattleCamera
 				}
 			}
 		}
-		else if (NrBattleCamera.m_BackupCameraData.checkbackup && NrBattleCamera.m_BackupCameraData.trParent != null)
+		else
 		{
-			GameObject gameObject3 = TsSceneSwitcher.Instance._GetSwitchData_RootSceneGO(TsSceneSwitcher.ESceneType.BattleScene);
-			if (gameObject3 == null)
+			if (NrBattleCamera.m_BackupCameraData == null)
 			{
 				return;
 			}
-			Transform child6 = NkUtil.GetChild(gameObject3.transform, "Main Camera");
-			if (child6 == null)
+			if (NrBattleCamera.m_BackupCameraData.checkbackup && NrBattleCamera.m_BackupCameraData.trParent != null)
 			{
-				return;
-			}
-			maxCamera component4 = child6.GetComponent<maxCamera>();
-			if (component4 == null)
-			{
-				return;
-			}
-			if (!component4.enabled && NrBattleCamera.m_BackupCameraData.trParent != null)
-			{
-				child6.parent = NrBattleCamera.m_BackupCameraData.trParent;
-				component4.enabled = true;
-				NrBattleCamera.m_BackupCameraData.trParent = null;
-			}
-			component4.m_nCameraLevel = NrBattleCamera.m_BackupCameraData.CameraLevel;
-			component4.SetLevelValue();
-			NrBattleCamera.m_BackupCameraData.checkbackup = false;
-			this.SetcameraPos(this.m_veTriggerStartPos);
-			Battle.BATTLE.InputControlTrigger = false;
-			Transform child7 = NkUtil.GetChild(gameObject3.transform, "@battlemap");
-			if (child7 != null)
-			{
-				Transform child8 = NkUtil.GetChild(child7, "normal1");
-				if (child8 != null)
+				GameObject gameObject3 = TsSceneSwitcher.Instance._GetSwitchData_RootSceneGO(TsSceneSwitcher.ESceneType.BattleScene);
+				if (gameObject3 == null)
 				{
-					child8.gameObject.SetActive(true);
-					if (this.m_SkyBoxMaterial != null)
-					{
-						RenderSettings.skybox = this.m_SkyBoxMaterial;
-						this.m_SkyBoxMaterial = null;
-					}
-					NrTSingleton<NkBattleCharManager>.Instance.ShowHideAlly(pkTarget.Ally, pkTarget.GetBUID(), true, true);
-					Battle.BATTLE.GRID_MANAGER.ShowHideGrid(true);
+					return;
 				}
-			}
-			GameObject gameObject4 = GameObject.Find("UI Camera");
-			if (gameObject4 != null)
-			{
-				Camera componentInChildren2 = gameObject4.GetComponentInChildren<Camera>();
-				if (componentInChildren2 != null)
+				Transform child6 = NkUtil.GetChild(gameObject3.transform, "Main Camera");
+				if (child6 == null)
 				{
-					componentInChildren2.enabled = true;
+					return;
+				}
+				maxCamera component4 = child6.GetComponent<maxCamera>();
+				if (component4 == null)
+				{
+					return;
+				}
+				if (!component4.enabled && NrBattleCamera.m_BackupCameraData.trParent != null)
+				{
+					child6.parent = NrBattleCamera.m_BackupCameraData.trParent;
+					component4.enabled = true;
+					NrBattleCamera.m_BackupCameraData.trParent = null;
+				}
+				component4.m_nCameraLevel = NrBattleCamera.m_BackupCameraData.CameraLevel;
+				component4.SetLevelValue();
+				NrBattleCamera.m_BackupCameraData.checkbackup = false;
+				this.SetcameraPos(this.m_veTriggerStartPos);
+				Battle.BATTLE.InputControlTrigger = false;
+				Transform child7 = NkUtil.GetChild(gameObject3.transform, "@battlemap");
+				if (child7 != null)
+				{
+					Transform child8 = NkUtil.GetChild(child7, "normal1");
+					if (child8 != null)
+					{
+						child8.gameObject.SetActive(true);
+						if (this.m_SkyBoxMaterial != null)
+						{
+							RenderSettings.skybox = this.m_SkyBoxMaterial;
+							this.m_SkyBoxMaterial = null;
+						}
+						NrTSingleton<NkBattleCharManager>.Instance.ShowHideAlly(pkTarget.Ally, pkTarget.GetBUID(), true, true);
+						Battle.BATTLE.GRID_MANAGER.ShowHideGrid(true);
+					}
+				}
+				GameObject gameObject4 = GameObject.Find("UI Camera");
+				if (gameObject4 != null)
+				{
+					Camera componentInChildren2 = gameObject4.GetComponentInChildren<Camera>();
+					if (componentInChildren2 != null)
+					{
+						componentInChildren2.enabled = true;
+					}
 				}
 			}
 		}

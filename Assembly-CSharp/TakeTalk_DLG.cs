@@ -108,7 +108,7 @@ public class TakeTalk_DLG : Form
 		this.m_Button_Button36.Visible = true;
 		this.m_Button_Button36.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("52");
 		this.m_NPCTalk_Transbutton.Visible = true;
-		this.m_Face.SetTexture(eCharImageType.LARGE, 242, -1);
+		this.m_Face.SetTexture(eCharImageType.LARGE, 242, -1, string.Empty);
 		this.m_NPCTalk_npcname.Text = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(242);
 		string empty = string.Empty;
 		string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(this.m_cItem);
@@ -150,7 +150,7 @@ public class TakeTalk_DLG : Form
 		{
 			return;
 		}
-		this.m_Face.SetTexture(eCharImageType.LARGE, i32CharKind, -1);
+		this.m_Face.SetTexture(eCharImageType.LARGE, i32CharKind, -1, string.Empty);
 		this.m_NPCTalk_npcname.Text = charByCharUnique.GetCharKindInfo().GetName();
 		string textFromCharInfo = NrTSingleton<NrTextMgr>.Instance.GetTextFromCharInfo(charByCharUnique.GetCharKindInfo().GetCHARKIND_NPCINFO().GetTextGreeting());
 		this.m_NPCTalk_talklabel.Visible = true;

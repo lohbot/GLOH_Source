@@ -15,6 +15,10 @@ public class BattleSkill_Manager : NrTSingleton<BattleSkill_Manager>
 
 	private Dictionary<int, Dictionary<int, BATTLESKILL_TRAINING>> mHash_BattleSkillTraining;
 
+	private Dictionary<string, List<BATTLESKILL_TRAINING>> mHash_BattleSkillTraining_CharName;
+
+	private Dictionary<int, Dictionary<int, MYTHSKILL_TRAINING>> m_hashMythSkillTraining;
+
 	private Dictionary<string, BATTLESKILL_ICON> m_dicBattleSkillIcon;
 
 	private Dictionary<int, UIBaseInfoLoader> m_dicUILoader = new Dictionary<int, UIBaseInfoLoader>();
@@ -27,7 +31,9 @@ public class BattleSkill_Manager : NrTSingleton<BattleSkill_Manager>
 		this.mHash_BattleSkillDetailInclude = new Dictionary<int, Dictionary<int, BATTLESKILL_DETAILINCLUDE>>();
 		this.mHash_BattleSkillDetail = new Dictionary<int, Dictionary<int, BATTLESKILL_DETAIL>>();
 		this.mHash_BattleSkillTraining = new Dictionary<int, Dictionary<int, BATTLESKILL_TRAINING>>();
+		this.mHash_BattleSkillTraining_CharName = new Dictionary<string, List<BATTLESKILL_TRAINING>>();
 		this.mHash_BattleSkillTrainingInclude = new Dictionary<int, Dictionary<int, BATTLE_SKILL_TRAININGINCLUDE>>();
+		this.m_hashMythSkillTraining = new Dictionary<int, Dictionary<int, MYTHSKILL_TRAINING>>();
 		this.m_dicBattleSkillIcon = new Dictionary<string, BATTLESKILL_ICON>();
 	}
 
@@ -84,6 +90,30 @@ public class BattleSkill_Manager : NrTSingleton<BattleSkill_Manager>
 		if (!this.mHash_BattleSkillTraining[TrainingData.m_nSkillUnique].ContainsKey(TrainingData.m_nSkillLevel))
 		{
 			this.mHash_BattleSkillTraining[TrainingData.m_nSkillUnique].Add(TrainingData.m_nSkillLevel, TrainingData);
+		}
+		for (int i = 0; i < 20; i++)
+		{
+			if (this.mHash_BattleSkillTraining_CharName.ContainsKey(TrainingData.m_szCharCode[i]))
+			{
+				this.mHash_BattleSkillTraining_CharName[TrainingData.m_szCharCode[i]].Add(TrainingData);
+			}
+			else
+			{
+				this.mHash_BattleSkillTraining_CharName[TrainingData.m_szCharCode[i]] = new List<BATTLESKILL_TRAINING>();
+				this.mHash_BattleSkillTraining_CharName[TrainingData.m_szCharCode[i]].Add(TrainingData);
+			}
+		}
+	}
+
+	public void SetMythSkillTraining(MYTHSKILL_TRAINING TrainingData)
+	{
+		if (!this.m_hashMythSkillTraining.ContainsKey(TrainingData.m_i32SkillUnique))
+		{
+			this.m_hashMythSkillTraining.Add(TrainingData.m_i32SkillUnique, new Dictionary<int, MYTHSKILL_TRAINING>());
+		}
+		if (!this.m_hashMythSkillTraining[TrainingData.m_i32SkillUnique].ContainsKey(TrainingData.m_i32SkillLevel))
+		{
+			this.m_hashMythSkillTraining[TrainingData.m_i32SkillUnique].Add(TrainingData.m_i32SkillLevel, TrainingData);
 		}
 	}
 
@@ -269,29 +299,33 @@ public class BattleSkill_Manager : NrTSingleton<BattleSkill_Manager>
 		}
 		List<BATTLESKILL_TRAINING> list = new List<BATTLESKILL_TRAINING>();
 		string code = SoldierData.GetCharKindInfo().GetCode();
-		foreach (int current in this.mHash_BattleSkillTraining.Keys)
+		if (!this.mHash_BattleSkillTraining_CharName.ContainsKey(code))
 		{
-			foreach (KeyValuePair<int, BATTLESKILL_TRAINING> current2 in this.mHash_BattleSkillTraining[current])
+			Debug.LogError("Cannot Find Skill : " + code);
+			return null;
+		}
+		List<BATTLESKILL_TRAINING> list2 = this.mHash_BattleSkillTraining_CharName[code];
+		if (list2 == null)
+		{
+			return null;
+		}
+		for (int i = 0; i < list2.Count; i++)
+		{
+			if (list2[i].m_nSkillLevel == 1)
 			{
-				for (int i = 0; i < 10; i++)
+				BATTLESKILL_BASE battleSkillBase = this.GetBattleSkillBase(list2[i].m_nSkillUnique);
+				if (battleSkillBase != null)
 				{
-					if (code == current2.Value.m_szCharCode[i] && current2.Value.m_nSkillLevel == 1)
+					if (battleSkillBase.m_nSkilNeedWeapon > 0)
 					{
-						BATTLESKILL_BASE battleSkillBase = this.GetBattleSkillBase(current2.Value.m_nSkillUnique);
-						if (battleSkillBase != null)
+						if (SoldierData.CheckNeedWeaponType(battleSkillBase.m_nSkilNeedWeapon))
 						{
-							if (battleSkillBase.m_nSkilNeedWeapon > 0)
-							{
-								if (SoldierData.CheckNeedWeaponType(battleSkillBase.m_nSkilNeedWeapon))
-								{
-									list.Add(current2.Value);
-								}
-							}
-							else if (SoldierData.CheckNeedWeaponType(SoldierData.GetWeaponType()))
-							{
-								list.Add(current2.Value);
-							}
+							list.Add(list2[i]);
 						}
+					}
+					else if (SoldierData.CheckNeedWeaponType(SoldierData.GetWeaponType()))
+					{
+						list.Add(list2[i]);
 					}
 				}
 			}
@@ -301,6 +335,68 @@ public class BattleSkill_Manager : NrTSingleton<BattleSkill_Manager>
 			return null;
 		}
 		return list;
+	}
+
+	public MYTHSKILL_TRAINING GetMythSkillTraining(int skillUnique, int skillLevel)
+	{
+		if (this.m_hashMythSkillTraining.ContainsKey(skillUnique))
+		{
+			foreach (KeyValuePair<int, MYTHSKILL_TRAINING> current in this.m_hashMythSkillTraining[skillUnique])
+			{
+				int key = current.Key;
+				MYTHSKILL_TRAINING value = current.Value;
+				if (key == skillLevel)
+				{
+					return value;
+				}
+			}
+		}
+		return null;
+	}
+
+	public MYTHSKILL_TRAINING GetMythSkillTrainingData(NkSoldierInfo SoldierData)
+	{
+		if (SoldierData == null)
+		{
+			return null;
+		}
+		string code = SoldierData.GetCharKindInfo().GetCode();
+		foreach (int current in this.m_hashMythSkillTraining.Keys)
+		{
+			foreach (KeyValuePair<int, MYTHSKILL_TRAINING> current2 in this.m_hashMythSkillTraining[current])
+			{
+				for (int i = 0; i < 20; i++)
+				{
+					if (!(code != current2.Value.m_strCharCode[i]))
+					{
+						if (current2.Value.m_i32SkillLevel == 1)
+						{
+							BATTLESKILL_BASE battleSkillBase = this.GetBattleSkillBase(current2.Value.m_i32SkillUnique);
+							if (battleSkillBase != null)
+							{
+								if (battleSkillBase.m_nMythSkillType == 1)
+								{
+									int battleskillNeedWeapon;
+									if (battleSkillBase.m_nSkilNeedWeapon > 0)
+									{
+										battleskillNeedWeapon = battleSkillBase.m_nSkilNeedWeapon;
+									}
+									else
+									{
+										battleskillNeedWeapon = SoldierData.GetWeaponType();
+									}
+									if (SoldierData.CheckNeedWeaponType(battleskillNeedWeapon))
+									{
+										return current2.Value;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return null;
 	}
 
 	public UIBaseInfoLoader GetBattleSkillIconTexture(int skillUnique)
@@ -426,5 +522,80 @@ public class BattleSkill_Manager : NrTSingleton<BattleSkill_Manager>
 	public bool GetBuffSkillTextUse()
 	{
 		return this.m_BuffSkillTextUse;
+	}
+
+	public bool IsTargetWeaponTypeCheck(BATTLESKILL_BASE BSkillBase, NkBattleChar TargetBattleChar)
+	{
+		if (BSkillBase == null || TargetBattleChar == null)
+		{
+			return false;
+		}
+		if (BSkillBase.m_nSkillTargetWeaponType == 1L)
+		{
+			return true;
+		}
+		long targetWeaponType = 0L;
+		NkItem validEquipItem = TargetBattleChar.GetValidEquipItem(0);
+		if (validEquipItem == null)
+		{
+			switch (TargetBattleChar.GetWeaponType())
+			{
+			case 1:
+				targetWeaponType = 2L;
+				break;
+			case 2:
+				targetWeaponType = 4L;
+				break;
+			case 3:
+				targetWeaponType = 8L;
+				break;
+			case 4:
+				targetWeaponType = 16L;
+				break;
+			case 5:
+				targetWeaponType = 32L;
+				break;
+			case 6:
+				targetWeaponType = 64L;
+				break;
+			case 7:
+				targetWeaponType = 128L;
+				break;
+			case 8:
+				targetWeaponType = 256L;
+				break;
+			}
+		}
+		else
+		{
+			switch (validEquipItem.GetItemType())
+			{
+			case 1:
+				targetWeaponType = 2L;
+				break;
+			case 2:
+				targetWeaponType = 4L;
+				break;
+			case 3:
+				targetWeaponType = 8L;
+				break;
+			case 4:
+				targetWeaponType = 16L;
+				break;
+			case 5:
+				targetWeaponType = 32L;
+				break;
+			case 6:
+				targetWeaponType = 64L;
+				break;
+			case 7:
+				targetWeaponType = 128L;
+				break;
+			case 8:
+				targetWeaponType = 256L;
+				break;
+			}
+		}
+		return BSkillBase.CheckTargetWeaponType(targetWeaponType);
 	}
 }

@@ -3,6 +3,8 @@ using GAME;
 using Global;
 using Ndoors.Framework.Stage;
 using PROTOCOL;
+using PROTOCOL.GAME;
+using PROTOCOL.GAME.ID;
 using System;
 using UnityEngine;
 using UnityForms;
@@ -17,6 +19,22 @@ public class Main : NrBehaviour
 
 	private Form m_kForm;
 
+	private float prevTimeScale;
+
+	private bool bStopESC;
+
+	public bool StopESC
+	{
+		get
+		{
+			return this.bStopESC;
+		}
+		set
+		{
+			this.bStopESC = value;
+		}
+	}
+
 	public override bool Initialize()
 	{
 		Client.GetInstance();
@@ -29,7 +47,15 @@ public class Main : NrBehaviour
 		{
 			if (NrTSingleton<NkQuestManager>.Instance.IsCompletedFirstQuest())
 			{
-				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+				BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
+				if (bookmarkDlg == null)
+				{
+					bookmarkDlg = (NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BOOKMARK_DLG) as BookmarkDlg);
+				}
+				else
+				{
+					bookmarkDlg.SetBookmarkInfo();
+				}
 				if (bookmarkDlg != null)
 				{
 					bookmarkDlg.Show();
@@ -112,11 +138,6 @@ public class Main : NrBehaviour
 						PlunderMainDlg plunderMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERMAIN_DLG) as PlunderMainDlg;
 						if (plunderMainDlg != null)
 						{
-							if (StageWorld.BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_ATTACK_INFIBATTLE_MAKEUP || StageWorld.BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_DEFENSE_INFIBATTLE_MAKEUP)
-							{
-								plunderMainDlg.SetMode(eMODE.eMODE_INFIBATTLE);
-								plunderMainDlg.SetTgValue(eMODE.eMODE_INFIBATTLE);
-							}
 							plunderMainDlg.Show();
 						}
 					}
@@ -140,8 +161,14 @@ public class Main : NrBehaviour
 						babelGuildBossDlg.ShowList();
 					}
 				}
-				else if (StageWorld.BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
+				else if (StageWorld.BATCH_MODE != eSOLDIER_BATCH_MODE.MODE_EXPEDITION_MAKEUP)
 				{
+					if (StageWorld.BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+					{
+						NrTSingleton<MythRaidManager>.Instance.Init();
+						NrTSingleton<MythRaidManager>.Instance.ShowLobbyDlg();
+						NrTSingleton<MythRaidManager>.Instance.MythRaidBGMOn();
+					}
 				}
 				StageWorld.BATCH_MODE = eSOLDIER_BATCH_MODE.MODE_MAX;
 				if (StageWorld.MINEMSG_TYPE == eMINE_MESSAGE.eMINE_MESSAGE_GO_MILITARY_SUCCESS)
@@ -175,6 +202,41 @@ public class Main : NrBehaviour
 				}
 				StageWorld.PLUNDERMSG_TYPE = ePLUNDER_MESSAGE.ePLUNDER_MESSAGE_DEFAULT;
 				StageWorld.MINEMSG_TYPE = eMINE_MESSAGE.eMINE_MESSAGE_DEFAULT;
+				if (StageWorld.BATTLEROOM_TYPE == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+				{
+					if (NrTSingleton<NkClientLogic>.Instance.GidPrivewHero == 166)
+					{
+						NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.SOLGUIDE_DLG);
+					}
+					else if (NrTSingleton<NkClientLogic>.Instance.GidPrivewHero == 82)
+					{
+						NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.SOLMILITARYGROUP_DLG);
+					}
+					else if (NrTSingleton<NkClientLogic>.Instance.GidPrivewHero == 324)
+					{
+						if (!NrTSingleton<FormsManager>.Instance.IsForm(G_ID.ITEMMALL_DLG))
+						{
+							ItemMallDlg itemMallDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMMALL_DLG) as ItemMallDlg;
+							if (itemMallDlg != null)
+							{
+								itemMallDlg.SetShowMode(ItemMallDlg.eMODE.eMODE_NORMAL);
+								itemMallDlg.SetShowType(eITEMMALL_TYPE.BUY_HERO);
+							}
+						}
+					}
+					else if (NrTSingleton<NkClientLogic>.Instance.GidPrivewHero == 418)
+					{
+						if (NrTSingleton<ContentsLimitManager>.Instance.IsTimeShop())
+						{
+							NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.TIMESHOP_DLG);
+						}
+					}
+					else if (NrTSingleton<NkClientLogic>.Instance.GidPrivewHero == 433)
+					{
+						NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.HEROCOLLECT_DLG);
+						NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.MYTH_EVOLUTION_MAIN_DLG);
+					}
+				}
 			}
 		}
 		else if (Scene.CurScene == Scene.Type.BATTLE || Scene.CurScene == Scene.Type.SOLDIER_BATCH)
@@ -247,6 +309,9 @@ public class Main : NrBehaviour
 		{
 			this.m_ResolutionWindow = !this.m_ResolutionWindow;
 		}
+		if (!TsPlatform.IsEditor || NkInputManager.GetKeyUp(KeyCode.Alpha3))
+		{
+		}
 		if (NkInputManager.GetKey(KeyCode.LeftShift) && NkInputManager.GetKeyUp(KeyCode.Alpha3))
 		{
 			TsLog.LogError("GetMonoHeapSize = {0},  GetMonoUsedSize = {1} , usedHeapSize = {2} ", new object[]
@@ -274,25 +339,64 @@ public class Main : NrBehaviour
 		}
 		if (TsPlatform.IsMobile && !TsPlatform.IsEditor && Input.GetKeyUp(KeyCode.Escape))
 		{
+			string text = "FromESC";
+			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+			if (msgBoxUI != null)
+			{
+				string b = msgBoxUI.GetYesObject() as string;
+				if (text != null && text == b && this.IsBattleStop())
+				{
+					Battle_Control_Dlg battle_Control_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+					if (battle_Control_Dlg != null)
+					{
+						battle_Control_Dlg.bESC = false;
+					}
+					this.BattleStopStart(false);
+				}
+			}
 			bool flag = NrTSingleton<FormsManager>.Instance.CloseFormESC();
+			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.ITEMMALL_POPUPSHOP_DLG))
+			{
+				return;
+			}
 			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.TOASTMSG_DLG))
 			{
-				if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.TOASTMSG_DLG) == null)
+				MsgBoxUI msgBoxUI2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+				if (msgBoxUI2 != null)
 				{
-					MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-					if (msgBoxUI != null)
+					this.BattleStopStart(false);
+					if (Battle.BATTLE != null && !NrTSingleton<ContentsLimitManager>.Instance.IsBattleStopLimit())
 					{
-						msgBoxUI.SetMsg(new YesDelegate(this.EscQuitGame), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("7"), NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("38"), eMsgType.MB_OK_CANCEL);
+						Battle_Control_Dlg battle_Control_Dlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+						if (battle_Control_Dlg2 != null)
+						{
+							battle_Control_Dlg2.ShowRetreatWithCancel();
+						}
+					}
+					else
+					{
+						msgBoxUI2.SetMsg(new YesDelegate(this.EscQuitGame), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("7"), NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("38"), eMsgType.MB_OK_CANCEL, 2);
 					}
 				}
 			}
 			else if (!flag && Scene.CurScene != Scene.Type.SELECTCHAR)
 			{
-				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.TOASTMSG_DLG);
-				MsgBoxUI msgBoxUI2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				if (msgBoxUI2 != null)
+				MsgBoxUI msgBoxUI3 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+				if (msgBoxUI3 != null)
 				{
-					msgBoxUI2.SetMsg(new YesDelegate(this.EscQuitGame), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("7"), NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("38"), eMsgType.MB_OK_CANCEL);
+					this.BattleStopStart(true);
+					if (Battle.BATTLE != null && !NrTSingleton<ContentsLimitManager>.Instance.IsBattleStopLimit())
+					{
+						Battle_Control_Dlg battle_Control_Dlg3 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+						if (battle_Control_Dlg3 != null)
+						{
+							battle_Control_Dlg3.ShowRetreatWithCancel();
+						}
+					}
+					else
+					{
+						msgBoxUI3.SetMsg(new YesDelegate(this.EscQuitGame), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("7"), NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("38"), eMsgType.MB_OK_CANCEL, 2);
+					}
 				}
 				NrTSingleton<FiveRocksEventManager>.Instance.Placement("backbutton_click");
 			}
@@ -308,6 +412,45 @@ public class Main : NrBehaviour
 		NrTSingleton<NrMainSystem>.Instance.EscQuitGame();
 	}
 
+	public void EscGame_Cancle()
+	{
+		this.BattleStopStart(false);
+	}
+
+	private bool IsBattleStop()
+	{
+		return Scene.CurScene == Scene.Type.BATTLE && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PVP && ((Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID) || Battle.BabelPartyCount < 2) && Battle.BATTLE.GetBattleRoomState() == eBATTLE_ROOM_STATE.eBATTLE_ROOM_STATE_ACTION;
+	}
+
+	public void BattleStopStart(bool bStop)
+	{
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsBattleStopLimit())
+		{
+			return;
+		}
+		if (!this.IsBattleStop())
+		{
+			return;
+		}
+		GS_BATTLE_STOP_REQ gS_BATTLE_STOP_REQ = new GS_BATTLE_STOP_REQ();
+		gS_BATTLE_STOP_REQ.bStop = bStop;
+		this.bStopESC = bStop;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BATTLE_STOP_REQ, gS_BATTLE_STOP_REQ);
+	}
+
+	public void BattleTimeStop(bool bStop)
+	{
+		if (bStop)
+		{
+			this.prevTimeScale = Time.timeScale;
+			Time.timeScale = 0f;
+		}
+		else
+		{
+			Time.timeScale = this.prevTimeScale;
+		}
+	}
+
 	public void OnApplicationQuit()
 	{
 		BaseNet_Game.GetInstance().Quit();
@@ -315,6 +458,6 @@ public class Main : NrBehaviour
 
 	public void MsgBoxOKQuitGame(object a_oObject)
 	{
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 }

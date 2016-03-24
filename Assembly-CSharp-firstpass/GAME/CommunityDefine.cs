@@ -12,6 +12,8 @@ namespace GAME
 
 		public const short GUILD_NAME_LEN_NULL = 11;
 
+		public const short GUILD_NAME_LEN_WAR_NULL = 13;
+
 		public const short MEMBER_NAME_LEN_NULL = 11;
 
 		public const short GUILD_MAX_NUM = 500;
@@ -31,6 +33,8 @@ namespace GAME
 		public const short GUILD_INFOMATION_MESSAGE = 100;
 
 		public const short GUILD_INFOMATION_MESSAGE_NULL = 101;
+
+		public const string GUILDWAR_TEXT_COLOR = "1401";
 
 		public const short INVALID_MAG_ID = 0;
 

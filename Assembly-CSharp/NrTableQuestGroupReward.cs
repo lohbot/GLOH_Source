@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableQuestGroupReward : NrTableBase
 {
-	public NrTableQuestGroupReward(string strFilePath) : base(strFilePath, true)
+	public NrTableQuestGroupReward(string strFilePath) : base(strFilePath)
 	{
 	}
 

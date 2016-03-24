@@ -33,6 +33,6 @@ public static class CharObserver
 	[DebuggerHidden]
 	private static IEnumerator Action()
 	{
-		return new CharObserver.<Action>c__Iterator8();
+		return new CharObserver.<Action>c__IteratorB();
 	}
 }

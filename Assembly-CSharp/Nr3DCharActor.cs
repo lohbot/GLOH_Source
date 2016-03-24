@@ -173,33 +173,38 @@ public class Nr3DCharActor : Nr3DCharBase
 			NrCharKindInfo faceCharKindInfo = this.m_pkChar.GetFaceCharKindInfo();
 			if (faceCharKindInfo != null)
 			{
-				string bundlePath = faceCharKindInfo.GetBundlePath();
-				string text = "Char/" + bundlePath;
-				text = text.ToLower();
+				string text = faceCharKindInfo.GetBundlePath();
+				string faceCostumeBundlePath = this.GetFaceCostumeBundlePath();
+				if (!string.IsNullOrEmpty(faceCostumeBundlePath))
+				{
+					text = faceCostumeBundlePath;
+				}
+				string text2 = "Char/" + text;
+				text2 = text2.ToLower();
 				base.bStartDownloadBundle = true;
 				base.downloadCounter++;
-				NrTSingleton<NkBundleCallBack>.Instance.RequestBundleRuntime(text, NkBundleCallBack.PlayerBundleStackName, ItemType.SKIN_BONE, 0, bundlePath.ToLower(), NkBundleParam.eBundleType.BUNDLE_CHAR_NONEPART, base.GetID().ToString(), true);
+				NrTSingleton<NkBundleCallBack>.Instance.RequestBundleRuntime(text2, NkBundleCallBack.PlayerBundleStackName, ItemType.SKIN_BONE, 0, text.ToLower(), NkBundleParam.eBundleType.BUNDLE_CHAR_NONEPART, base.GetID().ToString(), true);
 				this.m_bFaceSoldier = true;
 				return;
 			}
 		}
 		if (TsPlatform.IsMobile)
 		{
-			string text2 = "Char/Player/" + this.m_szModelPath;
-			text2 = text2.ToLower();
+			string text3 = "Char/Player/" + this.m_szModelPath;
+			text3 = text3.ToLower();
 			base.bStartDownloadBundle = true;
 			base.downloadCounter++;
-			NrTSingleton<NkBundleCallBack>.Instance.RequestBundleRuntime(text2, NkBundleCallBack.PlayerBundleStackName, ItemType.SKIN_BONE, 0, this.m_szModelPath.ToLower(), NkBundleParam.eBundleType.BUNDLE_CHAR_NONEPART, base.GetID().ToString(), true);
+			NrTSingleton<NkBundleCallBack>.Instance.RequestBundleRuntime(text3, NkBundleCallBack.PlayerBundleStackName, ItemType.SKIN_BONE, 0, this.m_szModelPath.ToLower(), NkBundleParam.eBundleType.BUNDLE_CHAR_NONEPART, base.GetID().ToString(), true);
 			return;
 		}
-		string text3 = "Char/Player/" + this.m_szModelPath + "/";
-		text3 = text3 + this.m_szModelPath + "_bone";
+		string text4 = "Char/Player/" + this.m_szModelPath + "/";
+		text4 = text4 + this.m_szModelPath + "_bone";
 		base.bStartDownloadBundle = true;
 		base.downloadCounter++;
 		GameObject playerModelClone = NrTSingleton<Nr3DCharSystem>.Instance.GetPlayerModelClone(this.m_szModelPath);
 		if (playerModelClone == null)
 		{
-			NrTSingleton<NkBundleCallBack>.Instance.RequestBundleRuntime(text3, NkBundleCallBack.PlayerBundleStackName, ItemType.SKIN_BONE, 0, this.m_szCharCode, NkBundleParam.eBundleType.BUNDLE_CHAR_BONE, base.GetID().ToString());
+			NrTSingleton<NkBundleCallBack>.Instance.RequestBundleRuntime(text4, NkBundleCallBack.PlayerBundleStackName, ItemType.SKIN_BONE, 0, this.m_szCharCode, NkBundleParam.eBundleType.BUNDLE_CHAR_BONE, base.GetID().ToString());
 		}
 		else
 		{
@@ -326,11 +331,31 @@ public class Nr3DCharActor : Nr3DCharBase
 		base.FinishDownloadBase(ref wItem);
 	}
 
+	private string FindMainCharCode()
+	{
+		string empty = string.Empty;
+		string charCode = base.GetCharCode();
+		int num = 0;
+		for (int i = 0; i < charCode.Length; i++)
+		{
+			char c = charCode[i];
+			if (c == '_')
+			{
+				return charCode.Substring(num, i - num);
+			}
+		}
+		return charCode;
+	}
+
 	private void MakeWeaponTrail()
 	{
-		string charCode = base.GetCharCode();
+		string arg = base.GetCharCode();
 		string weaponCode = base.GetParentCharSoldierInfo().GetWeaponCode();
-		string str = string.Format("Effect/AttackEffect/fx_{0}_{1}{2}", charCode, weaponCode, NrTSingleton<UIDataManager>.Instance.AddFilePath);
+		if (base.GetParentCharKindInfo().IsATB(1L))
+		{
+			arg = this.FindMainCharCode();
+		}
+		string str = string.Format("Effect/AttackEffect/fx_{0}_{1}{2}", arg, weaponCode, NrTSingleton<UIDataManager>.Instance.AddFilePath);
 		WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.EffectBundleStackName);
 		wWWItem.SetItemType(ItemType.USER_ASSETB);
 		wWWItem.SetCallback(new PostProcPerItem(this.FinishDownloadWeaponTrail), null);
@@ -877,5 +902,23 @@ public class Nr3DCharActor : Nr3DCharBase
 	{
 		this.RemoveLocoMotion();
 		this.RemoveLookAt();
+	}
+
+	private string GetFaceCostumeBundlePath()
+	{
+		if (this.m_pkChar.GetFaceSolID() == 0L)
+		{
+			return string.Empty;
+		}
+		if (base.GetParentFaceSoldierInfo() != null)
+		{
+			int costumeUnique = (int)base.GetParentFaceSoldierInfo().GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+			return NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeBundlePath(costumeUnique);
+		}
+		if (0 < this.m_pkChar.GetFaceCostumeUnique())
+		{
+			return NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeBundlePath(this.m_pkChar.GetFaceCostumeUnique());
+		}
+		return string.Empty;
 	}
 }

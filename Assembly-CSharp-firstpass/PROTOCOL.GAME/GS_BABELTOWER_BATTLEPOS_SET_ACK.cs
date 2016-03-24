@@ -18,6 +18,8 @@ namespace PROTOCOL.GAME
 
 		public long nFightPower;
 
+		public int nCostumeUnique;
+
 		public long nMovePersonID;
 
 		public long nMoveSolID;
@@ -27,5 +29,7 @@ namespace PROTOCOL.GAME
 		public byte nMoveBattlePos;
 
 		public long nMoveFightPower;
+
+		public int nMoveCostumeUnique;
 	}
 }

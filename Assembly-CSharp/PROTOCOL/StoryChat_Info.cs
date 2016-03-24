@@ -26,6 +26,8 @@ namespace PROTOCOL
 
 		public long nPersonID;
 
+		public int nFaceCharCostumeUnique;
+
 		public void Init()
 		{
 			this.nStoryChatID = 0L;
@@ -39,6 +41,7 @@ namespace PROTOCOL
 			this.nLastCommentID = 0L;
 			this.nGuildID = 0L;
 			this.nPersonID = 0L;
+			this.nFaceCharCostumeUnique = 0;
 		}
 	}
 }

@@ -7,6 +7,10 @@ using UnityForms;
 
 public class NearNpcSelectUI_DLG : Form
 {
+	private const string BUTTON_TEXTURE_01 = "Win_B_NewTileBtnOrange";
+
+	private const string BUTTON_TEXTURE_02 = "Win_B_BattleControl";
+
 	private Button m_Button_Npc;
 
 	private DrawTexture m_DrawTexture_NpcIcon;
@@ -66,19 +70,19 @@ public class NearNpcSelectUI_DLG : Form
 		if (this.m_nOldCharUnique == i16CharUnique && charKindInfo.IsATB(8L))
 		{
 			this.QuestSymbol(charKind, eState);
-			this.m_Button_Npc.SetButtonTextureKey("Win_B_BasicBtn01");
+			this.m_Button_Npc.SetButtonTextureKey("Win_B_NewTileBtnOrange");
 			return;
 		}
 		if (this.m_nOldCharUnique == i16CharUnique && charKindInfo.IsATB(16L))
 		{
 			this.QuestSymbol(charKind, eState);
-			this.m_Button_Npc.SetButtonTextureKey("Win_B_BasicBtn01");
+			this.m_Button_Npc.SetButtonTextureKey("Win_B_NewTileBtnOrange");
 			return;
 		}
 		if (this.m_nOldCharUnique == i16CharUnique && charKindInfo.IsATB(4L))
 		{
 			this.BattleSymbol();
-			this.m_Button_Npc.SetButtonTextureKey("Win_B_BasicBtnB02");
+			this.m_Button_Npc.SetButtonTextureKey("Win_B_BattleControl");
 			return;
 		}
 		this.m_i16CharUnique = i16CharUnique;
@@ -102,17 +106,17 @@ public class NearNpcSelectUI_DLG : Form
 		if (this.m_nOldCharUnique == i16CharUnique && charKindInfo.IsATB(8L))
 		{
 			this.QuestSymbol(charKind, eState);
-			this.m_Button_Npc.SetButtonTextureKey("Win_B_BasicBtn01");
+			this.m_Button_Npc.SetButtonTextureKey("Win_B_NewTileBtnOrange");
 		}
 		else if (this.m_nOldCharUnique == i16CharUnique && charKindInfo.IsATB(16L))
 		{
 			this.QuestSymbol(charKind, eState);
-			this.m_Button_Npc.SetButtonTextureKey("Win_B_BasicBtn01");
+			this.m_Button_Npc.SetButtonTextureKey("Win_B_NewTileBtnOrange");
 		}
 		else if (this.m_nOldCharUnique == i16CharUnique && charKindInfo.IsATB(4L))
 		{
 			this.BattleSymbol();
-			this.m_Button_Npc.SetButtonTextureKey("Win_B_BasicBtnB02");
+			this.m_Button_Npc.SetButtonTextureKey("Win_B_BattleControl");
 		}
 	}
 

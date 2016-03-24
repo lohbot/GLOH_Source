@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_PlunderSupportGold : NrTableBase
 {
-	public NrTable_PlunderSupportGold() : base(CDefinePath.s_strPlunderSupportGoldURL, true)
+	public NrTable_PlunderSupportGold() : base(CDefinePath.s_strPlunderSupportGoldURL)
 	{
 	}
 

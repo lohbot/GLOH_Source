@@ -33,6 +33,7 @@ public class UI_RightClickMenu : Form
 		Form form = this;
 		instance.LoadFileAll(ref form, "RightClick/DLG_RightClick", G_ID.DLG_RIGHTCLICK_MENU, true);
 		base.InteractivePanel.draggable = false;
+		base.ShowBlackBG(0f);
 	}
 
 	public override void InitData()
@@ -77,7 +78,7 @@ public class UI_RightClickMenu : Form
 			this.m_ListBox_ListBox[i].AddValueChangedDelegate(new EZValueChangedDelegate(this.ListBoxSelect));
 			this.m_ListBox_ListBox[i].AddLongTapDelegate(new EZValueChangedDelegate(this.ListBoxSelect));
 		}
-		if (TsPlatform.IsWeb || TsPlatform.IsEditor)
+		if (TsPlatform.IsWeb || TsPlatform.IsEditor || TsPlatform.IsAndroid)
 		{
 			float x = NkInputManager.mousePosition.x;
 			float num = GUICamera.height - NkInputManager.mousePosition.y;
@@ -219,9 +220,22 @@ public class UI_RightClickMenu : Form
 		BoxCollider boxCollider = (BoxCollider)base.InteractivePanel.gameObject.GetComponent(typeof(BoxCollider));
 		boxCollider.size = new Vector3(base.GetSize().x, base.GetSize().y, 0f);
 		boxCollider.center = new Vector3(base.GetSize().x / 2f, -base.GetSize().y / 2f, 0f);
-		float val = GUICamera.width - base.GetSize().x - 1f;
-		float val2 = GUICamera.height - base.GetSize().y - 1f;
-		Vector2 location = new Vector2(Math.Min(base.GetLocation().x, val), Math.Min(base.GetLocationY(), val2));
+		float num = GUICamera.width - base.GetSize().x - 1f;
+		float num2 = GUICamera.height - base.GetSize().y - 1f;
+		Vector2 location = new Vector2(Math.Min(base.GetLocation().x, num), Math.Min(Math.Abs(base.GetLocationY()), num2));
+		Debug.LogError(string.Concat(new object[]
+		{
+			"GetLocation().x =",
+			base.GetLocation().x,
+			"GetLocationY()=",
+			base.GetLocationY(),
+			"fRightX = ",
+			num,
+			" fBottomY = ",
+			num2,
+			" ",
+			Time.time
+		}));
 		base.SetLocation(location);
 	}
 

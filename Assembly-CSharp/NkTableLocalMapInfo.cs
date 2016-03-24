@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableLocalMapInfo : NrTableBase
 {
-	public NkTableLocalMapInfo() : base(CDefinePath.LOCALMAP_INFO_URL, true)
+	public NkTableLocalMapInfo() : base(CDefinePath.LOCALMAP_INFO_URL)
 	{
 	}
 

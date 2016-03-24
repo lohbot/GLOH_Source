@@ -26,6 +26,8 @@ public class RightMenuQuestUI : Form
 
 	public string m_szSelectQuestUnique = string.Empty;
 
+	private string m_ChallengeUniqueDistinguish = "_challenge";
+
 	public bool bClickTouch;
 
 	private float _Depth;
@@ -204,7 +206,8 @@ public class RightMenuQuestUI : Form
 				string strQuestUnique = current3.strQuestUnique;
 				if (strQuestUnique != string.Empty)
 				{
-					if (NrTSingleton<NkQuestManager>.Instance.GetQuestGroupByQuestUnique(strQuestUnique) != null)
+					CQuestGroup questGroupByQuestUnique = NrTSingleton<NkQuestManager>.Instance.GetQuestGroupByQuestUnique(strQuestUnique);
+					if (questGroupByQuestUnique != null)
 					{
 						CQuest questByQuestUnique = NrTSingleton<NkQuestManager>.Instance.GetQuestByQuestUnique(strQuestUnique);
 						if (questByQuestUnique != null)
@@ -234,7 +237,7 @@ public class RightMenuQuestUI : Form
 							}
 							num += num3;
 							this.m_kQuestList.LineHeight = num3;
-							NewListItem newListItem = new NewListItem(this.m_kQuestList.ColumnNum, true);
+							NewListItem newListItem = new NewListItem(this.m_kQuestList.ColumnNum, true, string.Empty);
 							this.ShowTouchButton(questByQuestUnique);
 							string text = string.Empty;
 							string[] array = new string[3];
@@ -250,8 +253,8 @@ public class RightMenuQuestUI : Form
 							cSelQuestInfo.m_SeldQuestCondition = questByQuestUnique.GetQuestCommon().cQuestCondition[0];
 							cSelQuestInfo.m_SelQuest = questByQuestUnique;
 							cSelQuestInfo.bType = 0;
-							CQuestGroup questGroupByQuestUnique = NrTSingleton<NkQuestManager>.Instance.GetQuestGroupByQuestUnique(questByQuestUnique.GetQuestUnique());
-							if (questGroupByQuestUnique != null)
+							CQuestGroup questGroupByQuestUnique2 = NrTSingleton<NkQuestManager>.Instance.GetQuestGroupByQuestUnique(questByQuestUnique.GetQuestUnique());
+							if (questGroupByQuestUnique2 != null)
 							{
 								if (NrTSingleton<NkQuestManager>.Instance.GetToggleQuestUnique())
 								{
@@ -324,8 +327,15 @@ public class RightMenuQuestUI : Form
 									}
 								}
 							}
-							newListItem.SetListItemData(6, false);
-							newListItem.SetListItemData(7, false);
+							if (questGroupByQuestUnique.GetQuestType() == 2)
+							{
+								newListItem.SetListItemData(7, string.Empty, questByQuestUnique, new EZValueChangedDelegate(this.ClickCancelQuest), null);
+							}
+							else
+							{
+								newListItem.SetListItemData(6, false);
+								newListItem.SetListItemData(7, false);
+							}
 							newListItem.Data = strQuestUnique;
 							this.m_kQuestList.Add(newListItem);
 							if (0 < num2)
@@ -335,6 +345,78 @@ public class RightMenuQuestUI : Form
 							num2++;
 						}
 					}
+				}
+			}
+		}
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo != null)
+		{
+			ChallengeTable sequenceChallengeTable = NrTSingleton<ChallengeManager>.Instance.GetSequenceChallengeTable();
+			if (sequenceChallengeTable != null && (int)sequenceChallengeTable.m_nLevel <= kMyCharInfo.GetLevel())
+			{
+				UserChallengeInfo userChallengeInfo = kMyCharInfo.GetUserChallengeInfo();
+				if (userChallengeInfo != null && userChallengeInfo.GetLoadData())
+				{
+					Challenge_Info userChallengeInfo2 = userChallengeInfo.GetUserChallengeInfo(sequenceChallengeTable.m_nUnique);
+					num += 80f;
+					this.m_kQuestList.LineHeight = 80f;
+					NewListItem newListItem2 = new NewListItem(this.m_kQuestList.ColumnNum, true, string.Empty);
+					newListItem2.SetListItemData(0, "Win_T_QuestTitleBK2", null, null, null);
+					newListItem2.SetListItemData(2, "Win_I_QuestMark02", null, null, null);
+					newListItem2.SetListItemData(3, this.m_ColorTitle + NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(sequenceChallengeTable.m_szTitleTextKey), null, null, null);
+					string str = string.Empty;
+					string textFromChallenge = NrTSingleton<NrTextMgr>.Instance.GetTextFromChallenge(sequenceChallengeTable.m_kRewardInfo[0].m_szConditionTextKey);
+					if (textFromChallenge.Contains("count"))
+					{
+						if (userChallengeInfo2 == null)
+						{
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref str, new object[]
+							{
+								textFromChallenge,
+								"count",
+								sequenceChallengeTable.m_kRewardInfo[0].m_nConditionCount,
+								"count1",
+								0,
+								"count2",
+								sequenceChallengeTable.m_kRewardInfo[0].m_nConditionCount
+							});
+							newListItem2.SetListItemData(5, this.m_ColorNormal + str, null, null, null);
+						}
+						else if (userChallengeInfo2.m_nValue >= (long)sequenceChallengeTable.m_kRewardInfo[0].m_nConditionCount)
+						{
+							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref str, new object[]
+							{
+								textFromChallenge,
+								"count",
+								sequenceChallengeTable.m_kRewardInfo[0].m_nConditionCount,
+								"count1",
+								userChallengeInfo2.m_nValue,
+								"count2",
+								sequenceChallengeTable.m_kRewardInfo[0].m_nConditionCount
+							});
+							newListItem2.SetListItemData(5, this.m_ColorComplte + str, null, null, null);
+						}
+					}
+					else
+					{
+						str = textFromChallenge;
+						if (userChallengeInfo2 == null)
+						{
+							newListItem2.SetListItemData(5, this.m_ColorNormal + str, null, null, null);
+						}
+						else if (userChallengeInfo2.m_nValue >= (long)sequenceChallengeTable.m_kRewardInfo[0].m_nConditionCount)
+						{
+							newListItem2.SetListItemData(5, this.m_ColorComplte + str, null, null, null);
+						}
+						else
+						{
+							newListItem2.SetListItemData(5, this.m_ColorNormal + str, null, null, null);
+						}
+					}
+					newListItem2.SetListItemData(6, false);
+					newListItem2.SetListItemData(7, false);
+					newListItem2.Data = sequenceChallengeTable.m_nUnique.ToString() + this.m_ChallengeUniqueDistinguish;
+					this.m_kQuestList.Add(newListItem2);
 				}
 			}
 		}
@@ -357,15 +439,15 @@ public class RightMenuQuestUI : Form
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 		if (msgBoxUI != null)
 		{
-			msgBoxUI.SetMsg(new YesDelegate(this.CancelQuest), cQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("799"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("126"), eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.CancelQuest), cQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("799"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("126"), eMsgType.MB_OK_CANCEL, 2);
 			msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
 			msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
 		}
 	}
 
-	public void CancelQuest(object a_oObject)
+	public void CancelQuest(object obj)
 	{
-		CQuest cQuest = (CQuest)a_oObject;
+		CQuest cQuest = (CQuest)obj;
 		if (cQuest == null)
 		{
 			return;
@@ -433,6 +515,29 @@ public class RightMenuQuestUI : Form
 	{
 	}
 
+	private void ShowClickQuestOpenDlg(string OpenUi, short unique)
+	{
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo != null)
+		{
+			ChallengeTable sequenceChallengeTable = NrTSingleton<ChallengeManager>.Instance.GetSequenceChallengeTable();
+			if (sequenceChallengeTable != null)
+			{
+				UserChallengeInfo userChallengeInfo = kMyCharInfo.GetUserChallengeInfo();
+				if (userChallengeInfo != null)
+				{
+					Challenge_Info userChallengeInfo2 = userChallengeInfo.GetUserChallengeInfo(sequenceChallengeTable.m_nUnique);
+					if (userChallengeInfo2 != null && userChallengeInfo2.m_nValue >= (long)sequenceChallengeTable.m_kRewardInfo[0].m_nConditionCount)
+					{
+						NrTSingleton<ChallengeManager>.Instance.GetChallengeOpenReward();
+						return;
+					}
+				}
+			}
+		}
+		NrTSingleton<ChallengeManager>.Instance.GetChallengeOpenUi(OpenUi, unique);
+	}
+
 	private void BtnDoubleClickQuestList(object sender)
 	{
 		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.UIGUIDE_DLG) as UI_UIGuide;
@@ -445,38 +550,53 @@ public class RightMenuQuestUI : Form
 			CQuest questByQuestUnique = NrTSingleton<NkQuestManager>.Instance.GetQuestByQuestUnique(this.m_szSelectQuestUnique);
 			if (questByQuestUnique == null)
 			{
+				string text = this.m_szSelectQuestUnique.Replace(this.m_ChallengeUniqueDistinguish, string.Empty);
+				if (string.IsNullOrEmpty(text))
+				{
+					return;
+				}
+				short unique = short.Parse(text);
+				ChallengeTable challengeTable = NrTSingleton<ChallengeManager>.Instance.GetChallengeTable(unique);
+				if (challengeTable == null)
+				{
+					return;
+				}
+				this.ShowClickQuestOpenDlg(challengeTable.m_szOpenUI, challengeTable.m_nUnique);
 				return;
 			}
-			QUEST_CONST.eQUESTSTATE questState = NrTSingleton<NkQuestManager>.Instance.GetQuestState(questByQuestUnique.GetQuestUnique());
-			if (questState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ONGOING)
+			else
 			{
-				for (int i = 0; i < 3; i++)
+				QUEST_CONST.eQUESTSTATE questState = NrTSingleton<NkQuestManager>.Instance.GetQuestState(questByQuestUnique.GetQuestUnique());
+				if (questState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ONGOING)
 				{
-					if (questByQuestUnique.GetQuestCommon().cQuestCondition[i].i32QuestCode == 155)
+					for (int i = 0; i < 3; i++)
 					{
-						MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-						if (msgBoxUI != null)
+						if (questByQuestUnique.GetQuestCommon().cQuestCondition[i].i32QuestCode == 155)
 						{
-							string empty = string.Empty;
-							NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+							MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+							if (msgBoxUI != null)
 							{
-								NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1533"),
-								"targetname",
-								NrTSingleton<NrCharKindInfoManager>.Instance.GetName((int)questByQuestUnique.GetQuestCommon().cQuestCondition[1].i64Param)
-							});
-							msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<NkQuestManager>.Instance.OpenQuestBattle), questByQuestUnique, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1532"), empty, eMsgType.MB_OK_CANCEL);
-							msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
-							msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
-							return;
+								string empty = string.Empty;
+								NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+								{
+									NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1533"),
+									"targetname",
+									NrTSingleton<NrCharKindInfoManager>.Instance.GetName((int)questByQuestUnique.GetQuestCommon().cQuestCondition[1].i64Param)
+								});
+								msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<NkQuestManager>.Instance.OpenQuestBattle), questByQuestUnique, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1532"), empty, eMsgType.MB_OK_CANCEL, 2);
+								msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
+								msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
+								return;
+							}
 						}
 					}
 				}
-			}
-			NrTSingleton<NkQuestManager>.Instance.QuestAutoMove(this.m_szSelectQuestUnique);
-			if (null != this.m_Touch)
-			{
-				this.m_Touch.RenderEnabled = false;
-				this.bClickTouch = true;
+				NrTSingleton<NkQuestManager>.Instance.QuestAutoMove(this.m_szSelectQuestUnique);
+				if (null != this.m_Touch)
+				{
+					this.m_Touch.RenderEnabled = false;
+					this.bClickTouch = true;
+				}
 			}
 		}
 	}

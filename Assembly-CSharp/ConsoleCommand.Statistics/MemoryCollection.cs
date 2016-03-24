@@ -77,8 +77,8 @@ namespace ConsoleCommand.Statistics
 		[DebuggerHidden]
 		internal static IEnumerable<CollectionSummary> CollectionSummaries()
 		{
-			MemoryCollection.<CollectionSummaries>c__Iterator61 <CollectionSummaries>c__Iterator = new MemoryCollection.<CollectionSummaries>c__Iterator61();
-			MemoryCollection.<CollectionSummaries>c__Iterator61 expr_07 = <CollectionSummaries>c__Iterator;
+			MemoryCollection.<CollectionSummaries>c__Iterator65 <CollectionSummaries>c__Iterator = new MemoryCollection.<CollectionSummaries>c__Iterator65();
+			MemoryCollection.<CollectionSummaries>c__Iterator65 expr_07 = <CollectionSummaries>c__Iterator;
 			expr_07.$PC = -2;
 			return expr_07;
 		}

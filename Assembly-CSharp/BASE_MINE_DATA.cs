@@ -6,7 +6,7 @@ public class BASE_MINE_DATA : NrTableBase
 {
 	public static List<MINE_DATA> m_listMineData = new List<MINE_DATA>();
 
-	public BASE_MINE_DATA() : base(CDefinePath.MineDataURL, true)
+	public BASE_MINE_DATA() : base(CDefinePath.MineDataURL)
 	{
 	}
 
@@ -39,6 +39,10 @@ public class BASE_MINE_DATA : NrTableBase
 		if (szgrade == "LARGEST")
 		{
 			return 4;
+		}
+		if (szgrade == "GUILDWAR")
+		{
+			return 5;
 		}
 		return 0;
 	}

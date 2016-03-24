@@ -15,6 +15,8 @@ public class DLG_OtherCharEquipment : Form
 
 	private Label m_lbDefence;
 
+	private Label m_lbFightPower;
+
 	private DrawTexture m_dtCharImg;
 
 	private DrawTexture m_dtRank;
@@ -35,6 +37,8 @@ public class DLG_OtherCharEquipment : Form
 
 	private Label[] m_lbEventHeroStat = new Label[2];
 
+	private Button m_btClose;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -49,6 +53,7 @@ public class DLG_OtherCharEquipment : Form
 		this.m_lbHP = (base.GetControl("Label_stats_HP2") as Label);
 		this.m_lbAtack = (base.GetControl("Label_stats_damage2") as Label);
 		this.m_lbDefence = (base.GetControl("Label_stats_defence2") as Label);
+		this.m_lbFightPower = (base.GetControl("Label_FightPower") as Label);
 		this.m_dtCharImg = (base.GetControl("drawtexture_ch_img") as DrawTexture);
 		this.m_dtRank = (base.GetControl("DrawTexture_rank01") as DrawTexture);
 		this.m_ivHelmet = (base.GetControl("item_head") as ImageView);
@@ -63,6 +68,8 @@ public class DLG_OtherCharEquipment : Form
 		this.InitImageView(this.m_ivWeapon);
 		this.m_ivRing = (base.GetControl("item_ring") as ImageView);
 		this.InitImageView(this.m_ivRing);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.m_dtEventTexture = (base.GetControl("DrawTexture_Event") as DrawTexture);
 		for (int i = 0; i < 2; i++)
 		{
@@ -176,9 +183,11 @@ public class DLG_OtherCharEquipment : Form
 				solInfo.GetPhysicalDefense().ToString()
 			});
 			this.m_lbDefence.Text = empty;
+			long solSubData = solInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_FIGHTINGPOWER);
+			this.m_lbFightPower.Text = ANNUALIZED.Convert(solSubData);
 			float num5 = 512f;
 			this.m_dtCharImg.SetUVMask(new Rect(4f / num5, 0f, 504f / num5, 448f / num5));
-			this.m_dtCharImg.SetTexture(eCharImageType.LARGE, solInfo.GetCharKind(), (int)solInfo.GetGrade());
+			this.m_dtCharImg.SetTextureEffect(eCharImageType.LARGE, solInfo.GetCharKind(), (int)solInfo.GetGrade(), NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(solInfo));
 			short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(solInfo.GetCharKind(), (int)solInfo.GetGrade());
 			UIBaseInfoLoader solLargeGradeImg = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolLargeGradeImg(solInfo.GetCharKind(), (int)solInfo.GetGrade());
 			this.m_dtRank.Visible = (null != solLargeGradeImg);
@@ -200,6 +209,7 @@ public class DLG_OtherCharEquipment : Form
 			this.m_lbHP.Text = string.Empty;
 			this.m_lbAtack.Text = string.Empty;
 			this.m_lbDefence.Text = string.Empty;
+			this.m_lbFightPower.Text = string.Empty;
 		}
 	}
 

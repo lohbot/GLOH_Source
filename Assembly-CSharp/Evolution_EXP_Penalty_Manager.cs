@@ -26,7 +26,7 @@ public class Evolution_EXP_Penalty_Manager : NrTSingleton<Evolution_EXP_Penalty_
 
 	public int GetSeasonExpPenalty(byte Base, byte Sub)
 	{
-		if (Sub >= 6)
+		if (Sub >= 10)
 		{
 			return 10000;
 		}

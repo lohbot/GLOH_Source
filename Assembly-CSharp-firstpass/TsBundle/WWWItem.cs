@@ -81,6 +81,8 @@ namespace TsBundle
 
 		public delegate void OnIncreaseSizeOfDownloadHandler(int increaseSize);
 
+		public static ErrorCallback _errorCallback;
+
 		private WWW m_www;
 
 		private UnityEngine.Object _mainAsset;
@@ -143,6 +145,12 @@ namespace TsBundle
 			private set;
 		}
 
+		public AudioClip safeAudioClip
+		{
+			get;
+			private set;
+		}
+
 		public int safeSize
 		{
 			get;
@@ -194,6 +202,14 @@ namespace TsBundle
 			get
 			{
 				return this.wiState == WWWItem.StateWI.SUCCESS && null != this.safeBytes;
+			}
+		}
+
+		public bool canAccessAudioClip
+		{
+			get
+			{
+				return this.wiState == WWWItem.StateWI.SUCCESS && null != this.safeAudioClip;
 			}
 		}
 
@@ -427,7 +443,7 @@ namespace TsBundle
 		{
 			get
 			{
-				return this.wiState == WWWItem.StateWI.SUCCESS && this.itemType != ItemType.UNDEFINED && (null != this.safeBundle || this.safeString != null || null != this.safeBytes);
+				return this.wiState == WWWItem.StateWI.SUCCESS && this.itemType != ItemType.UNDEFINED && (null != this.safeBundle || this.safeString != null || this.safeBytes != null || null != this.safeAudioClip);
 			}
 		}
 
@@ -794,6 +810,7 @@ namespace TsBundle
 			this.safeBundle = null;
 			this.safeBytes = null;
 			this.safeString = null;
+			this.safeAudioClip = null;
 			if (this.useLoadFromCacheOrDownload)
 			{
 				this.safeSize = ((this.m_kItem == null) ? 0 : this.m_kItem.nFileSize);
@@ -834,6 +851,14 @@ namespace TsBundle
 					if (this.safeBytes == null)
 					{
 						this._InternalOnly_ChangeStateErrorOrRetry("fail to access www.bytes.");
+					}
+				}
+				else if (this.itemType == ItemType.USER_AUDIO)
+				{
+					this.safeAudioClip = this.m_www.GetAudioClip(false, true);
+					if (null == this.safeAudioClip)
+					{
+						this._InternalOnly_ChangeStateErrorOrRetry("fail to access www.AudioClip.");
 					}
 				}
 				else if (this.itemType == ItemType.UNDEFINED)
@@ -979,6 +1004,10 @@ namespace TsBundle
 								Scene.CurScene.ToString()
 							});
 							TsLog.Assert(false, text2, new object[0]);
+							if (WWWItem._errorCallback != null)
+							{
+								WWWItem._errorCallback(text2);
+							}
 							if (TsPlatform.IsMobile)
 							{
 								TsPlatform.FileLog(text2);
@@ -1066,6 +1095,7 @@ namespace TsBundle
 			this.safeString = null;
 			this.safeBytes = null;
 			this.subBundles = null;
+			this.safeAudioClip = null;
 			return www;
 		}
 
@@ -1093,6 +1123,7 @@ namespace TsBundle
 				this.safeString = null;
 				this.safeBytes = null;
 				this.subBundles = null;
+				this.safeAudioClip = null;
 				return true;
 			}
 			return false;
@@ -1123,6 +1154,7 @@ namespace TsBundle
 			this.safeString = null;
 			this.safeBytes = null;
 			this.subBundles = null;
+			this.safeAudioClip = null;
 			this.wiState = WWWItem.StateWI.DESTROIED;
 		}
 

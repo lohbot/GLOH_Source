@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_FacebookFeed : NrTableBase
 {
-	public NrTable_FacebookFeed() : base(CDefinePath.FACEBOOK_FEED_URL, true)
+	public NrTable_FacebookFeed() : base(CDefinePath.FACEBOOK_FEED_URL)
 	{
 	}
 

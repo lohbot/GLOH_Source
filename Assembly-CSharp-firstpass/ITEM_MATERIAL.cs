@@ -29,6 +29,8 @@ public class ITEM_MATERIAL : NrTableData
 
 	public string TEXT_COLOR_CODE = string.Empty;
 
+	public byte STAR_GRADE;
+
 	public string m_strIconFile = string.Empty;
 
 	public short m_shIconIndex;
@@ -76,5 +78,6 @@ public class ITEM_MATERIAL : NrTableData
 		row.GetColumn(num++, out this.TEXT_COLOR_CODE);
 		row.GetColumn(num++, out this.m_strIconFile);
 		row.GetColumn(num++, out this.m_shIconIndex);
+		row.GetColumn(num++, out this.STAR_GRADE);
 	}
 }

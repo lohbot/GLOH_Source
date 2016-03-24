@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ColosseumGradeInfo : NrTableBase
 {
-	public NrTable_ColosseumGradeInfo() : base(CDefinePath.s_strColosseumGradeInfoURL, true)
+	public NrTable_ColosseumGradeInfo() : base(CDefinePath.s_strColosseumGradeInfoURL)
 	{
 	}
 

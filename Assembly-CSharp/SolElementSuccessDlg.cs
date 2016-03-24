@@ -24,6 +24,8 @@ public class SolElementSuccessDlg : Form
 
 	private string SeasonImageKey = string.Empty;
 
+	private string CardFrameImageKey = string.Empty;
+
 	private SolElementSuccessDlg.eBUNDLEDOWNSTATE eBUNDLEDOWN;
 
 	private SOLDIER_INFO m_pSolInfo;
@@ -56,12 +58,6 @@ public class SolElementSuccessDlg : Form
 
 	private Label solMovieText;
 
-	private DrawTexture faceBookImg;
-
-	private Label faceBookText;
-
-	private Button facebookTrans;
-
 	private bool bLegend;
 
 	public override void InitializeComponent()
@@ -69,7 +65,7 @@ public class SolElementSuccessDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.TopMost = true;
-		instance.LoadFileAll(ref form, "Soldier/DLG_SolRecruitSuccess", G_ID.SOLELEMENTSUCCESS_DLG, false);
+		instance.LoadFileAll(ref form, "Soldier/DLG_SolRecruit", G_ID.SOLELEMENTSUCCESS_DLG, false);
 	}
 
 	public override void SetComponent()
@@ -97,13 +93,6 @@ public class SolElementSuccessDlg : Form
 		this.solMovie.Visible = false;
 		this.solMovieText = (base.GetControl("LB_Movie") as Label);
 		this.solMovieText.Visible = false;
-		this.faceBookImg = (base.GetControl("DT_Reuse") as DrawTexture);
-		this.faceBookImg.Visible = false;
-		this.facebookTrans = (base.GetControl("BT_Reuse") as Button);
-		this.facebookTrans.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickFaceBookButton));
-		this.facebookTrans.Visible = false;
-		this.faceBookText = (base.GetControl("LB_Reuse") as Label);
-		this.faceBookText.Visible = false;
 		this.SetData();
 		base.DonotDepthChange(360f);
 	}
@@ -153,6 +142,9 @@ public class SolElementSuccessDlg : Form
 		{
 			return;
 		}
+		TsAudio.StoreMuteAllAudio();
+		TsAudio.SetExceptMuteAllAudio(EAudioType.UI, true);
+		TsAudio.RefreshAllMuteAudio();
 		this.bLegend = false;
 		this.m_pSolInfo = pkSolInfo;
 		this.m_i32SelectCharKind = pkSolInfo.CharKind;
@@ -172,6 +164,9 @@ public class SolElementSuccessDlg : Form
 		{
 			return;
 		}
+		TsAudio.StoreMuteAllAudio();
+		TsAudio.SetExceptMuteAllAudio(EAudioType.UI, true);
+		TsAudio.RefreshAllMuteAudio();
 		this.bLegend = true;
 		this.m_pSolInfo = pkSolInfo;
 		this.m_i32SelectCharKind = pkSolInfo.CharKind;
@@ -193,43 +188,39 @@ public class SolElementSuccessDlg : Form
 			{
 				if (NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.FaceImageKey) != null && NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.RankImageKey) != null && NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.SeasonImageKey) != null)
 				{
-					GameObject gameObject;
-					if (this.bLegend)
-					{
-						gameObject = NkUtil.GetChild(this.rootEffectGameObject.transform, "face").gameObject;
-					}
-					else
-					{
-						gameObject = NkUtil.GetChild(this.rootEffectGameObject.transform, "fx_plan_face").gameObject;
-					}
-					if (null != gameObject)
-					{
-						Texture2D texture = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.FaceImageKey);
-						if (null != texture)
-						{
-							Material material = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
-							if (null != material)
-							{
-								material.mainTexture = texture;
-								if (null != gameObject.renderer)
-								{
-									gameObject.renderer.sharedMaterial = material;
-								}
-							}
-						}
-					}
 					GameObject gameObject2;
 					if (this.bLegend)
 					{
-						gameObject2 = NkUtil.GetChild(this.rootEffectGameObject.transform, "rank").gameObject;
+						if (NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.CardFrameImageKey) == null)
+						{
+							return;
+						}
+						GameObject gameObject = NkUtil.GetChild(this.rootEffectGameObject.transform, "back").gameObject;
+						if (null != gameObject)
+						{
+							Texture2D texture = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.CardFrameImageKey);
+							if (null != texture)
+							{
+								Material material = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
+								if (null != material)
+								{
+									material.mainTexture = texture;
+									if (null != gameObject.renderer)
+									{
+										gameObject.renderer.sharedMaterial = material;
+									}
+								}
+							}
+						}
+						gameObject2 = NkUtil.GetChild(this.rootEffectGameObject.transform, "face").gameObject;
 					}
 					else
 					{
-						gameObject2 = NkUtil.GetChild(this.rootEffectGameObject.transform, "fx_card_rank").gameObject;
+						gameObject2 = NkUtil.GetChild(this.rootEffectGameObject.transform, "fx_plan_face").gameObject;
 					}
 					if (null != gameObject2)
 					{
-						Texture2D texture2 = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.RankImageKey);
+						Texture2D texture2 = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.FaceImageKey);
 						if (null != texture2)
 						{
 							Material material2 = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
@@ -243,10 +234,18 @@ public class SolElementSuccessDlg : Form
 							}
 						}
 					}
-					GameObject gameObject3 = NkUtil.GetChild(this.rootEffectGameObject.transform, "fx_font_number").gameObject;
+					GameObject gameObject3;
+					if (this.bLegend)
+					{
+						gameObject3 = NkUtil.GetChild(this.rootEffectGameObject.transform, "rank").gameObject;
+					}
+					else
+					{
+						gameObject3 = NkUtil.GetChild(this.rootEffectGameObject.transform, "fx_card_rank").gameObject;
+					}
 					if (null != gameObject3)
 					{
-						Texture2D texture3 = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.SeasonImageKey);
+						Texture2D texture3 = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.RankImageKey);
 						if (null != texture3)
 						{
 							Material material3 = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
@@ -256,6 +255,23 @@ public class SolElementSuccessDlg : Form
 								if (null != gameObject3.renderer)
 								{
 									gameObject3.renderer.sharedMaterial = material3;
+								}
+							}
+						}
+					}
+					GameObject gameObject4 = NkUtil.GetChild(this.rootEffectGameObject.transform, "fx_font_number").gameObject;
+					if (null != gameObject4)
+					{
+						Texture2D texture4 = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.SeasonImageKey);
+						if (null != texture4)
+						{
+							Material material4 = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
+							if (null != material4)
+							{
+								material4.mainTexture = texture4;
+								if (null != gameObject4.renderer)
+								{
+									gameObject4.renderer.sharedMaterial = material4;
 								}
 							}
 						}
@@ -293,11 +309,11 @@ public class SolElementSuccessDlg : Form
 		}
 		if (UIDataManager.IsUse256Texture())
 		{
-			this.FaceImageKey = charKindInfo.GetPortraitFile1((int)(this.m_bSelectGrade - 1)) + "_256";
+			this.FaceImageKey = charKindInfo.GetPortraitFile1((int)(this.m_bSelectGrade - 1), string.Empty) + "_256";
 		}
 		else
 		{
-			this.FaceImageKey = charKindInfo.GetPortraitFile1((int)(this.m_bSelectGrade - 1)) + "_512";
+			this.FaceImageKey = charKindInfo.GetPortraitFile1((int)(this.m_bSelectGrade - 1), string.Empty) + "_512";
 		}
 		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.FaceImageKey))
 		{
@@ -327,6 +343,18 @@ public class SolElementSuccessDlg : Form
 			wWWItem2.SetItemType(ItemType.USER_ASSETB);
 			wWWItem2.SetCallback(new PostProcPerItem(this.SetBundleImage), this.SeasonImageKey);
 			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem2, DownGroup.RUNTIME, true);
+		}
+		if (this.bLegend)
+		{
+			this.CardFrameImageKey = "card_legend";
+			if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.CardFrameImageKey))
+			{
+				string str3 = string.Format("{0}", "UI/Soldier/" + this.CardFrameImageKey + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+				WWWItem wWWItem3 = Holder.TryGetOrCreateBundle(str3 + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+				wWWItem3.SetItemType(ItemType.USER_ASSETB);
+				wWWItem3.SetCallback(new PostProcPerItem(this.SetBundleImage), this.CardFrameImageKey);
+				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem3, DownGroup.RUNTIME, true);
+			}
 		}
 		this.eBUNDLEDOWN = SolElementSuccessDlg.eBUNDLEDOWNSTATE.eBUNDLE_DOWNING;
 	}
@@ -366,17 +394,17 @@ public class SolElementSuccessDlg : Form
 			if (NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
 				string str = string.Format("{0}SOLINTRO/", Option.GetProtocolRootPath(Protocol.HTTP));
-				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false, true);
 			}
 			else
 			{
-				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false, true);
 			}
 		}
 		else
 		{
 			string str2 = string.Format("{0}SOLINTRO/", NrTSingleton<NrGlobalReference>.Instance.basePath);
-			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false);
+			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false, true);
 		}
 	}
 
@@ -406,17 +434,10 @@ public class SolElementSuccessDlg : Form
 			{
 				UnityEngine.Object.Destroy(this.rootEffectGameObject);
 			}
-			SolDetail_Info_Dlg solDetail_Info_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLDETAIL_DLG) as SolDetail_Info_Dlg;
-			if (solDetail_Info_Dlg != null)
+			Myth_Evolution_Main_DLG_ChallengeQuest myth_Evolution_Main_DLG_ChallengeQuest = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_EVOLUTION_MAIN_CHALLENGEQUEST_DLG) as Myth_Evolution_Main_DLG_ChallengeQuest;
+			if (myth_Evolution_Main_DLG_ChallengeQuest != null)
 			{
-				if (this.bLegend)
-				{
-					solDetail_Info_Dlg.SetLegendElementGui();
-				}
-				else
-				{
-					solDetail_Info_Dlg.SetElementGui();
-				}
+				myth_Evolution_Main_DLG_ChallengeQuest.OnLegendEvolutionDirectionEnd();
 			}
 			NrTSingleton<FormsManager>.Instance.AddReserveDeleteForm(base.WindowID);
 		}
@@ -424,10 +445,27 @@ public class SolElementSuccessDlg : Form
 
 	public override void OnClose()
 	{
-		UIDataManager.MuteSound(false);
+		TsAudio.RestoreMuteAllAudio();
+		TsAudio.RefreshAllMuteAudio();
 		if (null != this.rootEffectGameObject)
 		{
 			UnityEngine.Object.Destroy(this.rootEffectGameObject);
+		}
+		if (this.bLegend)
+		{
+			Myth_Legend_Info_DLG myth_Legend_Info_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_LEGEND_INFO_DLG) as Myth_Legend_Info_DLG;
+			if (myth_Legend_Info_DLG != null)
+			{
+				myth_Legend_Info_DLG.InitSetCharKind(this.m_i32SelectCharKind);
+			}
+		}
+		else
+		{
+			SolDetail_Info_Dlg solDetail_Info_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLDETAIL_DLG) as SolDetail_Info_Dlg;
+			if (solDetail_Info_Dlg != null)
+			{
+				solDetail_Info_Dlg.SetElementGui();
+			}
 		}
 		Resources.UnloadUnusedAssets();
 		base.OnClose();
@@ -475,9 +513,6 @@ public class SolElementSuccessDlg : Form
 		this.solMovie.SetLocation(this.solMovie.GetLocationX(), this.closeBack.GetLocationY() - this.solMovie.GetSize().y - 10f, -102f);
 		this.solMovieText.SetLocation(this.solMovieText.GetLocationX(), this.closeBack.GetLocationY() - this.solMovie.GetSize().y - 5f, -102f);
 		this.solMovietTrans.SetLocation(this.solMovietTrans.GetLocationX(), this.closeBack.GetLocationY() - this.solMovietTrans.GetSize().y - 10f, -102f);
-		this.faceBookImg.SetLocation(this.faceBookImg.GetLocation().x, this.closeBack.GetLocationY() - this.faceBookImg.GetSize().y - 10f, -102f);
-		this.faceBookText.SetLocation(this.faceBookText.GetLocation().x, this.closeBack.GetLocationY() - this.faceBookImg.GetSize().y - 5f, -102f);
-		this.facebookTrans.SetLocation(this.facebookTrans.GetLocation().x, this.closeBack.GetLocationY() - this.facebookTrans.GetSize().y - 10f, -102f);
 	}
 
 	public void FacebookGui(bool bShow)
@@ -486,9 +521,6 @@ public class SolElementSuccessDlg : Form
 		{
 			return;
 		}
-		this.faceBookImg.Visible = bShow;
-		this.faceBookText.Visible = bShow;
-		this.facebookTrans.Visible = bShow;
 	}
 
 	public void IntroGui(bool bShow)

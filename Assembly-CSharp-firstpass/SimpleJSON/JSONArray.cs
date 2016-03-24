@@ -57,9 +57,9 @@ namespace SimpleJSON
 		{
 			get
 			{
-				JSONArray.<>c__Iterator18 <>c__Iterator = new JSONArray.<>c__Iterator18();
+				JSONArray.<>c__Iterator19 <>c__Iterator = new JSONArray.<>c__Iterator19();
 				<>c__Iterator.<>f__this = this;
-				JSONArray.<>c__Iterator18 expr_0E = <>c__Iterator;
+				JSONArray.<>c__Iterator19 expr_0E = <>c__Iterator;
 				expr_0E.$PC = -2;
 				return expr_0E;
 			}
@@ -90,9 +90,9 @@ namespace SimpleJSON
 		[DebuggerHidden]
 		public IEnumerator GetEnumerator()
 		{
-			JSONArray.<GetEnumerator>c__Iterator19 <GetEnumerator>c__Iterator = new JSONArray.<GetEnumerator>c__Iterator19();
-			<GetEnumerator>c__Iterator.<>f__this = this;
-			return <GetEnumerator>c__Iterator;
+			JSONArray.<GetEnumerator>c__Iterator1A <GetEnumerator>c__Iterator1A = new JSONArray.<GetEnumerator>c__Iterator1A();
+			<GetEnumerator>c__Iterator1A.<>f__this = this;
+			return <GetEnumerator>c__Iterator1A;
 		}
 
 		public override string ToString()

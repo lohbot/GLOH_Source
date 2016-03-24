@@ -13,5 +13,7 @@ namespace PROTOCOL.GAME
 		public char[] strMasterName = new char[11];
 
 		public char[] strGuildName = new char[11];
+
+		public bool bIsGuildWarRank;
 	}
 }

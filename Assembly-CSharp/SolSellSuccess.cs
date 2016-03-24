@@ -22,7 +22,7 @@ public class SolSellSuccess : Form
 	public override void SetComponent()
 	{
 		this.m_dtBG = (base.GetControl("DrawTexture_NPCImg") as DrawTexture);
-		this.m_dtBG.SetTexture(eCharImageType.LARGE, 242, -1);
+		this.m_dtBG.SetTexture(eCharImageType.LARGE, 242, -1, string.Empty);
 		this.m_btnOk = (base.GetControl("Button_OK") as Button);
 		this.m_btnOk.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		base.SetScreenCenter();

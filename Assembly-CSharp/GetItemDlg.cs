@@ -6,6 +6,8 @@ using UnityForms;
 
 public class GetItemDlg : Form
 {
+	private DrawTexture m_DrawTextureBG;
+
 	private ItemTexture m_itemTexture;
 
 	private Label m_itemName;
@@ -13,6 +15,8 @@ public class GetItemDlg : Form
 	private Label m_itemNumber;
 
 	private int m_nIndex;
+
+	private float m_fUpdateRemoveTime = 2f;
 
 	private float m_fStartTime;
 
@@ -31,9 +35,11 @@ public class GetItemDlg : Form
 
 	public override void SetComponent()
 	{
+		this.m_DrawTextureBG = (base.GetControl("DrawTexture_DrawTextureBG") as DrawTexture);
 		this.m_itemTexture = (base.GetControl("DrawTexture_DrawTexture1") as ItemTexture);
 		this.m_itemName = (base.GetControl("Label_Label1") as Label);
 		this.m_itemNumber = (base.GetControl("Label_Label2") as Label);
+		this.m_DrawTextureBG.Visible = false;
 	}
 
 	public void SetItem(int unique, int number, int nRank)
@@ -56,11 +62,38 @@ public class GetItemDlg : Form
 		}
 	}
 
+	public void SetAttendItem(int unique, int number, float fTime)
+	{
+		this.m_fStartTime = Time.time;
+		ITEM iTEM = new ITEM();
+		iTEM.m_nItemUnique = unique;
+		iTEM.m_nItemNum = number;
+		iTEM.m_nOption[2] = 0;
+		this.m_itemTexture.SetItemTexture(iTEM);
+		this.m_itemName.Text = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(iTEM);
+		this.m_itemNumber.Text = NrTSingleton<UIDataManager>.Instance.GetString(number.ToString(), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("442"));
+		this.m_fUpdateRemoveTime = fTime;
+		if (this.IsTicketItem(unique))
+		{
+			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "BATTLE", "ITEM_CARD", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+		}
+		else
+		{
+			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "BATTLE", "ITEM_ARTICLE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+		}
+		Form form = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.EVENT_NORMAL_ATTEND);
+		if (form != null)
+		{
+			this.m_DrawTextureBG.Visible = true;
+			base.SetLocation(GUICamera.width / 2f - base.GetSize().x / 2f, 0f);
+		}
+	}
+
 	public override void Update()
 	{
 		base.Update();
 		this.UpdatePosition();
-		if (this.m_fStartTime != 0f && Time.time - this.m_fStartTime > 2f)
+		if (this.m_fStartTime != 0f && Time.time - this.m_fStartTime > this.m_fUpdateRemoveTime)
 		{
 			if (Battle.BATTLE != null)
 			{

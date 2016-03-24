@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ComposeExpData : NrTableBase
 {
-	public NrTable_ComposeExpData() : base(CDefinePath.SOLCOMPOSEEXP_URL, true)
+	public NrTable_ComposeExpData() : base(CDefinePath.SOLCOMPOSEEXP_URL)
 	{
 	}
 

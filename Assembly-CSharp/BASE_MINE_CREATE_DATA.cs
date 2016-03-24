@@ -6,7 +6,7 @@ public class BASE_MINE_CREATE_DATA : NrTableBase
 {
 	public static Dictionary<short, MINE_CREATE_DATA> m_dicMineCreateData = new Dictionary<short, MINE_CREATE_DATA>();
 
-	public BASE_MINE_CREATE_DATA() : base(CDefinePath.MineCreateDataURL, true)
+	public BASE_MINE_CREATE_DATA() : base(CDefinePath.MineCreateDataURL)
 	{
 	}
 

@@ -36,9 +36,9 @@ namespace NPatch
 		[DebuggerHidden]
 		private IEnumerator InstallCoroutine()
 		{
-			InstallPackBehaviour.<InstallCoroutine>c__IteratorD <InstallCoroutine>c__IteratorD = new InstallPackBehaviour.<InstallCoroutine>c__IteratorD();
-			<InstallCoroutine>c__IteratorD.<>f__this = this;
-			return <InstallCoroutine>c__IteratorD;
+			InstallPackBehaviour.<InstallCoroutine>c__IteratorE <InstallCoroutine>c__IteratorE = new InstallPackBehaviour.<InstallCoroutine>c__IteratorE();
+			<InstallCoroutine>c__IteratorE.<>f__this = this;
+			return <InstallCoroutine>c__IteratorE;
 		}
 	}
 }

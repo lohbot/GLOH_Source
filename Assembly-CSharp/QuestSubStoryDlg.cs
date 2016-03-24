@@ -73,7 +73,7 @@ public class QuestSubStoryDlg : Form
 						{
 							if (NrTSingleton<NkQuestManager>.Instance.GetQuestState(questByQuestUnique.GetQuestUnique()) == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ACCEPTABLE)
 							{
-								NewListItem newListItem = new NewListItem(this.m_kSubStoryListBox.ColumnNum, true);
+								NewListItem newListItem = new NewListItem(this.m_kSubStoryListBox.ColumnNum, true, string.Empty);
 								if ((int)questByQuestUnique.GetQuestLevel(1) < level)
 								{
 									newListItem.SetListItemData(7, false);
@@ -229,7 +229,7 @@ public class QuestSubStoryDlg : Form
 					"mapname",
 					mapName
 				});
-				msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"));
 				msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 				this.m_nAutoMoveMapIndex = num;

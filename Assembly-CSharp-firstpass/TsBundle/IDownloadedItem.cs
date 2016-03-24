@@ -55,6 +55,11 @@ namespace TsBundle
 			get;
 		}
 
+		bool canAccessAudioClip
+		{
+			get;
+		}
+
 		string safeString
 		{
 			get;
@@ -66,6 +71,11 @@ namespace TsBundle
 		}
 
 		byte[] rawBytes
+		{
+			get;
+		}
+
+		AudioClip safeAudioClip
 		{
 			get;
 		}

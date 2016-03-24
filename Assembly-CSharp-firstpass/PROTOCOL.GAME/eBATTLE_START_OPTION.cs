@@ -1,0 +1,10 @@
+using System;
+
+namespace PROTOCOL.GAME
+{
+	public enum eBATTLE_START_OPTION
+	{
+		eBATTLE_START_OPTION_OBSERVER = 1,
+		eBATTLE_START_OPTION_ENEMY_HIDDEN_NAME
+	}
+}

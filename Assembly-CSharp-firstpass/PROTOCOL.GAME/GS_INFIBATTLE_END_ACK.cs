@@ -10,6 +10,10 @@ namespace PROTOCOL.GAME
 
 		public int i32StraightWin;
 
+		public int i32BattleTotal;
+
+		public int i32BattleWin;
+
 		public bool bRewardSendMail;
 	}
 }

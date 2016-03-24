@@ -6,7 +6,7 @@ public class CHARKIND_STATINFO : NrTableData
 {
 	public string CharCode = string.Empty;
 
-	public BATTLESKILL_DATA[] kBattleSkillData = new BATTLESKILL_DATA[3];
+	public BATTLESKILL_DATA[] kBattleSkillData = new BATTLESKILL_DATA[6];
 
 	public short BATTLESKILLUSERATE;
 
@@ -18,7 +18,7 @@ public class CHARKIND_STATINFO : NrTableData
 
 	public CHARKIND_STATINFO() : base(NrTableData.eResourceType.eRT_CHARKIND_STATINFO)
 	{
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			this.kBattleSkillData[i] = new BATTLESKILL_DATA();
 		}
@@ -28,7 +28,7 @@ public class CHARKIND_STATINFO : NrTableData
 	public void Init()
 	{
 		this.CharCode = string.Empty;
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			this.kBattleSkillData[i].Init();
 		}
@@ -40,7 +40,7 @@ public class CHARKIND_STATINFO : NrTableData
 		this.Init();
 		int num = 0;
 		row.GetColumn(num++, out this.CharCode);
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			row.GetColumn(num++, out this.kBattleSkillData[i].BattleSkillUnique);
 			row.GetColumn(num++, out this.kBattleSkillData[i].BattleSkillLevel);

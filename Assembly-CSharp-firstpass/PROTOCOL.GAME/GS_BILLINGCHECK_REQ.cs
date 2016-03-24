@@ -8,7 +8,7 @@ namespace PROTOCOL.GAME
 
 		public long i64ItemMallIndex;
 
-		public long UniqueCode;
+		public char[] UniqueCode = new char[128];
 
 		public char[] Receipt = new char[4000];
 	}

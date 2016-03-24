@@ -4,7 +4,7 @@ using TsLibs;
 
 public class NrTableItemSkillInfo : NrTableBase
 {
-	public NrTableItemSkillInfo() : base(CDefinePath.ITEMSKILL_URL, true)
+	public NrTableItemSkillInfo() : base(CDefinePath.ITEMSKILL_URL)
 	{
 	}
 

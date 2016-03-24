@@ -9,7 +9,7 @@ public class MINE_CREATE_DATA : NrTableData
 
 	public byte nMine_Grade;
 
-	public long MINE_ITEM_UNIQUE;
+	public int MINE_ITEM_UNIQUE;
 
 	public int MINE_TOTAL_NUM;
 
@@ -18,6 +18,8 @@ public class MINE_CREATE_DATA : NrTableData
 	public int[] MINE_ECO = new int[9];
 
 	public short MINE_MON_LEVEL;
+
+	public string Mine_MiniIcon = string.Empty;
 
 	public MINE_CREATE_DATA()
 	{
@@ -29,7 +31,7 @@ public class MINE_CREATE_DATA : NrTableData
 		this.MINE_ID = 0;
 		this.MINE_GRADE = string.Empty;
 		this.nMine_Grade = 0;
-		this.MINE_ITEM_UNIQUE = 0L;
+		this.MINE_ITEM_UNIQUE = 0;
 		this.MINE_TOTAL_NUM = 0;
 		this.MINE_GIVE_NUM = 0;
 		for (int i = 0; i < 9; i++)
@@ -58,6 +60,7 @@ public class MINE_CREATE_DATA : NrTableData
 		row.GetColumn(num++, out this.MINE_ECO[7]);
 		row.GetColumn(num++, out this.MINE_ECO[8]);
 		row.GetColumn(num++, out this.MINE_MON_LEVEL);
+		row.GetColumn(num++, out this.Mine_MiniIcon);
 	}
 
 	public byte GetGrade()

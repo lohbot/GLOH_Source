@@ -46,6 +46,8 @@ public class ColosseumRankInfoDlg : Form
 
 	private Button m_bReward;
 
+	private Button m_btRewardInfo;
+
 	private Button m_btRecord;
 
 	private List<COLOSSEUM_RANKINFO> ListRankInfo = new List<COLOSSEUM_RANKINFO>();
@@ -103,9 +105,11 @@ public class ColosseumRankInfoDlg : Form
 		this.m_bReward = (base.GetControl("Button_RankReward") as Button);
 		Button expr_23C = this.m_bReward;
 		expr_23C.Click = (EZValueChangedDelegate)Delegate.Combine(expr_23C.Click, new EZValueChangedDelegate(this.OnClickReward));
+		this.m_btRewardInfo = (base.GetControl("BT_rewardinfo") as Button);
+		this.m_btRewardInfo.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickRewardinfo));
 		this.m_bJoin = (base.GetControl("Button_entry") as Button);
-		Button expr_279 = this.m_bJoin;
-		expr_279.Click = (EZValueChangedDelegate)Delegate.Combine(expr_279.Click, new EZValueChangedDelegate(this.OnClickJoin));
+		Button expr_2A6 = this.m_bJoin;
+		expr_2A6.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2A6.Click, new EZValueChangedDelegate(this.OnClickJoin));
 		this.m_bJoin.Visible = false;
 		if (COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_TOURNAMENT_JOIN) == 1)
 		{
@@ -142,7 +146,7 @@ public class ColosseumRankInfoDlg : Form
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 		if (msgBoxUI != null)
 		{
-			msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2653"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2654"), eMsgType.MB_OK);
+			msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2653"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2654"), eMsgType.MB_OK, 2);
 		}
 	}
 
@@ -243,11 +247,11 @@ public class ColosseumRankInfoDlg : Form
 		string text2 = string.Empty;
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		List<COLOSSEUM_MYGRADE_USERINFO> list = kMyCharInfo.GeColosseumMyGradeUserList();
-		NewListItem newListItem = new NewListItem(this.m_lbMyRankList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_lbMyRankList.ColumnNum, true, string.Empty);
 		string text3 = TKString.NEWString(info.szCharName);
 		newListItem.SetListItemData(0, text3, null, null, null);
 		text2 = Rank.ToString();
-		newListItem.SetListItemData(1, text2, null, null, null);
+		newListItem.SetListItemData(2, text2, null, null, null);
 		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2091");
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 		{
@@ -255,7 +259,7 @@ public class ColosseumRankInfoDlg : Form
 			"ratingpoint",
 			1000 + info.i32ColosseumGradePoint
 		});
-		newListItem.SetListItemData(2, text2, null, null, null);
+		newListItem.SetListItemData(3, text2, null, null, null);
 		int value = COLOSSEUM_CONSTANT_Manager.GetInstance().GetValue(eCOLOSSEUM_CONSTANT.eCOLOSSEUM_CONSTANT_UPGRADE_RATE);
 		int value2 = COLOSSEUM_CONSTANT_Manager.GetInstance().GetValue(eCOLOSSEUM_CONSTANT.eCOLOSSEUM_CONSTANT_DOWNGRADE_RATE);
 		int num = 0;
@@ -287,7 +291,7 @@ public class ColosseumRankInfoDlg : Form
 		}
 		if (text4 != string.Empty)
 		{
-			newListItem.SetListItemData(3, text4, null, null, null);
+			newListItem.SetListItemData(4, text4, null, null, null);
 		}
 		return newListItem;
 	}
@@ -301,11 +305,11 @@ public class ColosseumRankInfoDlg : Form
 		int num = 1;
 		foreach (COLOSSEUM_RANKINFO current in this.ListRankInfo)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbTopRankList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbTopRankList.ColumnNum, true, string.Empty);
 			string text3 = TKString.NEWString(current.szCharName);
 			newListItem.SetListItemData(0, text3, null, null, null);
 			text2 = num.ToString();
-			newListItem.SetListItemData(1, text2, null, null, null);
+			newListItem.SetListItemData(2, text2, null, null, null);
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2091");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 			{
@@ -313,20 +317,29 @@ public class ColosseumRankInfoDlg : Form
 				"ratingpoint",
 				1000L + current.i64MatchPoint
 			});
-			newListItem.SetListItemData(2, text2, null, null, null);
-			string text4 = TKString.NEWString(current.szGuildName);
-			newListItem.SetListItemData(4, text4, null, null, null);
+			newListItem.SetListItemData(3, text2, null, null, null);
+			string text4 = string.Empty;
+			string[] array = TKString.NEWString(current.szGuildName).Split(new char[]
+			{
+				'_'
+			});
+			text4 = array[0];
+			if (array.Length > 1)
+			{
+				text4 = NrTSingleton<CTextParser>.Instance.GetTextColor("1401") + text4;
+			}
+			newListItem.SetListItemData(5, text4, null, null, null);
 			if (text4 != string.Empty)
 			{
 				string topGuildRank = this.GetTopGuildRank(current.i64GuildID);
 				if (topGuildRank == string.Empty)
 				{
-					newListItem.SetListItemData(5, false);
+					newListItem.SetListItemData(6, false);
 				}
 				else
 				{
-					newListItem.SetListItemData(5, true);
-					newListItem.SetListItemData(5, topGuildRank, null, null, null);
+					newListItem.SetListItemData(6, true);
+					newListItem.SetListItemData(6, topGuildRank, null, null, null);
 				}
 			}
 			this.m_lbTopRankList.Add(newListItem);
@@ -525,6 +538,16 @@ public class ColosseumRankInfoDlg : Form
 		{
 			colosseumRewardDlg.SetColosseumRewardInfo();
 		}
+	}
+
+	private void OnClickRewardinfo(IUIObject obj)
+	{
+		ColosseumRewardExplainDlg colosseumRewardExplainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.COLOSSEUMREWARD_EXPLAIN_DLG) as ColosseumRewardExplainDlg;
+		if (colosseumRewardExplainDlg != null)
+		{
+			colosseumRewardExplainDlg.ShowColosseumRewardExplain();
+		}
+		this.Close();
 	}
 
 	public void OnClickShowRecord(IUIObject obj)

@@ -177,7 +177,7 @@ public static class Protocol_Item
 		{
 			return "0";
 		}
-		return string.Format("{0:#,###.##}", a_lValue);
+		return string.Format("{0:#,##0.##}", a_lValue);
 	}
 
 	public static long Get_Price(int itemunique)
@@ -263,7 +263,7 @@ public static class Protocol_Item
 		gS_ITEM_MOVE_REQ.m_nSrcItemID = iTEM.m_nItemID;
 		gS_ITEM_MOVE_REQ.m_nSrcItemPos = iTEM.m_nItemPos;
 		gS_ITEM_MOVE_REQ.m_nSrcSolID = solID;
-		if (windowID == 231 && windowID2 == 79)
+		if (windowID == 260 && windowID2 == 82)
 		{
 			gS_ITEM_MOVE_REQ.m_nMoveType = NrTSingleton<ItemManager>.Instance.GetItemMoveType_InvenToSol(iTEM.m_nPosType);
 			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
@@ -297,11 +297,11 @@ public static class Protocol_Item
 			ITEM equipItem = soldierInfoFromSolID.GetEquipItem(num2);
 			iTEM2 = equipItem;
 		}
-		else if (windowID != 231 || windowID2 != 231)
+		else if (windowID != 260 || windowID2 != 260)
 		{
-			if (windowID != 79 || windowID2 != 79)
+			if (windowID != 82 || windowID2 != 82)
 			{
-				if (windowID == 79 && windowID2 == 231)
+				if (windowID == 82 && windowID2 == 260)
 				{
 					int itemPosType = Protocol_Item.GetItemPosType(iTEM.m_nItemUnique);
 					gS_ITEM_MOVE_REQ.m_nMoveType = NrTSingleton<ItemManager>.Instance.GetItemMoveType_SolToInven(itemPosType);
@@ -372,7 +372,7 @@ public static class Protocol_Item
 				itemNameByItemUnique
 			});
 			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			msgBoxUI.SetMsg(new YesDelegate(Protocol_Item.On_Delete), a_cItem, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(Protocol_Item.On_Delete), a_cItem, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 
@@ -429,7 +429,8 @@ public static class Protocol_Item
 			ITEM iTEM = null;
 			SoldierSelectDlg soldierSelectDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLSELECT_DLG) as SoldierSelectDlg;
 			SolEquipItemSelectDlg solEquipItemSelectDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLEQUIPITEMSELECT_DLG) as SolEquipItemSelectDlg;
-			if (pkSecondItem != null && (soldierSelectDlg != null || solEquipItemSelectDlg != null))
+			ItemEvolution_Dlg itemEvolution_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMEVOLUTION_DLG) as ItemEvolution_Dlg;
+			if (pkSecondItem != null && (soldierSelectDlg != null || solEquipItemSelectDlg != null || itemEvolution_Dlg != null))
 			{
 				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.TOOLTIP_SECOND_DLG);
 				iTEM = pkSecondItem;
@@ -556,6 +557,14 @@ public static class Protocol_Item
 							Item_Box_RareRandom_Dlg item_Box_RareRandom_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_RARERANDOM_DLG) as Item_Box_RareRandom_Dlg;
 							item_Box_RareRandom_Dlg.Set_Item(pkItem);
 						}
+						else if (itemInfo.IsItemATB(16L))
+						{
+							ItemBoxContinue_Dlg itemBoxContinue_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+							if (itemBoxContinue_Dlg != null)
+							{
+								itemBoxContinue_Dlg.SetItemData(pkItem, ItemBoxContinue_Dlg.SHOW_TYPE.ITEM_RANDOMBOX);
+							}
+						}
 						else
 						{
 							Protocol_Item_Box.Item_Box_Random_Show(pkItem);
@@ -600,7 +609,11 @@ public static class Protocol_Item
 					{
 						return;
 					}
-					SolRecruitDlg.ExcuteTicket(pkItem.m_nItemUnique, itemInfo2.m_nParam[0], itemInfo2.m_nParam[1], false);
+					SolRecruitDlg solRecruitDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
+					if (solRecruitDlg != null)
+					{
+						solRecruitDlg.ExcuteTicket(pkItem.m_nItemUnique, itemInfo2.m_nParam[0], itemInfo2.m_nParam[1], false);
+					}
 					return;
 				}
 				else if (NrTSingleton<ItemManager>.Instance.IsItemATB(pkItem.m_nItemUnique, 262144L))
@@ -610,7 +623,11 @@ public static class Protocol_Item
 					{
 						return;
 					}
-					SolRecruitDlg.ExcuteTicket(pkItem.m_nItemUnique, itemInfo3.m_nParam[0], itemInfo3.m_nParam[1], false);
+					SolRecruitDlg solRecruitDlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLRECRUIT_DLG) as SolRecruitDlg;
+					if (solRecruitDlg2 != null)
+					{
+						solRecruitDlg2.ExcuteTicket(pkItem.m_nItemUnique, itemInfo3.m_nParam[0], itemInfo3.m_nParam[1], false);
+					}
 					return;
 				}
 				else
@@ -618,7 +635,7 @@ public static class Protocol_Item
 					if (NrTSingleton<ItemManager>.Instance.IsItemATB(pkItem.m_nItemUnique, 2048L) || NrTSingleton<ItemManager>.Instance.IsItemATB(pkItem.m_nItemUnique, 32768L))
 					{
 						NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-						if (readySolList == null || readySolList.GetCount() >= 50)
+						if (readySolList == null || readySolList.GetCount() >= 100)
 						{
 							string textFromNotify5 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507");
 							Main_UI_SystemMessage.ADDMessage(textFromNotify5, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
@@ -668,7 +685,7 @@ public static class Protocol_Item
 									"targetname",
 									NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(itemInfo4.m_nParam[1].ToString())
 								});
-								msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<ItemManager>.Instance.ItemSupplyUseReq), gS_ITEM_SUPPLY_USE_REQ, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1552"), empty, eMsgType.MB_OK_CANCEL);
+								msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<ItemManager>.Instance.ItemSupplyUseReq), gS_ITEM_SUPPLY_USE_REQ, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1552"), empty, eMsgType.MB_OK_CANCEL, 2);
 								msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
 								msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
 							}
@@ -687,7 +704,7 @@ public static class Protocol_Item
 									num4.ToString()
 								});
 								string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("150");
-								msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<ItemManager>.Instance.ItemSupplyUseReq), gS_ITEM_SUPPLY_USE_REQ, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL);
+								msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<ItemManager>.Instance.ItemSupplyUseReq), gS_ITEM_SUPPLY_USE_REQ, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL, 2);
 								msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
 								msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
 							}
@@ -846,6 +863,11 @@ public static class Protocol_Item
 					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("367"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 					return false;
 				}
+				if (soldierInfoFromSolID.IsAtbCommonFlag(16L))
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("880"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+					return false;
+				}
 			}
 			int itemPosType = Protocol_Item.GetItemPosType(pkItem.m_nItemUnique);
 			gS_ITEM_MOVE_REQ.m_nMoveType = NrTSingleton<ItemManager>.Instance.GetItemMoveType_SolToInven(itemPosType);
@@ -983,13 +1005,16 @@ public static class Protocol_Item
 			return false;
 		}
 		short level = pkSolinfo.GetLevel();
-		if (itemInfo.GetUseMinLevel(pkItem) > 0 && (int)level < itemInfo.GetUseMinLevel(pkItem))
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsItemLevelCheckBlock())
 		{
-			return false;
-		}
-		if (itemInfo.m_nUseMaxLevel > 0 && (int)level > itemInfo.m_nUseMaxLevel)
-		{
-			return false;
+			if (itemInfo.GetUseMinLevel(pkItem) > 0 && (int)level < itemInfo.GetUseMinLevel(pkItem))
+			{
+				return false;
+			}
+			if (itemInfo.m_nUseMaxLevel > 0 && (int)level > itemInfo.m_nUseMaxLevel)
+			{
+				return false;
+			}
 		}
 		ITEMTYPE_INFO itemTypeInfo = NrTSingleton<ItemManager>.Instance.GetItemTypeInfo(pkItem.m_nItemUnique);
 		if (itemTypeInfo == null)
@@ -1009,6 +1034,10 @@ public static class Protocol_Item
 		{
 			return false;
 		}
+		if (itemInfo.IsItemATB(2097152L) && !pkSolinfo.IsLeader())
+		{
+			return false;
+		}
 		if (pkItem.m_nDurability <= 0)
 		{
 			if (_IsMessageVisible)
@@ -1016,6 +1045,10 @@ public static class Protocol_Item
 				string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("197");
 				Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			}
+			return false;
+		}
+		if (!NrTSingleton<ItemManager>.Instance.IsWearEquipItem(pkItem.m_nItemUnique, pkSolinfo.GetCharCode()))
+		{
 			return false;
 		}
 		int nItemUnique = pkItem.m_nItemUnique;
@@ -1358,5 +1391,9 @@ public static class Protocol_Item
 		GS_ITEM_SELL_REQ gS_ITEM_SELL_REQ = new GS_ITEM_SELL_REQ();
 		gS_ITEM_SELL_REQ.i64ItemID = lItemID;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_ITEM_SELL_REQ, gS_ITEM_SELL_REQ);
+	}
+
+	public static void BoxItem_List(ITEM pkItem)
+	{
 	}
 }

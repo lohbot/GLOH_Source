@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableAutoQuest : NrTableBase
 {
-	public NrTableAutoQuest(string strFilePath) : base(strFilePath, true)
+	public NrTableAutoQuest(string strFilePath) : base(strFilePath)
 	{
 	}
 

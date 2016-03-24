@@ -297,6 +297,11 @@ public abstract class Nr3DCharBase
 		{
 			this.m_szCharCode = parentCharKindInfo.GetCode();
 			this.m_szModelPath = parentCharKindInfo.GetBundlePath();
+			string costumeBundlePath = this.GetCostumeBundlePath();
+			if (!string.IsNullOrEmpty(costumeBundlePath))
+			{
+				this.m_szModelPath = costumeBundlePath;
+			}
 		}
 		this.m_szModelPath = this.m_szModelPath.ToLower();
 	}
@@ -366,6 +371,19 @@ public abstract class Nr3DCharBase
 		return null;
 	}
 
+	public NkSoldierInfo GetParentFaceSoldierInfo()
+	{
+		if (this.m_pkChar != null && this.m_pkChar.GetFaceSolID() != 0L)
+		{
+			return this.m_pkChar.GetPersonInfo().GetSoldierInfoBySolID((long)((int)this.m_pkChar.GetFaceSolID()));
+		}
+		if (this.m_pkBattleChar != null)
+		{
+			this.m_pkBattleChar.GetPersonInfo().GetSoldierInfoBySolID(0L);
+		}
+		return null;
+	}
+
 	public NrCharAnimation GetParentCharAnimation()
 	{
 		if (this.m_pkChar != null)
@@ -407,6 +425,30 @@ public abstract class Nr3DCharBase
 			return this.m_pkBattleChar.GetPartControl();
 		}
 		return null;
+	}
+
+	public string GetBattleCharCostumeBundleName()
+	{
+		if (this.m_pkBattleChar == null || this.m_pkBattleChar.GetSoldierInfo() == null)
+		{
+			Debug.LogError("ERROR, Nr3DCharBase.cs, GetBattleCharCostumeUnique(), m_pkBattleChar = null or m_pkBattleChar.GetSoldierInfo() = null");
+			return string.Empty;
+		}
+		int num = (int)this.m_pkBattleChar.GetSoldierInfo().GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+		if (num <= 0)
+		{
+			return string.Empty;
+		}
+		CharCostumeInfo_Data costumeData = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeData(num);
+		if (costumeData == null)
+		{
+			return string.Empty;
+		}
+		if (costumeData.IsNormalCostume())
+		{
+			return string.Empty;
+		}
+		return costumeData.m_BundlePath.Replace("Soldier/", string.Empty);
 	}
 
 	public GameObject GetRootGameObject()
@@ -1626,5 +1668,61 @@ public abstract class Nr3DCharBase
 			this.m_PosLookAt = LookAt;
 			this.m_bRequestSit = true;
 		}
+	}
+
+	private string GetCostumeBundlePath()
+	{
+		if (this.m_pkBattleChar == null || this.m_pkBattleChar.GetSoldierInfo() == null)
+		{
+			return string.Empty;
+		}
+		if (!this.m_pkBattleChar.IsFriend && this.m_pkBattleChar.IsMonster)
+		{
+			return string.Empty;
+		}
+		int costumeUnique = (int)this.m_pkBattleChar.GetSoldierInfo().GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+		CharCostumeInfo_Data costumeData = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeData(costumeUnique);
+		if (costumeData == null)
+		{
+			return string.Empty;
+		}
+		NrCharKindInfo parentCharKindInfo = this.GetParentCharKindInfo();
+		if (parentCharKindInfo == null)
+		{
+			return string.Empty;
+		}
+		if (costumeData.m_CharCode != parentCharKindInfo.GetCode())
+		{
+			return string.Empty;
+		}
+		return NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeBundlePath(costumeUnique);
+	}
+
+	public string GetCostumePortraitPath()
+	{
+		if (this.m_pkBattleChar == null || this.m_pkBattleChar.GetSoldierInfo() == null)
+		{
+			return string.Empty;
+		}
+		int costumeUnique = (int)this.m_pkBattleChar.GetSoldierInfo().GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+		CharCostumeInfo_Data costumeData = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeData(costumeUnique);
+		if (costumeData == null)
+		{
+			return string.Empty;
+		}
+		if (costumeData.IsNormalCostume())
+		{
+			return string.Empty;
+		}
+		NrCharKindInfo parentCharKindInfo = this.GetParentCharKindInfo();
+		if (parentCharKindInfo == null)
+		{
+			return string.Empty;
+		}
+		if (costumeData.m_CharCode != parentCharKindInfo.GetCode())
+		{
+			return string.Empty;
+		}
+		return NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(costumeUnique);
 	}
 }

@@ -20,17 +20,17 @@ public class PostUtil : NrTSingleton<PostUtil>
 		{
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_GAMEMASTER:
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_GAMEMASTER_MESSAGE:
-			goto IL_10F;
+			goto IL_11F;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_MARKET_ITEM_SOLD:
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("13");
-			goto IL_1B2;
+			goto IL_1C2;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_MARKET_RETURN:
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("13");
 			flag = true;
-			goto IL_1B2;
+			goto IL_1C2;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_QUEST:
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(szCharName);
-			goto IL_1B2;
+			goto IL_1C2;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_BUY_ITEM:
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_QUEST_ITEM:
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_BATTLE:
@@ -49,48 +49,49 @@ public class PostUtil : NrTSingleton<PostUtil>
 			case eMAIL_TYPE.MAIL_TYPE_CHALLENGE_REWARD:
 			case eMAIL_TYPE.MAIL_TYPE_KAKAOFRIEND_EVENT_REWARD:
 			case eMAIL_TYPE.MAIL_TYPE_INVITE_EVENT_REWARD:
-				goto IL_10F;
+				goto IL_11F;
 			case eMAIL_TYPE.MAIL_TYPE_AUCTION_HOLD:
 			case eMAIL_TYPE.MAIL_TYPE_AUCTION_HOLD_CANCEL_REGISTER:
 			case eMAIL_TYPE.MAIL_TYPE_AUCTION_HOLD_CANCEL_TENDER:
-				goto IL_150;
+				goto IL_160;
 			case eMAIL_TYPE.MAIL_TYPE_SOLDIERGROUP_RECRUIT:
 			case eMAIL_TYPE.MAIL_TYPE_GM_CREATESOL:
 			case eMAIL_TYPE.MAIL_TYPE_SOLDIERGROUP_CASH_RECRUIT:
+			case eMAIL_TYPE.MAIL_TYPE_INVENTORY_FULL:
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2311");
-				goto IL_1B2;
+				goto IL_1C2;
 			case eMAIL_TYPE.MAIL_TYPE_INFIBATTLE_REWARD:
 			case eMAIL_TYPE.MAIL_TYPE_INFIBATTLE_WEEK_REWARD:
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1574");
-				goto IL_1B2;
+				goto IL_1C2;
 			case eMAIL_TYPE.MAIL_TYPE_BOUNTYHUNT_REWARD:
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2344");
-				goto IL_1B2;
+				goto IL_1C2;
 			}
 			text = szCharName;
-			goto IL_1B2;
+			goto IL_1C2;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_EXTRACTED_ITEM:
-			goto IL_1B2;
+			goto IL_1C2;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_RETURN:
 			flag = true;
-			goto IL_1B2;
+			goto IL_1C2;
 		case eMAIL_TYPE.MAIL_TYPE_AUCTION_REGISTER:
 		case eMAIL_TYPE.MAIL_TYPE_AUCTION_BEFORETENDER:
 		case eMAIL_TYPE.MAIL_TYPE_AUCTION_TENDER:
 		case eMAIL_TYPE.MAIL_TYPE_AUCTION_REGISTER_CANCEL:
 		case eMAIL_TYPE.MAIL_TYPE_AUCTION_REGISTER_FAIL:
-			goto IL_150;
+			goto IL_160;
 		case eMAIL_TYPE.MAIL_TYPE_SYSTEM_INVITE_GUILD:
 			text = szCharName;
-			goto IL_1B2;
+			goto IL_1C2;
 		}
 		goto IL_94;
-		IL_10F:
+		IL_11F:
 		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1574");
-		goto IL_1B2;
-		IL_150:
+		goto IL_1C2;
+		IL_160:
 		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1144");
-		IL_1B2:
+		IL_1C2:
 		if (!flag2 && bHistory)
 		{
 			if (flag)
@@ -237,6 +238,14 @@ public class PostUtil : NrTSingleton<PostUtil>
 		else if (mailType == eMAIL_TYPE.MAIL_TYPE_EXPEDITION_RESULT_REPORT || mailType == eMAIL_TYPE.MAIL_TYPE_EXPEDITION_GIVE_ITEM)
 		{
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2428");
+		}
+		else if (mailType == eMAIL_TYPE.MAIL_TYPE_MYTHRAID_ITEM)
+		{
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3295");
+		}
+		else if (mailType == eMAIL_TYPE.MAIL_TYPE_INVENTORY_FULL)
+		{
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3500");
 		}
 		return text;
 	}

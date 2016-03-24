@@ -25,9 +25,9 @@ public class NmCaptureCam : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator TakeShotCamera()
 	{
-		NmCaptureCam.<TakeShotCamera>c__IteratorC <TakeShotCamera>c__IteratorC = new NmCaptureCam.<TakeShotCamera>c__IteratorC();
-		<TakeShotCamera>c__IteratorC.<>f__this = this;
-		return <TakeShotCamera>c__IteratorC;
+		NmCaptureCam.<TakeShotCamera>c__IteratorE <TakeShotCamera>c__IteratorE = new NmCaptureCam.<TakeShotCamera>c__IteratorE();
+		<TakeShotCamera>c__IteratorE.<>f__this = this;
+		return <TakeShotCamera>c__IteratorE;
 	}
 
 	private static Texture2D GetTexture()

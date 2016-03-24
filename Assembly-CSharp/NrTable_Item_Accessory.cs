@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_Item_Accessory : NrTableBase
 {
-	public NrTable_Item_Accessory() : base(CDefinePath.s_strItemAccessoryURL, true)
+	public NrTable_Item_Accessory() : base(CDefinePath.s_strItemAccessoryURL)
 	{
 	}
 

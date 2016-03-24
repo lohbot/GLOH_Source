@@ -2,6 +2,7 @@ using ICSharpCode.SharpZipLib.BZip2;
 using ICSharpCode.SharpZipLib.Zip;
 using NLibCs;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
@@ -20,7 +21,13 @@ namespace NPatch
 
 		public int _idx_LangCode = -1;
 
+		public int _idx_Prepack = -1;
+
 		private SortedDictionary<string, PatchFileInfo> m_dic_files = new SortedDictionary<string, PatchFileInfo>();
+
+		public ArrayList preResourceLastVersionList = new ArrayList();
+
+		public ArrayList preResourceAllVersionList = new ArrayList();
 
 		private float m_LoadPatchListVersion;
 
@@ -292,7 +299,7 @@ namespace NPatch
 		{
 			this.m_LoadPatchListVersion = 0f;
 			string text = string.Empty;
-			NDataSection nDataSection = dr["[Header]"];
+			NDataSection nDataSection = dr["Header"];
 			text = nDataSection["PatchVersion"];
 			bool bUserReplaceWord = nDataSection["UseListCompressor"];
 			if (text.ToLower().Equals("final"))
@@ -316,6 +323,7 @@ namespace NPatch
 					this._idx_CRC = dr.GetFieldIndex("CRC");
 					this._idx_PatchLevel = dr.GetFieldIndex("PatchLevel");
 					this._idx_LangCode = dr.GetFieldIndex("LangCode");
+					this._idx_Prepack = dr.GetFieldIndex("UsePrepack");
 				}
 				if (dr.BeginSection("[FinalList2]"))
 				{
@@ -354,9 +362,27 @@ namespace NPatch
 										this.FilesList[text2] = patchFileInfo;
 									}
 								}
+								if (patchFileInfo.bUsePrepack && !this.preResourceLastVersionList.Contains(patchFileInfo.VersionString))
+								{
+									this.preResourceLastVersionList.Add(patchFileInfo.VersionString);
+								}
 								this.FilesList.Add(text2, patchFileInfo);
 							}
 						}
+					}
+					this.preResourceLastVersionList.Sort();
+					if (dr.BeginSection("[prepackVersionList]"))
+					{
+						string text3 = string.Empty;
+						foreach (NDataReader.Row row2 in dr)
+						{
+							text3 = row2.GetColumn(0);
+							if (!this.preResourceAllVersionList.Contains(text3))
+							{
+								this.preResourceAllVersionList.Add(text3);
+							}
+						}
+						this.preResourceAllVersionList.Sort();
 					}
 					result = true;
 				}

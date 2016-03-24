@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ChallengeEquipTable : NrTableBase
 {
-	public NrTable_ChallengeEquipTable(string strFilePath) : base(strFilePath, true)
+	public NrTable_ChallengeEquipTable(string strFilePath) : base(strFilePath)
 	{
 	}
 

@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_PointLimitTable : NrTableBase
 {
-	public NrTable_PointLimitTable(string strFilePath) : base(strFilePath, true)
+	public NrTable_PointLimitTable(string strFilePath) : base(strFilePath)
 	{
 	}
 

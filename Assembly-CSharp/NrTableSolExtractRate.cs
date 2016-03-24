@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableSolExtractRate : NrTableBase
 {
-	public NrTableSolExtractRate() : base(CDefinePath.SOL_EXTRACTRATE_URL, true)
+	public NrTableSolExtractRate() : base(CDefinePath.SOL_EXTRACTRATE_URL)
 	{
 	}
 

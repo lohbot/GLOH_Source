@@ -45,6 +45,6 @@ public class StageError : AStage
 	[DebuggerHidden]
 	private IEnumerator SetAudioListener()
 	{
-		return new StageError.<SetAudioListener>c__Iterator34();
+		return new StageError.<SetAudioListener>c__Iterator37();
 	}
 }

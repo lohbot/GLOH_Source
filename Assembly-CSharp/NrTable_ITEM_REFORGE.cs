@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ITEM_REFORGE : NrTableBase
 {
-	public NrTable_ITEM_REFORGE() : base(CDefinePath.s_strItemReforgeURL, true)
+	public NrTable_ITEM_REFORGE() : base(CDefinePath.s_strItemReforgeURL)
 	{
 	}
 

@@ -89,4 +89,18 @@ public class NrPrefsKey
 	public static string SOLMILITARYGROUP_WAREHOUSE_SORT = "SolMilitaryGroupWarehouse Sort";
 
 	public static string SOLMILITARYSELECT_SORT = "SolMilitarySelect Sort";
+
+	public static string AUTOSELLGRADE = "Babel AutoSellGrade";
+
+	public static string AUTOSELLRANK = "Babel AutoSellRank";
+
+	public static string DOWNLOAD_MOVIE = "Download Play Movie";
+
+	public static string NEWGUILD_INVITE_ADVERTISING = "NewGuild Invite Advertising";
+
+	public static string CHAT_SUB_TAP = "ChatSubTap";
+
+	public static string NEWEXPLORATION_BATTLE_POS = "NewExploration Battle Pos";
+
+	public static string OPTION_VIBE_ON_OFF = "Option_vibe_on_off";
 }

@@ -10,5 +10,7 @@ public enum EAudioType
 	SYSTEM,
 	GAME_DRAMA,
 	ENVIRONMENT,
+	MOVIE,
+	BGM_STREAM,
 	TOTAL
 }

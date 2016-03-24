@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ReincarnationInfo : NrTableBase
 {
-	public NrTable_ReincarnationInfo() : base(CDefinePath.REINCARNATION_URL, true)
+	public NrTable_ReincarnationInfo() : base(CDefinePath.REINCARNATION_URL)
 	{
 	}
 

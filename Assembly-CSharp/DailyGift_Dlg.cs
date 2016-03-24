@@ -7,13 +7,13 @@ public class DailyGift_Dlg : Form
 {
 	private const int DAY_COUNT_MAX = 7;
 
-	private DrawTexture m_dtBg;
-
 	private DrawTexture[] m_dtReward = new DrawTexture[7];
 
 	private Label[] m_lbReward = new Label[7];
 
 	private DrawTexture[] m_dtRewardClear = new DrawTexture[7];
+
+	private DrawTexture[] m_dtRewardItemBG = new DrawTexture[7];
 
 	private Button m_btOK;
 
@@ -28,12 +28,11 @@ public class DailyGift_Dlg : Form
 		base.Scale = true;
 		instance.LoadFileAll(ref form, "System/dlg_dailygift", G_ID.EVENT_DAILY_GIFT_DLG, false, true);
 		base.SetScreenCenter();
+		base.ShowBlackBG(0.5f);
 	}
 
 	public override void SetComponent()
 	{
-		this.m_dtBg = (base.GetControl("DrawTexture_DrawTexture16") as DrawTexture);
-		this.m_dtBg.SetTextureFromBundle("ui/etc/dailygift");
 		StringBuilder stringBuilder = new StringBuilder();
 		for (int i = 0; i < 7; i++)
 		{
@@ -51,16 +50,18 @@ public class DailyGift_Dlg : Form
 			stringBuilder.Append("DrawTexture_Clear");
 			stringBuilder.Append(string.Format("{0:00}", i + 1));
 			this.m_dtRewardClear[i] = (base.GetControl(stringBuilder.ToString()) as DrawTexture);
+			stringBuilder.Length = 0;
+			stringBuilder.Append("DT_ItemBKBG");
+			stringBuilder.Append(string.Format("{0:00}", i + 1));
+			this.m_dtRewardItemBG[i] = (base.GetControl(stringBuilder.ToString()) as DrawTexture);
 		}
 		this.m_btOK = (base.GetControl("Button_ok") as Button);
 		this.m_btOK.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickOK));
 		this.m_btOK.Visible = false;
-		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
-		if (myCharInfo == null)
+		if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo() == null)
 		{
 			return;
 		}
-		long charWeekData = myCharInfo.GetCharWeekData(0);
 		string empty = string.Empty;
 		int num = 0;
 		short num2 = 0;
@@ -85,6 +86,7 @@ public class DailyGift_Dlg : Form
 				}
 				this.m_lbReward[j].SetText(empty);
 				this.m_dtRewardClear[j].Visible = false;
+				this.m_dtRewardItemBG[j].Visible = false;
 			}
 			else
 			{
@@ -122,10 +124,12 @@ public class DailyGift_Dlg : Form
 				if (num > i)
 				{
 					this.m_dtRewardClear[i].Visible = true;
+					this.m_dtRewardItemBG[i].Visible = true;
 				}
 				else
 				{
 					this.m_dtRewardClear[i].Visible = false;
+					this.m_dtRewardItemBG[i].Visible = false;
 				}
 			}
 			NrTSingleton<FormsManager>.Instance.AttachEffectKey("ATTENDANCECHECK", this.m_dtReward[num], this.m_dtReward[num].GetSize());

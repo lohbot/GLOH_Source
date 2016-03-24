@@ -467,38 +467,6 @@ public class NrCharAnimation
 		case eCharAnimationType.AttackRight1:
 			result = eCharAnimationType.Attack1;
 			return result;
-		case eCharAnimationType.ExtAttack1:
-		case eCharAnimationType.Skill1:
-		case eCharAnimationType.Skill2:
-		case eCharAnimationType.Skill3:
-		case eCharAnimationType.BStay1:
-		case eCharAnimationType.BRun1:
-		case eCharAnimationType.Die1:
-			IL_4C:
-			switch (sourceanitype)
-			{
-			case eCharAnimationType.EcoAction2:
-				result = eCharAnimationType.EcoAction1;
-				return result;
-			case eCharAnimationType.TalkStart1:
-				result = eCharAnimationType.TalkAction1;
-				return result;
-			case eCharAnimationType.TalkAction1:
-				result = eCharAnimationType.TalkStay1;
-				return result;
-			case eCharAnimationType.TalkEnd1:
-				result = eCharAnimationType.EcoAction1;
-				return result;
-			case eCharAnimationType.Respawn1:
-			case eCharAnimationType.Event1:
-				result = eCharAnimationType.BStay1;
-				return result;
-			}
-			if (this.IsMovingAnimation(sourceanitype))
-			{
-				result = eCharAnimationType.Run1;
-			}
-			return result;
 		case eCharAnimationType.BStay2:
 			result = eCharAnimationType.BStay1;
 			return result;
@@ -514,8 +482,33 @@ public class NrCharAnimation
 		case eCharAnimationType.Tired1:
 			result = eCharAnimationType.BStay1;
 			return result;
+		case eCharAnimationType.EcoAction2:
+			result = eCharAnimationType.EcoAction1;
+			return result;
+		case eCharAnimationType.TalkStart1:
+			result = eCharAnimationType.TalkAction1;
+			return result;
+		case eCharAnimationType.TalkAction1:
+			result = eCharAnimationType.TalkStay1;
+			return result;
+		case eCharAnimationType.TalkEnd1:
+			result = eCharAnimationType.EcoAction1;
+			return result;
+		case eCharAnimationType.Respawn1:
+		case eCharAnimationType.Event1:
+		case eCharAnimationType.Cinema_000:
+		case eCharAnimationType.Cinema_001:
+		case eCharAnimationType.Cinema_002:
+		case eCharAnimationType.Cinema_003:
+		case eCharAnimationType.Cinema_004:
+			result = eCharAnimationType.BStay1;
+			return result;
 		}
-		goto IL_4C;
+		if (this.IsMovingAnimation(sourceanitype))
+		{
+			result = eCharAnimationType.Run1;
+		}
+		return result;
 	}
 
 	public eCharAnimationType GetNextAniType(eCharAnimationType sourceanitype)
@@ -537,6 +530,11 @@ public class NrCharAnimation
 		case eCharAnimationType.Evade1:
 		case eCharAnimationType.Respawn1:
 		case eCharAnimationType.Event1:
+		case eCharAnimationType.Cinema_000:
+		case eCharAnimationType.Cinema_001:
+		case eCharAnimationType.Cinema_002:
+		case eCharAnimationType.Cinema_003:
+		case eCharAnimationType.Cinema_004:
 			result = eCharAnimationType.BStay1;
 			break;
 		case eCharAnimationType.SitS1:

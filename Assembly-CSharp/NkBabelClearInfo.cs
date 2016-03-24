@@ -133,11 +133,24 @@ public class NkBabelClearInfo
 	public bool IsBabelClear(short _floor, short floortype)
 	{
 		BabelTowerManager.BabelTower_Floor babelTowerFloorInfo = NrTSingleton<BabelTowerManager>.Instance.GetBabelTowerFloorInfo(_floor, floortype);
-		for (short num = 0; num < babelTowerFloorInfo.SubFloorCount_Type1; num += 1)
+		if (floortype == 2)
 		{
-			if (!this.IsBabelClear(_floor, num, floortype))
+			for (short num = 0; num < babelTowerFloorInfo.SubFloorCount_Type2; num += 1)
 			{
-				return false;
+				if (!this.IsBabelClear(_floor, num, floortype))
+				{
+					return false;
+				}
+			}
+		}
+		else
+		{
+			for (short num2 = 0; num2 < babelTowerFloorInfo.SubFloorCount_Type1; num2 += 1)
+			{
+				if (!this.IsBabelClear(_floor, num2, floortype))
+				{
+					return false;
+				}
 			}
 		}
 		return true;
@@ -153,11 +166,24 @@ public class NkBabelClearInfo
 	public bool IsBabelTreasure(short _floor, short floortype)
 	{
 		BabelTowerManager.BabelTower_Floor babelTowerFloorInfo = NrTSingleton<BabelTowerManager>.Instance.GetBabelTowerFloorInfo(_floor, floortype);
-		for (short num = 0; num < babelTowerFloorInfo.SubFloorCount_Type1; num += 1)
+		if (floortype == 2)
 		{
-			if (!this.IsBabelTreasure(_floor, num, floortype))
+			for (short num = 0; num < babelTowerFloorInfo.SubFloorCount_Type2; num += 1)
 			{
-				return false;
+				if (!this.IsBabelTreasure(_floor, num, floortype))
+				{
+					return false;
+				}
+			}
+		}
+		else
+		{
+			for (short num2 = 0; num2 < babelTowerFloorInfo.SubFloorCount_Type1; num2 += 1)
+			{
+				if (!this.IsBabelTreasure(_floor, num2, floortype))
+				{
+					return false;
+				}
 			}
 		}
 		return true;

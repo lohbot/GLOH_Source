@@ -3,12 +3,14 @@ using Ndoors.Framework.Stage;
 using omniata;
 using PROTOCOL;
 using PROTOCOL.WORLD;
+using SERVICE;
 using StageHelper;
 using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using TsBundle;
 using TsPatch;
 using UnityEngine;
 using UnityForms;
@@ -17,9 +19,15 @@ public class NmMainFrameWork : MonoBehaviour
 {
 	public const float BI_CHECK_TIME = 15f;
 
+	private const float PLAYMOVIE_CHECK_TIME = 150f;
+
 	public static int MAX_FPS = 60;
 
 	public static int MIN_FPS = 15;
+
+	private static float m_MoviePlayTime = 0f;
+
+	private static bool m_bMoviePlay = false;
 
 	private float m_fBITime;
 
@@ -37,6 +45,19 @@ public class NmMainFrameWork : MonoBehaviour
 	{
 		get;
 		set;
+	}
+
+	public static float MoviePlayTime
+	{
+		get
+		{
+			return NmMainFrameWork.m_MoviePlayTime;
+		}
+		set
+		{
+			NmMainFrameWork.m_MoviePlayTime = value + 150f;
+			NmMainFrameWork.m_bMoviePlay = true;
+		}
 	}
 
 	public string PushToken
@@ -67,17 +88,9 @@ public class NmMainFrameWork : MonoBehaviour
 		{
 			num = PlayerPrefs.GetInt("SaveFps");
 		}
-		else if (TsPlatform.IsAndroid)
-		{
-			num = TsHardwareAnalyzer.GetSmartFPS();
-		}
 		else
 		{
-			num = 30;
-		}
-		if (TsPlatform.IsMobile)
-		{
-			num = Math.Min(num, NmMainFrameWork.MAX_FPS);
+			num = NmMainFrameWork.MAX_FPS;
 		}
 		Application.targetFrameRate = num;
 		TsLog.LogWarning("SmartFPS={0} (H/W level={1} Mem = {2}) ", new object[]
@@ -86,6 +99,16 @@ public class NmMainFrameWork : MonoBehaviour
 			TsHardwareAnalyzer.GetLevel(),
 			SystemInfo.systemMemorySize
 		});
+	}
+
+	public static NmMainFrameWork GetMainFrameWork()
+	{
+		GameObject gameObject = GameObject.Find("MainFramework");
+		if (gameObject == null)
+		{
+			return null;
+		}
+		return gameObject.GetComponent<NmMainFrameWork>();
 	}
 
 	private void Awake()
@@ -99,10 +122,15 @@ public class NmMainFrameWork : MonoBehaviour
 		QualitySettings.vSyncCount = 0;
 		NmMainFrameWork.ApplySmartFPS();
 		NrTSingleton<NrGlobalReference>.Instance.Init();
+		if (this.IsDevelopVersion())
+		{
+			WWWItem._errorCallback = new ErrorCallback(NrTSingleton<CallbackMsgBoxManager>.Instance.OnMsgBox);
+		}
 		TsAudioManager.Instance.FirstInit();
 		if (TsPlatform.IsMobile)
 		{
 			this.ShowCompanyLogoMov();
+			NmMainFrameWork.ChagneResolution();
 			NmMainFrameWork.LoadImage();
 		}
 		NrTSingleton<NrMainSystem>.Instance.Awake();
@@ -118,7 +146,6 @@ public class NmMainFrameWork : MonoBehaviour
 				NmMainFrameWork.loginCamera.gameObject.SetActive(true);
 			}
 			NmMainFrameWork.frameWorkGuiTexture = (GameObject)UnityEngine.Object.Instantiate(Resources.Load(NrTSingleton<UIDataManager>.Instance.FilePath + "Prefabs/ObjPreLoading"));
-			CResources.ADDPrefabLoad(NmMainFrameWork.frameWorkGuiTexture, "Mobile/Prefabs/ObjPreLoading");
 		}
 	}
 
@@ -134,7 +161,7 @@ public class NmMainFrameWork : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator Start()
 	{
-		return new NmMainFrameWork.<Start>c__Iterator60();
+		return new NmMainFrameWork.<Start>c__Iterator64();
 	}
 
 	private void Update()
@@ -169,6 +196,10 @@ public class NmMainFrameWork : MonoBehaviour
 			CommonTasks.MuteAudioOnOff(false);
 			NmMainFrameWork.AddBGM();
 			NrTSingleton<NrMainSystem>.Instance.m_bIsShowBI = true;
+		}
+		if (NmMainFrameWork.m_bMoviePlay && NmMainFrameWork.m_MoviePlayTime < Time.time)
+		{
+			this.AudioPlay("0");
 		}
 	}
 
@@ -249,11 +280,12 @@ public class NmMainFrameWork : MonoBehaviour
 
 	private void CallBackQuitGame(object kObject)
 	{
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 	}
 
 	private void OnApplicationFocus(bool focussing)
 	{
+		UnityEngine.Debug.LogWarning("OnApplicationFocus  == " + focussing);
 		if (Application.isWebPlayer)
 		{
 			if (focussing)
@@ -359,16 +391,41 @@ public class NmMainFrameWork : MonoBehaviour
 			{
 				NmMainFrameWork.AddBGM();
 				NrTSingleton<NrMainSystem>.Instance.m_bIsShowBI = true;
+				NrTSingleton<PreloadDataTableMgr>.Instance.StopPreLoadTable();
 			}
 			else if (Scene.CurScene == Scene.Type.BATTLE)
 			{
 				Battle_ResultTutorialDlg battle_ResultTutorialDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_RESULT_TUTORIAL_DLG) as Battle_ResultTutorialDlg;
 				if (battle_ResultTutorialDlg != null)
 				{
-					battle_ResultTutorialDlg.Show();
+					if (!battle_ResultTutorialDlg.Visible)
+					{
+						battle_ResultTutorialDlg.Show();
+					}
+					battle_ResultTutorialDlg.OpenTime = 0f;
 					battle_ResultTutorialDlg.PlayMovie = false;
+					battle_ResultTutorialDlg.m_bUpdateCheck = true;
+					battle_ResultTutorialDlg.MovieTime = 0f;
+				}
+				if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+				{
+					Battle_Control_Dlg battle_Control_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CONTROL_DLG) as Battle_Control_Dlg;
+					if (battle_Control_Dlg != null)
+					{
+						battle_Control_Dlg.MovieEnd();
+					}
 				}
 			}
+			else if (NrTSingleton<NkQuestManager>.Instance.bPlayMovie)
+			{
+				NpcTalkUI_DLG npcTalkUI_DLG = (NpcTalkUI_DLG)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NPCTALK_DLG);
+				if (npcTalkUI_DLG != null)
+				{
+					npcTalkUI_DLG.Show();
+				}
+				NrTSingleton<NkQuestManager>.Instance.bPlayMovie = false;
+			}
+			NmMainFrameWork.m_bMoviePlay = false;
 		}
 		else
 		{
@@ -502,7 +559,7 @@ public class NmMainFrameWork : MonoBehaviour
 		if (!TsPlatform.IsEditor)
 		{
 			string path = str + text;
-			NmMainFrameWork.PlayMovieURL(path, false, true);
+			NmMainFrameWork.PlayMovieURL(path, false, true, true);
 		}
 	}
 
@@ -514,7 +571,7 @@ public class NmMainFrameWork : MonoBehaviour
 		}
 	}
 
-	public static void PlayMovieURL(string Path, bool bShowToast = true, bool bFile = false)
+	public static void PlayMovieURL(string Path, bool bShowToast = true, bool bFile = false, bool isSkip = true)
 	{
 		float num;
 		if (TsAudio.IsMuteAudio(EAudioType.BGM))
@@ -527,11 +584,11 @@ public class NmMainFrameWork : MonoBehaviour
 		}
 		if (bFile && TsPlatform.IsIPhone)
 		{
-			TsPlatform.Operator.PlayMovieAtPath(Path, num);
+			NrTSingleton<NrUserDeviceInfo>.Instance.PlayMovieAtPath(Path, num);
 		}
 		else
 		{
-			TsPlatform.Operator.PlayMovieURL(Path, Color.black, bShowToast, num);
+			NrTSingleton<NrUserDeviceInfo>.Instance.PlayMovieURL(Path, Color.black, bShowToast, num, isSkip);
 		}
 	}
 
@@ -547,6 +604,10 @@ public class NmMainFrameWork : MonoBehaviour
 					if (Screen.width == 2048)
 					{
 						Screen.SetResolution(Screen.width / 2, Screen.height / 2, true);
+					}
+					else if (NrTSingleton<ScreenSizeManager>.Instance.IsScreen4_3())
+					{
+						Screen.SetResolution(1024, 768, true);
 					}
 					else
 					{
@@ -566,5 +627,11 @@ public class NmMainFrameWork : MonoBehaviour
 			LightmapSettings.lightmapsMode = LightmapsMode.Single;
 			TsPlatform.FileLog("==== CHANGE RESOULUTION =======");
 		}
+	}
+
+	private bool IsDevelopVersion()
+	{
+		eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
+		return currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORLOCAL || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_KORQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_USQA || currentServiceArea == eSERVICE_AREA.SERVICE_IOS_JPQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_JPLOCAL || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_JPQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_USLOCAL;
 	}
 }

@@ -56,7 +56,7 @@ public class Agit_GoldRecordDlg : Form
 		{
 			return;
 		}
-		NewListItem newListItem = new NewListItem(this.m_nlbDonationList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbDonationList.ColumnNum, true, string.Empty);
 		DateTime dueDate = PublicMethod.GetDueDate(Data.i64UseTime);
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strText, new object[]
 		{

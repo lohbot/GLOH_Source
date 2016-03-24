@@ -1,4 +1,5 @@
 using GAME;
+using Ndoors.Framework.Stage;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
@@ -25,15 +26,15 @@ public class BabelTowerSubDlg : Form
 
 	private DrawTexture m_dtFirstRewardItemBG;
 
+	private DrawTexture m_dtFirstRewardItemFrame;
+
+	private DrawTexture m_dtFirstRewardItemLine;
+
 	private Label m_laFristRewardItemText;
 
 	private ItemTexture m_itSpecialRewardItem;
 
 	private Label m_laSpecialRewardItem;
-
-	private DrawTexture m_dtSpecialRewardItemBG;
-
-	private Label m_laSpecialRewardItemText;
 
 	private ItemTexture m_itRewardItem;
 
@@ -49,8 +50,6 @@ public class BabelTowerSubDlg : Form
 
 	private DrawTexture[][] m_dtFloorHundredNum = new DrawTexture[5][];
 
-	private Label m_laWillSpend;
-
 	private short m_nFloor;
 
 	private short m_nsubFloor;
@@ -59,21 +58,13 @@ public class BabelTowerSubDlg : Form
 
 	private GameObject m_SelectOldEffect;
 
-	private DrawTexture m_dwActivity;
+	private Button m_babelRepeat;
 
-	private Label m_lb_WillNum;
+	private UIButton _GuideItem;
 
-	private Label m_lbActivityTime;
+	private float _ButtonZ;
 
-	private Button btWillCharge1;
-
-	private Button btWillCharge2;
-
-	private long m_nBeforeActivity = -1L;
-
-	private float m_fActivityUpdateTime;
-
-	private int m_nBaseActivity;
+	private int m_nWinID;
 
 	public override void InitializeComponent()
 	{
@@ -97,13 +88,16 @@ public class BabelTowerSubDlg : Form
 		this.m_laFirstRewardItem = (base.GetControl("Label_first_reward2") as Label);
 		this.m_dtFirstRewardItemBG = (base.GetControl("DrawTexture_DrawTexture49") as DrawTexture);
 		this.m_laFristRewardItemText = (base.GetControl("Label_Label50") as Label);
+		this.m_dtFirstRewardItemFrame = (base.GetControl("DrawTexture_firstrewardFrame") as DrawTexture);
+		this.m_dtFirstRewardItemLine = (base.GetControl("DrawTexture_firstrewardline") as DrawTexture);
 		this.m_itSpecialRewardItem = (base.GetControl("ItemTexture_bonus_reward2") as ItemTexture);
 		this.m_laSpecialRewardItem = (base.GetControl("Label_bouns_reward2") as Label);
-		this.m_dtSpecialRewardItemBG = (base.GetControl("DrawTexture_bouns_reward") as DrawTexture);
-		this.m_laSpecialRewardItemText = (base.GetControl("Label_bouns_reward") as Label);
 		this.m_itRewardItem = (base.GetControl("ItemTexture_reward2") as ItemTexture);
 		this.m_laRewardItem = (base.GetControl("Label_reward2") as Label);
 		this.m_laRewardExp = (base.GetControl("Label_exp") as Label);
+		this.m_babelRepeat = (base.GetControl("Btn_Auto") as Button);
+		Button expr_1AA = this.m_babelRepeat;
+		expr_1AA.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1AA.Click, new EZValueChangedDelegate(this.OnClickRepeat));
 		string name = string.Empty;
 		for (short num = 0; num < 5; num += 1)
 		{
@@ -141,18 +135,6 @@ public class BabelTowerSubDlg : Form
 				}
 			}
 		}
-		COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
-		this.m_nBaseActivity = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BASE_ACTIVITY);
-		this.m_dwActivity = (base.GetControl("DrawTexture_will1") as DrawTexture);
-		this.m_lb_WillNum = (base.GetControl("Label_WillNum") as Label);
-		this.m_lbActivityTime = (base.GetControl("Label_Time") as Label);
-		this.btWillCharge1 = (base.GetControl("Button_WillCharge1") as Button);
-		Button expr_3FA = this.btWillCharge1;
-		expr_3FA.Click = (EZValueChangedDelegate)Delegate.Combine(expr_3FA.Click, new EZValueChangedDelegate(this.OnClickWillCharge));
-		this.btWillCharge2 = (base.GetControl("Button_WillCharge2") as Button);
-		Button expr_437 = this.btWillCharge2;
-		expr_437.Click = (EZValueChangedDelegate)Delegate.Combine(expr_437.Click, new EZValueChangedDelegate(this.OnClickWillCharge));
-		this.m_laWillSpend = (base.GetControl("Label_NeedWill") as Label);
 		base.ShowBlackBG(0.5f);
 		base.SetScreenCenter();
 	}
@@ -233,28 +215,13 @@ public class BabelTowerSubDlg : Form
 		}
 	}
 
-	public override void Update()
-	{
-		base.Update();
-		MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
-		if (myCharInfoDlg != null)
-		{
-			myCharInfoDlg.Update();
-		}
-		if (this.m_fActivityUpdateTime < Time.realtimeSinceStartup)
-		{
-			this.m_lbActivityTime.SetText(myCharInfoDlg.StrActivityTime);
-			this.m_fActivityUpdateTime = Time.realtimeSinceStartup + 0.5f;
-			this.SetActivityPointUI();
-		}
-	}
-
 	public override void InitData()
 	{
 	}
 
 	public override void OnClose()
 	{
+		this.HideUIGuide();
 		base.OnClose();
 	}
 
@@ -274,8 +241,6 @@ public class BabelTowerSubDlg : Form
 				"count",
 				babelTowerData.m_nWillSpend
 			});
-			this.m_laWillSpend.SetText(empty);
-			float width = this.m_laWillSpend.GetWidth();
 			if (this.m_nFloorType == 2)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2786");
@@ -326,6 +291,8 @@ public class BabelTowerSubDlg : Form
 				this.m_dtFirstRewardItemBG.Visible = true;
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("723");
 				this.m_laFristRewardItemText.SetText(text);
+				this.m_dtFirstRewardItemFrame.Visible = true;
+				this.m_dtFirstRewardItemLine.Visible = true;
 			}
 			else if (!kMyCharInfo.IsBabelTreasure(this.m_nFloor, sub_floor, this.m_nFloorType))
 			{
@@ -345,15 +312,19 @@ public class BabelTowerSubDlg : Form
 				iTEM.m_nItemUnique = babelTowerData.m_i32TreasureRewardUnique;
 				iTEM.m_nItemNum = babelTowerData.m_i32TreasureRewardNum;
 				iTEM.m_nOption[2] = babelTowerData.m_i32TreasureRewardRank;
-				this.m_itFirstRewardItem.SetItemTexture(iTEM, false);
+				this.m_itFirstRewardItem.SetItemTexture(iTEM, false, true, 1f);
 				this.m_dtFirstRewardItemBG.Visible = true;
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1931");
 				this.m_laFristRewardItemText.SetText(text);
+				this.m_dtFirstRewardItemFrame.Visible = true;
+				this.m_dtFirstRewardItemLine.Visible = true;
 			}
 			else
 			{
 				this.m_itFirstRewardItem.Visible = false;
 				this.m_dtFirstRewardItemBG.Visible = false;
+				this.m_dtFirstRewardItemFrame.Visible = false;
+				this.m_dtFirstRewardItemLine.Visible = false;
 				this.m_laFirstRewardItem.SetText(string.Empty);
 				this.m_laFristRewardItemText.SetText(string.Empty);
 			}
@@ -433,62 +404,6 @@ public class BabelTowerSubDlg : Form
 		this.Close();
 	}
 
-	public void OnClickWillCharge(IUIObject obj)
-	{
-		MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
-		if (myCharInfoDlg == null)
-		{
-			return;
-		}
-		long num = (long)COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_CHARGE_ACTIVITY_MAX);
-		if (myCharInfoDlg.CurrentActivity >= num)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("135"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.WILLCHARGE_DLG);
-	}
-
-	public void SetActivityPointUI()
-	{
-		MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
-		if (myCharInfoDlg == null)
-		{
-			return;
-		}
-		if (this.m_nBeforeActivity == myCharInfoDlg.CurrentActivity)
-		{
-			return;
-		}
-		this.m_nBeforeActivity = myCharInfoDlg.CurrentActivity;
-		string empty = string.Empty;
-		if (myCharInfoDlg.CurrentActivity > myCharInfoDlg.MaxActivity)
-		{
-			string textColor = NrTSingleton<CTextParser>.Instance.GetTextColor("1304");
-			string textColor2 = NrTSingleton<CTextParser>.Instance.GetTextColor("1002");
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2791"),
-				"CurrentNum",
-				textColor + myCharInfoDlg.CurrentActivity.ToString() + textColor2,
-				"MaxNum",
-				myCharInfoDlg.MaxActivity
-			});
-		}
-		else
-		{
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2791"),
-				"CurrentNum",
-				myCharInfoDlg.CurrentActivity,
-				"MaxNum",
-				myCharInfoDlg.MaxActivity
-			});
-		}
-		this.m_lb_WillNum.SetText(empty);
-	}
-
 	public void OldeffectDelete(IUIObject control, GameObject obj)
 	{
 		if (control == null || null == obj)
@@ -496,5 +411,124 @@ public class BabelTowerSubDlg : Form
 			return;
 		}
 		this.m_SelectOldEffect = obj;
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		this._GuideItem = this.m_btStart;
+		this.m_nWinID = winID;
+		if (null != this._GuideItem)
+		{
+			this._ButtonZ = this._GuideItem.gameObject.transform.localPosition.z;
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				this._GuideItem.EffectAni = false;
+				Vector2 vector = new Vector2(base.GetLocationX() + this._GuideItem.GetLocationX() + 80f, base.GetLocationY() + this._GuideItem.GetLocationY() - 10f);
+				uI_UIGuide.Move(vector, vector);
+				this._ButtonZ = this._GuideItem.gameObject.transform.localPosition.z;
+				this._GuideItem.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+				this._GuideItem.AlphaAni(1f, 0.5f, -0.5f);
+			}
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.gameObject.transform.localPosition = new Vector3(this._GuideItem.gameObject.transform.localPosition.x, this._GuideItem.gameObject.transform.localPosition.y, -this._ButtonZ);
+		}
+		this._GuideItem = null;
+	}
+
+	public void OnClickRepeat(IUIObject obj)
+	{
+		if (Scene.CurScene == Scene.Type.BATTLE)
+		{
+			return;
+		}
+		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+		COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
+		int num = 0;
+		int num2 = 0;
+		if (myCharInfo.ColosseumMatching)
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("615"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+			return;
+		}
+		if (instance != null)
+		{
+			if (NrTSingleton<ContentsLimitManager>.Instance.IsVipExp())
+			{
+				num2 = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BATTLE_REPEAT);
+			}
+			else
+			{
+				short vipLevelAddBattleRepeat = NrTSingleton<NrTableVipManager>.Instance.GetVipLevelAddBattleRepeat();
+				num2 = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BATTLE_REPEAT) + (int)vipLevelAddBattleRepeat;
+			}
+			num = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BABEL_REPEAT);
+		}
+		if (myCharInfo.GetLevel() < num)
+		{
+			string empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("781"),
+				"level",
+				num
+			});
+			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+			return;
+		}
+		string text = " ";
+		int nFloor = (int)this.m_nFloor;
+		int num3 = (int)this.m_nsubFloor;
+		if (nFloor <= 0 || num3 < 0)
+		{
+			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("614");
+			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+			return;
+		}
+		num3++;
+		MsgBoxTwoCheckUI msgBoxTwoCheckUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_TWOCHECK_DLG) as MsgBoxTwoCheckUI;
+		if (this.m_nFloorType == 2)
+		{
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2784");
+		}
+		string empty2 = string.Empty;
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("186"),
+			"type",
+			text,
+			"floor",
+			nFloor.ToString(),
+			"subfloor",
+			num3.ToString(),
+			"count",
+			num2.ToString()
+		});
+		msgBoxTwoCheckUI.SetCheckBoxState(1, false);
+		msgBoxTwoCheckUI.SetCheckBoxState(2, false);
+		msgBoxTwoCheckUI.SetMsg(new YesDelegate(BabelTowerMainDlg.RepeatBabelStart), msgBoxTwoCheckUI, null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("185"), empty2, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("354"), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("263"), new CheckBox2Delegate(BabelTowerMainDlg.CheckBattleSpeedCount), eMsgType.MB_CHECK12_OK_CANCEL);
+		MsgBoxTwoCheckUI expr_22F = msgBoxTwoCheckUI;
+		expr_22F.m_YesDelegatePriority = (YesDelegate)Delegate.Combine(expr_22F.m_YesDelegatePriority, new YesDelegate(this.SaveBabelFloor));
+	}
+
+	public void SaveBabelFloor(object obj)
+	{
+		if (this.m_nFloorType == 2)
+		{
+			PlayerPrefs.SetInt(NrPrefsKey.LASTPLAY_BABELFLOOR_HARD, (int)this.m_nFloor);
+			PlayerPrefs.SetInt(NrPrefsKey.LASTPLAY_BABELSUBFLOOR_HARD, (int)this.m_nsubFloor);
+		}
+		else
+		{
+			PlayerPrefs.SetInt(NrPrefsKey.LASTPLAY_BABELFLOOR, (int)this.m_nFloor);
+			PlayerPrefs.SetInt(NrPrefsKey.LASTPLAY_BABELSUBFLOOR, (int)this.m_nsubFloor);
+		}
 	}
 }

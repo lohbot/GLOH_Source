@@ -1,6 +1,7 @@
 using GAME;
 using System;
 using System.Text;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
@@ -34,17 +35,29 @@ public class ItemTooltipDlg_Second : Form
 
 	private DrawTexture m_txBG;
 
+	private DrawTexture m_txLine;
+
+	private DrawTexture m_txSetItemView_01;
+
+	private DrawTexture m_txSetItemView_02;
+
+	private DrawTexture m_txSetItemView_03;
+
 	private Button m_btnSell;
 
 	private Button m_btnEquip;
 
 	private Button m_btnUpgrade;
 
+	private Button m_btnSetItemView;
+
 	private bool bText;
 
 	private bool bItemSkillText;
 
 	private bool bItemSkillText2;
+
+	private GameObject m_gbEffect_Set;
 
 	private G_ID m_eParentWindowID;
 
@@ -53,6 +66,8 @@ public class ItemTooltipDlg_Second : Form
 	public static Vector3 MOBILE_TOOLTIP_POS = new Vector3(0f, 0f, 0f);
 
 	private long m_SolID;
+
+	private ItemSetTooltip_Dlg pSetItemTooltipDlg;
 
 	public ITEM Item
 	{
@@ -114,6 +129,13 @@ public class ItemTooltipDlg_Second : Form
 		this.m_btnEquip.Visible = false;
 		this.m_btnUpgrade.Visible = false;
 		this.m_btnSell.Visible = false;
+		this.m_txSetItemView_01 = (base.GetControl("DT_GRA") as DrawTexture);
+		this.m_txSetItemView_02 = (base.GetControl("DT_SETICON") as DrawTexture);
+		this.m_txSetItemView_03 = (base.GetControl("DT_SetText") as DrawTexture);
+		this.m_btnSetItemView = (base.GetControl("BT_SET") as Button);
+		this.m_btnSetItemView.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSetItemView));
+		this.SetItemView(false);
+		this.m_txLine = (base.GetControl("DrawTexture_MainBorder") as DrawTexture);
 	}
 
 	public void Set_Tooltip(G_ID a_eWidowID, ITEM a_cItem, bool bEquiped, Vector3 showPosition, long SolID = 0L)
@@ -186,9 +208,24 @@ public class ItemTooltipDlg_Second : Form
 		{
 			return;
 		}
-		ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(pkItem, pkEquipItem, bEquiped, true);
-		ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
-		if (itemInfo == null)
+		if (pkItem != null)
+		{
+			ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
+			if (itemInfo != null)
+			{
+				if (itemInfo.m_nSetUnique != 0)
+				{
+					this.SetItemView(true);
+				}
+				else
+				{
+					this.SetItemView(false);
+				}
+			}
+		}
+		ItemOption_Text[] array = ItemTooltipDlg.Get_Item_Info(pkItem, pkEquipItem, bEquiped, true, G_ID.NONE);
+		ITEMINFO itemInfo2 = NrTSingleton<ItemManager>.Instance.GetItemInfo(pkItem.m_nItemUnique);
+		if (itemInfo2 == null)
 		{
 			return;
 		}
@@ -200,11 +237,11 @@ public class ItemTooltipDlg_Second : Form
 		this.m_itItemTex.SetItemTexture(pkItem);
 		if (pkItem.m_nPosType == 10 || Protocol_Item.Is_EquipItem(pkItem.m_nItemUnique))
 		{
-			this.m_lbClass.Text = string.Format("{0}{1} {2}", ItemManager.RankTextColor(rank), ItemManager.RankText(rank), NrTSingleton<ItemManager>.Instance.GetItemTypeName((eITEM_TYPE)itemInfo.m_nItemType));
+			this.m_lbClass.Text = string.Format("{0}{1} {2}", ItemManager.RankTextColor(rank), ItemManager.RankText(rank), NrTSingleton<ItemManager>.Instance.GetItemTypeName((eITEM_TYPE)itemInfo2.m_nItemType));
 		}
 		else
 		{
-			this.m_lbClass.Text = string.Format("{0}", NrTSingleton<ItemManager>.Instance.GetItemTypeName((eITEM_TYPE)itemInfo.m_nItemType));
+			this.m_lbClass.Text = string.Format("{0}", NrTSingleton<ItemManager>.Instance.GetItemTypeName((eITEM_TYPE)itemInfo2.m_nItemType));
 		}
 		this.m_lbType.Text = Protocol_Item.GetItemPartText(NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(pkItem.m_nItemUnique));
 		if (array.Length > 0)
@@ -241,9 +278,9 @@ public class ItemTooltipDlg_Second : Form
 			this.m_flSubValue.SetFlashLabel(string.Empty);
 		}
 		this.m_lbText.SetLocation(this.m_lbText.GetLocation().x, this.m_lbSubOption.GetLocationY() + this.m_lbSubOption.Height + 10f);
-		if (itemInfo.m_strToolTipTextKey != "0")
+		if (itemInfo2.m_strToolTipTextKey != "0")
 		{
-			string textFromItemHelper = NrTSingleton<NrTextMgr>.Instance.GetTextFromItemHelper(itemInfo.m_strToolTipTextKey);
+			string textFromItemHelper = NrTSingleton<NrTextMgr>.Instance.GetTextFromItemHelper(itemInfo2.m_strToolTipTextKey);
 			this.m_lbText.SetFlashLabel(textFromItemHelper);
 			this.bText = true;
 		}
@@ -264,7 +301,7 @@ public class ItemTooltipDlg_Second : Form
 			if (battleSkillDetail != null)
 			{
 				string flashLabel = string.Empty;
-				if (itemInfo.IsItemATB(131072L) || itemInfo.IsItemATB(524288L))
+				if (itemInfo2.IsItemATB(131072L) || itemInfo2.IsItemATB(524288L))
 				{
 					flashLabel = string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1401"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2381"));
 				}
@@ -273,7 +310,7 @@ public class ItemTooltipDlg_Second : Form
 					flashLabel = string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("1401"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2183"));
 				}
 				string empty = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, null);
+				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, null, -1);
 				if (this.bText)
 				{
 					this.m_lbItemSkillName.SetLocation(this.m_lbItemSkillName.GetLocation().x, this.m_lbText.GetLocationY() + this.m_lbText.Height + 20f);
@@ -299,7 +336,7 @@ public class ItemTooltipDlg_Second : Form
 			if (battleSkillDetail2 != null)
 			{
 				string empty2 = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail2.m_nSkillTooltip), battleSkillDetail2, null);
+				NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty2, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail2.m_nSkillTooltip), battleSkillDetail2, null, -1);
 				this.m_lbItemSkillText2.SetLocation(this.m_lbItemSkillText.GetLocation().x, this.m_lbItemSkillText.GetLocationY() + this.m_lbItemSkillText.Height);
 				this.m_lbItemSkillText2.SetFlashLabel(empty2);
 				this.bItemSkillText2 = true;
@@ -324,6 +361,14 @@ public class ItemTooltipDlg_Second : Form
 		else
 		{
 			height = this.m_lbText.GetLocationY() + this.m_lbText.Height + 14f;
+		}
+		if (this.bItemSkillText2)
+		{
+			this.m_txLine.Visible = true;
+		}
+		else
+		{
+			this.m_txLine.Visible = false;
 		}
 		base.SetSize(base.GetSizeX(), height);
 		this.m_txBG.SetSize(base.GetSize().x, height);
@@ -399,6 +444,10 @@ public class ItemTooltipDlg_Second : Form
 
 	public override void OnClose()
 	{
+		if (this.pSetItemTooltipDlg != null)
+		{
+			this.pSetItemTooltipDlg.Close();
+		}
 	}
 
 	public override void AfterShow()
@@ -408,6 +457,80 @@ public class ItemTooltipDlg_Second : Form
 			ItemTooltip_Btn_Dlg itemTooltip_Btn_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMTOOLTIP_BUTTON) as ItemTooltip_Btn_Dlg;
 			itemTooltip_Btn_Dlg.SetLocation(GUICamera.width - itemTooltip_Btn_Dlg.GetSizeX(), GUICamera.height - itemTooltip_Btn_Dlg.GetSizeY());
 			base.InteractivePanel.twinFormID = G_ID.ITEMTOOLTIP_BUTTON;
+		}
+	}
+
+	public void ClickSetItemView(IUIObject data)
+	{
+		if (this.pSetItemTooltipDlg == null)
+		{
+			this.pSetItemTooltipDlg = (NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.SETITEMTOOLTIP_DLG) as ItemSetTooltip_Dlg);
+		}
+		if (this.pSetItemTooltipDlg != null)
+		{
+			this.pSetItemTooltipDlg.SetData(this.m_cItem, null, base.WindowID);
+			this.pSetItemTooltipDlg.SetLocation(base.GetLocationX() + this.m_txSetItemView_03.GetLocationX() + this.m_txSetItemView_03.GetSize().x, base.GetLocationY(), base.GetLocation().z - 2f);
+		}
+	}
+
+	private void SetItemView(bool bshow)
+	{
+		this.m_btnSetItemView.Visible = bshow;
+		this.m_txSetItemView_01.Visible = bshow;
+		this.m_txSetItemView_02.Visible = bshow;
+		this.m_txSetItemView_03.Visible = bshow;
+		if (bshow)
+		{
+			this.LoadEffect();
+		}
+		else if (this.m_gbEffect_Set != null)
+		{
+			UnityEngine.Object.DestroyImmediate(this.m_gbEffect_Set);
+		}
+	}
+
+	public void LoadEffect()
+	{
+		string str = string.Format("{0}{1}", "Effect/Instant/fx_setbuuton_ui", NrTSingleton<UIDataManager>.Instance.AddFilePath);
+		WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+		wWWItem.SetItemType(ItemType.USER_ASSETB);
+		wWWItem.SetCallback(new PostProcPerItem(this.Effect_Set), this.m_btnSetItemView);
+		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+	}
+
+	private void Effect_Set(WWWItem _item, object _param)
+	{
+		Button button = _param as Button;
+		if (null != _item.GetSafeBundle() && button != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.m_gbEffect_Set = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				if (this == null)
+				{
+					UnityEngine.Object.DestroyImmediate(this.m_gbEffect_Set);
+					return;
+				}
+				Vector2 size = button.GetSize();
+				this.m_gbEffect_Set.transform.parent = button.gameObject.transform;
+				this.m_gbEffect_Set.transform.localPosition = new Vector3(size.x / 2f, -size.y / 2f, button.gameObject.transform.localPosition.z + 1.05f);
+				NkUtil.SetAllChildLayer(this.m_gbEffect_Set, GUICamera.UILayer);
+				this.m_gbEffect_Set.SetActive(true);
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_gbEffect_Set);
+				}
+			}
+		}
+	}
+
+	public void CloseSetItemTooltip()
+	{
+		if (this.pSetItemTooltipDlg != null)
+		{
+			this.pSetItemTooltipDlg.Close();
+			this.pSetItemTooltipDlg = null;
 		}
 	}
 }

@@ -348,7 +348,7 @@ namespace UnityForms
 			{
 				uIListItemContainer.SetControlIsEnabled(item.enable);
 				uIListItemContainer.transform.position = Vector3.zero;
-				if (base.GetItem(index) != null)
+				if (null != base.GetItem(index))
 				{
 					base.RemoveItemDonotPositionUpdate(index, true);
 					base.InsertItemDonotPosionUpdate(uIListItemContainer, index, null, false);
@@ -378,7 +378,7 @@ namespace UnityForms
 					flashLabel.FontColor = string.Empty;
 					flashLabel.anchor = this.columnTextAnchor[0];
 					flashLabel.width = this.viewableArea.x - 20f;
-					if (base.GetItem(this.startIndex) != null)
+					if (null != base.GetItem(this.startIndex))
 					{
 						base.RemoveItemDonotPositionUpdate(this.startIndex, true);
 						flashLabel.SetFlashLabel(array[i]);
@@ -828,7 +828,7 @@ namespace UnityForms
 						boxCollider2.center = new Vector3((float)(this.columnWidth[i] / 2), -this.lineHeight / 2f, num2);
 					}
 					itemTexture.Start();
-					itemTexture.SetItemTexture(item.ColumnKey[i] as ITEM, false);
+					itemTexture.SetItemTexture(item.ColumnKey[i] as ITEM, false, true, 1f);
 					if (item.p_bIsTooltip[i] && item.ColumnKey[i] is ITEM)
 					{
 						itemTexture.c_cItemTooltip = (ITEM)item.ColumnKey[i];
@@ -1053,12 +1053,12 @@ namespace UnityForms
 				}
 				if (!this.callRepositionItems && (float)this.startIndex >= (float)num / this.lineHeight + 1f)
 				{
-					base.RepositionItems();
+					this.RepositionItems();
 					this.callRepositionItems = true;
 				}
 				else if (!this.callRepositionItems && this.reserveItems.Count == 0)
 				{
-					base.RepositionItems();
+					this.RepositionItems();
 					this.callRepositionItems = true;
 				}
 			}
@@ -1091,7 +1091,7 @@ namespace UnityForms
 					}
 				}
 			}
-			base.RepositionItems();
+			this.RepositionItems();
 		}
 
 		private void MakeContainer(ListItem item)
@@ -1104,7 +1104,7 @@ namespace UnityForms
 			uIListItemContainer.Start();
 			uIListItemContainer.SetControlIsEnabled(item.enable);
 			uIListItemContainer.transform.position = Vector3.zero;
-			if (base.GetItem(this.startIndex) != null)
+			if (null != base.GetItem(this.startIndex))
 			{
 				base.RemoveItemDonotPositionUpdate(this.startIndex, true);
 				base.InsertItemDonotPosionUpdate(uIListItemContainer, this.startIndex, null, this.m_bReserve);

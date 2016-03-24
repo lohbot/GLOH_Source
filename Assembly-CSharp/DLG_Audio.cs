@@ -15,7 +15,7 @@ public class DLG_Audio : Form
 
 	private Button m_Button_Select;
 
-	private float[] m_fPrevVolume = new float[9];
+	private float[] m_fPrevVolume = new float[11];
 
 	public override void InitializeComponent()
 	{
@@ -27,7 +27,7 @@ public class DLG_Audio : Form
 
 	public override void SetComponent()
 	{
-		for (int i = 0; i < 9; i++)
+		for (int i = 0; i < 11; i++)
 		{
 			DLG_Audio.AudioControl audioControl = new DLG_Audio.AudioControl();
 			audioControl.m_HSliderScroll = (base.GetControl("HSlider_Scroll" + (i + 1).ToString()) as HorizontalSlider);

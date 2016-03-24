@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableCharKindMonsterInfo : NrTableBase
 {
-	public NkTableCharKindMonsterInfo() : base(CDefinePath.CHARKIND_MONSTERINFO_URL, true)
+	public NkTableCharKindMonsterInfo() : base(CDefinePath.CHARKIND_MONSTERINFO_URL)
 	{
 	}
 

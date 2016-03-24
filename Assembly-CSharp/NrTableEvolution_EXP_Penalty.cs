@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableEvolution_EXP_Penalty : NrTableBase
 {
-	public NrTableEvolution_EXP_Penalty() : base(CDefinePath.SEASON_EXP_PENALTY_URL, true)
+	public NrTableEvolution_EXP_Penalty() : base(CDefinePath.SEASON_EXP_PENALTY_URL)
 	{
 	}
 

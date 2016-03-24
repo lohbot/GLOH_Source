@@ -16,6 +16,8 @@ public class SolMilitaryPositionDlg : Form
 
 	private DrawTexture[] BattlePosSolImage;
 
+	private DrawTexture[] BattlePosCoverImage;
+
 	private UIRadioBtn[] BattlePosSolSelect;
 
 	private DrawTexture BattlePosSelectedPos;
@@ -24,17 +26,11 @@ public class SolMilitaryPositionDlg : Form
 
 	private Button BattlePosApply;
 
+	private Button m_btClose;
+
 	private float fBattlePosSlotSize;
 
-	private float fBattlePosSlotSpaceX;
-
-	private float fBattlePosSlotSpaceY;
-
 	private short nSelectedBattelPos = -1;
-
-	private float fBattlePosStartX;
-
-	private float fBattlePosStartY;
 
 	private int nCurrentMilitaryUnique;
 
@@ -45,7 +41,7 @@ public class SolMilitaryPositionDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		form.Scale = true;
-		instance.LoadFileAll(ref form, "Soldier/dlg_position", G_ID.SOLMILITARYPOSITION_DLG, true);
+		instance.LoadFileAll(ref form, "Soldier/dlg_positionnew", G_ID.SOLMILITARYPOSITION_DLG, true);
 		if (TsPlatform.IsMobile)
 		{
 			base.ShowBlackBG(0.5f);
@@ -58,31 +54,30 @@ public class SolMilitaryPositionDlg : Form
 		this.BattlePosSolWeapon1 = (base.GetControl("DrawTexture_position_weapon01") as DrawTexture);
 		this.BattlePosSolWeapon2 = (base.GetControl("DrawTexture_position_weapon02") as DrawTexture);
 		this.BattlePosSolImage = new DrawTexture[9];
+		this.BattlePosCoverImage = new DrawTexture[9];
 		this.BattlePosSolSelect = new UIRadioBtn[9];
 		for (int i = 0; i < 9; i++)
 		{
 			string str = (i + 1).ToString();
 			this.BattlePosSolImage[i] = (base.GetControl("DrawTexture_sol_0" + str) as DrawTexture);
-			this.BattlePosSolImage[i].SetLocation(this.BattlePosSolImage[i].GetLocationX(), this.BattlePosSolImage[i].GetLocationY(), -0.11f);
 			Vector2 size = this.BattlePosSolImage[i].GetSize();
 			this.BattlePosSolSelect[i] = UICreateControl.RadioBtn(this, "BattlePosSolSelect0" + str, string.Empty, size.x, size.y);
 			this.BattlePosSolSelect[i].Data = i;
 			this.BattlePosSolSelect[i].Layer = 3;
 			this.BattlePosSolSelect[i].SetLocation(this.BattlePosSolImage[i].GetLocationX(), this.BattlePosSolImage[i].GetLocationY(), -0.12f);
-			((UIButton)this.BattlePosSolSelect[i].layers[0]).SetLocation(this.BattlePosSolImage[i].GetLocationX(), this.BattlePosSolImage[i].GetLocationY(), -0.13f);
 			this.BattlePosSolSelect[i].SetValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBattlePosSolSelect));
+			this.BattlePosCoverImage[i] = (base.GetControl("DrawTexture_p_0" + str) as DrawTexture);
+			this.BattlePosCoverImage[i].Visible = false;
 		}
 		this.BattlePosSelectedPos = (base.GetControl("DrawTexture_selectsol") as DrawTexture);
 		this.BattlePosSelectedPos.Visible = false;
 		this.BattlePosReturn = (base.GetControl("btn_return") as Button);
 		this.BattlePosReturn.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBattlePosCancel));
-		this.BattlePosApply = (base.GetControl("btn_Apply") as Button);
+		this.BattlePosApply = (base.GetControl("btn_apply") as Button);
 		this.BattlePosApply.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBattlePosChange));
 		this.fBattlePosSlotSize = this.BattlePosSolImage[0].GetSize().x;
-		this.fBattlePosSlotSpaceX = this.BattlePosSolImage[1].GetLocationX() - (this.BattlePosSolImage[0].GetLocationX() + this.fBattlePosSlotSize);
-		this.fBattlePosSlotSpaceY = this.BattlePosSolImage[3].GetLocationY() - (this.BattlePosSolImage[0].GetLocationY() + this.BattlePosSolImage[0].GetSize().y);
-		this.fBattlePosStartX = this.BattlePosSolImage[0].GetLocationX();
-		this.fBattlePosStartY = this.BattlePosSolImage[0].GetLocationY();
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		if (!this.MakeMilitary())
 		{
 			base.CloseNow();
@@ -143,10 +138,9 @@ public class SolMilitaryPositionDlg : Form
 			this.BattlePosSolSelect[i].SetTexture("Com_I_Transparent");
 			((UIButton)this.BattlePosSolSelect[i].layers[0]).Visible = true;
 			((UIButton)this.BattlePosSolSelect[i].layers[0]).SetSize(this.fBattlePosSlotSize, this.fBattlePosSlotSize);
+			this.BattlePosCoverImage[i].Visible = false;
 			this.BattlePosSolImage[i].Visible = false;
-			float num = (float)(i % 3) * this.fBattlePosSlotSize + (float)(i % 3) * this.fBattlePosSlotSpaceX;
-			float num2 = (float)(i / 3) * this.fBattlePosSlotSize + (float)(i / 3) * this.fBattlePosSlotSpaceY;
-			this.BattlePosSolImage[i].SetLocation(this.fBattlePosStartX + num, this.fBattlePosStartY + num2);
+			this.BattlePosSolImage[i].SetLocation(this.BattlePosSolSelect[i].GetLocationX(), this.BattlePosSolSelect[i].GetLocationY());
 		}
 		for (int j = 0; j < 6; j++)
 		{
@@ -158,22 +152,20 @@ public class SolMilitaryPositionDlg : Form
 					NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(nkSoldierInfo.GetCharKind());
 					if (charKindInfo != null)
 					{
-						float num3 = (float)charKindInfo.GetBattleSizeX() * this.fBattlePosSlotSize;
-						float num4 = (float)charKindInfo.GetBattleSizeY() * this.fBattlePosSlotSize;
-						if (num3 > this.fBattlePosSlotSize || num4 > this.fBattlePosSlotSize)
+						float num = (float)charKindInfo.GetBattleSizeX() * this.fBattlePosSlotSize;
+						float num2 = (float)charKindInfo.GetBattleSizeY() * this.fBattlePosSlotSize;
+						if (num > this.fBattlePosSlotSize || num2 > this.fBattlePosSlotSize)
 						{
-							this.BattlePosSolSelect[(int)nkSoldierInfo.GetBattlePos()].SetSize(num3, num4);
-							((UIButton)this.BattlePosSolSelect[(int)nkSoldierInfo.GetBattlePos()].layers[0]).SetSize(num3, num4);
-							if (num3 > this.fBattlePosSlotSize)
+							this.BattlePosSolSelect[(int)nkSoldierInfo.GetBattlePos()].SetSize(num, num2);
+							((UIButton)this.BattlePosSolSelect[(int)nkSoldierInfo.GetBattlePos()].layers[0]).SetSize(num, num2);
+							if (num > this.fBattlePosSlotSize)
 							{
 								for (int k = 1; k < (int)charKindInfo.GetBattleSizeX(); k++)
 								{
 									this.BattlePosSolSelect[(int)nkSoldierInfo.GetBattlePos() + k].Visible = false;
 								}
-								float x = this.fBattlePosSlotSize / 2f * (float)(charKindInfo.GetBattleSizeX() - 1);
-								this.BattlePosSolImage[(int)nkSoldierInfo.GetBattlePos()].MoveLocation(x, 0f);
 							}
-							if (num4 > this.fBattlePosSlotSize)
+							if (num2 > this.fBattlePosSlotSize)
 							{
 								for (int l = 1; l < (int)charKindInfo.GetBattleSizeY(); l++)
 								{
@@ -183,8 +175,10 @@ public class SolMilitaryPositionDlg : Form
 								this.BattlePosSolImage[(int)nkSoldierInfo.GetBattlePos()].MoveLocation(0f, y);
 							}
 						}
+						this.BattlePosCoverImage[(int)nkSoldierInfo.GetBattlePos()].Visible = true;
 						this.BattlePosSolImage[(int)nkSoldierInfo.GetBattlePos()].Visible = true;
-						this.BattlePosSolImage[(int)nkSoldierInfo.GetBattlePos()].SetTexture(eCharImageType.SMALL, nkSoldierInfo.GetCharKind(), (int)nkSoldierInfo.GetGrade());
+						string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(nkSoldierInfo);
+						this.BattlePosSolImage[(int)nkSoldierInfo.GetBattlePos()].SetTexture(eCharImageType.SMALL, nkSoldierInfo.GetCharKind(), (int)nkSoldierInfo.GetGrade(), costumePortraitPath);
 					}
 				}
 			}
@@ -199,7 +193,7 @@ public class SolMilitaryPositionDlg : Form
 			return false;
 		}
 		BATTLE_POS_GRID bATTLE_POS_GRID = new BATTLE_POS_GRID();
-		bATTLE_POS_GRID.Set(info, 0);
+		bATTLE_POS_GRID.Set(info, 0, false);
 		for (int i = 0; i < 6; i++)
 		{
 			NkSoldierInfo nkSoldierInfo = this.m_kBattlePosSolList[i];
@@ -274,11 +268,12 @@ public class SolMilitaryPositionDlg : Form
 			if (!flag)
 			{
 				this.BattlePosSolName.Text = string.Empty;
+				this.BattlePosSolWeapon1.Visible = false;
+				this.BattlePosSolWeapon2.Visible = false;
 			}
 			if (this.nSelectedBattelPos >= 0 && this.nSelectedBattelPos < 9)
 			{
-				this.BattlePosSelectedPos.SetLocation(this.BattlePosSolSelect[(int)this.nSelectedBattelPos].GetLocationX(), this.BattlePosSolSelect[(int)this.nSelectedBattelPos].GetLocationY(), -0.14f);
-				this.BattlePosSelectedPos.SetSize(this.BattlePosSolSelect[(int)this.nSelectedBattelPos].GetSize().x, this.BattlePosSolSelect[(int)this.nSelectedBattelPos].GetSize().y);
+				this.BattlePosSelectedPos.SetLocation(this.BattlePosCoverImage[(int)this.nSelectedBattelPos].GetLocationX(), this.BattlePosCoverImage[(int)this.nSelectedBattelPos].GetLocationY(), -0.14f);
 				this.BattlePosSelectedPos.Visible = true;
 			}
 			return;

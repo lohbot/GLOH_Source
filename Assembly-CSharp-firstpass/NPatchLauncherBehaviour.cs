@@ -78,7 +78,7 @@ public class NPatchLauncherBehaviour : MonoBehaviour
 		NPatchLauncherBehaviour._launcherBehaviour = NPatchLauncherBehaviour._owner.AddComponent<NPatchLauncherBehaviour>();
 	}
 
-	public static bool PatchStart(string root_local, string root_url, LauncherHandler handler, int maxver, bool isMaster = false)
+	public static bool PatchStart(string root_local, string root_url, LauncherHandler handler, bool _isCallPrepackEndFuncOnlyFirstPatch, int maxver, bool isMaster = false, string apkVersion = "")
 	{
 		Debug.Log("maxver : " + maxver);
 		if (NPatchLauncherBehaviour._owner == null)
@@ -89,7 +89,7 @@ public class NPatchLauncherBehaviour : MonoBehaviour
 		NPatchLauncherBehaviour._launcherBehaviour.isFinish = false;
 		NPatchLauncherBehaviour.useFrame = Application.targetFrameRate;
 		Application.targetFrameRate = -1;
-		NPatchLauncherBehaviour._launcherBehaviour.isRunning = NPatchLauncherBehaviour._launcherBehaviour.LanucherCore.PatchStart(root_local, root_url, handler, maxver, isMaster);
+		NPatchLauncherBehaviour._launcherBehaviour.isRunning = NPatchLauncherBehaviour._launcherBehaviour.LanucherCore.PatchStart(root_local, root_url, handler, _isCallPrepackEndFuncOnlyFirstPatch, maxver, isMaster, apkVersion);
 		return NPatchLauncherBehaviour._launcherBehaviour.isRunning;
 	}
 

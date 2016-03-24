@@ -36,6 +36,18 @@ namespace GAME
 
 		public const byte COMPOSEITEM_MAX_RESERVED_ITEM_NUM = 11;
 
+		public const int MAX_ITEMSKILLREINFORCE_ITEM = 2;
+
+		public const int MAX_ITEMSKILLREINFORCE_DELETEITEM = 3;
+
+		public const int MAX_ITEMSKILLREINFORCE_SKILLLEVEL = 30;
+
+		public const int MAX_ITEMSKILLREINFORCE_GROUPUNIQUE = 50;
+
+		public const int MAX_ITEMEVOLUTION_ITEM = 2;
+
+		public const int MAX_ITEMEVOLUTION_DELETEITEM = 3;
+
 		public const int N_MARKET_SELL_MAX = 30;
 
 		public const int N_MARKET_BUY_MAX = 500;
@@ -91,6 +103,12 @@ namespace GAME
 		public const int INVENTORY_INVENTORYNUM_MAX = 6;
 
 		public const int INVENTORY_MULTISELL_ITEMNUM_MAX = 30;
+
+		public const int INVENTORY_ITEMBREAK_MAX = 30;
+
+		public const int SET_ITEM_EFFECT_COUNT = 6;
+
+		public const int EVENTEXCHANGE_NEED_ITEM_COUNT = 3;
 
 		public const int INVENTORY_ITEMNUM_DEFAULT = 30;
 
@@ -171,6 +189,22 @@ namespace GAME
 		public const long ATB_ITEM_RANDOMHEARTSRATE = 262144L;
 
 		public const long ATB_ITEM_ACCESSORY = 524288L;
+
+		public const long ATB_ITEM_UNTRADABLE = 1048576L;
+
+		public const long ATB_ITEM_ONLY_LEADER = 2097152L;
+
+		public const long ATB_ITEM_PREMIUMRATE = 4194304L;
+
+		public const long ATB_ITEM_LEGENDHIRE = 8388608L;
+
+		public const long ATB_ITEM_ITEMLOCK = 16777216L;
+
+		public const long ATB_ITEM_COSTUMEBOX = 33554432L;
+
+		public const int MAX_ONLYUSE_CHARCODE_NUM = 10;
+
+		public const string EQUIP_MODELPATH = "1";
 
 		public static int INVENTORY_ITEMSLOT_MAX = ItemDefine.N_SLOT_COUNT_X * ItemDefine.N_SLOT_COUNT_Y;
 

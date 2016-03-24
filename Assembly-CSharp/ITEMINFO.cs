@@ -129,6 +129,18 @@ public class ITEMINFO
 
 	public int m_nNeedOpenItemNum;
 
+	public int m_nCardType;
+
+	public int m_nRecruitType;
+
+	public int m_nSetUnique;
+
+	public byte m_nStarGrade;
+
+	public string m_strOnlyUse = string.Empty;
+
+	public string[] m_strOnlyUseCharCode = new string[20];
+
 	public ITEMINFO()
 	{
 		this.Init();
@@ -187,12 +199,19 @@ public class ITEMINFO
 		this.m_nBoxItemUnique = new int[12];
 		this.m_nBoxItemNumber = new int[12];
 		this.m_nBoxItemProbability = new int[12];
-		this.m_strMaterialCode = string.Empty;
 		this.m_strTextColorCode = string.Empty;
 		this.m_strQuestItemFunc = null;
 		this.m_nQuestFuncParam = 0;
 		this.m_nQuestIsDrop = 0;
 		this.m_nQuestIsDisappear = 0;
+		this.m_nCardType = 0;
+		this.m_nRecruitType = 0;
+		this.m_nSetUnique = 0;
+		this.m_strOnlyUse = string.Empty;
+		for (int i = 0; i < 10; i++)
+		{
+			this.m_strOnlyUseCharCode[i] = string.Empty;
+		}
 	}
 
 	public bool IsItemATB(long nFlag)
@@ -210,7 +229,14 @@ public class ITEMINFO
 		int num = this.m_nUseMinLevel;
 		if (Item != null)
 		{
-			num = this.m_nUseMinLevel - Item.m_nOption[8];
+			if (NrTSingleton<ContentsLimitManager>.Instance.IsItemLevelCheckBlock())
+			{
+				num = this.m_nUseMinLevel - Item.m_nOption[8];
+			}
+			else
+			{
+				num = this.m_nUseMinLevel;
+			}
 		}
 		if (0 > num)
 		{

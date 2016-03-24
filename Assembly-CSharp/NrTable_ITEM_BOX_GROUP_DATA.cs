@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ITEM_BOX_GROUP_DATA : NrTableBase
 {
-	public NrTable_ITEM_BOX_GROUP_DATA() : base(CDefinePath.s_strItemBoxGroupURL, true)
+	public NrTable_ITEM_BOX_GROUP_DATA() : base(CDefinePath.s_strItemBoxGroupURL)
 	{
 	}
 

@@ -65,6 +65,10 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 
 	private string[] szOTPAuthKey = new string[8];
 
+	private bool canOpenTicket = true;
+
+	private int m_nGID_PreviewHero;
+
 	public bool showDown = true;
 
 	private bool m_bGuestLogin;
@@ -78,6 +82,18 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 		set
 		{
 			this.m_nAuthPlatformType = value;
+		}
+	}
+
+	public int GidPrivewHero
+	{
+		get
+		{
+			return this.m_nGID_PreviewHero;
+		}
+		set
+		{
+			this.m_nGID_PreviewHero = value;
 		}
 	}
 
@@ -126,6 +142,8 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 		{
 			this.szOTPAuthKey[i] = string.Empty;
 		}
+		this.canOpenTicket = true;
+		this.m_nGID_PreviewHero = 0;
 	}
 
 	public bool IsWarp()
@@ -688,6 +706,7 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 			switch (eSERVICE_AREA)
 			{
 			case eSERVICE_AREA.SERVICE_ANDROID_CNTEST:
+			case eSERVICE_AREA.SERVICE_IOS_CNTEST:
 				result = eAuthPlatformType.AUTH_PLATFORMTYPE_CHUKONG;
 				return (int)result;
 			case eSERVICE_AREA.SERVICE_ANDROID_CNREVIEW:
@@ -697,7 +716,6 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 			case eSERVICE_AREA.SERVICE_IOS_USQA:
 			case eSERVICE_AREA.SERVICE_IOS_USIOS:
 			case eSERVICE_AREA.SERVICE_IOS_CNQA:
-			case eSERVICE_AREA.SERVICE_IOS_CNTEST:
 				IL_91:
 				switch (eSERVICE_AREA)
 				{
@@ -765,7 +783,7 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 			case eSERVICE_AREA.SERVICE_ANDROID_BANDNAVER:
 				return 3;
 			default:
-				if (eSERVICE_AREA != eSERVICE_AREA.SERVICE_ANDROID_CNTEST)
+				if (eSERVICE_AREA != eSERVICE_AREA.SERVICE_ANDROID_CNTEST && eSERVICE_AREA != eSERVICE_AREA.SERVICE_IOS_CNTEST)
 				{
 					return 1;
 				}
@@ -983,7 +1001,7 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 			{
 				string url3 = string.Format("http://{0}/mobileAuth/auth.aspx?otp={1}", NrGlobalReference.strWebPageDomain, this.szOTPAuthKey[4]);
 				Application.OpenURL(url3);
-				NrTSingleton<NrMainSystem>.Instance.QuitGame();
+				NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 				break;
 			}
 			case eOTPRequestType.OTPREQ_GUESTID:
@@ -1004,7 +1022,7 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 			case eOTPRequestType.OTPREQ_HELPQUESTION:
 			{
 				NrMobileNoticeWeb nrMobileNoticeWeb4 = new NrMobileNoticeWeb();
-				nrMobileNoticeWeb4.OnGameQuestion(this.szOTPAuthKey[6]);
+				nrMobileNoticeWeb4.OnGameQuestion(this.szOTPAuthKey[6], string.Empty);
 				break;
 			}
 			case eOTPRequestType.OTPREQ_UNREGISTER:
@@ -1020,5 +1038,26 @@ public class NkClientLogic : NrTSingleton<NkClientLogic>
 
 	public void GetClientInfo(ref USER_CLIENT_INFO pkClientInfo)
 	{
+	}
+
+	public void SetCanOpenTicket(bool _canOpenTicket)
+	{
+		this.canOpenTicket = _canOpenTicket;
+	}
+
+	public bool GetCanOpenTicket()
+	{
+		return this.canOpenTicket;
+	}
+
+	public NkSoldierInfo GetLeaderSolInfo(long _solID)
+	{
+		NkSoldierInfo nkSoldierInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetSoldierInfoBySolID(_solID);
+		if (nkSoldierInfo == null)
+		{
+			NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
+			nkSoldierInfo = nrCharUser.GetPersonInfoUser().GetSoldierInfo(0);
+		}
+		return nkSoldierInfo;
 	}
 }

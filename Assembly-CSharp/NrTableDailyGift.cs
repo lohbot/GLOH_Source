@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableDailyGift : NrTableBase
 {
-	public NrTableDailyGift() : base(CDefinePath.DAILY_GIFT_URL, true)
+	public NrTableDailyGift() : base(CDefinePath.DAILY_GIFT_URL)
 	{
 	}
 

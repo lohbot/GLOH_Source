@@ -17,5 +17,9 @@ namespace PROTOCOL.GAME
 		public short nChallengeNum;
 
 		public short nVoucherCount;
+
+		public short nChallengeEvent_RewardCount;
+
+		public short nItemShop_PopUpShopCount;
 	}
 }

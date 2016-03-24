@@ -18,63 +18,81 @@ public class SolComposeMainDlg : Form
 		public bool ZeroExpSol;
 
 		public bool bBattle;
+
+		public bool bReady;
+
+		public bool bWareHouse;
 	}
 
 	private const int GRADE_MAX = 5;
 
-	private const string BUTTON_ADDIMG_KEY = "Win_B_Addlist";
+	protected const string BUTTON_ADDIMG_KEY = "Win_B_Addlist";
 
-	private const string BUTTON_CHANGEIMG_KEY = "Win_B_Change";
+	protected const string BUTTON_CHANGEIMG_KEY = "Win_B_Change";
 
 	private const int SOL_COMPOSE_LIMIT_GRADE = 3;
 
 	private int USE_HEARTS_NUM;
 
+	private List<int> guideWinIDList = new List<int>();
+
+	private UIButton _Touch;
+
 	public SOLCOMPOSE_TYPE m_ShowType;
 
-	private Toolbar m_Toolbar;
+	protected Toolbar m_Toolbar;
 
-	private Button btnBaseSelect;
+	protected Button btnBaseSelect;
 
 	private Button btnBaseImgSelect;
 
-	private DrawTexture dtBase;
+	protected DrawTexture dtBase;
 
-	private Label lbBaseName;
+	protected Label lbBaseName;
 
-	private Button btnSubSelect;
+	protected Button btnSubSelect;
 
-	private Button btnSubSelectMain;
+	protected Button btnSubSelectMain;
+
+	private Button m_HelpButton;
+
+	private Button m_btnAddGold;
+
+	private Button m_btnAddGoldTrans;
 
 	private Label lbSubNum;
 
 	private NewListBox lxList;
 
-	private DrawTexture dtGage;
+	protected DrawTexture dtGage;
 
-	private DrawTexture dtExpBG;
+	protected DrawTexture dtExpBG;
 
-	private Button btnOk;
+	protected Button btnOk;
 
-	private Label lbMoney;
+	protected Label lbMoney;
 
-	private Label lblComposeCost;
+	protected Label lblComposeCost;
 
-	private Label lblExp;
+	protected Label lblExp;
 
-	private DrawTexture SolRank;
+	protected Label lblGradeText;
 
-	private Label lblComposeText;
+	protected DrawTexture SolRank;
 
-	private Label lblBaseGuideText;
+	protected Label lblComposeText;
 
-	private Label lblMaterialGuideText;
+	protected Label lblBaseGuideText;
 
-	private DrawTexture GradeExpBG;
+	protected Label lblMaterialGuideText;
 
-	private DrawTexture GradeExpGage;
+	protected Label lblBaseSeasonText;
 
-	private Label GradeExpText;
+	protected DrawTexture GradeExpBG;
+
+	protected DrawTexture GradeExpGage;
+
+	protected Label GradeExpText;
 
 	private NewListBox lxList2;
 
@@ -96,9 +114,13 @@ public class SolComposeMainDlg : Form
 
 	private Button btnSubSelect2;
 
-	private Button btnRecommend;
+	protected Button btnRecommend;
 
 	private NewListBox lxList3;
+
+	private NewListBox lxSelectList;
+
+	private Label lbExtract_Heart;
 
 	private Label lbSolNameSpace;
 
@@ -112,7 +134,7 @@ public class SolComposeMainDlg : Form
 
 	private Label lbNowHearts;
 
-	private CheckBox chHeartsUse;
+	protected CheckBox chHeartsUse;
 
 	private Button btnCheckHeartsUse;
 
@@ -120,15 +142,15 @@ public class SolComposeMainDlg : Form
 
 	private Label lbExtractSolText1;
 
-	private DrawTexture dwExtractSolImg;
-
-	private DrawTexture dwExtractSolRank;
+	private Label lbExtarct_Title;
 
 	private DrawTexture dwExtractSolImpossible;
 
-	private Button btnExtractsolWeapon;
+	private DrawTexture dwExtractBG;
 
-	private Button btnExtractsolSupport;
+	private DrawTexture dwExtractTextBG;
+
+	private DrawTexture dwExtractTitleBG;
 
 	private Button btnExtractStart;
 
@@ -136,7 +158,7 @@ public class SolComposeMainDlg : Form
 
 	private Label lbExtractSolText3;
 
-	private Label lbExtractPercentage;
+	protected Label lbExtractPercentage;
 
 	public bool m_bUseHearts;
 
@@ -144,7 +166,9 @@ public class SolComposeMainDlg : Form
 
 	public byte mBaseSolSeason;
 
-	private List<long> mSubSolList = new List<long>();
+	protected List<long> mSubSolList = new List<long>();
+
+	protected List<long> m_SolExtract = new List<long>();
 
 	private List<int> m_RecommandSol = new List<int>();
 
@@ -154,57 +178,74 @@ public class SolComposeMainDlg : Form
 
 	private long mSellCost;
 
-	private float GAGE_SRC_WIDTH;
+	protected float GAGE_SRC_WIDTH;
 
 	private bool m_bGradeUp;
 
-	private Button btn_Transcendence_StartButton;
+	private List<long> m_SaveSubSolIDList = new List<long>();
 
-	private Button btn_TranscendenceBase_Button1;
+	protected Button btn_Transcendence_StartButton;
 
-	private Button btn_TranscendenceUse_Add1;
+	protected Button btn_TranscendenceBase_Button1;
 
-	private Button btn_TranscendenceBase_Button2;
+	protected Button btn_TranscendenceUse_Add1;
 
-	private Button btn_TranscendenceBase_Button3;
+	protected Button btn_TranscendenceBase_Button2;
 
-	private Button btn_TranscendenceUse_Add2;
+	protected Button btn_TranscendenceBase_Button3;
 
-	private Button btn_TranscendenceUse_Add3;
+	protected Button btn_TranscendenceUse_Add2;
 
-	private Label lb_Tarnscendence_ExpGet;
+	protected Button btn_TranscendenceUse_Add3;
 
-	private DrawTexture dt_Transcendence_GaugeBar;
+	protected Label lb_Label_AddPercentage;
 
-	private Label lb_TranscendenceBase_SolName;
+	protected DrawTexture dt_DrawTexture_PercentagePlus;
 
-	private Label lb_Transcendence_Money;
+	protected Label lb_Transcendence_AddPercentage_Text;
 
-	private Label lb_TranscendenceUseMoney;
+	protected Label lb_Transcendence_AddPercentage;
 
-	private Label lb_Transcendence_SuccessRate_Text;
+	protected Label lb_Tarnscendence_ExpGet;
 
-	private Label lb_Transcendence_SuccessRate;
+	protected Label lb_TarnscendenceBaseSeasont;
 
-	private Label lb_TranscendenceBase_Help;
+	protected DrawTexture dt_Transcendence_GaugeBar;
 
-	private Label lb_Transcendence_Help;
+	protected Label lb_TranscendenceBase_SolName;
 
-	private Label lb_Transcendence_Help2;
+	protected Label lb_Transcendence_Money;
 
-	private DrawTexture dt_TranscendenceBase_SolImg;
+	protected Label lb_TranscendenceUseMoney;
 
-	private DrawTexture dt_TranscendenceBase_SolRank;
+	protected Label lb_Transcendence_SuccessRate_Text;
 
-	private NewListBox lxList4;
+	protected Label lb_Transcendence_SuccessRate;
 
-	private float GAGE_TRANSCENDENCE_WIDTH;
+	protected Label lb_TranscendenceBase_Help;
+
+	protected Label lb_Transcendence_Help;
+
+	protected Label lb_Transcendence_Help2;
+
+	protected DrawTexture dt_TranscendenceBase_SolImg;
+
+	protected DrawTexture dt_TranscendenceBase_SolRank;
+
+	public NewListBox lxList4;
+
+	protected float GAGE_TRANSCENDENCE_WIDTH;
 
 	public static SolComposeMainDlg Instance
 	{
 		get
 		{
-			return (SolComposeMainDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_DLG);
+			SolComposeMainDlg solComposeMainDlg = (SolComposeMainDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_DLG);
+			if (solComposeMainDlg == null)
+			{
+				solComposeMainDlg = (SolComposeMainDlg)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_CHALLENGEQUEST_DLG);
+			}
+			return solComposeMainDlg;
 		}
 	}
 
@@ -238,6 +279,14 @@ public class SolComposeMainDlg : Form
 		get
 		{
 			return this.mSubSolList.ToArray();
+		}
+	}
+
+	public long[] SUB_EXTRACTARRAY
+	{
+		get
+		{
+			return this.m_SolExtract.ToArray();
 		}
 	}
 
@@ -449,19 +498,20 @@ public class SolComposeMainDlg : Form
 		this.lxList2.AutoListBox = false;
 		this.lxList3 = (base.GetControl("Sol_ListBox3") as NewListBox);
 		this.lxList3.AutoListBox = false;
+		this.lxSelectList = (base.GetControl("NLB_ExtractSol_Base") as NewListBox);
 		this.m_Toolbar = (base.GetControl("ToolBar_01") as Toolbar);
 		this.m_Toolbar.Control_Tab[0].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("55");
 		this.m_Toolbar.Control_Tab[1].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("56");
 		this.m_Toolbar.Control_Tab[2].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2835");
 		this.m_Toolbar.Control_Tab[3].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2874");
-		UIPanelTab expr_25E = this.m_Toolbar.Control_Tab[0];
-		expr_25E.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_25E.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
-		UIPanelTab expr_28C = this.m_Toolbar.Control_Tab[1];
-		expr_28C.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_28C.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
-		UIPanelTab expr_2BA = this.m_Toolbar.Control_Tab[2];
-		expr_2BA.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_2BA.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
-		UIPanelTab expr_2E8 = this.m_Toolbar.Control_Tab[3];
-		expr_2E8.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_2E8.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		UIPanelTab expr_27A = this.m_Toolbar.Control_Tab[0];
+		expr_27A.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_27A.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		UIPanelTab expr_2A9 = this.m_Toolbar.Control_Tab[1];
+		expr_2A9.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_2A9.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		UIPanelTab expr_2D8 = this.m_Toolbar.Control_Tab[2];
+		expr_2D8.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_2D8.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		UIPanelTab expr_307 = this.m_Toolbar.Control_Tab[3];
+		expr_307.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_307.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
 		if (NrTSingleton<ContentsLimitManager>.Instance.IsExtract())
 		{
 			this.m_Toolbar.Control_Tab[2].Visible = false;
@@ -474,9 +524,11 @@ public class SolComposeMainDlg : Form
 		this.lbBaseName = (base.GetControl("Label_BaseSolName") as Label);
 		this.lblBaseGuideText = (base.GetControl("Label_BaseGuideText") as Label);
 		this.lblMaterialGuideText = (base.GetControl("Label_MaterialGuideText") as Label);
+		this.lblBaseSeasonText = (base.GetControl("Label_BaseSeason") as Label);
 		this.SolRank = (base.GetControl("DrawTexture_SolRank") as DrawTexture);
 		this.lblComposeCost = (base.GetControl("Label_Cost") as Label);
 		this.lblExp = (base.GetControl("Label_BaseExp") as Label);
+		this.lblGradeText = (base.GetControl("Label_GradeTextDetail") as Label);
 		this.lblComposeText = (base.GetControl("Label_ComposeText") as Label);
 		this.lblComposeText.Visible = false;
 		this.dtExpBG = (base.GetControl("DrawTexture_EXPBG") as DrawTexture);
@@ -489,7 +541,7 @@ public class SolComposeMainDlg : Form
 		this.GradeExpGage = (base.GetControl("DrawTexture_GradePRG") as DrawTexture);
 		this.GradeExpText = (base.GetControl("Label_GradeText") as Label);
 		this.dtSelBaseSol = (base.GetControl("layer2_sol1") as DrawTexture);
-		this.dtSelBaseSol.SetTexture(eCharImageType.LARGE, 242, -1);
+		this.dtSelBaseSol.SetTexture(eCharImageType.LARGE, 242, -1, string.Empty);
 		this.lbMoney2 = (base.GetControl("layer2_Gold") as Label);
 		this.lbSelMoney = (base.GetControl("layer2_Cost") as Label);
 		this.btnSell = (base.GetControl("Sol_sale_Button") as Button);
@@ -497,6 +549,7 @@ public class SolComposeMainDlg : Form
 		this.lbSubNum2 = (base.GetControl("layer2_Label02") as Label);
 		this.lbExplain = (base.GetControl("layer2_Label01") as Label);
 		this.lbSellGuide = (base.GetControl("Label_SellGuideText") as Label);
+		this.lbExtract_Heart = (base.GetControl("Label_Extract_HeartsUseInfo") as Label);
 		this.lbSolNameSpace = (base.GetControl("SolExtract_SolNameSpace") as Label);
 		this.btnExtractsolBase1 = (base.GetControl("Button_ExtractSol_Base") as Button);
 		this.btnExtractsolBase1.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickAddExtractSol));
@@ -524,22 +577,25 @@ public class SolComposeMainDlg : Form
 		}
 		this.lbExtractHelpText = (base.GetControl("Extract_Help") as Label);
 		this.lbExtractSolText1 = (base.GetControl("Extract_Text") as Label);
-		this.dwExtractSolImg = (base.GetControl("DrawTexture_ExtractSolImg") as DrawTexture);
-		this.dwExtractSolRank = (base.GetControl("DrawTexture_Extract_SolRank") as DrawTexture);
 		this.dwExtractSolImpossible = (base.GetControl("DrawTexture_ImpossibleExtract") as DrawTexture);
 		this.dwExtractSolImpossible.Visible = false;
-		this.btnExtractsolWeapon = (base.GetControl("Extract_RemoveWeapon_Button") as Button);
-		this.btnExtractsolWeapon.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickRemoveWeapon));
-		this.btnExtractsolWeapon.EffectAni = false;
-		this.btnExtractsolSupport = (base.GetControl("Extract_ClearSolSupport_Button") as Button);
-		this.btnExtractsolSupport.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickClearSupport));
-		this.btnExtractsolSupport.EffectAni = false;
 		this.btnExtractStart = (base.GetControl("Sol_Extract_Button") as Button);
 		this.btnExtractStart.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickExtractStart));
 		this.btnExtractStart.EffectAni = false;
 		this.lbExtractSolText2 = (base.GetControl("Extract_Text1") as Label);
 		this.lbExtractSolText3 = (base.GetControl("Extract_Text2") as Label);
+		this.dwExtractTextBG = (base.GetControl("DrawTexture_Extract_Text1Acc") as DrawTexture);
+		this.dwExtractBG = (base.GetControl("DrawTexture_ExtractBGimg") as DrawTexture);
+		this.dwExtractBG.SetTextureFromBundle("UI/Soldier/legendextract_backimg");
+		this.lbExtarct_Title = (base.GetControl("Label_SolExtract_Title") as Label);
+		this.dwExtractTitleBG = (base.GetControl("SolExtract_Title_BG") as DrawTexture);
 		this.lbExtractPercentage = (base.GetControl("Extract_Percentage") as Label);
+		this.m_HelpButton = (base.GetControl("Help_Button") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
+		this.m_btnAddGold = (base.GetControl("Button_AddGold") as Button);
+		this.m_btnAddGold.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBuyGold));
+		this.m_btnAddGoldTrans = (base.GetControl("Button_AddGoldTrans") as Button);
+		this.m_btnAddGoldTrans.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBuyGold));
 		this.SetTranscendenceComponent();
 		base.SetScreenCenter();
 		this.MakeSubSolList();
@@ -549,6 +605,7 @@ public class SolComposeMainDlg : Form
 		base.SetShowLayer(4, false);
 		this.SetComposeBaseSol(false);
 		this.CalcData();
+		this.m_RecommandSol.Clear();
 		NrTSingleton<FiveRocksEventManager>.Instance.Placement("solcomposedlg_open");
 	}
 
@@ -556,6 +613,7 @@ public class SolComposeMainDlg : Form
 	{
 		string empty = string.Empty;
 		string text = string.Empty;
+		string empty2 = string.Empty;
 		this.mComposeCost = 0L;
 		this.mMaxLvEvelution = 0L;
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
@@ -568,12 +626,14 @@ public class SolComposeMainDlg : Form
 		{
 			this.lbBaseName.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2031"));
 			this.lblComposeCost.SetText(Protocol_Item.Money_Format(this.mComposeCost));
+			this.lblBaseSeasonText.SetText(string.Empty);
 			this.btnBaseSelect.SetButtonTextureKey("Win_B_Addlist");
 			this.btnSubSelectMain.Visible = false;
 			this.lblBaseGuideText.Visible = true;
 			this.lblMaterialGuideText.Visible = false;
 			this.dtExpBG.Visible = false;
 			this.lblExp.Visible = false;
+			this.lblGradeText.Visible = false;
 			this.GradeExpBG.Visible = false;
 			this.GradeExpGage.Visible = false;
 			this.GradeExpText.Visible = false;
@@ -590,6 +650,7 @@ public class SolComposeMainDlg : Form
 		long num6 = 0L;
 		long num7 = 0L;
 		int num8 = 0;
+		int num9 = 0;
 		if (this.mBaseSol != null)
 		{
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
@@ -605,6 +666,7 @@ public class SolComposeMainDlg : Form
 			num = this.mBaseSol.GetCharKind();
 			num2 = this.mBaseSol.GetLevel();
 			b = this.mBaseSol.GetGrade();
+			num9 = this.mBaseSol.GetSeason() + 1;
 		}
 		if (this.mSubSolList.Count == 0)
 		{
@@ -613,6 +675,7 @@ public class SolComposeMainDlg : Form
 			this.btnSubSelect.SetButtonTextureKey("Win_B_Addlist");
 			this.dtExpBG.Visible = false;
 			this.lblExp.Visible = false;
+			this.lblGradeText.Visible = false;
 			this.lblMaterialGuideText.Visible = true;
 		}
 		else
@@ -621,6 +684,7 @@ public class SolComposeMainDlg : Form
 			this.btnSubSelectMain.Visible = false;
 			this.dtExpBG.Visible = true;
 			this.lblExp.Visible = true;
+			this.lblGradeText.Visible = true;
 			this.lblMaterialGuideText.Visible = false;
 		}
 		this.mSubSolList.Sort(new Comparison<long>(this.CompareExp));
@@ -685,17 +749,18 @@ public class SolComposeMainDlg : Form
 		}
 		else if (this.mBaseSol != null && this.mBaseSol.GetLevel() != num2)
 		{
-			int num9 = Math.Min((int)this.mBaseSol.GetSolMaxLevel(), (int)(num2 - this.mBaseSol.GetLevel()));
+			int num10 = Math.Min((int)this.mBaseSol.GetSolMaxLevel(), (int)(num2 - this.mBaseSol.GetLevel()));
 			text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1732");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 			{
 				text2,
 				"count",
-				num9.ToString()
+				num10.ToString()
 			});
 		}
 		this.lblComposeText.Visible = visible;
-		this.dtBase.SetTexture(eCharImageType.LARGE, num, (int)b);
+		string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(this.mBaseSol);
+		this.dtBase.SetTexture(eCharImageType.LARGE, num, (int)b, costumePortraitPath);
 		this.SolRank.Visible = true;
 		bool flag = false;
 		if (!NrTSingleton<ContentsLimitManager>.Instance.IsReincarnation() && this.mBaseSol.IsLeader())
@@ -712,6 +777,16 @@ public class SolComposeMainDlg : Form
 			}
 			this.SolRank.SetTexture(solLargeGradeImg);
 		}
+		if (num9 != 0)
+		{
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3274"),
+				"season",
+				num9
+			});
+		}
+		this.lblBaseSeasonText.SetText(empty2);
 		this.lbBaseName.SetText(empty);
 		this.lbMoney.SetText(text);
 		this.lblExp.Visible = (0L < num4);
@@ -720,79 +795,80 @@ public class SolComposeMainDlg : Form
 		this.m_bGradeUp = false;
 		if (this.mBaseSol != null)
 		{
-			float num11;
+			float num12;
 			if (this.mBaseSol.GetLevel() != num2)
 			{
 				long nextExp2 = NrTSingleton<NkLevelManager>.Instance.GetNextExp(this.mBaseSol.GetClassInfo().EXP_TYPE, num2);
 				long nextExp3 = NrTSingleton<NkLevelManager>.Instance.GetNextExp(this.mBaseSol.GetClassInfo().EXP_TYPE, num2 - 1);
 				long remainExp = NrTSingleton<NkLevelManager>.Instance.GetRemainExp(this.mBaseSol.GetClassInfo().EXP_TYPE, num2, this.mBaseSol.GetExp() + num4);
-				long num10 = nextExp2 - nextExp3;
-				num11 = ((float)num10 - (float)remainExp) / (float)num10;
+				long num11 = nextExp2 - nextExp3;
+				num12 = ((float)num11 - (float)remainExp) / (float)num11;
 			}
 			else
 			{
-				long num12 = this.mBaseSol.GetNextExp() - this.mBaseSol.GetCurBaseExp();
-				num11 = ((float)num12 - (float)(this.mBaseSol.GetRemainExp() - num4)) / (float)num12;
+				long num13 = this.mBaseSol.GetNextExp() - this.mBaseSol.GetCurBaseExp();
+				num12 = ((float)num13 - (float)(this.mBaseSol.GetRemainExp() - num4)) / (float)num13;
 			}
 			if (this.mBaseSol.IsMaxLevel() || this.mBaseSol.GetSolMaxLevel() <= num2)
 			{
-				num11 = 1f;
+				num12 = 1f;
 			}
-			if (num11 > 1f)
+			if (num12 > 1f)
 			{
-				num11 = 1f;
+				num12 = 1f;
 			}
-			if (0f > num11)
+			if (0f > num12)
 			{
-				num11 = 0f;
+				num12 = 0f;
 			}
-			this.dtGage.SetSize(this.GAGE_SRC_WIDTH * num11, this.dtGage.GetSize().y);
+			this.dtGage.SetSize(this.GAGE_SRC_WIDTH * num12, this.dtGage.GetSize().y);
 			this.GradeExpBG.Visible = true;
 			this.GradeExpGage.Visible = true;
 			this.GradeExpText.Visible = true;
-			long num13 = 0L;
+			this.lblGradeText.Visible = true;
 			long num14 = 0L;
-			float num15;
+			long num15 = 0L;
+			float num16;
 			if (this.mBaseSol.IsMaxGrade())
 			{
-				num15 = 1f;
+				num16 = 1f;
 			}
 			else if (this.mBaseSol.GetGrade() != b)
 			{
 				if (b + 1 >= 15)
 				{
-					num15 = 1f;
+					num16 = 1f;
 				}
 				else
 				{
 					long solEvolutionNeedEXP = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolEvolutionNeedEXP(num, (int)(b + 1));
 					long solEvolutionNeedEXP2 = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolEvolutionNeedEXP(num, (int)b);
-					long num16 = solEvolutionNeedEXP - (this.mBaseSol.GetEvolutionExp() + num5);
-					long num17 = solEvolutionNeedEXP - solEvolutionNeedEXP2;
-					num15 = ((float)num17 - (float)num16) / (float)num17;
-					if (num15 <= 0f)
+					long num17 = solEvolutionNeedEXP - (this.mBaseSol.GetEvolutionExp() + num5);
+					long num18 = solEvolutionNeedEXP - solEvolutionNeedEXP2;
+					num16 = ((float)num18 - (float)num17) / (float)num18;
+					if (num16 <= 0f)
 					{
-						num15 = 1f;
+						num16 = 1f;
 					}
 				}
 			}
 			else
 			{
-				num13 = this.mBaseSol.GetEvolutionExp() + num5 - this.mBaseSol.GetCurBaseEvolutionExp();
-				num14 = this.mBaseSol.GetNextEvolutionExp() - this.mBaseSol.GetCurBaseEvolutionExp();
-				num15 = ((float)num14 - (float)(this.mBaseSol.GetRemainEvolutionExp() - num5)) / (float)num14;
+				num14 = this.mBaseSol.GetEvolutionExp() + num5 - this.mBaseSol.GetCurBaseEvolutionExp();
+				num15 = this.mBaseSol.GetNextEvolutionExp() - this.mBaseSol.GetCurBaseEvolutionExp();
+				num16 = ((float)num15 - (float)(this.mBaseSol.GetRemainEvolutionExp() - num5)) / (float)num15;
 			}
 			string text3 = string.Empty;
-			if (num15 > 1f)
+			if (num16 > 1f)
 			{
-				num15 = 1f;
+				num16 = 1f;
 			}
 			bool flag2 = true;
 			if (NrTSingleton<ContentsLimitManager>.Instance.IsReincarnation())
 			{
 				flag2 = false;
 			}
-			this.GradeExpGage.SetSize(414f * num15, this.GradeExpGage.height);
+			this.GradeExpGage.SetSize(414f * num16, this.GradeExpGage.height);
 			if (!this.mBaseSol.IsMaxGrade())
 			{
 				if (this.mBaseSol.GetGrade() != b)
@@ -806,9 +882,9 @@ public class SolComposeMainDlg : Form
 					{
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1871"),
 						"exp",
-						num13.ToString(),
+						num14.ToString(),
 						"maxexp",
-						num14.ToString()
+						num15.ToString()
 					});
 				}
 			}
@@ -821,6 +897,13 @@ public class SolComposeMainDlg : Form
 				text3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("484");
 			}
 			this.GradeExpText.SetText(text3);
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text3, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3273"),
+				"evolexp",
+				num5
+			});
+			this.lblGradeText.SetText(text3);
 		}
 		if ((num4 != 0L || num5 != 0L) && TsPlatform.IsEditor)
 		{
@@ -912,7 +995,7 @@ public class SolComposeMainDlg : Form
 			this.btnSell.Visible = true;
 			this.btnSubSelectMain2.Visible = false;
 			this.lbSellGuide.Visible = false;
-			this.lbExplain.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("76"));
+			this.lbExplain.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3067"));
 			this.btnSubSelect2.SetButtonTextureKey("Win_B_Change");
 		}
 	}
@@ -921,47 +1004,59 @@ public class SolComposeMainDlg : Form
 	{
 		string empty = string.Empty;
 		string empty2 = string.Empty;
-		if (this.mBaseSol != null)
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 		{
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2826"),
+			"count",
+			this.m_SolExtract.Count
+		});
+		this.lbSolNameSpace.SetText(empty);
+		int num = 0;
+		float num2 = 0f;
+		if (this.m_SolExtract.Count > 0)
+		{
+			for (int i = 0; i < this.m_SolExtract.Count; i++)
 			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("290"),
-				"targetname",
-				this.mBaseSol.GetName(),
-				"count1",
-				this.mBaseSol.GetLevel().ToString(),
-				"count2",
-				this.mBaseSol.GetSolMaxLevel().ToString()
-			});
-			int charKind = this.mBaseSol.GetCharKind();
-			byte grade = this.mBaseSol.GetGrade();
-			this.lbSolNameSpace.SetText(empty);
-			this.dwExtractSolImg.SetTexture(eCharImageType.LARGE, charKind, (int)grade);
-			short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(this.mBaseSol.GetCharKind(), (int)this.mBaseSol.GetGrade());
-			UIBaseInfoLoader solLargeGradeImg = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolLargeGradeImg(this.mBaseSol.GetCharKind(), (int)this.mBaseSol.GetGrade());
-			if (0 < legendType)
-			{
-				this.dwExtractSolRank.SetSize(solLargeGradeImg.UVs.width, solLargeGradeImg.UVs.height);
+				num += 100;
+				NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(this.m_SolExtract[i]);
+				if (soldierInfo != null)
+				{
+					int solExtractRateItemInfo = NrTSingleton<NrSolExtractRateManager>.Instance.GetSolExtractRateItemInfo(soldierInfo.GetSeason(), (int)soldierInfo.GetGrade(), this.m_bUseHearts);
+					num2 += (float)solExtractRateItemInfo / 100f;
+				}
 			}
-			this.dwExtractSolRank.SetTexture(solLargeGradeImg);
-			int solExtractRateItemInfo = NrTSingleton<NrSolExtractRateManager>.Instance.GetSolExtractRateItemInfo(this.mBaseSol.GetSeason(), (int)this.mBaseSol.GetGrade(), this.m_bUseHearts);
-			float num = (float)solExtractRateItemInfo / 100f;
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2827"),
+				"count",
+				num
+			});
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{
 				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2857"),
 				"count",
-				num.ToString()
+				string.Format("{0:F2}", num2 / (float)this.m_SolExtract.Count)
 			});
-			this.lbExtractPercentage.SetText(empty2);
+			this.lbExtractPercentage.SetText(empty);
 		}
 		else
 		{
-			this.lbSolNameSpace.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2826"));
+			this.chHeartsUse.SetToggleState(0);
+			this.m_bUseHearts = false;
+			num = this.USE_HEARTS_NUM;
+			this.ShowExtractSol(false);
 		}
-		int num2 = NkUserInventory.GetInstance().Get_First_ItemCnt(70000);
-		if (num2 >= 0)
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
 		{
-			this.lbNowHearts.SetText(num2.ToString());
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2827"),
+			"count",
+			num
+		});
+		this.lbExtract_Heart.SetText(empty2);
+		int num3 = NkUserInventory.GetInstance().Get_First_ItemCnt(70000);
+		if (num3 >= 0)
+		{
+			this.lbNowHearts.SetText(num3.ToString());
 		}
 	}
 
@@ -972,11 +1067,17 @@ public class SolComposeMainDlg : Form
 
 	public override void OnClose()
 	{
+		this.HideTouch(true);
+		if (NrTSingleton<FormsManager>.Instance.IsPopUPDlgNotExist(base.WindowID))
+		{
+			NrTSingleton<UIImageBundleManager>.Instance.DeleteTexture();
+		}
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SOLCOMPOSE_LIST_DLG);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SOLCOMPOSE_CHECK_DLG);
 		NrSound.ImmedatePlay("UI_SFX", "MERCENARY-COMPOSE", "CLOSE");
 		NrTSingleton<NrMainSystem>.Instance.CleanUpReserved();
 		NrTSingleton<ChallengeManager>.Instance.ShowNotice();
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.CHALLENGE_DLG);
 	}
 
 	public bool ContainBaseSoldier(long SolID)
@@ -989,6 +1090,11 @@ public class SolComposeMainDlg : Form
 		return this.mSubSolList.Contains(SolID);
 	}
 
+	public bool ContainExtractSoldier(long SolID)
+	{
+		return this.m_SolExtract.Contains(SolID);
+	}
+
 	public bool CheckBaseSoldier(NkSoldierInfo pkSolInfo)
 	{
 		if (this.mBaseSol != null && this.mBaseSol.GetSolID() == pkSolInfo.GetSolID())
@@ -999,7 +1105,7 @@ public class SolComposeMainDlg : Form
 		return false;
 	}
 
-	private NewListBox GetListBox()
+	protected NewListBox GetListBox()
 	{
 		NewListBox result = null;
 		switch (this.m_ShowType)
@@ -1011,13 +1117,101 @@ public class SolComposeMainDlg : Form
 			result = this.lxList2;
 			break;
 		case SOLCOMPOSE_TYPE.EXTRACT:
-			result = this.lxList3;
+			result = this.lxSelectList;
 			break;
 		case SOLCOMPOSE_TYPE.TRANSCENDENCE:
 			result = this.lxList4;
 			break;
 		}
 		return result;
+	}
+
+	private void AddExtractSolList(long SolIDX)
+	{
+		NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(SolIDX);
+		if (soldierInfo == null)
+		{
+			return;
+		}
+		NewListBox listBox = this.GetListBox();
+		NewListItem newListItem = new NewListItem(listBox.ColumnNum, true, string.Empty);
+		long num = soldierInfo.GetNextExp() - soldierInfo.GetCurBaseExp();
+		float num2 = ((float)num - (float)soldierInfo.GetRemainExp()) / (float)num;
+		if (num2 > 1f)
+		{
+			num2 = 1f;
+		}
+		if (0f > num2)
+		{
+		}
+		string empty = string.Empty;
+		if (soldierInfo.IsMaxLevel())
+		{
+		}
+		UIBaseInfoLoader legendFrame = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendFrame(soldierInfo.GetCharKind(), (int)soldierInfo.GetGrade());
+		if (legendFrame != null)
+		{
+			newListItem.SetListItemData(0, legendFrame, null, null, null);
+		}
+		newListItem.SetListItemData(2, soldierInfo.GetListSolInfo(false), null, null, null);
+		string legendName = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendName(soldierInfo.GetCharKind(), (int)soldierInfo.GetGrade(), soldierInfo.GetName());
+		newListItem.SetListItemData(3, legendName, null, null, null);
+		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("167");
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref textFromInterface, new object[]
+		{
+			textFromInterface,
+			"count1",
+			soldierInfo.GetLevel(),
+			"count2",
+			soldierInfo.GetSolMaxLevel()
+		});
+		newListItem.SetListItemData(4, textFromInterface, null, null, null);
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3274"),
+			"season",
+			soldierInfo.GetSeason() + 1
+		});
+		newListItem.SetListItemData(5, empty, null, null, null);
+		if (this.CheckEquipItem(soldierInfo))
+		{
+			newListItem.SetListItemData(3, false);
+			newListItem.SetListItemData(4, false);
+			newListItem.SetListItemData(5, false);
+			string textFromInterface2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("627");
+			newListItem.SetListItemData(6, true);
+			newListItem.SetListItemData(7, textFromInterface2, soldierInfo, new EZValueChangedDelegate(this.OnClickReleaseEquip), null);
+			newListItem.SetListItemData(8, false);
+		}
+		else if (soldierInfo.GetFriendPersonID() > 0L)
+		{
+			newListItem.SetListItemData(3, false);
+			newListItem.SetListItemData(4, false);
+			newListItem.SetListItemData(5, false);
+			string textFromInterface3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("74");
+			newListItem.SetListItemData(6, true);
+			newListItem.SetListItemData(7, false);
+			newListItem.SetListItemData(8, textFromInterface3, soldierInfo, new EZValueChangedDelegate(this.OnClickUnsetSolHelp), null);
+		}
+		else if (soldierInfo.IsCostumeEquip())
+		{
+			newListItem.SetListItemData(3, false);
+			newListItem.SetListItemData(4, false);
+			newListItem.SetListItemData(5, false);
+			string textFromInterface4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3305");
+			newListItem.SetListItemData(6, true);
+			newListItem.SetListItemData(7, false);
+			newListItem.SetListItemData(8, textFromInterface4, soldierInfo, new EZValueChangedDelegate(this.OnClickUnsetCostume), null);
+		}
+		else
+		{
+			newListItem.SetListItemData(6, false);
+			newListItem.SetListItemData(7, false);
+			newListItem.SetListItemData(8, false);
+		}
+		newListItem.SetListItemData(9, string.Empty, soldierInfo.GetSolID(), new EZValueChangedDelegate(this.OnClickExtract), null);
+		newListItem.Data = soldierInfo.GetSolID();
+		listBox.Add(newListItem);
 	}
 
 	private void AddSubSolList(long SolIDX)
@@ -1028,7 +1222,7 @@ public class SolComposeMainDlg : Form
 			return;
 		}
 		NewListBox listBox = this.GetListBox();
-		NewListItem newListItem = new NewListItem(listBox.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(listBox.ColumnNum, true, string.Empty);
 		long num = soldierInfo.GetExp() - soldierInfo.GetCurBaseExp();
 		long num2 = soldierInfo.GetNextExp() - soldierInfo.GetCurBaseExp();
 		float num3 = ((float)num2 - (float)soldierInfo.GetRemainExp()) / (float)num2;
@@ -1041,6 +1235,7 @@ public class SolComposeMainDlg : Form
 			num3 = 0f;
 		}
 		string text = string.Format("{0}/{1}", num, num2);
+		string empty = string.Empty;
 		if (soldierInfo.IsMaxLevel())
 		{
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("286");
@@ -1065,7 +1260,13 @@ public class SolComposeMainDlg : Form
 		});
 		newListItem.SetListItemData(3, textFromInterface, null, null, null);
 		newListItem.SetListItemData(4, false);
-		newListItem.SetListItemData(5, false);
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3274"),
+			"season",
+			soldierInfo.GetSeason() + 1
+		});
+		newListItem.SetListItemData(5, empty, null, null, null);
 		newListItem.SetListItemData(6, false);
 		newListItem.SetListItemData(7, false);
 		listBox.SetColumnSize(9, (int)(250f * num3), 26);
@@ -1084,6 +1285,13 @@ public class SolComposeMainDlg : Form
 			newListItem.SetListItemData(11, true);
 			newListItem.SetListItemData(13, textFromInterface3, soldierInfo, new EZValueChangedDelegate(this.OnClickUnsetSolHelp), null);
 		}
+		else if (soldierInfo.IsCostumeEquip())
+		{
+			string textFromInterface4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3305");
+			newListItem.SetListItemData(10, false);
+			newListItem.SetListItemData(11, true);
+			newListItem.SetListItemData(13, textFromInterface4, soldierInfo, new EZValueChangedDelegate(this.OnClickUnsetCostume), null);
+		}
 		else
 		{
 			newListItem.SetListItemData(11, false);
@@ -1099,6 +1307,13 @@ public class SolComposeMainDlg : Form
 		NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(a);
 		NkSoldierInfo soldierInfo2 = SolComposeMainDlg.GetSoldierInfo(b);
 		return soldierInfo2.GetExp().CompareTo(soldierInfo.GetExp());
+	}
+
+	private int CompareGrade(long a, long b)
+	{
+		NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(a);
+		NkSoldierInfo soldierInfo2 = SolComposeMainDlg.GetSoldierInfo(b);
+		return soldierInfo.GetGrade().CompareTo(soldierInfo2.GetGrade());
 	}
 
 	public int GetListIndexBySolID(long SolIDX)
@@ -1204,7 +1419,7 @@ public class SolComposeMainDlg : Form
 		Protocol_Item.Send_EquipSol_InvenEquip_All(kSolInfo);
 	}
 
-	private void OnClickStart(IUIObject obj)
+	protected virtual void OnClickStart(IUIObject obj)
 	{
 		if (this.mBaseSol == null)
 		{
@@ -1264,11 +1479,24 @@ public class SolComposeMainDlg : Form
 				}
 			}
 		}
+		foreach (long current3 in this.mSubSolList)
+		{
+			NkSoldierInfo soldierInfo3 = SolComposeMainDlg.GetSoldierInfo(current3);
+			if (soldierInfo3 != null)
+			{
+				if (soldierInfo3.IsCostumeEquip())
+				{
+					string textFromNotify7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("856");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify7, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+					return;
+				}
+			}
+		}
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		if (kMyCharInfo != null && this.mComposeCost > kMyCharInfo.m_Money)
 		{
-			string textFromNotify7 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("89");
-			Main_UI_SystemMessage.ADDMessage(textFromNotify7, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			string textFromNotify8 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("89");
+			Main_UI_SystemMessage.ADDMessage(textFromNotify8, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			LackGold_dlg lackGold_dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GOLDLACK_DLG) as LackGold_dlg;
 			if (lackGold_dlg != null)
 			{
@@ -1285,14 +1513,63 @@ public class SolComposeMainDlg : Form
 		this.m_RecommandSol.Clear();
 	}
 
-	private void OnClickBase(IUIObject obj)
+	protected virtual void OnClickBase(IUIObject obj)
 	{
 		SolComposeListDlg.LoadSelectList(true, SOLCOMPOSE_TYPE.COMPOSE);
 	}
 
-	private void OnClickSub(IUIObject obj)
+	protected virtual void OnClickSub(IUIObject obj)
 	{
 		SolComposeListDlg.LoadSelectList(false, this.m_ShowType);
+	}
+
+	protected virtual void OnClickExtract(IUIObject obj)
+	{
+		UIButton uIButton = obj as UIButton;
+		if (uIButton == null)
+		{
+			return;
+		}
+		long num = (long)uIButton.Data;
+		if (0L < num && this.m_SolExtract.Contains(num))
+		{
+			this.RemoveExtractSolList(num);
+			this.CalcData();
+		}
+	}
+
+	public void RemoveExtractSolList(long SolIDX)
+	{
+		if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMPOSE_CHECK_DLG))
+		{
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SOLCOMPOSE_CHECK_DLG);
+		}
+		int listExtractIndexBySolID = this.GetListExtractIndexBySolID(SolIDX);
+		if (0 <= listExtractIndexBySolID)
+		{
+			NewListBox listBox = this.GetListBox();
+			this.m_SolExtract.Remove(SolIDX);
+			listBox.RemoveItem(listExtractIndexBySolID, false);
+			listBox.RepositionItems();
+			this.SetSoldierNum();
+		}
+	}
+
+	public int GetListExtractIndexBySolID(long SolIDX)
+	{
+		NewListBox listBox = this.GetListBox();
+		if (this.m_SolExtract.Contains(SolIDX))
+		{
+			for (int i = 0; i < listBox.Count; i++)
+			{
+				IUIListObject item = listBox.GetItem(i);
+				if (SolIDX == (long)item.Data)
+				{
+					return i;
+				}
+			}
+		}
+		return -1;
 	}
 
 	private void OnClickSubCancel(IUIObject obj)
@@ -1354,6 +1631,19 @@ public class SolComposeMainDlg : Form
 				}
 			}
 		}
+		foreach (long current3 in this.mSubSolList)
+		{
+			NkSoldierInfo soldierInfo3 = SolComposeMainDlg.GetSoldierInfo(current3);
+			if (soldierInfo3 != null)
+			{
+				if (soldierInfo3.IsCostumeEquip())
+				{
+					string textFromNotify3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("856");
+					Main_UI_SystemMessage.ADDMessage(textFromNotify3, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+					return;
+				}
+			}
+		}
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SOLCOMPOSE_LIST_DLG);
 		SolComposeCheckDlg solComposeCheckDlg = (SolComposeCheckDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMPOSE_CHECK_DLG);
 		if (solComposeCheckDlg != null)
@@ -1379,10 +1669,15 @@ public class SolComposeMainDlg : Form
 	private void OnClickCheckBoxUseHearts(IUIObject obj)
 	{
 		int num = NkUserInventory.GetInstance().Get_First_ItemCnt(70000);
-		if (num < this.USE_HEARTS_NUM)
+		if (this.m_SolExtract.Count <= 0)
 		{
 			return;
 		}
+		if (num < this.USE_HEARTS_NUM * this.m_SolExtract.Count)
+		{
+			return;
+		}
+		this.chHeartsUse.SetEnabled(true);
 		if (this.chHeartsUse.StateNum == 1)
 		{
 			this.m_bUseHearts = true;
@@ -1391,65 +1686,82 @@ public class SolComposeMainDlg : Form
 		{
 			this.m_bUseHearts = false;
 		}
-		if (this.mBaseSol != null)
-		{
-			string empty = string.Empty;
-			int solExtractRateItemInfo = NrTSingleton<NrSolExtractRateManager>.Instance.GetSolExtractRateItemInfo(this.mBaseSol.GetSeason(), (int)this.mBaseSol.GetGrade(), this.m_bUseHearts);
-			float num2 = (float)solExtractRateItemInfo / 100f;
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2857"),
-				"count",
-				num2.ToString()
-			});
-			this.lbExtractPercentage.SetText(empty);
-		}
+		this.CalcExtractData();
 	}
 
 	private void OnClickExtractHeartsUse(IUIObject obj)
 	{
 		int num = NkUserInventory.GetInstance().Get_First_ItemCnt(70000);
-		if (num < this.USE_HEARTS_NUM)
+		if (this.m_SolExtract.Count > 0)
 		{
-			return;
+			if (num < this.USE_HEARTS_NUM * this.m_SolExtract.Count)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("273"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return;
+			}
+			if (this.chHeartsUse.StateNum == 1)
+			{
+				this.chHeartsUse.SetToggleState(0);
+			}
+			else
+			{
+				this.chHeartsUse.SetToggleState(1);
+			}
+			this.OnClickCheckBoxUseHearts(null);
 		}
-		if (this.chHeartsUse.StateNum == 1)
-		{
-			this.chHeartsUse.SetToggleState(0);
-		}
-		else
-		{
-			this.chHeartsUse.SetToggleState(1);
-		}
-		this.OnClickCheckBoxUseHearts(null);
 	}
 
-	private void OnClickAddExtractSol(IUIObject obj)
+	protected virtual void OnClickAddExtractSol(IUIObject obj)
 	{
-		SolComposeListDlg.LoadSelectList(true, this.m_ShowType);
+		this.HideTouch(false);
+		SolComposeListDlg.LoadSelectExtractList(this.m_ShowType);
+		this.chHeartsUse.SetToggleState(0);
+		this.chHeartsUse.SetEnabled(false);
+		this.m_bUseHearts = false;
 	}
 
-	private void OnClickHeartsPurchase(IUIObject obj)
+	protected virtual void OnClickHeartsPurchase(IUIObject obj)
 	{
 		NrTSingleton<ItemMallItemManager>.Instance.Send_GS_ITEMMALL_INFO_REQ(eITEMMALL_TYPE.BUY_HEARTS, true);
 		this.Close();
 	}
 
-	private void OnClickExtractStart(IUIObject obj)
+	protected virtual void OnClickExtractStart(IUIObject obj)
 	{
-		if (this.mBaseSol == null)
+		if (this.m_SolExtract.Count <= 0)
 		{
 			return;
 		}
-		if (this.CheckEquipItem(this.mBaseSol))
+		bool flag = true;
+		for (int i = 0; i < this.m_SolExtract.Count; i++)
 		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("789"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(this.m_SolExtract[i]);
+			if (soldierInfo == null)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("270"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				flag = false;
+				break;
+			}
+			if (this.CheckEquipItem(soldierInfo))
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("789"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				flag = false;
+				break;
+			}
+			if (soldierInfo.GetFriendPersonID() > 0L)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("790"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				flag = false;
+				break;
+			}
+			if (soldierInfo.IsCostumeEquip())
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("856"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				flag = false;
+				break;
+			}
 		}
-		else if (this.mBaseSol.GetFriendPersonID() > 0L)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("790"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-		}
-		else
+		if (flag)
 		{
 			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 			if (msgBoxUI == null)
@@ -1457,26 +1769,53 @@ public class SolComposeMainDlg : Form
 				return;
 			}
 			string empty = string.Empty;
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(this.m_SolExtract[0]);
+			if (soldierInfo == null)
 			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("295"),
-				"charname",
-				this.mBaseSol.GetName()
-			});
-			msgBoxUI.SetMsg(new YesDelegate(this.MessageBoxClassChangeOK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2866"), empty, eMsgType.MB_OK_CANCEL);
+				return;
+			}
+			if (this.m_SolExtract.Count - 1 > 0)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("440"),
+					"charname",
+					soldierInfo.GetName(),
+					"count",
+					this.m_SolExtract.Count - 1
+				});
+			}
+			else
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("295"),
+					"charname",
+					soldierInfo.GetName()
+				});
+			}
+			msgBoxUI.SetMsg(new YesDelegate(this.MessageBoxClassChangeOK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2866"), empty, eMsgType.MB_OK_CANCEL, 2);
 			msgBoxUI.Show();
+			this.HideTouch(false);
 		}
 	}
 
 	private void MessageBoxClassChangeOK(object a_oObject)
 	{
+		if (this.m_SolExtract.Count <= 0)
+		{
+			return;
+		}
 		int i32HeartsCount = 0;
 		if (this.m_bUseHearts)
 		{
-			i32HeartsCount = this.USE_HEARTS_NUM;
+			i32HeartsCount = this.USE_HEARTS_NUM * this.m_SolExtract.Count;
 		}
 		GS_SOLDIERS_EXTRACT_REQ gS_SOLDIERS_EXTRACT_REQ = new GS_SOLDIERS_EXTRACT_REQ();
-		gS_SOLDIERS_EXTRACT_REQ.i64ExtractSolID = this.mBaseSol.GetSolID();
+		for (int i = 0; i < this.m_SolExtract.Count; i++)
+		{
+			gS_SOLDIERS_EXTRACT_REQ.i64ExtractSolID[i] = this.m_SolExtract[i];
+		}
 		gS_SOLDIERS_EXTRACT_REQ.i32HeartsCount = i32HeartsCount;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_SOLDIERS_EXTRACT_REQ, gS_SOLDIERS_EXTRACT_REQ);
 	}
@@ -1501,7 +1840,7 @@ public class SolComposeMainDlg : Form
 		}
 	}
 
-	private void ShowExtractSol(bool bShowExtractSol)
+	protected void ShowExtractSol(bool bShowExtractSol)
 	{
 		this.btnExtractsolBase1.Visible = true;
 		this.btnExtractsolBase2.Visible = true;
@@ -1517,84 +1856,74 @@ public class SolComposeMainDlg : Form
 		}
 		this.lbExtractHelpText.Visible = !bShowExtractSol;
 		this.lbExtractSolText1.Visible = !bShowExtractSol;
-		this.dwExtractSolImg.Visible = bShowExtractSol;
-		this.dwExtractSolRank.Visible = bShowExtractSol;
+		this.lbExtract_Heart.Visible = bShowExtractSol;
 		this.btnExtractStart.Visible = bShowExtractSol;
 		this.lbExtractSolText2.Visible = bShowExtractSol;
 		this.lbExtractSolText3.Visible = bShowExtractSol;
 		this.lbExtractPercentage.Visible = bShowExtractSol;
+		this.dwExtractTextBG.Visible = bShowExtractSol;
+		this.dwExtractBG.Visible = bShowExtractSol;
+		this.lbExtarct_Title.Visible = !bShowExtractSol;
+		this.dwExtractTitleBG.Visible = !bShowExtractSol;
 		if (this.mBaseSol != null)
 		{
-			if (this.CheckEquipItem(this.mBaseSol))
+			string empty = string.Empty;
+			int num2 = this.mBaseSol.GetSeason() + 1;
+			if (num2 != 0)
 			{
-				this.btnExtractsolWeapon.Visible = true;
-			}
-			else
-			{
-				if (this.btnExtractsolWeapon.Visible)
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 				{
-					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("218"), SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
-				}
-				this.btnExtractsolWeapon.Visible = false;
-			}
-			if (this.mBaseSol.GetFriendPersonID() > 0L)
-			{
-				if (this.btnExtractsolWeapon.Visible)
-				{
-					this.btnExtractsolSupport.Visible = false;
-				}
-				else
-				{
-					this.btnExtractsolSupport.Visible = true;
-				}
-			}
-			else
-			{
-				if (this.btnExtractsolSupport.Visible)
-				{
-					USER_FRIEND_INFO friend = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().m_kFriendInfo.GetFriend(this.mBaseSol.GetFriendPersonID());
-					if (friend != null)
-					{
-						string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("43");
-						string empty = string.Empty;
-						NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-						{
-							textFromNotify,
-							"username",
-							TKString.NEWString(friend.szName)
-						});
-						Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
-					}
-				}
-				this.btnExtractsolSupport.Visible = false;
-			}
-			if (this.btnExtractsolWeapon.Visible || this.btnExtractsolSupport.Visible)
-			{
-				this.dwExtractSolImpossible.Visible = true;
-			}
-			else
-			{
-				this.dwExtractSolImpossible.Visible = false;
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3274"),
+					"season",
+					num2
+				});
 			}
 		}
 		else
 		{
-			this.btnExtractsolWeapon.Visible = false;
-			this.btnExtractsolSupport.Visible = false;
 			this.dwExtractSolImpossible.Visible = false;
-			this.lbSolNameSpace.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2826"));
+			string empty2 = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2826"),
+				"count",
+				this.m_SolExtract.Count
+			});
+			this.lbSolNameSpace.SetText(empty2);
 		}
 	}
 
-	public void OnClickTab(IUIObject obj)
+	public virtual void OnClickTab(IUIObject obj)
 	{
 		UIPanelTab uIPanelTab = obj as UIPanelTab;
 		if (uIPanelTab.panel.index == uIPanelTab.panelManager.CurrentPanel.index)
 		{
 			return;
 		}
-		this.m_ShowType = (SOLCOMPOSE_TYPE)uIPanelTab.panel.index;
+		this.SetComposeType((SOLCOMPOSE_TYPE)uIPanelTab.panel.index);
+	}
+
+	public virtual void SetComposeType(SOLCOMPOSE_TYPE eType)
+	{
+		this.m_ShowType = eType;
+		this.m_Toolbar.SetSelectTabIndex((int)eType);
 		this.ComposeInit();
+	}
+
+	public void ComposeTranscendence()
+	{
+		if (this.m_ShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
+		{
+			this.ClearList();
+			base.SetShowLayer(1, this.m_ShowType == SOLCOMPOSE_TYPE.COMPOSE);
+			base.SetShowLayer(2, this.m_ShowType == SOLCOMPOSE_TYPE.SELL);
+			base.SetShowLayer(3, this.m_ShowType == SOLCOMPOSE_TYPE.EXTRACT);
+			base.SetShowLayer(4, this.m_ShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE);
+			this.ShowTranscendence(true);
+			this.CalcData();
+			this.SetSoldierNum();
+			this.m_HelpButton.Visible = (this.m_ShowType != SOLCOMPOSE_TYPE.SELL);
+		}
 	}
 
 	public void ComposeInit()
@@ -1615,11 +1944,18 @@ public class SolComposeMainDlg : Form
 		}
 		this.CalcData();
 		this.SetSoldierNum();
+		this.m_HelpButton.Visible = (this.m_ShowType != SOLCOMPOSE_TYPE.SELL);
 	}
 
 	public void InitExtract()
 	{
 		this.mBaseSol = null;
+		this.m_SolExtract.Clear();
+		NewListBox listBox = this.GetListBox();
+		if (listBox != null)
+		{
+			listBox.Clear();
+		}
 		this.ShowExtractSol(false);
 		this.CalcData();
 	}
@@ -1653,6 +1989,11 @@ public class SolComposeMainDlg : Form
 			this.SelectBase(nkSoldierInfo.GetSolID());
 			this.SelectSub(list);
 		}
+	}
+
+	private void SetSaveSubSolIDList(List<long> SaveSubSolIDList)
+	{
+		this.m_SaveSubSolIDList = SaveSubSolIDList;
 	}
 
 	private void LatestSolRecommand()
@@ -1722,65 +2063,133 @@ public class SolComposeMainDlg : Form
 	private bool FindSameSol(int SolKind, ref NkSoldierInfo _BaseSol, ref List<long> _SubSolIDList)
 	{
 		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 		for (int i = 0; i < 6; i++)
 		{
 			NkSoldierInfo soldierInfo = charPersonInfo.GetSoldierInfo(i);
-			if (soldierInfo != null)
+			if (this.CheckRecommandBaseSol(soldierInfo, 1))
 			{
-				if (soldierInfo.GetSolID() > 0L)
+				if (SolKind == soldierInfo.GetCharKind())
 				{
-					if (soldierInfo.GetLevel() != 1)
-					{
-						if (SolKind == soldierInfo.GetCharKind())
-						{
-							_BaseSol = soldierInfo;
-							break;
-						}
-					}
+					_BaseSol = soldierInfo;
+					break;
 				}
 			}
 		}
-		foreach (NkSoldierInfo current in readySolList.GetList().Values)
+		List<NkSoldierInfo> solWarehouseList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetSolWarehouseList();
+		foreach (NkSoldierInfo current in solWarehouseList)
 		{
-			if (current.GetSolPosType() == 0)
+			if (this.CheckRecommandBaseSol(current, 5))
 			{
-				if (current.GetCharKind() == SolKind)
+				if (_BaseSol == null)
 				{
-					if (current.GetLevel() == 1)
+					if (SolKind == current.GetCharKind())
 					{
-						if (_BaseSol == null || _BaseSol.GetGrade() >= current.GetGrade())
-						{
-							_SubSolIDList.Add(current.GetSolID());
-						}
+						_BaseSol = current;
+						break;
 					}
-					else if (_BaseSol == null)
+				}
+				else if (SolKind == current.GetCharKind())
+				{
+					if (current.GetGrade() > _BaseSol.GetGrade())
 					{
 						_BaseSol = current;
 					}
-					else if (_BaseSol.GetGrade() < current.GetGrade())
+					else if (current.GetGrade() == _BaseSol.GetGrade() && current.GetLevel() > _BaseSol.GetLevel())
 					{
-						if (_BaseSol.GetSolPosType() == 0)
-						{
-							_SubSolIDList.Add(_BaseSol.GetSolID());
-						}
 						_BaseSol = current;
-					}
-					else if (_BaseSol.GetGrade() == current.GetGrade() && _BaseSol.GetLevel() < current.GetLevel())
-					{
-						if (_BaseSol.GetSolPosType() == 0)
-						{
-							_SubSolIDList.Add(_BaseSol.GetSolID());
-						}
-						_BaseSol = current;
-					}
-					else if (current.GetExp() == 0L)
-					{
-						_SubSolIDList.Add(current.GetSolID());
 					}
 				}
 			}
 		}
+		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+		foreach (NkSoldierInfo current2 in readySolList.GetList().Values)
+		{
+			if (this.CheckRecommandBaseSol(current2, 0))
+			{
+				if (_BaseSol == null)
+				{
+					if (SolKind == current2.GetCharKind())
+					{
+						_BaseSol = current2;
+					}
+				}
+				else if (SolKind == current2.GetCharKind())
+				{
+					if (current2.GetGrade() > _BaseSol.GetGrade())
+					{
+						_BaseSol = current2;
+					}
+					else if (current2.GetGrade() == _BaseSol.GetGrade() && current2.GetLevel() > _BaseSol.GetLevel())
+					{
+						_BaseSol = current2;
+					}
+				}
+			}
+		}
+		List<long> list = new List<long>();
+		foreach (NkSoldierInfo current3 in readySolList.GetList().Values)
+		{
+			if (this.CheckRecommandBaseSol(current3, 0))
+			{
+				if (_BaseSol != null && SolKind == current3.GetCharKind() && _BaseSol.GetSolID() != current3.GetSolID() && current3.GetExp() == 0L && !current3.IsAwakening() && !current3.IsAtbCommonFlag(1L))
+				{
+					list.Add(current3.GetSolID());
+				}
+			}
+		}
+		list.Sort(new Comparison<long>(this.CompareGrade));
+		long num = 0L;
+		long num2 = 0L;
+		long maxNextEvolutionExp = _BaseSol.GetMaxNextEvolutionExp();
+		foreach (long current4 in list)
+		{
+			NkSoldierInfo soldierInfo2 = SolComposeMainDlg.GetSoldierInfo(current4);
+			NrCharKindInfo charKindInfo = soldierInfo2.GetCharKindInfo();
+			if (soldierInfo2 != null && charKindInfo != null && _BaseSol != null)
+			{
+				long evolutionExp = charKindInfo.GetEvolutionExp((int)soldierInfo2.GetGrade());
+				long num3 = soldierInfo2.GetEvolutionExp() - NrTSingleton<NrCharKindInfoManager>.Instance.GetSolEvolutionNeedEXP(soldierInfo2.GetCharKind(), (int)soldierInfo2.GetGrade());
+				if (0L > num3)
+				{
+					num3 = 0L;
+				}
+				num += evolutionExp + num3;
+				if (maxNextEvolutionExp < num)
+				{
+					num2 = num;
+					_SubSolIDList.Add(current4);
+					break;
+				}
+				_SubSolIDList.Add(current4);
+			}
+		}
+		List<long> list2 = new List<long>();
+		foreach (long current5 in _SubSolIDList)
+		{
+			NkSoldierInfo soldierInfo3 = SolComposeMainDlg.GetSoldierInfo(current5);
+			NrCharKindInfo charKindInfo2 = soldierInfo3.GetCharKindInfo();
+			if (soldierInfo3 != null && charKindInfo2 != null && _BaseSol != null)
+			{
+				long evolutionExp2 = charKindInfo2.GetEvolutionExp((int)soldierInfo3.GetGrade());
+				long num4 = soldierInfo3.GetEvolutionExp() - NrTSingleton<NrCharKindInfoManager>.Instance.GetSolEvolutionNeedEXP(soldierInfo3.GetCharKind(), (int)soldierInfo3.GetGrade());
+				if (0L > num4)
+				{
+					num4 = 0L;
+				}
+				long num5 = evolutionExp2 + num4;
+				if (maxNextEvolutionExp <= num2 - num5)
+				{
+					list2.Add(current5);
+					num2 -= num5;
+				}
+			}
+		}
+		for (int j = 0; j < list2.Count; j++)
+		{
+			_SubSolIDList.Remove(list2[j]);
+		}
+		list2.Clear();
+		list.Clear();
 		if (_BaseSol != null && _BaseSol.IsMaxGrade())
 		{
 			_BaseSol = null;
@@ -1790,23 +2199,6 @@ public class SolComposeMainDlg : Form
 			_BaseSol = null;
 			_SubSolIDList.Clear();
 			return false;
-		}
-		if (_SubSolIDList.Count > 0)
-		{
-			List<long> list = new List<long>();
-			for (int j = 0; j < _SubSolIDList.Count; j++)
-			{
-				NkSoldierInfo solInfo = readySolList.GetSolInfo(_SubSolIDList[j]);
-				if (_BaseSol.GetGrade() < solInfo.GetGrade() || solInfo.IsAwakening() || solInfo.IsAtbCommonFlag(1L))
-				{
-					list.Add(_SubSolIDList[j]);
-				}
-			}
-			for (int j = 0; j < list.Count; j++)
-			{
-				_SubSolIDList.Remove(list[j]);
-			}
-			list.Clear();
 		}
 		return true;
 	}
@@ -1826,10 +2218,6 @@ public class SolComposeMainDlg : Form
 		{
 			this.m_RecommandSol.Add(_BaseSol.GetCharKind());
 		}
-		else
-		{
-			this.GetNonZeroExpSol(_BaseSol, ref _SubSolIDList);
-		}
 	}
 
 	private bool FindRecommandNonSameSol(ref NkSoldierInfo _BaseSol, ref List<long> _SubSolIDList, bool bBattle = false)
@@ -1841,48 +2229,77 @@ public class SolComposeMainDlg : Form
 			for (int i = 0; i < 6; i++)
 			{
 				NkSoldierInfo soldierInfo = charPersonInfo.GetSoldierInfo(i);
-				if (soldierInfo != null)
+				if (this.CheckRecommandBaseSol(soldierInfo, 1))
 				{
-					if (soldierInfo.GetSolID() > 0L)
+					if (soldierInfo.GetLevel() >= 2 && !soldierInfo.IsMaxLevel())
 					{
-						if (0 >= soldierInfo.GetLegendType())
+						if (_BaseSol == null)
 						{
-							if (soldierInfo.GetLevel() >= 2)
-							{
-								if (_BaseSol == null)
-								{
-									_BaseSol = soldierInfo;
-								}
-								else if (_BaseSol.GetExp() > soldierInfo.GetExp())
-								{
-									_BaseSol = soldierInfo;
-								}
-							}
+							_BaseSol = soldierInfo;
+						}
+						else if (_BaseSol.GetExp() > soldierInfo.GetExp())
+						{
+							_BaseSol = soldierInfo;
 						}
 					}
 				}
 			}
 		}
-		foreach (NkSoldierInfo current in readySolList.GetList().Values)
+		List<NkSoldierInfo> solWarehouseList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetSolWarehouseList();
+		foreach (NkSoldierInfo current in solWarehouseList)
 		{
-			if (current.GetSolPosType() == 0)
+			if (this.CheckRecommandBaseSol(current, 5))
 			{
-				if (0 >= current.GetLegendType())
+				if (_BaseSol == null)
 				{
-					if (!bBattle && current.GetLevel() >= 2)
+					if (current.GetLevel() >= 2 && !current.IsMaxLevel())
 					{
-						if (_BaseSol == null)
+						_BaseSol = current;
+					}
+				}
+				else if (current.GetLevel() >= 2 && !current.IsMaxLevel() && _BaseSol.GetLevel() > current.GetLevel())
+				{
+					_BaseSol = current;
+				}
+			}
+		}
+		foreach (NkSoldierInfo current2 in readySolList.GetList().Values)
+		{
+			if (this.CheckRecommandBaseSol(current2, 0))
+			{
+				if (!bBattle && current2.GetLevel() >= 2 && !current2.IsMaxLevel())
+				{
+					if (_BaseSol == null)
+					{
+						_BaseSol = current2;
+					}
+					else if (_BaseSol.GetExp() > current2.GetExp())
+					{
+						_BaseSol = current2;
+					}
+				}
+			}
+		}
+		foreach (NkSoldierInfo current3 in readySolList.GetList().Values)
+		{
+			if (this.CheckRecommandBaseSol(current3, 0))
+			{
+				if (_BaseSol != null && _BaseSol.GetSolID() != current3.GetSolID())
+				{
+					if (current3.GetExp() == 0L && current3.GetGrade() < 3 && !current3.IsAwakening() && !current3.IsAtbCommonFlag(1L))
+					{
+						_SubSolIDList.Add(current3.GetSolID());
+					}
+					else if (_BaseSol.IsLeader())
+					{
+						if (current3.GetCharKind() == 1131 && !_BaseSol.IsMaxLevel())
 						{
-							_BaseSol = current;
-						}
-						else if (_BaseSol.GetExp() > current.GetExp())
-						{
-							_BaseSol = current;
+							_SubSolIDList.Add(current3.GetSolID());
 						}
 					}
-					else if (current.GetExp() == 0L && current.GetGrade() < 3 && current.GetSolPosType() == 0 && !current.IsAwakening() && !current.IsAtbCommonFlag(1L))
+					else if (current3.GetCharKind() == 1129)
 					{
-						_SubSolIDList.Add(current.GetSolID());
+						_SubSolIDList.Add(current3.GetSolID());
 					}
 				}
 			}
@@ -1943,8 +2360,12 @@ public class SolComposeMainDlg : Form
 			}
 			list.Clear();
 		}
-		this.GetNonZeroExpSol(_BaseSol, ref _SubSolIDList);
 		return true;
+	}
+
+	private bool CheckRecommandBaseSol(NkSoldierInfo kSolInfo, byte SolPosType)
+	{
+		return kSolInfo != null && kSolInfo.GetSolID() > 0L && kSolInfo.GetSolPosType() == SolPosType && (kSolInfo.IsLeader() || kSolInfo.GetGrade() <= 4) && kSolInfo.GetLegendType() <= 0;
 	}
 
 	private bool FindRecommandSameSol(ref NkSoldierInfo _BaseSol, ref List<long> _SubSolIDList, ref Dictionary<int, SolComposeMainDlg.SOLKINDTONUM> _SolKindToNum)
@@ -1955,57 +2376,70 @@ public class SolComposeMainDlg : Form
 			for (int i = 0; i < 6; i++)
 			{
 				NkSoldierInfo soldierInfo = charPersonInfo.GetSoldierInfo(i);
-				if (soldierInfo != null)
+				if (this.CheckRecommandBaseSol(soldierInfo, 1))
 				{
-					if (soldierInfo.GetSolID() > 0L)
-					{
-						if (0 >= soldierInfo.GetLegendType())
-						{
-							SolComposeMainDlg.SOLKINDTONUM sOLKINDTONUM = new SolComposeMainDlg.SOLKINDTONUM();
-							sOLKINDTONUM.Kind = soldierInfo.GetCharKind();
-							sOLKINDTONUM.Count = 1;
-							sOLKINDTONUM.bBattle = true;
-							_SolKindToNum.Add(soldierInfo.GetCharKind(), sOLKINDTONUM);
-						}
-					}
+					SolComposeMainDlg.SOLKINDTONUM sOLKINDTONUM = new SolComposeMainDlg.SOLKINDTONUM();
+					sOLKINDTONUM.Kind = soldierInfo.GetCharKind();
+					sOLKINDTONUM.Count = 1;
+					sOLKINDTONUM.bBattle = true;
+					_SolKindToNum.Add(soldierInfo.GetCharKind(), sOLKINDTONUM);
+				}
+			}
+		}
+		List<NkSoldierInfo> solWarehouseList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetSolWarehouseList();
+		foreach (NkSoldierInfo current in solWarehouseList)
+		{
+			if (this.CheckRecommandBaseSol(current, 5))
+			{
+				int charKind = current.GetCharKind();
+				if (_SolKindToNum.ContainsKey(charKind))
+				{
+					_SolKindToNum[charKind].bWareHouse = true;
+				}
+				else
+				{
+					SolComposeMainDlg.SOLKINDTONUM sOLKINDTONUM2 = new SolComposeMainDlg.SOLKINDTONUM();
+					sOLKINDTONUM2.Kind = current.GetCharKind();
+					sOLKINDTONUM2.Count = 1;
+					sOLKINDTONUM2.bWareHouse = true;
+					_SolKindToNum.Add(current.GetCharKind(), sOLKINDTONUM2);
 				}
 			}
 		}
 		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-		foreach (NkSoldierInfo current in readySolList.GetList().Values)
+		foreach (NkSoldierInfo current2 in readySolList.GetList().Values)
 		{
-			if (current.GetSolPosType() == 0)
+			if (this.CheckRecommandBaseSol(current2, 0))
 			{
-				if (0 >= current.GetLegendType())
+				int charKind2 = current2.GetCharKind();
+				if (_SolKindToNum.ContainsKey(charKind2))
 				{
-					int charKind = current.GetCharKind();
-					if (_SolKindToNum.ContainsKey(charKind))
+					_SolKindToNum[charKind2].Count = _SolKindToNum[charKind2].Count + 1;
+					_SolKindToNum[charKind2].bReady = true;
+					if (current2.GetExp() == 0L)
 					{
-						_SolKindToNum[charKind].Count++;
-						if (current.GetExp() == 0L)
-						{
-							_SolKindToNum[charKind].ZeroExpSol = true;
-						}
+						_SolKindToNum[charKind2].ZeroExpSol = true;
 					}
-					else
+				}
+				else
+				{
+					SolComposeMainDlg.SOLKINDTONUM sOLKINDTONUM3 = new SolComposeMainDlg.SOLKINDTONUM();
+					sOLKINDTONUM3.Kind = current2.GetCharKind();
+					sOLKINDTONUM3.Count = 1;
+					sOLKINDTONUM3.bReady = true;
+					if (current2.GetExp() == 0L)
 					{
-						SolComposeMainDlg.SOLKINDTONUM sOLKINDTONUM2 = new SolComposeMainDlg.SOLKINDTONUM();
-						sOLKINDTONUM2.Kind = current.GetCharKind();
-						sOLKINDTONUM2.Count = 1;
-						if (current.GetExp() == 0L)
-						{
-							sOLKINDTONUM2.ZeroExpSol = true;
-						}
-						_SolKindToNum.Add(charKind, sOLKINDTONUM2);
+						sOLKINDTONUM3.ZeroExpSol = true;
 					}
+					_SolKindToNum.Add(charKind2, sOLKINDTONUM3);
 				}
 			}
 		}
-		foreach (SolComposeMainDlg.SOLKINDTONUM current2 in _SolKindToNum.Values)
+		foreach (SolComposeMainDlg.SOLKINDTONUM current3 in _SolKindToNum.Values)
 		{
-			if (current2.Count > 1 && current2.ZeroExpSol && !this.m_RecommandSol.Contains(current2.Kind) && this.FindSameSol(current2.Kind, ref _BaseSol, ref _SubSolIDList))
+			if (current3.Count > 1 && current3.ZeroExpSol && !this.m_RecommandSol.Contains(current3.Kind) && this.FindSameSol(current3.Kind, ref _BaseSol, ref _SubSolIDList))
 			{
-				this.m_RecommandSol.Add(current2.Kind);
+				this.m_RecommandSol.Add(current3.Kind);
 				break;
 			}
 		}
@@ -2014,7 +2448,6 @@ public class SolComposeMainDlg : Form
 			_SubSolIDList.Clear();
 			return false;
 		}
-		this.GetNonZeroExpSol(_BaseSol, ref _SubSolIDList);
 		return true;
 	}
 
@@ -2027,18 +2460,15 @@ public class SolComposeMainDlg : Form
 			for (int i = 0; i < 6; i++)
 			{
 				NkSoldierInfo soldierInfo = charPersonInfo.GetSoldierInfo(i);
-				if (soldierInfo != null)
+				if (this.CheckRecommandBaseSol(soldierInfo, 1))
 				{
-					if (soldierInfo.GetSolID() > 0L)
+					if (soldierInfo.IsLeader())
 					{
-						if (soldierInfo.IsLeader())
+						if (soldierInfo.IsMaxLevel() && soldierInfo.IsMaxGrade())
 						{
-							if (soldierInfo.IsMaxLevel())
-							{
-								return false;
-							}
-							_BaseSol = soldierInfo;
+							return false;
 						}
+						_BaseSol = soldierInfo;
 					}
 				}
 			}
@@ -2049,6 +2479,10 @@ public class SolComposeMainDlg : Form
 			{
 				if (current.GetExp() == 0L && current.GetGrade() < 3)
 				{
+					if (current.IsAtbCommonFlag(1L))
+					{
+						continue;
+					}
 					NrCharKindInfo charKindInfo = current.GetCharKindInfo();
 					if (charKindInfo != null)
 					{
@@ -2067,6 +2501,10 @@ public class SolComposeMainDlg : Form
 						_SubSolIDList.Add(current.GetSolID());
 					}
 				}
+				if (_BaseSol != null && _BaseSol.IsLeader() && current.GetCharKind() == 1131 && !_BaseSol.IsMaxLevel())
+				{
+					_SubSolIDList.Add(current.GetSolID());
+				}
 			}
 		}
 		if (this.m_RecommandSol.Contains(_BaseSol.GetCharKind()))
@@ -2075,7 +2513,6 @@ public class SolComposeMainDlg : Form
 			_SubSolIDList.Clear();
 			return false;
 		}
-		this.GetNonZeroExpSol(_BaseSol, ref _SubSolIDList);
 		return true;
 	}
 
@@ -2170,33 +2607,88 @@ public class SolComposeMainDlg : Form
 			this.ShowTranscendence(true);
 			break;
 		}
+		if (this.m_SaveSubSolIDList.Count > 0)
+		{
+			this.SelectSub(this.m_SaveSubSolIDList);
+			this.m_SaveSubSolIDList.Clear();
+		}
 		return true;
 	}
 
 	public bool SelectBase(List<long> List)
 	{
-		return 0 >= List.Count || this.SelectBase(List[0]);
+		if (this.m_ShowType != SOLCOMPOSE_TYPE.EXTRACT)
+		{
+			if (0 < List.Count)
+			{
+				return this.SelectBase(List[0]);
+			}
+		}
+		return true;
+	}
+
+	public void RefreshSelectExtract()
+	{
+		if (this.m_ShowType == SOLCOMPOSE_TYPE.EXTRACT)
+		{
+			NewListBox listBox = this.GetListBox();
+			listBox.Clear();
+			for (int i = 0; i < this.m_SolExtract.Count; i++)
+			{
+				this.AddExtractSolList(this.m_SolExtract[i]);
+			}
+			this.ShowExtractSol(true);
+			this.CalcExtractData();
+			listBox.RepositionItems();
+		}
 	}
 
 	public bool SelectSub(List<long> List)
 	{
 		if (0 < List.Count)
 		{
-			this.mSubSolList.Clear();
-			NewListBox listBox = this.GetListBox();
-			listBox.Clear();
-			foreach (long current in List)
+			if (this.m_ShowType == SOLCOMPOSE_TYPE.EXTRACT)
 			{
-				NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(List[0]);
-				if (this.CheckUpAble(this.mBaseSol, soldierInfo))
+				this.m_SolExtract.Clear();
+				NewListBox listBox = this.GetListBox();
+				listBox.Clear();
+				foreach (long current in List)
 				{
-					this.mSubSolList.Add(current);
-					this.AddSubSolList(current);
+					if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().GetFaceSolID() != current)
+					{
+						NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(List[0]);
+						if (this.CheckUpAble(null, soldierInfo))
+						{
+							this.m_SolExtract.Add(current);
+							this.AddExtractSolList(current);
+						}
+					}
 				}
+				this.ShowExtractSol(true);
+				this.CalcExtractData();
+				listBox.RepositionItems();
 			}
-			this.CalcData();
-			listBox.RepositionItems();
-			this.SetSoldierNum();
+			else
+			{
+				this.mSubSolList.Clear();
+				NewListBox listBox2 = this.GetListBox();
+				listBox2.Clear();
+				foreach (long current2 in List)
+				{
+					if (NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().GetFaceSolID() != current2)
+					{
+						NkSoldierInfo soldierInfo2 = SolComposeMainDlg.GetSoldierInfo(List[0]);
+						if (this.CheckUpAble(this.mBaseSol, soldierInfo2))
+						{
+							this.mSubSolList.Add(current2);
+							this.AddSubSolList(current2);
+						}
+					}
+				}
+				this.CalcData();
+				listBox2.RepositionItems();
+				this.SetSoldierNum();
+			}
 		}
 		return true;
 	}
@@ -2204,6 +2696,7 @@ public class SolComposeMainDlg : Form
 	public void ClearList()
 	{
 		this.mSubSolList.Clear();
+		this.m_SolExtract.Clear();
 		NewListBox listBox = this.GetListBox();
 		if (listBox != null)
 		{
@@ -2229,6 +2722,7 @@ public class SolComposeMainDlg : Form
 		this.mBaseSol = null;
 		this.dtBase.SetTexture(string.Empty);
 		this.lbBaseName.SetText(string.Empty);
+		this.lblBaseSeasonText.SetText(string.Empty);
 		this.SolRank.SetTexture(string.Empty);
 		this.lblComposeCost.SetText(string.Empty);
 		this.lblExp.SetText(string.Empty);
@@ -2299,6 +2793,128 @@ public class SolComposeMainDlg : Form
 		this.lbMoney.SetText(text);
 	}
 
+	protected virtual void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			if (this.m_ShowType == SOLCOMPOSE_TYPE.COMPOSE)
+			{
+				gameHelpList_Dlg.SetViewType(eHELP_LIST.Soldier_Synthesis.ToString());
+			}
+			else if (this.m_ShowType == SOLCOMPOSE_TYPE.EXTRACT)
+			{
+				gameHelpList_Dlg.SetViewType(eHELP_LIST.Soldier_Extract.ToString());
+			}
+			else if (this.m_ShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
+			{
+				gameHelpList_Dlg.SetViewType(eHELP_LIST.Soldier_Transcend.ToString());
+			}
+		}
+	}
+
+	public virtual void OnClickBuyGold(IUIObject obj)
+	{
+		NrTSingleton<ItemMallItemManager>.Instance.Send_GS_ITEMMALL_INFO_REQ(eITEMMALL_TYPE.BUY_GOLD, true);
+	}
+
+	private void OnClickUnsetCostume(IUIObject obj)
+	{
+		NkSoldierInfo nkSoldierInfo = (NkSoldierInfo)obj.Data;
+		if (nkSoldierInfo == null)
+		{
+			return;
+		}
+		CharCostumeInfo_Data normalCostumeData = NrTSingleton<NrCharCostumeTableManager>.Instance.GetNormalCostumeData(nkSoldierInfo.GetCharCode());
+		if (normalCostumeData == null || !normalCostumeData.IsNormalCostume())
+		{
+			Debug.LogError("ERROR, SolComposeMainDlg.cs, OnClickUnsetCostume(), costumeNormalData is error ");
+			return;
+		}
+		NrTSingleton<CostumeWearManager>.Instance.RequestCostumeWear(nkSoldierInfo, normalCostumeData.m_costumeUnique);
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		if (string.IsNullOrEmpty(param1))
+		{
+			return;
+		}
+		if (this.guideWinIDList != null && !this.guideWinIDList.Contains(winID))
+		{
+			this.guideWinIDList.Add(winID);
+		}
+		string[] array = param1.Split(new char[]
+		{
+			','
+		});
+		if (array == null || array.Length != 4)
+		{
+			return;
+		}
+		IUIObject control = base.GetControl(array[0]);
+		if (control == null)
+		{
+			return;
+		}
+		if (this._Touch == null)
+		{
+			this._Touch = UICreateControl.Button("touch", "Main_I_Touch01", 196f, 154f);
+		}
+		if (this._Touch == null)
+		{
+			return;
+		}
+		int anchor = int.Parse(array[1]);
+		this._Touch.SetAnchor((SpriteRoot.ANCHOR_METHOD)anchor);
+		this._Touch.PlayAni(true);
+		this._Touch.gameObject.SetActive(true);
+		this._Touch.gameObject.transform.parent = control.gameObject.transform;
+		this._Touch.transform.position = new Vector3(control.transform.position.x, control.transform.position.y, control.transform.position.z - 3f);
+		float x = float.Parse(array[2]);
+		float y = float.Parse(array[3]);
+		this._Touch.transform.eulerAngles = new Vector3(x, y, this._Touch.transform.eulerAngles.z);
+		BoxCollider component = this._Touch.gameObject.GetComponent<BoxCollider>();
+		if (null != component)
+		{
+			UnityEngine.Object.Destroy(component);
+		}
+	}
+
+	protected void HideTouch(bool closeUI)
+	{
+		if (this._Touch != null && this._Touch.gameObject != null)
+		{
+			this._Touch.gameObject.SetActive(false);
+		}
+		if (!closeUI)
+		{
+			return;
+		}
+		if (this.guideWinIDList == null)
+		{
+			return;
+		}
+		foreach (int current in this.guideWinIDList)
+		{
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)current) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				uI_UIGuide.CloseUI = true;
+			}
+		}
+		this._Touch = null;
+	}
+
+	public int GetExtractSolCount()
+	{
+		if (this.lxSelectList == null)
+		{
+			return -1;
+		}
+		return this.lxSelectList.Count;
+	}
+
 	public void SetTranscendenceComponent()
 	{
 		this.btn_Transcendence_StartButton = (base.GetControl("Button_Transcendence_StartButton") as Button);
@@ -2328,8 +2944,12 @@ public class SolComposeMainDlg : Form
 		this.btn_TranscendenceUse_Add3 = (base.GetControl("Button_TranscendenceUse_Add3") as Button);
 		this.btn_TranscendenceUse_Add3.AddMouseDownDelegate(new EZValueChangedDelegate(this.OnClickTranscendenceUseAdd));
 		this.lb_Transcendence_Help2 = (base.GetControl("Label_Transcendence_Help2") as Label);
+		this.lb_TarnscendenceBaseSeasont = (base.GetControl("Label_TranscendenceBaseSeason") as Label);
 		this.lxList4 = (base.GetControl("Sol_Listbox4") as NewListBox);
-		this.lxList4.Reserve = false;
+		this.dt_DrawTexture_PercentagePlus = (base.GetControl("DrawTexture_PercentagePlus") as DrawTexture);
+		this.lb_Label_AddPercentage = (base.GetControl("Label_AddPercentage") as Label);
+		this.lb_Transcendence_AddPercentage_Text = (base.GetControl("Label_Transcendence_AddPercentage_Text") as Label);
+		this.lb_Transcendence_AddPercentage = (base.GetControl("Label_Transcendence_AddPercentage") as Label);
 	}
 
 	public void ShowTranscendence(bool bShowTranscendence)
@@ -2350,9 +2970,20 @@ public class SolComposeMainDlg : Form
 				this.mBaseSol = null;
 				this.lb_TranscendenceBase_Help.Visible = true;
 			}
-			this.btn_TranscendenceUse_Add1.Visible = true;
-			this.btn_TranscendenceUse_Add2.Visible = true;
-			this.btn_TranscendenceUse_Add3.Visible = true;
+			if (this.mBaseSol.GetGrade() == 9 || this.mBaseSol.GetGrade() >= 13)
+			{
+				this.btn_TranscendenceUse_Add1.Visible = false;
+				this.btn_TranscendenceUse_Add2.Visible = false;
+				this.btn_TranscendenceUse_Add3.Visible = false;
+				this.lb_Label_AddPercentage.Visible = false;
+			}
+			else
+			{
+				this.btn_TranscendenceUse_Add1.Visible = true;
+				this.btn_TranscendenceUse_Add2.Visible = true;
+				this.btn_TranscendenceUse_Add3.Visible = true;
+				this.lb_Label_AddPercentage.Visible = true;
+			}
 		}
 		else
 		{
@@ -2360,11 +2991,15 @@ public class SolComposeMainDlg : Form
 			this.btn_TranscendenceUse_Add2.Visible = false;
 			this.btn_TranscendenceUse_Add3.Visible = false;
 			this.lb_TranscendenceBase_Help.Visible = true;
+			this.lb_Label_AddPercentage.Visible = false;
 		}
 		this.lb_TranscendenceUseMoney.Visible = false;
 		this.lb_Tarnscendence_ExpGet.Visible = false;
 		this.lb_Transcendence_SuccessRate.Visible = false;
 		this.lb_Transcendence_SuccessRate_Text.Visible = false;
+		this.lb_Transcendence_AddPercentage_Text.Visible = false;
+		this.lb_Transcendence_AddPercentage.Visible = false;
+		this.dt_DrawTexture_PercentagePlus.Visible = false;
 		this.lb_Transcendence_Help2.Visible = false;
 		if (this.mSubSolList.Count == 1)
 		{
@@ -2372,7 +3007,7 @@ public class SolComposeMainDlg : Form
 		}
 	}
 
-	private void OnClickTranscendenceStart(IUIObject obj)
+	protected virtual void OnClickTranscendenceStart(IUIObject obj)
 	{
 		if (this.mBaseSol == null)
 		{
@@ -2416,6 +3051,11 @@ public class SolComposeMainDlg : Form
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("790"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 			return;
 		}
+		if (nkSoldierInfo.IsCostumeEquip())
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("856"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
+			return;
+		}
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 		if (msgBoxUI == null)
 		{
@@ -2428,7 +3068,7 @@ public class SolComposeMainDlg : Form
 			"charname",
 			nkSoldierInfo.GetName()
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.OnOKStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2874"), empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnOKStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2874"), empty, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnOKStart(object a_oObject)
@@ -2465,13 +3105,15 @@ public class SolComposeMainDlg : Form
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_TRANSCENDENCS_REQ, gS_TRANSCENDENCS_REQ);
 	}
 
-	private void OnClickTranscendenceBase(IUIObject obj)
+	protected virtual void OnClickTranscendenceBase(IUIObject obj)
 	{
+		this.HideTouch(false);
 		SolComposeListDlg.LoadSelectList(true, this.m_ShowType);
 	}
 
-	private void OnClickTranscendenceUseAdd(IUIObject obj)
+	protected virtual void OnClickTranscendenceUseAdd(IUIObject obj)
 	{
+		this.HideTouch(false);
 		if (this.btn_TranscendenceUse_Add1.Visible && this.btn_TranscendenceUse_Add2.Visible && this.btn_TranscendenceUse_Add3.Visible)
 		{
 			SolComposeListDlg.LoadSelectList(false, this.m_ShowType);
@@ -2481,7 +3123,6 @@ public class SolComposeMainDlg : Form
 	public void CalcTranscendence()
 	{
 		string empty = string.Empty;
-		string empty2 = string.Empty;
 		short num = 0;
 		long num2 = 0L;
 		long num3 = 0L;
@@ -2501,7 +3142,20 @@ public class SolComposeMainDlg : Form
 			byte grade = this.mBaseSol.GetGrade();
 			num = this.mBaseSol.GetLevel();
 			this.lb_TranscendenceBase_SolName.SetText(empty);
-			this.dt_TranscendenceBase_SolImg.SetTexture(eCharImageType.LARGE, charKind, (int)grade);
+			string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(this.mBaseSol);
+			this.dt_TranscendenceBase_SolImg.SetTexture(eCharImageType.LARGE, charKind, (int)grade, costumePortraitPath);
+			string empty2 = string.Empty;
+			int num4 = this.mBaseSol.GetSeason() + 1;
+			if (num4 != 0)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3274"),
+					"season",
+					num4
+				});
+			}
+			this.lb_TarnscendenceBaseSeasont.SetText(empty2);
 			short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(this.mBaseSol.GetCharKind(), (int)this.mBaseSol.GetGrade());
 			UIBaseInfoLoader solLargeGradeImg = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolLargeGradeImg(this.mBaseSol.GetCharKind(), (int)this.mBaseSol.GetGrade());
 			if (0 < legendType)
@@ -2509,26 +3163,37 @@ public class SolComposeMainDlg : Form
 				this.dt_TranscendenceBase_SolRank.SetSize(solLargeGradeImg.UVs.width, solLargeGradeImg.UVs.height);
 			}
 			this.dt_TranscendenceBase_SolRank.SetTexture(solLargeGradeImg);
-			long num4 = this.mBaseSol.GetNextExp() - this.mBaseSol.GetCurBaseExp();
-			float num5 = ((float)num4 - (float)(this.mBaseSol.GetRemainExp() - num2)) / (float)num4;
+			long num5 = this.mBaseSol.GetNextExp() - this.mBaseSol.GetCurBaseExp();
+			float num6 = ((float)num5 - (float)(this.mBaseSol.GetRemainExp() - num2)) / (float)num5;
 			if (this.mBaseSol.IsMaxLevel() || this.mBaseSol.GetSolMaxLevel() <= num)
 			{
-				num5 = 1f;
+				num6 = 1f;
 			}
-			if (num5 > 1f)
+			if (num6 > 1f)
 			{
-				num5 = 1f;
+				num6 = 1f;
 			}
-			if (0f > num5)
+			if (0f > num6)
 			{
-				num5 = 0f;
+				num6 = 0f;
 			}
-			this.dt_Transcendence_GaugeBar.SetSize(this.GAGE_TRANSCENDENCE_WIDTH * num5, this.dtGage.GetSize().y);
+			this.dt_Transcendence_GaugeBar.SetSize(this.GAGE_TRANSCENDENCE_WIDTH * num6, this.dtGage.GetSize().y);
+			long solSubData = this.mBaseSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_TRANSCENDENCE_PLUS);
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty2, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3283"),
+				"count",
+				(float)solSubData * 0.01f
+			});
+			this.lb_Label_AddPercentage.SetText(empty2);
 		}
 		else
 		{
+			this.dt_TranscendenceBase_SolRank.SetTexture(string.Empty);
+			this.dt_TranscendenceBase_SolImg.SetTexture(string.Empty);
 			this.lb_TranscendenceBase_SolName.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2031"));
 			this.lbSolNameSpace.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2826"));
+			this.lb_TarnscendenceBaseSeasont.SetText(string.Empty);
 		}
 		this.lb_Transcendence_Help.Visible = false;
 		if (this.mSubSolList.Count == 0)
@@ -2540,6 +3205,9 @@ public class SolComposeMainDlg : Form
 			this.lb_Transcendence_Help2.Visible = false;
 			this.btn_Transcendence_StartButton.Visible = false;
 			this.lb_Transcendence_Help.Visible = true;
+			this.lb_Transcendence_AddPercentage_Text.Visible = false;
+			this.lb_Transcendence_AddPercentage.Visible = false;
+			this.dt_DrawTexture_PercentagePlus.Visible = false;
 		}
 		else
 		{
@@ -2559,6 +3227,10 @@ public class SolComposeMainDlg : Form
 				{
 					nkSoldierInfo = SolComposeMainDlg.GetReadySoldierInfo(current);
 				}
+				if (nkSoldierInfo == null)
+				{
+					return;
+				}
 				long transcendenceMoney = NrTSingleton<NrTableTranscendenceManager>.Instance.GetTranscendenceMoney(this.mBaseSol.GetGrade(), this.mBaseSol.GetSeason(), nkSoldierInfo.GetGrade(), nkSoldierInfo.GetSeason());
 				if (transcendenceMoney <= 0L)
 				{
@@ -2568,6 +3240,7 @@ public class SolComposeMainDlg : Form
 				this.lb_TranscendenceUseMoney.SetText(this.GetMoneyFormat(transcendenceMoney));
 				int transcendenceRate = NrTSingleton<NrTableTranscendenceManager>.Instance.GetTranscendenceRate(this.mBaseSol.GetGrade(), this.mBaseSol.GetSeason(), this.mBaseSol.GetCharKind(), nkSoldierInfo.GetGrade(), nkSoldierInfo.GetSeason(), nkSoldierInfo.GetCharKind());
 				short transcendenceFailItemNum = NrTSingleton<NrTableTranscendenceManager>.Instance.GetTranscendenceFailItemNum(this.mBaseSol.GetGrade(), this.mBaseSol.GetSeason(), nkSoldierInfo.GetGrade(), nkSoldierInfo.GetSeason());
+				int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_TRANSCENDENCE_PLUSRATE);
 				string text = string.Empty;
 				if (transcendenceRate <= 0 || transcendenceRate > 10000 || transcendenceFailItemNum <= 0)
 				{
@@ -2578,6 +3251,10 @@ public class SolComposeMainDlg : Form
 					this.lb_Transcendence_SuccessRate.Visible = true;
 					text = string.Format(" {0} %", (float)transcendenceRate * 0.01f);
 					this.lb_Transcendence_SuccessRate.SetText(text);
+					long solSubData2 = this.mBaseSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_TRANSCENDENCE_PLUS);
+					this.lb_Transcendence_AddPercentage.Visible = true;
+					text = string.Format(" {0} %", (float)solSubData2 * 0.01f);
+					this.lb_Transcendence_AddPercentage.SetText(text);
 				}
 				this.GetComposeExp(ref num, nkSoldierInfo, ref num2, ref num3, this.mBaseSol, ref this.mMaxLvEvelution);
 				string text2 = string.Empty;
@@ -2597,41 +3274,46 @@ public class SolComposeMainDlg : Form
 				}
 				else if (this.mBaseSol != null && this.mBaseSol.GetLevel() != num)
 				{
-					int num6 = Math.Min((int)this.mBaseSol.GetSolMaxLevel(), (int)(num - this.mBaseSol.GetLevel()));
+					int num7 = Math.Min((int)this.mBaseSol.GetSolMaxLevel(), (int)(num - this.mBaseSol.GetLevel()));
 					text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1732");
 					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 					{
 						text2,
 						"count",
-						num6.ToString()
+						num7.ToString()
 					});
 				}
-				long num7 = this.mBaseSol.GetNextExp() - this.mBaseSol.GetCurBaseExp();
-				float num8 = ((float)num7 - (float)(this.mBaseSol.GetRemainExp() - num2)) / (float)num7;
+				long num8 = this.mBaseSol.GetNextExp() - this.mBaseSol.GetCurBaseExp();
+				float num9 = ((float)num8 - (float)(this.mBaseSol.GetRemainExp() - num2)) / (float)num8;
 				if (this.mBaseSol.IsMaxLevel() || this.mBaseSol.GetSolMaxLevel() <= num)
 				{
-					num8 = 1f;
+					num9 = 1f;
 				}
-				if (num8 > 1f)
+				if (num9 > 1f)
 				{
-					num8 = 1f;
+					num9 = 1f;
 				}
-				if (0f > num8)
+				if (0f > num9)
 				{
-					num8 = 0f;
+					num9 = 0f;
 				}
 				this.lb_Tarnscendence_ExpGet.Visible = (0L < num2);
 				this.lb_Tarnscendence_ExpGet.SetText(text2);
-				this.dt_Transcendence_GaugeBar.SetSize(this.GAGE_TRANSCENDENCE_WIDTH * num8, this.dtGage.GetSize().y);
+				this.dt_Transcendence_GaugeBar.SetSize(this.GAGE_TRANSCENDENCE_WIDTH * num9, this.dtGage.GetSize().y);
 				this.lb_Transcendence_SuccessRate_Text.Visible = true;
 				this.lb_Transcendence_Help2.Visible = true;
+				float num10 = (float)(transcendenceRate * value) * 0.0001f;
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2869"),
 					"count",
-					transcendenceFailItemNum
+					transcendenceFailItemNum,
+					"count1",
+					num10
 				});
 				this.lb_Transcendence_Help2.SetText(text);
+				this.lb_Transcendence_AddPercentage_Text.Visible = true;
+				this.dt_DrawTexture_PercentagePlus.Visible = true;
 			}
 		}
 	}
@@ -2644,7 +3326,7 @@ public class SolComposeMainDlg : Form
 
 	public static NkSoldierInfo GetReadySoldierInfo(long SoldID)
 	{
-		NkReadySolList soldierReadyList = SolComposeMainDlg.GetSoldierReadyList();
-		return soldierReadyList.GetSolInfo(SoldID);
+		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+		return readySolList.GetSolInfo(SoldID);
 	}
 }

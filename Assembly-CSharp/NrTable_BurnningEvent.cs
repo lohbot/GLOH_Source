@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BurnningEvent : NrTableBase
 {
-	public NrTable_BurnningEvent() : base(CDefinePath.s_strBurnningEventInfoURL, true)
+	public NrTable_BurnningEvent() : base(CDefinePath.s_strBurnningEventInfoURL)
 	{
 	}
 

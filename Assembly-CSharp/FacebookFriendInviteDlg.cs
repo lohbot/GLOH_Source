@@ -186,7 +186,7 @@ public class FacebookFriendInviteDlg : Form
 			_ItemData.m_ID,
 			_ItemData.m_GameName
 		});
-		NewListItem newListItem = new NewListItem(this.m_ListBox.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_ListBox.ColumnNum, true, string.Empty);
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(_ItemData.nFaceCharKind);
 		if (charKindInfo != null)
 		{

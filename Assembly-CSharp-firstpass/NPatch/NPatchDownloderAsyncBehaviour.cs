@@ -14,10 +14,6 @@ namespace NPatch
 
 		private WWW www;
 
-		private Action OnProgressFile;
-
-		private float oldProgress;
-
 		private bool isErrorDone;
 
 		public float wwwProgress
@@ -39,29 +35,27 @@ namespace NPatch
 		[DebuggerHidden]
 		public IEnumerator DownloadFileRoutine(string url, string fileName, Action<ERRORLEVEL> OnCompletedFile, Action _OnProgressFile)
 		{
-			NPatchDownloderAsyncBehaviour.<DownloadFileRoutine>c__IteratorE <DownloadFileRoutine>c__IteratorE = new NPatchDownloderAsyncBehaviour.<DownloadFileRoutine>c__IteratorE();
-			<DownloadFileRoutine>c__IteratorE.url = url;
-			<DownloadFileRoutine>c__IteratorE._OnProgressFile = _OnProgressFile;
-			<DownloadFileRoutine>c__IteratorE.OnCompletedFile = OnCompletedFile;
-			<DownloadFileRoutine>c__IteratorE.fileName = fileName;
-			<DownloadFileRoutine>c__IteratorE.<$>url = url;
-			<DownloadFileRoutine>c__IteratorE.<$>_OnProgressFile = _OnProgressFile;
-			<DownloadFileRoutine>c__IteratorE.<$>OnCompletedFile = OnCompletedFile;
-			<DownloadFileRoutine>c__IteratorE.<$>fileName = fileName;
-			<DownloadFileRoutine>c__IteratorE.<>f__this = this;
-			return <DownloadFileRoutine>c__IteratorE;
+			NPatchDownloderAsyncBehaviour.<DownloadFileRoutine>c__IteratorF <DownloadFileRoutine>c__IteratorF = new NPatchDownloderAsyncBehaviour.<DownloadFileRoutine>c__IteratorF();
+			<DownloadFileRoutine>c__IteratorF.url = url;
+			<DownloadFileRoutine>c__IteratorF.OnCompletedFile = OnCompletedFile;
+			<DownloadFileRoutine>c__IteratorF.fileName = fileName;
+			<DownloadFileRoutine>c__IteratorF.<$>url = url;
+			<DownloadFileRoutine>c__IteratorF.<$>OnCompletedFile = OnCompletedFile;
+			<DownloadFileRoutine>c__IteratorF.<$>fileName = fileName;
+			<DownloadFileRoutine>c__IteratorF.<>f__this = this;
+			return <DownloadFileRoutine>c__IteratorF;
 		}
 
 		[DebuggerHidden]
 		public IEnumerator DownloadStringRoutine(string url, Action<ERRORLEVEL, string> OnCompletedString)
 		{
-			NPatchDownloderAsyncBehaviour.<DownloadStringRoutine>c__IteratorF <DownloadStringRoutine>c__IteratorF = new NPatchDownloderAsyncBehaviour.<DownloadStringRoutine>c__IteratorF();
-			<DownloadStringRoutine>c__IteratorF.url = url;
-			<DownloadStringRoutine>c__IteratorF.OnCompletedString = OnCompletedString;
-			<DownloadStringRoutine>c__IteratorF.<$>url = url;
-			<DownloadStringRoutine>c__IteratorF.<$>OnCompletedString = OnCompletedString;
-			<DownloadStringRoutine>c__IteratorF.<>f__this = this;
-			return <DownloadStringRoutine>c__IteratorF;
+			NPatchDownloderAsyncBehaviour.<DownloadStringRoutine>c__Iterator10 <DownloadStringRoutine>c__Iterator = new NPatchDownloderAsyncBehaviour.<DownloadStringRoutine>c__Iterator10();
+			<DownloadStringRoutine>c__Iterator.url = url;
+			<DownloadStringRoutine>c__Iterator.OnCompletedString = OnCompletedString;
+			<DownloadStringRoutine>c__Iterator.<$>url = url;
+			<DownloadStringRoutine>c__Iterator.<$>OnCompletedString = OnCompletedString;
+			<DownloadStringRoutine>c__Iterator.<>f__this = this;
+			return <DownloadStringRoutine>c__Iterator;
 		}
 
 		private bool SaveFile(string fileName, byte[] bytes)

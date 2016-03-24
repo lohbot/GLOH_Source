@@ -66,6 +66,14 @@ public class MobileDropDownDlg : Form
 		{
 			return;
 		}
+		if (dw.GetParentCheck() && NrTSingleton<FormsManager>.Instance.IsForm(dw.ParentGID))
+		{
+			MsgBoxAutoSellUI msgBoxAutoSellUI = NrTSingleton<FormsManager>.Instance.GetForm(dw.ParentGID) as MsgBoxAutoSellUI;
+			if (msgBoxAutoSellUI != null)
+			{
+				base.SetLocation(base.GetLocation().x, base.GetLocationY() + 80f, msgBoxAutoSellUI.GetLocation().z - 2f);
+			}
+		}
 		this.m_kParentDropDownList = dw;
 		this.m_kListBox.Clear();
 		for (int i = 0; i < dw.Count; i++)

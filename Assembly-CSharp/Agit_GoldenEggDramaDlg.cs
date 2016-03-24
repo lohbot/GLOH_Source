@@ -8,13 +8,6 @@ using UnityForms;
 
 public class Agit_GoldenEggDramaDlg : Form
 {
-	private enum COMMANDSTATE
-	{
-		NONE,
-		SHOW_GOLDENEGG,
-		SHOW_WHITEEGG
-	}
-
 	private const int ITEMDLG_SHOWTIME_TICK = 7400;
 
 	private const int CLOSE_TIME_TICK = 8500;
@@ -27,7 +20,7 @@ public class Agit_GoldenEggDramaDlg : Form
 
 	private GameObject m_audioGO;
 
-	private Agit_GoldenEggDramaDlg.COMMANDSTATE m_eState;
+	private NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE m_eEggType;
 
 	private ITEM m_item;
 
@@ -43,7 +36,13 @@ public class Agit_GoldenEggDramaDlg : Form
 		Form form = this;
 		base.Scale = true;
 		instance.LoadFileAll(ref form, "NewGuild/Agit/DLG_goldenegg_drama", G_ID.AGIT_GOLDENEGGDRAMA_DLG, false);
+		base.ShowUpperBG(-1000f);
+		base.ShowDownBG(-1000f);
+		base.ShowLeftBG(-1000f);
+		base.ShowRightBG(-1000f);
 		base.ShowBlackBG(0.5f);
+		base.SetScreenCenter();
+		base.bCloseAni = false;
 	}
 
 	public override void SetComponent()
@@ -89,14 +88,9 @@ public class Agit_GoldenEggDramaDlg : Form
 		this.m_item = item;
 	}
 
-	public void ShowGoldenEgg()
+	public void SetEggType(byte EggType)
 	{
-		this.m_eState = Agit_GoldenEggDramaDlg.COMMANDSTATE.SHOW_GOLDENEGG;
-	}
-
-	public void ShowWhiteEgg()
-	{
-		this.m_eState = Agit_GoldenEggDramaDlg.COMMANDSTATE.SHOW_WHITEEGG;
+		this.m_eEggType = (NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE)EggType;
 	}
 
 	public void OnDownloaded_Sound(IDownloadedItem wItem, object obj)
@@ -141,23 +135,23 @@ public class Agit_GoldenEggDramaDlg : Form
 		{
 			return;
 		}
-		if (this.m_eState != Agit_GoldenEggDramaDlg.COMMANDSTATE.NONE)
+		if (this.m_eEggType != NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE.eNEWGUILD_GOLDENEGG_TYPE_NONE)
 		{
 			this.m_itemDlgShowTickTime = Environment.TickCount + 7400;
 			this.m_CloseTickTime = Environment.TickCount + 8500;
 			this.m_rootGameObject.SetActive(true);
-			this.m_goldenEgg.SetActive(this.m_eState == Agit_GoldenEggDramaDlg.COMMANDSTATE.SHOW_GOLDENEGG);
-			this.m_whiiteEgg.SetActive(this.m_eState == Agit_GoldenEggDramaDlg.COMMANDSTATE.SHOW_WHITEEGG);
+			this.m_goldenEgg.SetActive(this.m_eEggType == NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE.eNEWGUILD_GOLDENEGG_TYPE_GOLD);
+			this.m_whiiteEgg.SetActive(this.m_eEggType == NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE.eNEWGUILD_GOLDENEGG_TYPE_WHITE);
 			this.Show();
-			if (this.m_eState == Agit_GoldenEggDramaDlg.COMMANDSTATE.SHOW_GOLDENEGG)
+			if (this.m_eEggType == NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE.eNEWGUILD_GOLDENEGG_TYPE_GOLD)
 			{
 				TsAudioManager.Container.RequestAudioClip("UI_SFX", "EGG", "GOLD", new PostProcPerItem(this.OnDownloaded_Sound));
 			}
-			else if (this.m_eState == Agit_GoldenEggDramaDlg.COMMANDSTATE.SHOW_WHITEEGG)
+			else if (this.m_eEggType == NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE.eNEWGUILD_GOLDENEGG_TYPE_WHITE)
 			{
 				TsAudioManager.Container.RequestAudioClip("UI_SFX", "EGG", "NORMAL", new PostProcPerItem(this.OnDownloaded_Sound));
 			}
-			this.m_eState = Agit_GoldenEggDramaDlg.COMMANDSTATE.NONE;
+			this.m_eEggType = NewGuildDefine.eNEWGUILD_GOLDENEGG_TYPE.eNEWGUILD_GOLDENEGG_TYPE_NONE;
 		}
 		if (this.m_itemDlgShowTickTime != 0 && Environment.TickCount >= this.m_itemDlgShowTickTime)
 		{

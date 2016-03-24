@@ -7,6 +7,8 @@ public class BabelTower_RepeatMainDlg : Form
 
 	private DrawTexture m_dtBack;
 
+	private string m_LoadingImg = string.Empty;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -14,6 +16,7 @@ public class BabelTower_RepeatMainDlg : Form
 		instance.LoadFileAll(ref form, "BabelTower/DLG_babel_repeat_bg", G_ID.BABELTOWER_REPEAT_MAIN_DLG, false);
 		base.ShowBlackBG(1f);
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
+		this.m_LoadingImg = "UI/Loading/chaostower";
 	}
 
 	public override void SetComponent()
@@ -23,7 +26,7 @@ public class BabelTower_RepeatMainDlg : Form
 		expr_1C.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C.Click, new EZValueChangedDelegate(this.OnStopBabelRepeat));
 		this.m_dtBack = (base.GetControl("Main_BG") as DrawTexture);
 		UIDataManager.MuteSound(true);
-		this.m_dtBack.SetTextureFromBundle("UI/Loading/chaostower");
+		this.m_dtBack.SetTextureFromBundle(this.m_LoadingImg);
 		this._SetDialogPos();
 	}
 
@@ -40,6 +43,7 @@ public class BabelTower_RepeatMainDlg : Form
 	public override void OnClose()
 	{
 		UIDataManager.MuteSound(false);
+		NrTSingleton<UIImageBundleManager>.Instance.DeleteTexture(this.m_LoadingImg);
 	}
 
 	public void OnStopBabelRepeat(IUIObject obj)

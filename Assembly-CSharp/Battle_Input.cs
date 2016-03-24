@@ -105,7 +105,7 @@ public class Battle_Input : InputCommandLayer
 		}
 		if (NkInputManager.GetKeyUp(KeyCode.V) && TsPlatform.IsEditor)
 		{
-			this.m_Battle.CastedTarget.Send_GS_BATTLE_AUTO_REQ();
+			this.m_Battle.CastedTarget.ChangeBattleAuto();
 		}
 		if (NkInputManager.GetKeyUp(KeyCode.C))
 		{

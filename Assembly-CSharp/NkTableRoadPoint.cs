@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableRoadPoint : NrTableBase
 {
-	public NkTableRoadPoint(string strURL) : base(strURL, true)
+	public NkTableRoadPoint(string strURL) : base(strURL)
 	{
 	}
 

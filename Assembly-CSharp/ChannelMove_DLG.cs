@@ -9,19 +9,11 @@ public class ChannelMove_DLG : Form
 {
 	private const byte CHANNEL_MAX_LIST = 20;
 
-	private Label m_LTitle;
-
-	private Label m_LText;
-
 	private Button m_BtnMove;
 
 	private Button m_BtnCancel;
 
 	private DropDownList m_ChannleDropDownList;
-
-	private DrawTexture m_DTBG;
-
-	private DrawTexture m_DTBG2;
 
 	private ListItem[] m_Items;
 
@@ -31,23 +23,23 @@ public class ChannelMove_DLG : Form
 	{
 		this.m_Items = new ListItem[20];
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
-		Form form = this;
 		base.Scale = true;
-		instance.LoadFile(ref form, "ChannelMove/DLG_ChannelMove", G_ID.CHANNEL_MOVE_DLG, true);
-		base.ShowBlackBG(0.5f);
-		instance.CreateControl(ref this.m_DTBG, "DrawTexture_bg");
-		instance.CreateControl(ref this.m_LTitle, "Label_title");
-		instance.CreateControl(ref this.m_LText, "Label_text");
-		instance.CreateControl(ref this.m_BtnMove, "Button_confirm");
-		instance.CreateControl(ref this.m_BtnCancel, "Button_cancle");
-		instance.CreateControl(ref this.m_ChannleDropDownList, "DropDownList_channel");
+		Form form = this;
+		form.Scale = true;
+		instance.LoadFileAll(ref form, "ChannelMove/DLG_ChannelMove", G_ID.CHANNEL_MOVE_DLG, true);
+	}
+
+	public override void SetComponent()
+	{
+		this.m_BtnMove = (base.GetControl("Button_confirm") as Button);
+		this.m_BtnCancel = (base.GetControl("Button_cancle") as Button);
+		this.m_ChannleDropDownList = (base.GetControl("DropDownList_channel") as DropDownList);
 		this.m_BtnMove.SetValueChangedDelegate(new EZValueChangedDelegate(this.BtnClickMove));
 		this.m_BtnCancel.SetValueChangedDelegate(new EZValueChangedDelegate(this.BtnClickCancel));
 		this.m_ChannleDropDownList.AddValueChangedDelegate(new EZValueChangedDelegate(this.ChannleDropDownList_SelectionChange));
 		this.m_SelectedChallenInfo = null;
-		float x = (GUICamera.width - base.GetSize().x) / 2f;
-		float y = (GUICamera.height - base.GetSize().y) / 2f;
-		base.SetLocation(x, y);
+		base.SetScreenCenter();
+		base.ShowBlackBG(0.5f);
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "CHANNEL", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 	}
 
@@ -189,7 +181,7 @@ public class ChannelMove_DLG : Form
 			"targetname",
 			TKString.NEWString(this.m_SelectedChallenInfo.ChannelName)
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.On_Channel_Move_Request), this.m_SelectedChallenInfo.ChannelID, textFromInterface, empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.On_Channel_Move_Request), this.m_SelectedChallenInfo.ChannelID, textFromInterface, empty, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	private void BtnClickCancel(IUIObject obj)

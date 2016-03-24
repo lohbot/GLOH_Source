@@ -1,4 +1,5 @@
 using GAME;
+using GameMessage;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
@@ -14,6 +15,14 @@ public class PostDlg : Form
 	{
 		eSEND_STATE_NORMAL,
 		eSEND_STATE_NEWGUILD
+	}
+
+	public enum eRECV_POSTTYPE
+	{
+		eRECV_POSTNORMAL,
+		eRECV_POSTBATTLE,
+		eRECV_POSTFRIENDGIFT,
+		eRECV_POSTALL
 	}
 
 	private enum eTabMode
@@ -76,6 +85,8 @@ public class PostDlg : Form
 
 	private const short RECV_MAX = 30;
 
+	public PostDlg.eRECV_POSTTYPE m_eMailType;
+
 	private int m_nItemUnique_SEND;
 
 	private int m_i32ItemSendNum_SEND;
@@ -116,6 +127,8 @@ public class PostDlg : Form
 
 	private Toolbar _tbTab;
 
+	private Button Button_GetAll;
+
 	private TextField m_UserName;
 
 	private TextArea m_Comment;
@@ -137,6 +150,8 @@ public class PostDlg : Form
 	private CheckBox m_cbPushMsg;
 
 	private Label m_lbPushText;
+
+	private Label m_lbPushText2;
 
 	private Label m_lbRemain;
 
@@ -198,10 +213,12 @@ public class PostDlg : Form
 			expr_8D.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_8D.ButtonClick, new EZValueChangedDelegate(this.OnClickToolBar));
 		}
 		this._tbTab.FirstSetting();
+		this.Button_GetAll = (base.GetControl("BT_GetAll") as Button);
+		this.Button_GetAll.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickGetAll));
 		this.m_UserName = (base.GetControl("TextField_InputName") as TextField);
 		this.m_UserName.Text = string.Empty;
-		TextField expr_F0 = this.m_UserName;
-		expr_F0.CommitDelegate = (EZKeyboardCommitDelegate)Delegate.Combine(expr_F0.CommitDelegate, new EZKeyboardCommitDelegate(this.OnInputText));
+		TextField expr_11D = this.m_UserName;
+		expr_11D.CommitDelegate = (EZKeyboardCommitDelegate)Delegate.Combine(expr_11D.CommitDelegate, new EZKeyboardCommitDelegate(this.OnInputText));
 		this.m_Comment = (base.GetControl("TextArea_InputText") as TextArea);
 		if (null != this.m_Comment.spriteText)
 		{
@@ -220,14 +237,14 @@ public class PostDlg : Form
 		this._btRecv_Prev = (base.GetControl("Button_ArrowBtn01") as Button);
 		this._btRecv_Next = (base.GetControl("Button_ArrowBtn02") as Button);
 		this._boxRecv_Page = (base.GetControl("Box_Page") as Box);
-		Button expr_233 = this._btRecv_Prev;
-		expr_233.Click = (EZValueChangedDelegate)Delegate.Combine(expr_233.Click, new EZValueChangedDelegate(this.OnClickRecvPrev));
-		Button expr_25A = this._btRecv_Prev;
-		expr_25A.Click = (EZValueChangedDelegate)Delegate.Combine(expr_25A.Click, new EZValueChangedDelegate(this.OnClickHistoryPrev));
-		Button expr_281 = this._btRecv_Next;
-		expr_281.Click = (EZValueChangedDelegate)Delegate.Combine(expr_281.Click, new EZValueChangedDelegate(this.OnClickRecvNext));
-		Button expr_2A8 = this._btRecv_Next;
-		expr_2A8.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2A8.Click, new EZValueChangedDelegate(this.OnClickHistoryNext));
+		Button expr_260 = this._btRecv_Prev;
+		expr_260.Click = (EZValueChangedDelegate)Delegate.Combine(expr_260.Click, new EZValueChangedDelegate(this.OnClickRecvPrev));
+		Button expr_287 = this._btRecv_Prev;
+		expr_287.Click = (EZValueChangedDelegate)Delegate.Combine(expr_287.Click, new EZValueChangedDelegate(this.OnClickHistoryPrev));
+		Button expr_2AE = this._btRecv_Next;
+		expr_2AE.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2AE.Click, new EZValueChangedDelegate(this.OnClickRecvNext));
+		Button expr_2D5 = this._btRecv_Next;
+		expr_2D5.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2D5.Click, new EZValueChangedDelegate(this.OnClickHistoryNext));
 		this.m_Cancel = (base.GetControl("Button_Cancel") as Button);
 		this.m_Cancel.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickCancel));
 		this.m_FriendList = (base.GetControl("Button_friendlist") as Button);
@@ -237,7 +254,8 @@ public class PostDlg : Form
 		this.m_LoadingTxt = (base.GetControl("Label_Loading") as Label);
 		this.m_LoadingImg.Visible = false;
 		this.m_LoadingTxt.Visible = false;
-		this.m_lbPushText = (base.GetControl("LB_PushText02") as Label);
+		this.m_lbPushText = (base.GetControl("LB_PushText01") as Label);
+		this.m_lbPushText2 = (base.GetControl("LB_PushText02") as Label);
 		this.m_lbRemain = (base.GetControl("Label_Remain") as Label);
 		this.m_lbDailyMailCount = (base.GetControl("Label_dailymailcount") as Label);
 		this.SetDailyMailCount();
@@ -289,18 +307,18 @@ public class PostDlg : Form
 
 	private void ClickList(IUIObject obj)
 	{
-		UIListItemContainer uIListItemContainer = this.m_NewListBox.GetSelectItem() as UIListItemContainer;
-		if (null == uIListItemContainer)
+		UIListItemContainer selectItem = this.m_NewListBox.GetSelectItem();
+		if (null == selectItem)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
 		if (this._tbTab.CurrentPanel.index == 1)
 		{
-			long num = (long)uIListItemContainer.Data;
+			long num = (long)selectItem.Data;
 			if (num == 0L)
 			{
 				return;
@@ -309,7 +327,7 @@ public class PostDlg : Form
 		}
 		else if (this._tbTab.CurrentPanel.index == 2)
 		{
-			MAILBOXHISTORY_INFO mAILBOXHISTORY_INFO = (MAILBOXHISTORY_INFO)uIListItemContainer.Data;
+			MAILBOXHISTORY_INFO mAILBOXHISTORY_INFO = (MAILBOXHISTORY_INFO)selectItem.Data;
 			if (mAILBOXHISTORY_INFO == null)
 			{
 				return;
@@ -423,6 +441,7 @@ public class PostDlg : Form
 			return;
 		}
 		int layer = uIPanelTab.panel.index + 1;
+		this.m_iRecvCurPage = 1;
 		switch (uIPanelTab.panel.index)
 		{
 		case 0:
@@ -436,14 +455,33 @@ public class PostDlg : Form
 			this.m_nFirstMailID = 0L;
 			this.m_nLastMailID = 0L;
 			this.m_bNextRequest = false;
-			this.RequestRecvList();
+			this.RequestRecvList(this.m_eMailType);
 			break;
 		case 2:
 			base.ShowLayer(2);
-			this.RequestHistory();
+			this.RequestHistory(this.m_eMailType);
+			this.Button_GetAll.Visible = false;
 			break;
 		}
 		this.Close_PostRecvDlg();
+	}
+
+	private void OnClickGetAll(IUIObject obj)
+	{
+		GS_MAILBOX_TAKE_GETMAILALL_REQ gS_MAILBOX_TAKE_GETMAILALL_REQ = new GS_MAILBOX_TAKE_GETMAILALL_REQ();
+		for (int i = 0; i < 5; i++)
+		{
+			GS_MAILBOX_INFO gS_MAILBOX_INFO = this.m_RecvList[i];
+			if (gS_MAILBOX_INFO != null)
+			{
+				if (gS_MAILBOX_INFO.i64MailID != 0L)
+				{
+					gS_MAILBOX_TAKE_GETMAILALL_REQ.i8MailCount = (byte)i;
+					gS_MAILBOX_TAKE_GETMAILALL_REQ.i64Idx[i] = gS_MAILBOX_INFO.i64MailID;
+				}
+			}
+		}
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MAILBOX_TAKE_GETMAILALL_REQ, gS_MAILBOX_TAKE_GETMAILALL_REQ);
 	}
 
 	private void InitSendControlTap_ForTapMove()
@@ -539,6 +577,13 @@ public class PostDlg : Form
 		GS_MAILBOX_SEND_REQ gS_MAILBOX_SEND_REQ = new GS_MAILBOX_SEND_REQ();
 		gS_MAILBOX_SEND_REQ.nRecvType = (int)this.m_eSendState;
 		TKString.StringChar(this.m_UserName.Text, ref gS_MAILBOX_SEND_REQ.szRecvCharName);
+		if ("true" == MsgHandler.HandleReturn<string>("ReservedWordManagerIsUse", new object[0]))
+		{
+			this.m_Comment.Text = MsgHandler.HandleReturn<string>("ReservedWordManagerReplaceWord", new object[]
+			{
+				this.m_Comment.Text
+			});
+		}
 		if (this.m_Comment.GetDefaultText() != string.Empty)
 		{
 			TKString.StringChar(string.Empty, ref gS_MAILBOX_SEND_REQ.szComment);
@@ -692,7 +737,7 @@ public class PostDlg : Form
 			this.m_iRecvCurPage--;
 			this.m_bNextRequest = false;
 			this.requestMail = true;
-			this.RequestRecvList();
+			this.RequestRecvList(this.m_eMailType);
 		}
 	}
 
@@ -711,7 +756,7 @@ public class PostDlg : Form
 			this.m_iRecvCurPage++;
 			this.m_bNextRequest = true;
 			this.requestMail = true;
-			this.RequestRecvList();
+			this.RequestRecvList(this.m_eMailType);
 		}
 	}
 
@@ -734,7 +779,7 @@ public class PostDlg : Form
 			this.m_iRecvCurPage--;
 			this.m_bNextRequest = false;
 			this.requestMail = true;
-			this.RequestHistory();
+			this.RequestHistory(this.m_eMailType);
 		}
 	}
 
@@ -753,14 +798,14 @@ public class PostDlg : Form
 			this.m_iRecvCurPage++;
 			this.m_bNextRequest = true;
 			this.requestMail = true;
-			this.RequestHistory();
+			this.RequestHistory(this.m_eMailType);
 		}
 	}
 
 	private void OnClickHistoryRefresh(IUIObject obj)
 	{
 		this.m_iRecvCurPage = 1;
-		this.RequestHistory();
+		this.RequestHistory(this.m_eMailType);
 	}
 
 	public static void OnMessageEffect(string EffectKey)
@@ -809,7 +854,12 @@ public class PostDlg : Form
 		text = string.Format("{0}\n-{1}", text, this.m_pkMyChar.GetMyCharObject().name);
 		GS_MAILBOX_SEND_REQ gS_MAILBOX_SEND_REQ = a_oObject as GS_MAILBOX_SEND_REQ;
 		gS_MAILBOX_SEND_REQ.nRecvType = (int)this.m_eSendState;
-		if (this.m_cbPushMsg.StateNum == 1 && this.CheckPushMsg())
+		bool flag = false;
+		if (this.m_cbPushMsg.StateNum == 1)
+		{
+			flag = this.CheckPushMsg();
+		}
+		if (this.m_cbPushMsg.StateNum == 1 && flag)
 		{
 			gS_MAILBOX_SEND_REQ.i8Push = 1;
 			TKString.StringChar(text, ref gS_MAILBOX_SEND_REQ.strPushText);
@@ -819,7 +869,7 @@ public class PostDlg : Form
 			gS_MAILBOX_SEND_REQ.i8Push = 0;
 		}
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MAILBOX_SEND_REQ, gS_MAILBOX_SEND_REQ);
-		if (this.m_eSendState == PostDlg.eSEND_STATE.eSEND_STATE_NORMAL && this.m_cbPushMsg.StateNum == 1 && this.CheckPushMsg())
+		if (this.m_eSendState == PostDlg.eSEND_STATE.eSEND_STATE_NORMAL && this.m_cbPushMsg.StateNum == 1 && flag)
 		{
 			GS_FRIEND_PUSH_REQ gS_FRIEND_PUSH_REQ = new GS_FRIEND_PUSH_REQ();
 			gS_FRIEND_PUSH_REQ.i64PersonID = this.m_pkMyChar.m_PersonID;
@@ -944,7 +994,9 @@ public class PostDlg : Form
 			{
 				return;
 			}
-			this.RequestDetailInfo(num);
+			GS_MAILBOX_TAKE_GETMAIL_REQ gS_MAILBOX_TAKE_GETMAIL_REQ = new GS_MAILBOX_TAKE_GETMAIL_REQ();
+			gS_MAILBOX_TAKE_GETMAIL_REQ.i64Idx = num;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MAILBOX_TAKE_GETMAIL_REQ, gS_MAILBOX_TAKE_GETMAIL_REQ);
 		}
 	}
 
@@ -962,9 +1014,36 @@ public class PostDlg : Form
 			GS_MAILBOX_INFO gS_MAILBOX_INFO = this.m_RecvList[i];
 			if (gS_MAILBOX_INFO != null)
 			{
-				NewListItem newListItem = new NewListItem(this.m_NewListBox.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_NewListBox.ColumnNum, true, string.Empty);
 				newListItem.Data = gS_MAILBOX_INFO.i64MailID;
-				newListItem.SetListItemData(0, NrTSingleton<PostUtil>.Instance.GetAttachIconTextureName(gS_MAILBOX_INFO.i64CharMoney, gS_MAILBOX_INFO.i64ItemID), null, null, null);
+				newListItem.SetListItemData(0, "Win_T_ItemEmpty", null, null, null);
+				if (gS_MAILBOX_INFO.i32ItemUnique > 0 && gS_MAILBOX_INFO.i32ItemNum > 0)
+				{
+					newListItem.SetListItemData(1, new ITEM
+					{
+						m_nItemUnique = gS_MAILBOX_INFO.i32ItemUnique,
+						m_nItemNum = gS_MAILBOX_INFO.i32ItemNum
+					}, null, null, null);
+				}
+				else if (gS_MAILBOX_INFO.i64CharMoney > 0L)
+				{
+					UIBaseInfoLoader loader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary("Main_I_ExtraI01");
+					newListItem.SetListItemData(1, loader, null, null, null);
+				}
+				else if (gS_MAILBOX_INFO.i32CharKind > 0)
+				{
+					newListItem.SetListItemData(1, new NkListSolInfo
+					{
+						SolCharKind = gS_MAILBOX_INFO.i32CharKind,
+						SolGrade = (int)gS_MAILBOX_INFO.i8Grade,
+						SolLevel = gS_MAILBOX_INFO.i16Level,
+						ShowLevel = true
+					}, null, null, null);
+				}
+				else
+				{
+					newListItem.SetListItemData(1, NrTSingleton<PostUtil>.Instance.GetAttachIconTextureName(gS_MAILBOX_INFO.i64CharMoney, gS_MAILBOX_INFO.i64ItemID), null, null, null);
+				}
 				string text = string.Empty;
 				if (this.m_bToggleMailID)
 				{
@@ -974,7 +1053,7 @@ public class PostDlg : Form
 				{
 					text = NrTSingleton<PostUtil>.Instance.GetSendObjectName((eMAIL_TYPE)gS_MAILBOX_INFO.i32MailType, TKString.NEWString(gS_MAILBOX_INFO.szCharName_Send), false, false);
 				}
-				newListItem.SetListItemData(1, text, null, null, null);
+				newListItem.SetListItemData(2, text, null, null, null);
 				string empty = string.Empty;
 				DateTime dueDate = PublicMethod.GetDueDate(gS_MAILBOX_INFO.i64DateVary_Send);
 				string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1541");
@@ -994,7 +1073,7 @@ public class PostDlg : Form
 					"sec",
 					dueDate.Second
 				});
-				newListItem.SetListItemData(2, empty, null, null, null);
+				newListItem.SetListItemData(3, empty, null, null, null);
 				dueDate = PublicMethod.GetDueDate(PublicMethod.GetCurTime());
 				DateTime dueDate2 = PublicMethod.GetDueDate(gS_MAILBOX_INFO.i64DateVary_End);
 				TimeSpan timeSpan = dueDate2 - dueDate;
@@ -1010,8 +1089,25 @@ public class PostDlg : Form
 					"min",
 					timeSpan.Minutes
 				});
-				newListItem.SetListItemData(4, empty2, null, null, null);
-				newListItem.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("12"), gS_MAILBOX_INFO.i64MailID, new EZValueChangedDelegate(this.ClickReceiveMail), null);
+				newListItem.SetListItemData(5, empty2, null, null, null);
+				if (this.m_eMailType == PostDlg.eRECV_POSTTYPE.eRECV_POSTBATTLE)
+				{
+					newListItem.SetListItemData(4, false);
+				}
+				else if (this.m_RecvList[i].i32MailType >= 200 && this.m_RecvList[i].i32MailType <= 204)
+				{
+					newListItem.SetListItemData(4, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("12"), null, null, null);
+					newListItem.SetListItemEnable(4, false);
+				}
+				else if (this.m_RecvList[i].i32MailType == 111 || this.m_RecvList[i].i32MailType == 124)
+				{
+					newListItem.SetListItemData(4, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("12"), null, null, null);
+					newListItem.SetListItemEnable(4, false);
+				}
+				else
+				{
+					newListItem.SetListItemData(4, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("12"), gS_MAILBOX_INFO.i64MailID, new EZValueChangedDelegate(this.ClickReceiveMail), null);
+				}
 				this.m_NewListBox.Add(newListItem);
 			}
 		}
@@ -1040,15 +1136,8 @@ public class PostDlg : Form
 					this.m_nLastMailID = nMailBoxInfo[i].i64MailID;
 				}
 			}
-			if (this.m_iRecvCurPage == 1)
-			{
-				this.m_iRecvTotalPage = (totalCnt - 1) / (int)PostDlg.RECV_LISTNUM + 1;
-				this.m_nMaxMailNum = totalCnt;
-			}
-			else
-			{
-				this.m_iRecvTotalPage = (this.m_nMaxMailNum - 1) / (int)PostDlg.RECV_LISTNUM + 1;
-			}
+			this.m_iRecvTotalPage = (totalCnt - 1) / (int)PostDlg.RECV_LISTNUM + 1;
+			this.m_nMaxMailNum = totalCnt;
 			if (!this.m_mapPrevPageMailID.ContainsKey(this.m_iRecvCurPage))
 			{
 				this.m_mapPrevPageMailID.Add(this.m_iRecvCurPage, this.m_nLastMailID);
@@ -1091,7 +1180,7 @@ public class PostDlg : Form
 			{
 				this.m_nLastMailID = nHistoryInfo[i].i64MailID;
 			}
-			NewListItem newListItem = new NewListItem(this.m_NewListBox.ColumnNum - 1, true);
+			NewListItem newListItem = new NewListItem(this.m_NewListBox.ColumnNum - 1, true, string.Empty);
 			newListItem.Data = nHistoryInfo[i];
 			eMAILBOX_ICONTYPE iconType = eMAILBOX_ICONTYPE.ICONTYPE_NONE;
 			if (0L < nHistoryInfo[i].nMoney && 0 < nHistoryInfo[i].nItemUnique)
@@ -1110,8 +1199,9 @@ public class PostDlg : Form
 			{
 				iconType = eMAILBOX_ICONTYPE.ICONTYPE_SOL;
 			}
-			newListItem.SetListItemData(0, NrTSingleton<PostUtil>.Instance.GetAttachIconTextureName(iconType), null, null, null);
-			newListItem.SetListItemData(1, NrTSingleton<PostUtil>.Instance.GetSendObjectName((eMAIL_TYPE)nHistoryInfo[i].i32MailType, TKString.NEWString(nHistoryInfo[i].szCharName_Send), true, false), null, null, null);
+			newListItem.SetListItemData(0, false);
+			newListItem.SetListItemData(1, NrTSingleton<PostUtil>.Instance.GetAttachIconTextureName(iconType), null, null, null);
+			newListItem.SetListItemData(2, NrTSingleton<PostUtil>.Instance.GetSendObjectName((eMAIL_TYPE)nHistoryInfo[i].i32MailType, TKString.NEWString(nHistoryInfo[i].szCharName_Send), true, false), null, null, null);
 			DateTime dueDate = PublicMethod.GetDueDate(nHistoryInfo[i].i64DateVary_Send);
 			string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1541");
 			string empty = string.Empty;
@@ -1131,8 +1221,8 @@ public class PostDlg : Form
 				"sec",
 				dueDate.Second
 			});
-			newListItem.SetListItemData(2, empty, null, null, null);
-			newListItem.SetListItemData(3, false);
+			newListItem.SetListItemData(3, empty, null, null, null);
+			newListItem.SetListItemData(4, false);
 			this.m_NewListBox.Add(newListItem);
 		}
 		this.m_NewListBox.RepositionItems();
@@ -1170,17 +1260,13 @@ public class PostDlg : Form
 			return false;
 		}
 		DateTime nowTime = PublicMethod.GetNowTime();
-		if (nowTime.Hour < 8 || nowTime.Hour >= 22)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("287"));
-			return false;
-		}
 		return true;
 	}
 
-	private void RequestHistory()
+	private void RequestHistory(PostDlg.eRECV_POSTTYPE bType)
 	{
 		int eLastSelectedType_history = (int)this._eLastSelectedType_history;
+		this.m_eMailType = bType;
 		PostDlg.CMailRequireRangeForHistory cMailRequireRangeForHistory = this.JudgeMailType_ForHistory(eLastSelectedType_history);
 		this.RequestHistory(cMailRequireRangeForHistory.i32MailType_Begin, cMailRequireRangeForHistory.i32MailType_End, PostDlg.E_HISTORY_FILTERTYPE.ALL);
 	}
@@ -1197,12 +1283,22 @@ public class PostDlg : Form
 		gS_MAILBOX_HISTORY_LIST_REQ.nFirstMailID = this.m_nFirstMailID;
 		gS_MAILBOX_HISTORY_LIST_REQ.nLastMailID = this.m_nLastMailID;
 		gS_MAILBOX_HISTORY_LIST_REQ.bNextRequest = this.m_bHistoryNextRequest;
+		gS_MAILBOX_HISTORY_LIST_REQ.i8MailType = (byte)this.m_eMailType;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MAILBOX_HISTORY_LIST_REQ, gS_MAILBOX_HISTORY_LIST_REQ);
 	}
 
-	public void RequestRecvList()
+	public void RequestRecvList(PostDlg.eRECV_POSTTYPE bType)
 	{
+		if (bType == PostDlg.eRECV_POSTTYPE.eRECV_POSTNORMAL)
+		{
+			this.Button_GetAll.Visible = true;
+		}
+		else if (bType == PostDlg.eRECV_POSTTYPE.eRECV_POSTBATTLE)
+		{
+			this.Button_GetAll.Visible = false;
+		}
 		PostDlg.CMailRequireRange cMailRequireRange = this.JudgeMailType(this._eLastSelectedType_send);
+		this.m_eMailType = bType;
 		this.RequestRecvList(cMailRequireRange.i32MailType_Begin, cMailRequireRange.i32MailType_End);
 	}
 
@@ -1216,6 +1312,7 @@ public class PostDlg : Form
 		gS_MAILBOX_MINE_REQ.i32PageSize = (int)PostDlg.RECV_LISTNUM;
 		gS_MAILBOX_MINE_REQ.nFirstMailID = this.m_nFirstMailID;
 		gS_MAILBOX_MINE_REQ.nLastMailID = this.m_nLastMailID;
+		gS_MAILBOX_MINE_REQ.i8MailType = (byte)this.m_eMailType;
 		gS_MAILBOX_MINE_REQ.bNextRequest = this.m_bNextRequest;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MAILBOX_MINE_REQ, gS_MAILBOX_MINE_REQ);
 	}
@@ -1227,6 +1324,7 @@ public class PostDlg : Form
 		GS_MAILBOX_MINE_REQ gS_MAILBOX_MINE_REQ = new GS_MAILBOX_MINE_REQ();
 		gS_MAILBOX_MINE_REQ.i32MailType_Begin = cMailRequireRange.i32MailType_Begin;
 		gS_MAILBOX_MINE_REQ.i32MailType_End = cMailRequireRange.i32MailType_End;
+		gS_MAILBOX_MINE_REQ.i8MailType = (byte)this.m_eMailType;
 		gS_MAILBOX_MINE_REQ.i32Page = this.m_iRecvCurPage;
 		gS_MAILBOX_MINE_REQ.i32PageSize = (int)PostDlg.RECV_LISTNUM;
 		if (this.m_iRecvCurPage == 1)
@@ -1375,12 +1473,6 @@ public class PostDlg : Form
 
 	private void BtnSort_Recv(IUIObject obj)
 	{
-		DropDownList dropDownList = (DropDownList)obj;
-		int selectIndex = dropDownList.SelectIndex;
-		this.m_iRecvCurPage = 1;
-		this._eLastSelectedType_send = (PostDlg.SORT_TABMENU_RECV)selectIndex;
-		PostDlg.CMailRequireRange cMailRequireRange = this.JudgeMailType((PostDlg.SORT_TABMENU_RECV)selectIndex);
-		this.RequestRecvList(cMailRequireRange.i32MailType_Begin, cMailRequireRange.i32MailType_End);
 	}
 
 	private void BtnSort_History(IUIObject obj)
@@ -1435,7 +1527,7 @@ public class PostDlg : Form
 			break;
 		case PostDlg.SORT_TABMENU_RECV.SYSTEM:
 			cMailRequireRange.i32MailType_Begin = 100;
-			cMailRequireRange.i32MailType_End = 158;
+			cMailRequireRange.i32MailType_End = 163;
 			break;
 		}
 		return cMailRequireRange;
@@ -1518,7 +1610,7 @@ public class PostDlg : Form
 				this._tbTab.Control_Tab[0].controlIsEnabled = true;
 				this._tbTab.Control_Tab[1].controlIsEnabled = false;
 				this._tbTab.Control_Tab[2].controlIsEnabled = false;
-				this.m_lbPushText.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1940"));
+				this.m_lbPushText2.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1940"));
 				this.m_UserName.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1939"));
 				this.m_UserName.controlIsEnabled = false;
 				this.m_cbPushMsg.SetCheckState(1);
@@ -1530,7 +1622,8 @@ public class PostDlg : Form
 			this._tbTab.Control_Tab[0].controlIsEnabled = true;
 			this._tbTab.Control_Tab[1].controlIsEnabled = true;
 			this._tbTab.Control_Tab[2].controlIsEnabled = true;
-			this.m_lbPushText.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1351"));
+			this.m_lbPushText.Visible = true;
+			this.m_lbPushText2.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1351"));
 			this.m_UserName.SetText(string.Empty);
 			this.m_UserName.controlIsEnabled = true;
 			this.m_cbPushMsg.SetCheckState(0);

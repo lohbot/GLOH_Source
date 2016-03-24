@@ -98,7 +98,7 @@ public class Battle_Fight_ListDlg : Form
 			"charname",
 			text
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.OnFightAllowOK), text, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnFightAllowOK), text, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnFightAllowOK(object a_oObject)
@@ -149,7 +149,7 @@ public class Battle_Fight_ListDlg : Form
 			{
 				if (num >= this.m_nCurPage * this.m_nNumPerPage && num < (this.m_nCurPage + 1) * this.m_nNumPerPage)
 				{
-					NewListItem newListItem = new NewListItem(this.m_nlbCharList.ColumnNum, true);
+					NewListItem newListItem = new NewListItem(this.m_nlbCharList.ColumnNum, true, string.Empty);
 					newListItem.SetListItemData(0, nrCharBase.GetCharName(), null, null, null);
 					newListItem.SetListItemData(1, nrCharBase.GetPersonInfo().GetLevel(0L).ToString(), null, null, null);
 					newListItem.Data = nrCharBase.GetCharName();

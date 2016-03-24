@@ -24,6 +24,8 @@ public class ReforgeSelectDlg : Form
 
 	private Button m_btConfirm2;
 
+	private Button m_HelpButton;
+
 	private Label m_lbText;
 
 	private byte m_nSearch_SolPosType = 1;
@@ -46,12 +48,19 @@ public class ReforgeSelectDlg : Form
 
 	private byte m_byMilityUnique;
 
+	private UIPanelTab _GuideItem;
+
+	private float _ButtonZ;
+
+	private int m_nWinID;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		form.Scale = true;
 		instance.LoadFileAll(ref form, "Reforge/DLG_ReforgeSelect", G_ID.REFORGESELECT_DLG, true);
+		base.bCloseAni = false;
 		base.ShowBlackBG(0.5f);
 	}
 
@@ -92,6 +101,8 @@ public class ReforgeSelectDlg : Form
 		this.m_Tab.SetSelectTabIndex(0);
 		this.m_NewListBox = (base.GetControl("NewListBox_ReforgeSelect") as NewListBox);
 		this.m_NewListBox.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnNewListClick));
+		this.m_HelpButton = (base.GetControl("Help_Button") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
 		if (null != this.m_NewListBox)
 		{
 			this.SetColumFromShowType();
@@ -139,7 +150,7 @@ public class ReforgeSelectDlg : Form
 				if (iTEM.m_nItemPos == nItemPos && iTEM.m_nPosType == nItemType)
 				{
 					ITEM item = NkUserInventory.GetInstance().GetItem(nItemType, nItemPos);
-					NewListItem item2 = new NewListItem(this.m_NewListBox.ColumnNum, true);
+					NewListItem item2 = new NewListItem(this.m_NewListBox.ColumnNum, true, string.Empty);
 					this.SetItemColum(item, i, ref item2);
 					this.m_NewListBox.UpdateAdd(i, item2);
 					flag = true;
@@ -159,7 +170,7 @@ public class ReforgeSelectDlg : Form
 		this.m_NewListBox.Clear();
 		for (int i = 0; i < this.m_kSolSortList.Count; i++)
 		{
-			NewListItem item = new NewListItem(this.m_NewListBox.ColumnNum, true);
+			NewListItem item = new NewListItem(this.m_NewListBox.ColumnNum, true, string.Empty);
 			this.SetSolColum(i, ref item);
 			this.m_NewListBox.Add(item);
 		}
@@ -204,7 +215,7 @@ public class ReforgeSelectDlg : Form
 			this.m_InvenItemList.Sort(new Comparison<ITEM>(this.CompareItemLevel));
 			for (int k = 0; k < this.m_InvenItemList.Count; k++)
 			{
-				NewListItem item2 = new NewListItem(this.m_NewListBox.ColumnNum, true);
+				NewListItem item2 = new NewListItem(this.m_NewListBox.ColumnNum, true, string.Empty);
 				this.SetItemColum(this.m_InvenItemList[k], k, ref item2);
 				this.m_NewListBox.Add(item2);
 			}
@@ -237,7 +248,7 @@ public class ReforgeSelectDlg : Form
 				{
 					if (NrTSingleton<ItemManager>.Instance.GetItemInfo(item.m_nItemUnique) != null)
 					{
-						NewListItem item2 = new NewListItem(this.m_NewListBox.ColumnNum, true);
+						NewListItem item2 = new NewListItem(this.m_NewListBox.ColumnNum, true, string.Empty);
 						this.SetItemColum(item, num++, ref item2);
 						this.m_NewListBox.Add(item2);
 					}
@@ -412,22 +423,23 @@ public class ReforgeSelectDlg : Form
 		switch (nSearch_SolPosType)
 		{
 		case 0:
+			this.MakeMilitarySolList();
 			this.MakeReadySolList();
-			goto IL_B7;
+			goto IL_BD;
 		case 1:
 			this.MakeBattleSolList();
-			goto IL_B7;
+			goto IL_BD;
 		case 2:
 		case 6:
 			this.MakeMilitarySolList((int)this.m_byMilityUnique);
-			goto IL_B7;
+			goto IL_BD;
 		case 3:
 		case 4:
 		case 5:
 			IL_54:
 			if (nSearch_SolPosType != 100)
 			{
-				goto IL_B7;
+				goto IL_BD;
 			}
 			if (this.m_nSearch_SolSortType == 1)
 			{
@@ -439,10 +451,10 @@ public class ReforgeSelectDlg : Form
 				this.MakeMilitarySolList();
 				this.MakeReadySolList();
 			}
-			goto IL_B7;
+			goto IL_BD;
 		}
 		goto IL_54;
-		IL_B7:
+		IL_BD:
 		switch (this.m_nSearch_SolSortType)
 		{
 		case 1:
@@ -593,6 +605,9 @@ public class ReforgeSelectDlg : Form
 
 	public void OnClickTab(IUIObject obj)
 	{
+		this.HideUIGuide();
+		this.closeButton.Visible = true;
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.REFORGECONFIRM_DLG);
 		UIPanelTab uIPanelTab = obj as UIPanelTab;
 		if (uIPanelTab.panel.index == uIPanelTab.panelManager.CurrentPanel.index)
 		{
@@ -621,10 +636,64 @@ public class ReforgeSelectDlg : Form
 		this.SetData();
 	}
 
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.Gear_Strengthen.ToString());
+		}
+	}
+
 	public override void OnClose()
 	{
 		base.OnClose();
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.REFORGEMAIN_DLG);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.REFORGERESULT_DLG);
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		if (null != base.InteractivePanel)
+		{
+			base.InteractivePanel.depthChangeable = false;
+		}
+		this._GuideItem = this.m_Tab.Control_Tab[1];
+		this.m_nWinID = winID;
+		if (null != this._GuideItem)
+		{
+			this._ButtonZ = this._GuideItem.GetLocation().z;
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				if (uI_UIGuide.GetLocation().z == base.GetLocation().z)
+				{
+					uI_UIGuide.SetLocation(uI_UIGuide.GetLocationX(), uI_UIGuide.GetLocationY(), uI_UIGuide.GetLocation().z - 10f);
+				}
+				this._GuideItem.EffectAni = false;
+				Vector2 x = new Vector2(base.GetLocationX() + this._GuideItem.GetLocationX() + 72f, base.GetLocationY() + this._GuideItem.GetLocationY() + 44f);
+				uI_UIGuide.Move(x, UI_UIGuide.eTIPPOS.BUTTOM);
+				this._ButtonZ = this._GuideItem.gameObject.transform.localPosition.z;
+				this._GuideItem.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+				this._GuideItem.AlphaAni(1f, 0.5f, -0.5f);
+			}
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+			this._GuideItem.StopAni();
+			this._GuideItem.AlphaAni(1f, 1f, 0f);
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				uI_UIGuide.Close();
+			}
+		}
+		this._GuideItem = null;
 	}
 }

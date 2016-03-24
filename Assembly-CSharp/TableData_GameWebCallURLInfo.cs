@@ -6,7 +6,7 @@ public class TableData_GameWebCallURLInfo : NrTableBase
 {
 	public static Dictionary<eGameWebCallURL, GameWebCallURLInfo> m_dicGameWebCallURLInfo = new Dictionary<eGameWebCallURL, GameWebCallURLInfo>();
 
-	public TableData_GameWebCallURLInfo() : base(CDefinePath.GameWebCallURLData_URL, true)
+	public TableData_GameWebCallURLInfo() : base(CDefinePath.GameWebCallURLData_URL)
 	{
 	}
 

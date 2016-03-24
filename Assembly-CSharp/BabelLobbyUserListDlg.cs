@@ -14,8 +14,6 @@ public class BabelLobbyUserListDlg : Form
 
 	private const int LEADER_INDEX = 0;
 
-	public Label m_laTitle;
-
 	public DropDownList[] m_ddlSlotType = new DropDownList[4];
 
 	public Label[] m_laSlotState = new Label[4];
@@ -23,18 +21,6 @@ public class BabelLobbyUserListDlg : Form
 	public Button m_btStart;
 
 	public Button m_btReady;
-
-	public Button m_btCancel;
-
-	public Button m_btInvite;
-
-	public Button m_btChat;
-
-	public Button m_btInitiative;
-
-	public Button m_btAllCure;
-
-	public Box m_bChatNew;
 
 	private GameObject m_StartEffect;
 
@@ -50,6 +36,14 @@ public class BabelLobbyUserListDlg : Form
 
 	private int nInjuryReadySoldierCount;
 
+	public int InjurySoldierCount
+	{
+		get
+		{
+			return this.nInjurySoldierCount;
+		}
+	}
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -60,41 +54,19 @@ public class BabelLobbyUserListDlg : Form
 		float y = 0f;
 		base.SetLocation(x, y);
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
+		base.DonotDepthChange(1005f);
 	}
 
 	public override void SetComponent()
 	{
-		this.m_laTitle = (base.GetControl("Label_Label0") as Label);
-		this.m_btInvite = (base.GetControl("BT_Invite") as Button);
-		Button expr_32 = this.m_btInvite;
-		expr_32.Click = (EZValueChangedDelegate)Delegate.Combine(expr_32.Click, new EZValueChangedDelegate(this.OnClickInviteFriend));
-		this.m_btInvite.Hide(true);
-		this.m_btInvite.EffectAni = false;
-		this.m_btInitiative = (base.GetControl("BT_Initiative") as Button);
-		Button expr_87 = this.m_btInitiative;
-		expr_87.Click = (EZValueChangedDelegate)Delegate.Combine(expr_87.Click, new EZValueChangedDelegate(this.OnClickSetInitiative));
-		this.m_btInitiative.EffectAni = false;
 		this.m_btStart = (base.GetControl("Button_Start") as Button);
-		Button expr_D0 = this.m_btStart;
-		expr_D0.Click = (EZValueChangedDelegate)Delegate.Combine(expr_D0.Click, new EZValueChangedDelegate(this.OnClickStartBabel));
+		Button expr_1C = this.m_btStart;
+		expr_1C.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C.Click, new EZValueChangedDelegate(this.OnClickStartBabel));
 		this.m_btStart.EffectAni = false;
 		this.m_btReady = (base.GetControl("Button_Ready") as Button);
-		Button expr_119 = this.m_btReady;
-		expr_119.Click = (EZValueChangedDelegate)Delegate.Combine(expr_119.Click, new EZValueChangedDelegate(this.OnClickReady));
+		Button expr_65 = this.m_btReady;
+		expr_65.Click = (EZValueChangedDelegate)Delegate.Combine(expr_65.Click, new EZValueChangedDelegate(this.OnClickReady));
 		this.m_btReady.EffectAni = false;
-		this.m_btCancel = (base.GetControl("Button_cancel2") as Button);
-		Button expr_162 = this.m_btCancel;
-		expr_162.Click = (EZValueChangedDelegate)Delegate.Combine(expr_162.Click, new EZValueChangedDelegate(this.OnClickCancelBabel));
-		this.m_btCancel.EffectAni = false;
-		this.m_btChat = (base.GetControl("BT_chat") as Button);
-		this.m_btChat.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1922");
-		Button expr_1C5 = this.m_btChat;
-		expr_1C5.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C5.Click, new EZValueChangedDelegate(this.ChatDlg));
-		this.m_btAllCure = (base.GetControl("btn_allcure") as Button);
-		Button expr_202 = this.m_btAllCure;
-		expr_202.Click = (EZValueChangedDelegate)Delegate.Combine(expr_202.Click, new EZValueChangedDelegate(this.OnClickSolAllCure));
-		this.m_bChatNew = (base.GetControl("Box_New") as Box);
-		this.m_bChatNew.Visible = false;
 		for (int i = 0; i < 4; i++)
 		{
 			this.user_info[i] = new BABEL_USER_CONTROL_INFO();
@@ -143,6 +115,10 @@ public class BabelLobbyUserListDlg : Form
 				}
 			}
 		}
+		base.SetShowLayer(5, false);
+		base.SetShowLayer(6, false);
+		base.SetShowLayer(7, false);
+		base.SetShowLayer(8, false);
 		this.Hide();
 	}
 
@@ -197,7 +173,6 @@ public class BabelLobbyUserListDlg : Form
 		{
 			if (@char.GetPersonID() == babelLeaderInfo.nPartyPersonID)
 			{
-				this.m_btInvite.Hide(false);
 				this.m_btStart.Hide(false);
 				this.m_btReady.Hide(true);
 			}
@@ -285,10 +260,14 @@ public class BabelLobbyUserListDlg : Form
 			BountyInfoData bountyInfoDataFromUnique = NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoDataFromUnique(SoldierBatch.BABELTOWER_INFO.BountHuntUnique);
 			if (bountyInfoDataFromUnique != null)
 			{
-				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromMap(bountyInfoDataFromUnique.i32WeekTitleKey.ToString());
+				text2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(bountyInfoDataFromUnique.i32WeekTitleKey.ToString());
 			}
 		}
-		this.m_laTitle.SetText(text2);
+		PlunderSolNumDlg plunderSolNumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+		if (plunderSolNumDlg != null)
+		{
+			plunderSolNumDlg.SetTitle(text2);
+		}
 		BABELTOWER_PERSON babelLeaderInfo = SoldierBatch.BABELTOWER_INFO.GetBabelLeaderInfo();
 		if (babelLeaderInfo != null)
 		{
@@ -368,8 +347,6 @@ public class BabelLobbyUserListDlg : Form
 			{
 				if (this.m_StartEffect == null)
 				{
-					NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_STARTBUTTON_UI", this.m_btReady, this.m_btReady.GetSize());
-					this.m_btReady.AddGameObjectDelegate(new EZGameObjectDelegate(this.effectDelete));
 				}
 			}
 			else if (this.m_StartEffect != null)
@@ -379,7 +356,6 @@ public class BabelLobbyUserListDlg : Form
 		}
 		this.RefreshSolCount();
 		this.RefreshPossibleLevel();
-		this.CheckInjurySoldierList();
 		if (!base.Visible)
 		{
 			this.Show();
@@ -421,8 +397,6 @@ public class BabelLobbyUserListDlg : Form
 			{
 				if (this.m_StartEffect == null)
 				{
-					NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_STARTBUTTON_UI", this.m_btReady, this.m_btReady.GetSize());
-					this.m_btReady.AddGameObjectDelegate(new EZGameObjectDelegate(this.effectDelete));
 				}
 			}
 			else if (this.m_StartEffect != null)
@@ -515,7 +489,7 @@ public class BabelLobbyUserListDlg : Form
 			});
 		}
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnKickOutUser), null, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnKickOutUser), null, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	private void OnKickOutUser(object a_oObject)
@@ -539,50 +513,9 @@ public class BabelLobbyUserListDlg : Form
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_LEAVE_REQ, gS_BABELTOWER_LEAVE_REQ);
 	}
 
-	public void OnClickInviteFriend(IUIObject obj)
+	public void SetUserSlotType(int pos, byte type)
 	{
-		bool flag = false;
-		for (int i = 0; i < 4; i++)
-		{
-			BABELTOWER_PERSON babelPersonInfo = SoldierBatch.BABELTOWER_INFO.GetBabelPersonInfo(i);
-			if (babelPersonInfo.nPartyPersonID <= 0L && babelPersonInfo.nPartyPersonID != SoldierBatch.BABELTOWER_INFO.m_nLeaderPersonID)
-			{
-				flag = true;
-				if (babelPersonInfo.nSlotType == 0)
-				{
-					this.m_ddlSlotType[i].SetIndex(1);
-					GS_BABELTOWER_CHANGE_SLOTTYPE_REQ gS_BABELTOWER_CHANGE_SLOTTYPE_REQ = new GS_BABELTOWER_CHANGE_SLOTTYPE_REQ();
-					gS_BABELTOWER_CHANGE_SLOTTYPE_REQ.pos = i;
-					gS_BABELTOWER_CHANGE_SLOTTYPE_REQ.nBabelRoomIndex = SoldierBatch.BABELTOWER_INFO.m_nBabelRoomIndex;
-					gS_BABELTOWER_CHANGE_SLOTTYPE_REQ.change_type = 1;
-					SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_CHANGE_SLOTTYPE_REQ, gS_BABELTOWER_CHANGE_SLOTTYPE_REQ);
-				}
-				break;
-			}
-		}
-		if (flag)
-		{
-			NrTSingleton<NewGuildManager>.Instance.Send_GS_NEWGUILD_INFO_REQ(0);
-		}
-		else
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("306"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-		}
-	}
-
-	public void OnClickSetInitiative(IUIObject obj)
-	{
-		int solBatchNum = SoldierBatch.SOLDIERBATCH.GetSolBatchNum();
-		if (solBatchNum <= 0)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("740"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		InitiativeSetDlg initiativeSetDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.INITIATIVE_SET_DLG) as InitiativeSetDlg;
-		if (initiativeSetDlg != null)
-		{
-			initiativeSetDlg.SetBatchSolList(eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER);
-		}
+		this.m_ddlSlotType[pos].SetIndex((int)type);
 	}
 
 	public void OnClickStartBabel(IUIObject obj)
@@ -645,7 +578,7 @@ public class BabelLobbyUserListDlg : Form
 				num
 			});
 			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			msgBoxUI.SetMsg(new YesDelegate(this.OnStartBabel), null, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnStartBabel), null, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL, 2);
 			return;
 		}
 		if (solBatchNum2 > num)
@@ -662,11 +595,8 @@ public class BabelLobbyUserListDlg : Form
 		{
 			return;
 		}
-		if (SoldierBatch.BABELTOWER_INFO.GetPartyCount() == 1)
-		{
-			SoldierBatch.SOLDIERBATCH.SaveBatchSolInfo();
-		}
 		GS_BABELTOWER_START_REQ gS_BABELTOWER_START_REQ = new GS_BABELTOWER_START_REQ();
+		gS_BABELTOWER_START_REQ.nCombinationUnique = NrTSingleton<SolCombination_BatchSelectInfoManager>.Instance.GetUserSelectedUniqeKey(0);
 		gS_BABELTOWER_START_REQ.nBabelRoomIndex = SoldierBatch.BABELTOWER_INFO.m_nBabelRoomIndex;
 		gS_BABELTOWER_START_REQ.nPersonID = charPersonInfo.GetPersonID();
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BABELTOWER_START_REQ, gS_BABELTOWER_START_REQ);
@@ -750,7 +680,7 @@ public class BabelLobbyUserListDlg : Form
 					num
 				});
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI.SetMsg(new YesDelegate(this.OnReadyBabel), null, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.OnReadyBabel), null, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL, 2);
 				return;
 			}
 		}
@@ -818,24 +748,6 @@ public class BabelLobbyUserListDlg : Form
 		this.m_StartEffect = obj;
 	}
 
-	public void ChatDlg(IUIObject obj)
-	{
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BABELTOWER_CHAT))
-		{
-			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BABELTOWER_CHAT);
-			base.SetShowLayer(7, false);
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.EMOTICON_DLG);
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.WHISPER_COLOR_DLG);
-		}
-		else
-		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BABELTOWER_CHAT);
-			base.SetShowLayer(7, false);
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.EMOTICON_DLG);
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.WHISPER_COLOR_DLG);
-		}
-	}
-
 	public bool IsEnableUseFriend()
 	{
 		int num = 0;
@@ -865,7 +777,7 @@ public class BabelLobbyUserListDlg : Form
 				return;
 			}
 		}
-		else if (pkSolinfo.GetSolPosType() != 0 && pkSolinfo.GetSolPosType() != 2 && pkSolinfo.GetSolPosType() != 6 && pkSolinfo.GetSolPosType() != 7)
+		else if (pkSolinfo.GetSolPosType() != 0 && pkSolinfo.GetSolPosType() != 2 && pkSolinfo.GetSolPosType() != 6)
 		{
 			return;
 		}
@@ -924,39 +836,15 @@ public class BabelLobbyUserListDlg : Form
 		}
 		this.nInjuryReadySoldierCount = num;
 		this.nInjurySoldierCount = this.nInjuryBattleSoldierCount + this.nInjuryReadySoldierCount;
-		if (this.nInjurySoldierCount > 0)
-		{
-			this.m_btAllCure.SetEnabled(true);
-		}
-		else
-		{
-			this.m_btAllCure.SetEnabled(false);
-		}
-	}
-
-	private void OnClickSolAllCure(IUIObject obj)
-	{
-		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		if (msgBoxUI != null)
-		{
-			string empty = string.Empty;
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("230"),
-				"count",
-				this.nInjurySoldierCount
-			});
-			msgBoxUI.SetMsg(new YesDelegate(this.OnClickSolAllCureOK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("229"), empty, eMsgType.MB_OK_CANCEL);
-		}
-	}
-
-	private void OnClickSolAllCureOK(object _Object)
-	{
-		NrTSingleton<NkCharManager>.Instance.IsInjuryCureAllChar = true;
 	}
 
 	private int CompareSolPosIndex(NkSoldierInfo a, NkSoldierInfo b)
 	{
 		return a.GetSolPosIndex().CompareTo(b.GetSolPosIndex());
+	}
+
+	public void SetSlotIndex(int index, byte type)
+	{
+		this.m_ddlSlotType[index].SetIndex((int)type);
 	}
 }

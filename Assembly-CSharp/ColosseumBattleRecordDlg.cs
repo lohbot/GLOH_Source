@@ -8,6 +8,8 @@ using UnityForms;
 
 public class ColosseumBattleRecordDlg : Form
 {
+	private Button m_btClose;
+
 	private Label m_laMyColosseum_WinCount;
 
 	private NewListBox m_lbColossenumRecordList;
@@ -25,6 +27,8 @@ public class ColosseumBattleRecordDlg : Form
 
 	public override void SetComponent()
 	{
+		this.m_btClose = (base.GetControl("Close_Button") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.m_laMyColosseum_WinCount = (base.GetControl("Label_WinCount") as Label);
 		this.m_lbColossenumRecordList = (base.GetControl("NewListBox_fight_record") as NewListBox);
 		GS_COLOSSEUM_RECORD_LIST_GET_REQ gS_COLOSSEUM_RECORD_LIST_GET_REQ = new GS_COLOSSEUM_RECORD_LIST_GET_REQ();
@@ -77,15 +81,8 @@ public class ColosseumBattleRecordDlg : Form
 		this.m_lbColossenumRecordList.Clear();
 		foreach (COLOSSEUM_RECORDINFO current in this.record_list)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbColossenumRecordList.ColumnNum, true);
-			if (current.i64WinPersonID == charPersonInfo.GetPersonID())
-			{
-				newListItem.SetListItemData(0, false);
-			}
-			else
-			{
-				newListItem.SetListItemData(0, true);
-			}
+			NewListItem newListItem = new NewListItem(this.m_lbColossenumRecordList.ColumnNum, true, string.Empty);
+			newListItem.SetListItemData(0, true);
 			DateTime dueDate = PublicMethod.GetDueDate(current.i64BattleTime);
 			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("602");
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]

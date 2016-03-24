@@ -31,5 +31,9 @@ namespace PROTOCOL.GAME
 		public long i64CreateDate;
 
 		public long i64Fund;
+
+		public bool bIsDeclareWarTarget;
+
+		public bool bGuildWar;
 	}
 }

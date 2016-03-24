@@ -437,7 +437,7 @@ public class NrGridManager
 							int num = array2[j];
 							if (pkSendChar.CanBattleSkillForTargetGrid(charArray[iD], (short)num, BSkillBase, BSkillDetail))
 							{
-								if (NrGridData.IndexAccessAble(num, xMax, yMax))
+								if (NrTSingleton<BattleSkill_Manager>.Instance.IsTargetWeaponTypeCheck(BSkillBase, charArray[iD]) && NrGridData.IndexAccessAble(num, xMax, yMax))
 								{
 									battleGridList[num].SetMode(E_RENDER_MODE.ATTACK);
 								}

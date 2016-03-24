@@ -39,7 +39,14 @@ public class CCameraAniPlay : NrTSingleton<CCameraAniPlay>
 		}
 		if (this.m_Camera == null)
 		{
-			this.m_Camera = Camera.main;
+			for (int i = 0; i < Camera.allCamerasCount; i++)
+			{
+				if (Camera.allCameras[i] != null && Camera.allCameras[i].name.Contains("Main"))
+				{
+					this.m_Camera = Camera.allCameras[i];
+					break;
+				}
+			}
 		}
 		if (this.m_ActionAnis == null)
 		{
@@ -84,9 +91,9 @@ public class CCameraAniPlay : NrTSingleton<CCameraAniPlay>
 			}
 			this.m_IntroVoice = gameObject.GetComponentInChildren<AudioSource>();
 			Animation[] array = componentsInChildren;
-			for (int i = 0; i < array.Length; i++)
+			for (int j = 0; j < array.Length; j++)
 			{
-				Animation animation = array[i];
+				Animation animation = array[j];
 				foreach (AnimationState animationState in animation)
 				{
 					if (!(animationState.clip == null))

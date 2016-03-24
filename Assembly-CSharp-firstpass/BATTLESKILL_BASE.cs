@@ -11,6 +11,8 @@ public class BATTLESKILL_BASE : NrTableData
 
 	public int m_nSkillMaxLevel;
 
+	public int m_nMythSkillType;
+
 	public int m_nSkillType;
 
 	public int m_nSkillRange;
@@ -20,6 +22,8 @@ public class BATTLESKILL_BASE : NrTableData
 	public int m_nSkillJobType;
 
 	public int m_nSkillGridType;
+
+	public long m_nSkillTargetWeaponType;
 
 	public int m_nSkilNeedWeapon;
 
@@ -65,6 +69,8 @@ public class BATTLESKILL_BASE : NrTableData
 
 	public int m_nColosseumSkillDesc;
 
+	public string[] m_nSkillDescSub = new string[6];
+
 	public string m_strParserWeaphoneType = string.Empty;
 
 	public string m_strParserCharAniType = string.Empty;
@@ -72,6 +78,8 @@ public class BATTLESKILL_BASE : NrTableData
 	public string m_strParserBuffType = string.Empty;
 
 	public string m_strParserSkillAniType = string.Empty;
+
+	public string m_strParserTargetWeaponType = string.Empty;
 
 	public BATTLESKILL_BASE()
 	{
@@ -84,11 +92,13 @@ public class BATTLESKILL_BASE : NrTableData
 		this.m_strTextKey = string.Empty;
 		this.m_waSkillName = string.Empty;
 		this.m_nSkillMaxLevel = 0;
+		this.m_nMythSkillType = 0;
 		this.m_nSkillType = 0;
 		this.m_nSkillRange = 0;
 		this.m_nSkillTargetType = 0;
 		this.m_nSkillJobType = 0;
 		this.m_nSkillGridType = 0;
+		this.m_nSkillTargetWeaponType = 0L;
 		this.m_nSkilNeedWeapon = 0;
 		this.m_nSkillMoveRange = 0f;
 		this.m_strSkillCameraShake = string.Empty;
@@ -114,6 +124,10 @@ public class BATTLESKILL_BASE : NrTableData
 		this.m_nSkillDESC = string.Empty;
 		this.m_nSkillNoUseTurn = 0;
 		this.m_nColosseumSkillDesc = 0;
+		for (int j = 0; j < 6; j++)
+		{
+			this.m_nSkillDescSub[j] = string.Empty;
+		}
 	}
 
 	public override void SetData(TsDataReader.Row row)
@@ -126,6 +140,7 @@ public class BATTLESKILL_BASE : NrTableData
 		row.GetColumn(num2++, out this.m_strTextKey);
 		row.GetColumn(num2++, out this.m_waSkillName);
 		row.GetColumn(num2++, out this.m_nSkillMaxLevel);
+		row.GetColumn(num2++, out this.m_nMythSkillType);
 		row.GetColumn(num2++, out empty);
 		this.m_nSkillType = (int)NrTSingleton<BATTLE_SKILL_PARSER>.Instance.GetCharSkillType(empty);
 		row.GetColumn(num2++, out this.m_nSkillRange);
@@ -135,6 +150,7 @@ public class BATTLESKILL_BASE : NrTableData
 		this.m_nSkillJobType = (int)NrTSingleton<BATTLE_SKILL_PARSER>.Instance.GetBattleSkillJobType(empty);
 		row.GetColumn(num2++, out empty);
 		this.m_nSkillGridType = (int)NrTSingleton<BATTLE_SKILL_PARSER>.Instance.GetCharGridType(empty);
+		row.GetColumn(num2++, out this.m_strParserTargetWeaponType);
 		row.GetColumn(num2++, out this.m_strParserWeaphoneType);
 		row.GetColumn(num2++, out num);
 		this.m_nSkillMoveRange = (float)num / 10f;
@@ -159,6 +175,12 @@ public class BATTLESKILL_BASE : NrTableData
 		row.GetColumn(num2++, out this.m_nSkillDESC);
 		row.GetColumn(num2++, out this.m_nSkillNoUseTurn);
 		row.GetColumn(num2++, out this.m_nColosseumSkillDesc);
+		row.GetColumn(num2++, out this.m_nSkillDescSub[0]);
+		row.GetColumn(num2++, out this.m_nSkillDescSub[1]);
+		row.GetColumn(num2++, out this.m_nSkillDescSub[2]);
+		row.GetColumn(num2++, out this.m_nSkillDescSub[3]);
+		row.GetColumn(num2++, out this.m_nSkillDescSub[4]);
+		row.GetColumn(num2++, out this.m_nSkillDescSub[5]);
 	}
 
 	public string GetBSkillHitCenterGridEffectCode()
@@ -260,5 +282,10 @@ public class BATTLESKILL_BASE : NrTableData
 	public bool ChecJobTypeMagicDamage()
 	{
 		return this.m_nSkillJobType == 4 || this.m_nSkillJobType == 2 || this.m_nSkillJobType == 8 || this.m_nSkillJobType == 6 || this.m_nSkillJobType == 10 || this.m_nSkillJobType == 12;
+	}
+
+	public bool CheckTargetWeaponType(long TargetWeaponType)
+	{
+		return this.m_nSkillTargetWeaponType != 0L && TargetWeaponType > 0L && (TargetWeaponType == 1L || (this.m_nSkillTargetWeaponType & TargetWeaponType) > 0L);
 	}
 }

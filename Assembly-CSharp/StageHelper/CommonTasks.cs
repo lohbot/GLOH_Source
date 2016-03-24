@@ -23,25 +23,25 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator CommonUpdate()
 		{
-			return new CommonTasks.<CommonUpdate>c__IteratorE();
+			return new CommonTasks.<CommonUpdate>c__Iterator10();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator InitializeChangeScene()
 		{
-			return new CommonTasks.<InitializeChangeScene>c__IteratorF();
+			return new CommonTasks.<InitializeChangeScene>c__Iterator11();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator LoadEmptyMainScene()
 		{
-			return new CommonTasks.<LoadEmptyMainScene>c__Iterator10();
+			return new CommonTasks.<LoadEmptyMainScene>c__Iterator12();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator MuteAudio(bool bMute)
 		{
-			CommonTasks.<MuteAudio>c__Iterator11 <MuteAudio>c__Iterator = new CommonTasks.<MuteAudio>c__Iterator11();
+			CommonTasks.<MuteAudio>c__Iterator13 <MuteAudio>c__Iterator = new CommonTasks.<MuteAudio>c__Iterator13();
 			<MuteAudio>c__Iterator.bMute = bMute;
 			<MuteAudio>c__Iterator.<$>bMute = bMute;
 			return <MuteAudio>c__Iterator;
@@ -75,7 +75,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator BGMExceptMuteAudio(bool bMute)
 		{
-			CommonTasks.<BGMExceptMuteAudio>c__Iterator12 <BGMExceptMuteAudio>c__Iterator = new CommonTasks.<BGMExceptMuteAudio>c__Iterator12();
+			CommonTasks.<BGMExceptMuteAudio>c__Iterator14 <BGMExceptMuteAudio>c__Iterator = new CommonTasks.<BGMExceptMuteAudio>c__Iterator14();
 			<BGMExceptMuteAudio>c__Iterator.bMute = bMute;
 			<BGMExceptMuteAudio>c__Iterator.<$>bMute = bMute;
 			return <BGMExceptMuteAudio>c__Iterator;
@@ -109,7 +109,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator ExceptMuteAudioOnOff(EAudioType type, bool bMute)
 		{
-			CommonTasks.<ExceptMuteAudioOnOff>c__Iterator13 <ExceptMuteAudioOnOff>c__Iterator = new CommonTasks.<ExceptMuteAudioOnOff>c__Iterator13();
+			CommonTasks.<ExceptMuteAudioOnOff>c__Iterator15 <ExceptMuteAudioOnOff>c__Iterator = new CommonTasks.<ExceptMuteAudioOnOff>c__Iterator15();
 			<ExceptMuteAudioOnOff>c__Iterator.bMute = bMute;
 			<ExceptMuteAudioOnOff>c__Iterator.type = type;
 			<ExceptMuteAudioOnOff>c__Iterator.<$>bMute = bMute;
@@ -120,13 +120,13 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator ClearAudioStack()
 		{
-			return new CommonTasks.<ClearAudioStack>c__Iterator14();
+			return new CommonTasks.<ClearAudioStack>c__Iterator16();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator MemoryCleaning(bool unloadUnusedAsset, int countGC)
 		{
-			CommonTasks.<MemoryCleaning>c__Iterator15 <MemoryCleaning>c__Iterator = new CommonTasks.<MemoryCleaning>c__Iterator15();
+			CommonTasks.<MemoryCleaning>c__Iterator17 <MemoryCleaning>c__Iterator = new CommonTasks.<MemoryCleaning>c__Iterator17();
 			<MemoryCleaning>c__Iterator.countGC = countGC;
 			<MemoryCleaning>c__Iterator.unloadUnusedAsset = unloadUnusedAsset;
 			<MemoryCleaning>c__Iterator.<$>countGC = countGC;
@@ -141,7 +141,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator LoadLevelSubScene(string path, string stackName)
 		{
-			CommonTasks.<LoadLevelSubScene>c__Iterator16 <LoadLevelSubScene>c__Iterator = new CommonTasks.<LoadLevelSubScene>c__Iterator16();
+			CommonTasks.<LoadLevelSubScene>c__Iterator18 <LoadLevelSubScene>c__Iterator = new CommonTasks.<LoadLevelSubScene>c__Iterator18();
 			<LoadLevelSubScene>c__Iterator.path = path;
 			<LoadLevelSubScene>c__Iterator.stackName = stackName;
 			<LoadLevelSubScene>c__Iterator.<$>path = path;
@@ -152,91 +152,91 @@ namespace StageHelper
 		[DebuggerHidden]
 		public static IEnumerator EnableCharacterLoad()
 		{
-			return new CommonTasks.<EnableCharacterLoad>c__Iterator17();
+			return new CommonTasks.<EnableCharacterLoad>c__Iterator19();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator LoadEnvironment(bool useEnvironmentSetting)
 		{
-			return new CommonTasks.<LoadEnvironment>c__Iterator18();
+			return new CommonTasks.<LoadEnvironment>c__Iterator1A();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator WaitMyCharacterReadyToAction()
 		{
-			return new CommonTasks.<WaitMyCharacterReadyToAction>c__Iterator19();
+			return new CommonTasks.<WaitMyCharacterReadyToAction>c__Iterator1B();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator SetGUIBehaviourScene()
 		{
-			return new CommonTasks.<SetGUIBehaviourScene>c__Iterator1A();
+			return new CommonTasks.<SetGUIBehaviourScene>c__Iterator1C();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator FinalizeChangeScene(bool bHideLoadingScreen)
 		{
-			CommonTasks.<FinalizeChangeScene>c__Iterator1B <FinalizeChangeScene>c__Iterator1B = new CommonTasks.<FinalizeChangeScene>c__Iterator1B();
-			<FinalizeChangeScene>c__Iterator1B.bHideLoadingScreen = bHideLoadingScreen;
-			<FinalizeChangeScene>c__Iterator1B.<$>bHideLoadingScreen = bHideLoadingScreen;
-			return <FinalizeChangeScene>c__Iterator1B;
+			CommonTasks.<FinalizeChangeScene>c__Iterator1D <FinalizeChangeScene>c__Iterator1D = new CommonTasks.<FinalizeChangeScene>c__Iterator1D();
+			<FinalizeChangeScene>c__Iterator1D.bHideLoadingScreen = bHideLoadingScreen;
+			<FinalizeChangeScene>c__Iterator1D.<$>bHideLoadingScreen = bHideLoadingScreen;
+			return <FinalizeChangeScene>c__Iterator1D;
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator DownloadAsset(string path, PostProcPerItem callback, object obj, bool unloadAfterDownload)
 		{
-			CommonTasks.<DownloadAsset>c__Iterator1C <DownloadAsset>c__Iterator1C = new CommonTasks.<DownloadAsset>c__Iterator1C();
-			<DownloadAsset>c__Iterator1C.path = path;
-			<DownloadAsset>c__Iterator1C.callback = callback;
-			<DownloadAsset>c__Iterator1C.obj = obj;
-			<DownloadAsset>c__Iterator1C.unloadAfterDownload = unloadAfterDownload;
-			<DownloadAsset>c__Iterator1C.<$>path = path;
-			<DownloadAsset>c__Iterator1C.<$>callback = callback;
-			<DownloadAsset>c__Iterator1C.<$>obj = obj;
-			<DownloadAsset>c__Iterator1C.<$>unloadAfterDownload = unloadAfterDownload;
-			return <DownloadAsset>c__Iterator1C;
+			CommonTasks.<DownloadAsset>c__Iterator1E <DownloadAsset>c__Iterator1E = new CommonTasks.<DownloadAsset>c__Iterator1E();
+			<DownloadAsset>c__Iterator1E.path = path;
+			<DownloadAsset>c__Iterator1E.callback = callback;
+			<DownloadAsset>c__Iterator1E.obj = obj;
+			<DownloadAsset>c__Iterator1E.unloadAfterDownload = unloadAfterDownload;
+			<DownloadAsset>c__Iterator1E.<$>path = path;
+			<DownloadAsset>c__Iterator1E.<$>callback = callback;
+			<DownloadAsset>c__Iterator1E.<$>obj = obj;
+			<DownloadAsset>c__Iterator1E.<$>unloadAfterDownload = unloadAfterDownload;
+			return <DownloadAsset>c__Iterator1E;
 		}
 
 		[DebuggerHidden]
 		private static IEnumerator _LoadAsset(string path, ItemType type, PostProcPerItem callback, object obj, bool unloadAfterDownload, string stackName)
 		{
-			CommonTasks.<_LoadAsset>c__Iterator1D <_LoadAsset>c__Iterator1D = new CommonTasks.<_LoadAsset>c__Iterator1D();
-			<_LoadAsset>c__Iterator1D.path = path;
-			<_LoadAsset>c__Iterator1D.stackName = stackName;
-			<_LoadAsset>c__Iterator1D.type = type;
-			<_LoadAsset>c__Iterator1D.callback = callback;
-			<_LoadAsset>c__Iterator1D.obj = obj;
-			<_LoadAsset>c__Iterator1D.unloadAfterDownload = unloadAfterDownload;
-			<_LoadAsset>c__Iterator1D.<$>path = path;
-			<_LoadAsset>c__Iterator1D.<$>stackName = stackName;
-			<_LoadAsset>c__Iterator1D.<$>type = type;
-			<_LoadAsset>c__Iterator1D.<$>callback = callback;
-			<_LoadAsset>c__Iterator1D.<$>obj = obj;
-			<_LoadAsset>c__Iterator1D.<$>unloadAfterDownload = unloadAfterDownload;
-			return <_LoadAsset>c__Iterator1D;
+			CommonTasks.<_LoadAsset>c__Iterator1F <_LoadAsset>c__Iterator1F = new CommonTasks.<_LoadAsset>c__Iterator1F();
+			<_LoadAsset>c__Iterator1F.path = path;
+			<_LoadAsset>c__Iterator1F.stackName = stackName;
+			<_LoadAsset>c__Iterator1F.type = type;
+			<_LoadAsset>c__Iterator1F.callback = callback;
+			<_LoadAsset>c__Iterator1F.obj = obj;
+			<_LoadAsset>c__Iterator1F.unloadAfterDownload = unloadAfterDownload;
+			<_LoadAsset>c__Iterator1F.<$>path = path;
+			<_LoadAsset>c__Iterator1F.<$>stackName = stackName;
+			<_LoadAsset>c__Iterator1F.<$>type = type;
+			<_LoadAsset>c__Iterator1F.<$>callback = callback;
+			<_LoadAsset>c__Iterator1F.<$>obj = obj;
+			<_LoadAsset>c__Iterator1F.<$>unloadAfterDownload = unloadAfterDownload;
+			return <_LoadAsset>c__Iterator1F;
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator DownloadStringXML(string resPath, PostProcPerItem callback)
 		{
-			CommonTasks.<DownloadStringXML>c__Iterator1E <DownloadStringXML>c__Iterator1E = new CommonTasks.<DownloadStringXML>c__Iterator1E();
-			<DownloadStringXML>c__Iterator1E.resPath = resPath;
-			<DownloadStringXML>c__Iterator1E.callback = callback;
-			<DownloadStringXML>c__Iterator1E.<$>resPath = resPath;
-			<DownloadStringXML>c__Iterator1E.<$>callback = callback;
-			return <DownloadStringXML>c__Iterator1E;
+			CommonTasks.<DownloadStringXML>c__Iterator20 <DownloadStringXML>c__Iterator = new CommonTasks.<DownloadStringXML>c__Iterator20();
+			<DownloadStringXML>c__Iterator.resPath = resPath;
+			<DownloadStringXML>c__Iterator.callback = callback;
+			<DownloadStringXML>c__Iterator.<$>resPath = resPath;
+			<DownloadStringXML>c__Iterator.<$>callback = callback;
+			return <DownloadStringXML>c__Iterator;
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator WaitGoToBattleWorld()
 		{
-			return new CommonTasks.<WaitGoToBattleWorld>c__Iterator1F();
+			return new CommonTasks.<WaitGoToBattleWorld>c__Iterator21();
 		}
 
 		[DebuggerHidden]
 		public static IEnumerator WaitGoToBattleSoldierBatch()
 		{
-			return new CommonTasks.<WaitGoToBattleSoldierBatch>c__Iterator20();
+			return new CommonTasks.<WaitGoToBattleSoldierBatch>c__Iterator22();
 		}
 
 		public static void GotoBattleReserve()

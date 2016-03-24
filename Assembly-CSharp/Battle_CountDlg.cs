@@ -9,6 +9,10 @@ public class Battle_CountDlg : Form
 
 	private DrawTexture m_dwBG;
 
+	private DrawTexture m_dtPreviewBG;
+
+	private Label m_lbPreview;
+
 	private float m_TurnSwapTime;
 
 	private float m_TurnTime;
@@ -24,6 +28,8 @@ public class Battle_CountDlg : Form
 	private float m_fBattleContinueEffectUV = 0.2f;
 
 	private int m_nCurrentContinueCount;
+
+	private string m_strText = string.Empty;
 
 	private GameObject m_goCountDown;
 
@@ -61,7 +67,24 @@ public class Battle_CountDlg : Form
 			NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_UI_COUNTDOWN", this.m_dwBG, this.m_dwBG.GetSize());
 			this.m_dwBG.AddGameObjectDelegate(new EZGameObjectDelegate(this.effectdownload));
 		}
+		this.m_dtPreviewBG = (base.GetControl("DT_PreviewBG") as DrawTexture);
+		this.m_lbPreview = (base.GetControl("Label_Preview") as Label);
+		this.m_dtPreviewBG.Visible = false;
+		this.m_lbPreview.Visible = false;
+		this.m_strText = "mythic_raid_nextround";
+		if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strText))
+		{
+			string str = string.Format("{0}", "UI/mythicraid/" + this.m_strText + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			wWWItem.SetItemType(ItemType.USER_ASSETB);
+			wWWItem.SetCallback(new PostProcPerItem(this.SetBundleTextureImage), this.m_strText);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+		}
 		this.SetVisibleFlag(false);
+		if (Battle.BATTLE != null && Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+		{
+			this.SetControl_PreviewHero();
+		}
 	}
 
 	public override void InitData()
@@ -113,6 +136,10 @@ public class Battle_CountDlg : Form
 		{
 			UnityEngine.Object.Destroy(this.m_goCountDown);
 			this.m_goCountDown = null;
+		}
+		if (NrTSingleton<FormsManager>.Instance.IsPopUPDlgNotExist(base.WindowID))
+		{
+			NrTSingleton<UIImageBundleManager>.Instance.DeleteTexture(this.m_strText);
 		}
 	}
 
@@ -228,6 +255,10 @@ public class Battle_CountDlg : Form
 
 	public void SetVisibleFlag(bool bShow)
 	{
+		if (Battle.BATTLE != null && Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+		{
+			return;
+		}
 		if (base.Visible != bShow)
 		{
 			base.Visible = bShow;
@@ -245,10 +276,15 @@ public class Battle_CountDlg : Form
 			return;
 		}
 		Battle bATTLE = Battle.BATTLE;
-		if (bATTLE != null)
+		if (bATTLE == null)
 		{
-			this.ShowTurnCount(this.m_PlayerTurn);
+			return;
 		}
+		if (bATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+		{
+			return;
+		}
+		this.ShowTurnCount(this.m_PlayerTurn);
 	}
 
 	public void TurnEffectDeleteCallBack()
@@ -293,22 +329,62 @@ public class Battle_CountDlg : Form
 		if (child != null)
 		{
 			GameObject gameObject4 = child.gameObject;
-			if (gameObject4 != null && nCount > 1)
+			if (gameObject4 != null)
 			{
 				MeshFilter component = gameObject4.GetComponent<MeshFilter>();
+				Vector2[] array = new Vector2[component.mesh.uv.Length];
 				if (component != null)
 				{
-					Vector2[] array = new Vector2[component.mesh.uv.Length];
-					for (int i = 0; i < array.Length; i++)
+					if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
 					{
-						array[i] = component.mesh.uv[i];
-						Vector2[] expr_18B_cp_0 = array;
-						int expr_18B_cp_1 = i;
-						expr_18B_cp_0[expr_18B_cp_1].y = expr_18B_cp_0[expr_18B_cp_1].y - this.m_fBattleContinueEffectUV;
+						Texture2D texture = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(this.m_strText);
+						if (component != null)
+						{
+							array[0].x = 0f;
+							array[0].y = 1f;
+							array[1].x = 1f;
+							array[1].y = 1f;
+							array[2].x = 0f;
+							array[2].y = 0f;
+							array[3].x = 1f;
+							array[3].y = 0f;
+							component.mesh.uv = array;
+						}
+						Material material = new Material(Shader.Find("Transparent/Vertex Colored" + NrTSingleton<UIDataManager>.Instance.AddFilePath));
+						if (null != gameObject4.renderer && null != material)
+						{
+							gameObject4.renderer.sharedMaterial = material;
+						}
+						if (null != texture)
+						{
+							material.mainTexture = texture;
+						}
+						else
+						{
+							CustomMonsterProtriteInfo customMonsterProtriteInfo = new CustomMonsterProtriteInfo();
+							customMonsterProtriteInfo.m_goAniObject = gameObject4;
+							customMonsterProtriteInfo.m_Material = gameObject4.renderer.sharedMaterial;
+							customMonsterProtriteInfo.m_szImageKey = this.m_strText;
+							string str = string.Format("{0}", "UI/mythicraid/" + this.m_strText + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+							WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+							wWWItem.SetItemType(ItemType.USER_ASSETB);
+							wWWItem.SetCallback(new PostProcPerItem(this.SetBundleImage), customMonsterProtriteInfo);
+							TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+						}
 					}
-					if (component != null)
+					else if (nCount > 1)
 					{
-						component.mesh.uv = array;
+						for (int i = 0; i < array.Length; i++)
+						{
+							array[i] = component.mesh.uv[i];
+							Vector2[] expr_360_cp_0 = array;
+							int expr_360_cp_1 = i;
+							expr_360_cp_0[expr_360_cp_1].y = expr_360_cp_0[expr_360_cp_1].y - this.m_fBattleContinueEffectUV;
+						}
+						if (component != null)
+						{
+							component.mesh.uv = array;
+						}
 					}
 				}
 			}
@@ -400,11 +476,11 @@ public class Battle_CountDlg : Form
 					{
 						if (UIDataManager.IsUse256Texture())
 						{
-							text = charKindInfo.GetPortraitFile1(-1) + "_256";
+							text = charKindInfo.GetPortraitFile1(-1, string.Empty) + "_256";
 						}
 						else
 						{
-							text = charKindInfo.GetPortraitFile1(-1) + "_512";
+							text = charKindInfo.GetPortraitFile1(-1, string.Empty) + "_512";
 						}
 					}
 					type = eCharImageType.LARGE;
@@ -414,7 +490,7 @@ public class Battle_CountDlg : Form
 					strName = string.Format("fx_enemy0{0}", j.ToString());
 					if (charKindInfo != null)
 					{
-						text = charKindInfo.GetPortraitFile1(-1) + "_64";
+						text = charKindInfo.GetPortraitFile1(-1, string.Empty) + "_64";
 					}
 					type = eCharImageType.SMALL;
 				}
@@ -434,20 +510,20 @@ public class Battle_CountDlg : Form
 							Renderer component4 = gameObject5.GetComponent<Renderer>();
 							if (component4 != null)
 							{
-								Material material = component4.material;
-								if (null != material)
+								Material material2 = component4.material;
+								if (null != material2)
 								{
 									if (null == NrTSingleton<UIImageBundleManager>.Instance.GetTexture(text))
 									{
-										CustomMonsterProtriteInfo customMonsterProtriteInfo = new CustomMonsterProtriteInfo();
-										customMonsterProtriteInfo.m_goAniObject = gameObject2;
-										customMonsterProtriteInfo.m_Material = material;
-										customMonsterProtriteInfo.m_szImageKey = text;
-										NrTSingleton<UIImageBundleManager>.Instance.RequestCharImageCustomParam(text, type, new PostProcPerItem(this.SetBundleImage), customMonsterProtriteInfo);
+										CustomMonsterProtriteInfo customMonsterProtriteInfo2 = new CustomMonsterProtriteInfo();
+										customMonsterProtriteInfo2.m_goAniObject = gameObject2;
+										customMonsterProtriteInfo2.m_Material = material2;
+										customMonsterProtriteInfo2.m_szImageKey = text;
+										NrTSingleton<UIImageBundleManager>.Instance.RequestCharImageCustomParam(text, type, new PostProcPerItem(this.SetBundleImage), customMonsterProtriteInfo2);
 									}
 									else
 									{
-										material.mainTexture = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(text);
+										material2.mainTexture = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(text);
 										gameObject2.SetActive(true);
 									}
 								}
@@ -559,5 +635,32 @@ public class Battle_CountDlg : Form
 		Vector3 localPosition = this.m_goCountDown.transform.localPosition;
 		localPosition.z = 1f;
 		this.m_goCountDown.transform.localPosition = localPosition;
+	}
+
+	private void SetBundleTextureImage(WWWItem _item, object _param)
+	{
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				string imageKey = string.Empty;
+				if (_param is string)
+				{
+					imageKey = (string)_param;
+					NrTSingleton<UIImageBundleManager>.Instance.AddTexture(imageKey, texture2D);
+				}
+			}
+		}
+	}
+
+	private void SetControl_PreviewHero()
+	{
+		this.SetVisibleFlag(true);
+		base.SetShowLayer(0, false);
+		base.SetShowLayer(1, true);
+		this.m_dtPreviewBG.SetSize(GUICamera.width, this.m_dtPreviewBG.GetSize().y);
+		this.m_dtPreviewBG.SetLocation(0f, this.m_dtPreviewBG.GetSize().y * 0.8f);
+		this.m_lbPreview.SetLocation(0, 0);
 	}
 }

@@ -4,6 +4,7 @@ using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
 using SERVICE;
 using System;
+using System.Collections.Generic;
 using TsBundle;
 using UnityEngine;
 using UnityForms;
@@ -24,15 +25,21 @@ public class SolDetailinfoDlg : Form
 
 	private Label TradeCountName;
 
+	private Label m_lbSoldierSpec;
+
 	private ScrollLabel SolExplain;
 
 	private Button IntroMovieButton;
+
+	private Button m_btnClose;
 
 	private Label IntroMoveieText;
 
 	private Button UserPortraitRefresh;
 
 	private Button UserPortraitChange;
+
+	private Button m_HelpButton;
 
 	private HorizontalSlider m_InitiativeValueSlider;
 
@@ -49,6 +56,12 @@ public class SolDetailinfoDlg : Form
 	private DrawTexture m_dtLock;
 
 	private CheckBox m_cOnlySkill;
+
+	private Button m_btCostume;
+
+	private Label m_lbCostume;
+
+	private Button m_btnSolPreview;
 
 	private float m_oldInitiativeValue_f;
 
@@ -67,6 +80,8 @@ public class SolDetailinfoDlg : Form
 	private string m_strIncTextColor = string.Empty;
 
 	private float m_fLockDelayTime;
+
+	private int m_selectedSolCostumeUnique;
 
 	public override void InitializeComponent()
 	{
@@ -94,6 +109,7 @@ public class SolDetailinfoDlg : Form
 		this.TradeCountName = (base.GetControl("Label_stats_TradeNum") as Label);
 		this.TradeCountName.SetText(string.Empty);
 		this.SolExplain = (base.GetControl("ScrollLabel_info") as ScrollLabel);
+		this.m_lbSoldierSpec = (base.GetControl("Label_soldierspec2") as Label);
 		this.IntroMovieButton = (base.GetControl("Button_MovieBtn") as Button);
 		this.IntroMovieButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnIntroMovieButton));
 		this.IntroMovieButton.Visible = false;
@@ -128,6 +144,19 @@ public class SolDetailinfoDlg : Form
 		this.m_dtLock.Visible = false;
 		this.m_strBaseTextColor = NrTSingleton<CTextParser>.Instance.GetTextColor("1002");
 		this.m_strIncTextColor = NrTSingleton<CTextParser>.Instance.GetTextColor("1104");
+		this.m_HelpButton = (base.GetControl("Help_Button") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
+		this.m_HelpButton.Visible = false;
+		this.m_btCostume = (base.GetControl("BT_Costume") as Button);
+		this.m_btCostume.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickCostume));
+		this.m_btCostume.Visible = false;
+		this.m_lbCostume = (base.GetControl("LB_CostumeBT") as Label);
+		this.m_lbCostume.Visible = false;
+		this.m_btnClose = (base.GetControl("Close_Button") as Button);
+		this.m_btnClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
+		this.m_btnSolPreview = (base.GetControl("Button_SolPreview") as Button);
+		this.m_btnSolPreview.AddValueChangedDelegate(new EZValueChangedDelegate(this.Click_PreViewHero));
+		this.m_btnSolPreview.Visible = false;
 		this.InitData();
 	}
 
@@ -140,11 +169,17 @@ public class SolDetailinfoDlg : Form
 	{
 		this.UserPortraitRefresh.Visible = bShow;
 		this.UserPortraitChange.Visible = bShow;
+		this.m_HelpButton.Visible = bShow;
 	}
 
 	public void SetLocationByForm(Form pkTargetDlg)
 	{
 		base.SetScreenCenter();
+	}
+
+	public void SetCostumeUnique(int costumeUnique)
+	{
+		this.m_selectedSolCostumeUnique = costumeUnique;
 	}
 
 	public void SetData(ref NkSoldierInfo solinfo)
@@ -216,6 +251,7 @@ public class SolDetailinfoDlg : Form
 		{
 			return;
 		}
+		this.SetCostumeButton();
 		this.pkSolinfo.UpdateSoldierStatInfo();
 		NrCharKindInfo charKindInfo = this.pkSolinfo.GetCharKindInfo();
 		if (charKindInfo == null)
@@ -224,7 +260,8 @@ public class SolDetailinfoDlg : Form
 		}
 		this.m_SolInterfaceTool.m_kSelectCharKindInfo = charKindInfo;
 		this.m_SolInterfaceTool.SetHeroEventLabel(this.pkSolinfo.GetGrade() + 1);
-		this.m_SolInterfaceTool.SetCharImg(this.pkSolinfo.GetGrade());
+		string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(this.m_selectedSolCostumeUnique);
+		this.m_SolInterfaceTool.SetCharImg(this.pkSolinfo.GetGrade(), costumePortraitPath);
 		this.m_SolInterfaceTool.m_Label_Rank2.Visible = false;
 		if (!NrTSingleton<ContentsLimitManager>.Instance.IsReincarnation())
 		{
@@ -253,6 +290,16 @@ public class SolDetailinfoDlg : Form
 		this.ShowBaseSolStatAwakening(this.SolDEX, statDEX, sUBDATA_UNION.n32SubData_1);
 		this.ShowBaseSolStatAwakening(this.SolVIT, statVIT, sUBDATA_UNION2.n32SubData_0);
 		this.ShowBaseSolStatAwakening(this.SolINT, statINT, sUBDATA_UNION2.n32SubData_1);
+		string text = string.Empty;
+		if (charKindInfo.GetCHARKIND_ATTACKINFO().ATTACKTYPE == this.pkSolinfo.GetAttackInfo().ATTACKTYPE)
+		{
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(charKindInfo.GetCHARKIND_INFO().SoldierSpec1);
+		}
+		else
+		{
+			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(charKindInfo.GetCHARKIND_INFO().SoldierSpec2);
+		}
+		this.m_lbSoldierSpec.SetText(text);
 		this.SolExplain.SetScrollLabel(charKindInfo.GetDesc());
 		int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_TRADECOUNT_USE);
 		this.TradeCount.Hide(true);
@@ -301,10 +348,15 @@ public class SolDetailinfoDlg : Form
 		}
 		this.IntroMovieButton.Visible = false;
 		this.IntroMoveieText.Visible = false;
-		if (charKindInfo.GetCHARKIND_INFO().SOLINTRO != "0")
+		this.m_btnSolPreview.Visible = false;
+		if (charKindInfo.IsATB(1L))
 		{
 			this.IntroMovieButton.Visible = true;
 			this.IntroMoveieText.Visible = true;
+		}
+		else
+		{
+			this.m_btnSolPreview.Visible = true;
 		}
 		this.SetInitiativeValue();
 		if (this.pkSolinfo.IsAtbCommonFlag(8L))
@@ -390,17 +442,17 @@ public class SolDetailinfoDlg : Form
 			if (NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
 				string str = string.Format("{0}SOLINTRO/", Option.GetProtocolRootPath(Protocol.HTTP));
-				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false, true);
 			}
 			else
 			{
-				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false, true);
 			}
 		}
 		else
 		{
 			string str2 = string.Format("{0}SOLINTRO/", NrTSingleton<NrGlobalReference>.Instance.basePath);
-			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false);
+			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false, true);
 		}
 	}
 
@@ -415,7 +467,7 @@ public class SolDetailinfoDlg : Form
 				GS_GETPORTRAIT_INFO_REQ gS_GETPORTRAIT_INFO_REQ = new GS_GETPORTRAIT_INFO_REQ();
 				gS_GETPORTRAIT_INFO_REQ.bDataType = 0;
 				gS_GETPORTRAIT_INFO_REQ.i64DataID = @char.GetPersonID();
-				SendPacket.GetInstance().SendObject(1716, gS_GETPORTRAIT_INFO_REQ);
+				SendPacket.GetInstance().SendObject(1726, gS_GETPORTRAIT_INFO_REQ);
 				this.m_fRefreshTime = Time.time;
 			}
 		}
@@ -545,6 +597,94 @@ public class SolDetailinfoDlg : Form
 			{
 				this.m_dtLock.SetTexture("Win_I_Lock03");
 			}
+		}
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.Hero_Reincarnate.ToString());
+		}
+	}
+
+	private void SetCostumeButton()
+	{
+		if (this.pkSolinfo == null)
+		{
+			return;
+		}
+		bool visible = NrTSingleton<NrCharCostumeTableManager>.Instance.IsCostumeKind(this.pkSolinfo.GetCharKind());
+		this.m_btCostume.Visible = visible;
+		this.m_lbCostume.Visible = visible;
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsCostumeLimit())
+		{
+			this.m_btCostume.Visible = false;
+			this.m_lbCostume.Visible = false;
+		}
+	}
+
+	private void OnClickCostume(IUIObject obj)
+	{
+		if (this.pkSolinfo == null)
+		{
+			return;
+		}
+		List<int> costumeKindList = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumeKindList();
+		if (!costumeKindList.Contains(this.pkSolinfo.GetCharKind()))
+		{
+			return;
+		}
+		CostumeRoom_Dlg costumeRoom_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.COSTUMEROOM_DLG) as CostumeRoom_Dlg;
+		if (costumeRoom_Dlg == null)
+		{
+			return;
+		}
+		costumeRoom_Dlg.InitCostumeRoom(this.pkSolinfo.GetCharKind(), this.pkSolinfo);
+		costumeRoom_Dlg.Show();
+	}
+
+	private void Click_PreViewHero(IUIObject obj)
+	{
+		if (this.pkSolinfo == null)
+		{
+			return;
+		}
+		if (this.pkSolinfo.GetCharKindInfo() == null)
+		{
+			return;
+		}
+		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+		if (msgBoxUI == null)
+		{
+			return;
+		}
+		msgBoxUI.SetMsg(new YesDelegate(this.MessageBox_PreviewHero), this.pkSolinfo, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3293"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("438"), eMsgType.MB_OK_CANCEL, 2);
+		msgBoxUI.Show();
+	}
+
+	private void MessageBox_PreviewHero(object a_oObject)
+	{
+		NkSoldierInfo nkSoldierInfo = (NkSoldierInfo)a_oObject;
+		if (nkSoldierInfo == null)
+		{
+			return;
+		}
+		if (nkSoldierInfo.GetCharKindInfo() == null)
+		{
+			return;
+		}
+		GS_PREVIEW_HERO_START_REQ gS_PREVIEW_HERO_START_REQ = new GS_PREVIEW_HERO_START_REQ();
+		gS_PREVIEW_HERO_START_REQ.i32CharKind = nkSoldierInfo.GetCharKind();
+		gS_PREVIEW_HERO_START_REQ.i32CostumeUnique = (int)nkSoldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_PREVIEW_HERO_START_REQ, gS_PREVIEW_HERO_START_REQ);
+		SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
+		if (solMilitaryGroupDlg != null)
+		{
+			solMilitaryGroupDlg.ChangeSceneDestory = false;
+			solMilitaryGroupDlg.Hide();
+			NrTSingleton<NkClientLogic>.Instance.GidPrivewHero = 82;
 		}
 	}
 }

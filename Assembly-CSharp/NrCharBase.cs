@@ -36,6 +36,10 @@ public class NrCharBase : INrCharInput, ICloneable
 
 	protected int m_nFaceCharGrade;
 
+	protected long m_nFaceSolID;
+
+	protected int m_nFaceCostumeUnique;
+
 	protected eCharKindType m_eCharKindType;
 
 	public NrCharMove m_kCharMove;
@@ -318,6 +322,16 @@ public class NrCharBase : INrCharInput, ICloneable
 	public int GetFaceCharGrade()
 	{
 		return this.m_nFaceCharGrade;
+	}
+
+	public long GetFaceSolID()
+	{
+		return this.m_nFaceSolID;
+	}
+
+	public int GetFaceCostumeUnique()
+	{
+		return this.m_nFaceCostumeUnique;
 	}
 
 	public NrCharKindInfo GetFaceCharKindInfo()
@@ -1156,6 +1170,11 @@ public class NrCharBase : INrCharInput, ICloneable
 		return 0;
 	}
 
+	public virtual bool GetGuildWar()
+	{
+		return false;
+	}
+
 	public void SetClickMe()
 	{
 		this.m_bClickedMe = true;
@@ -1400,7 +1419,7 @@ public class NrCharBase : INrCharInput, ICloneable
 									"maxnum",
 									num2.ToString()
 								});
-								msgBoxUI.SetMsg(new YesDelegate(this.OnBattleOK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), empty, eMsgType.MB_OK_CANCEL);
+								msgBoxUI.SetMsg(new YesDelegate(this.OnBattleOK), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), empty, eMsgType.MB_OK_CANCEL, 2);
 							}
 							else
 							{
@@ -1420,7 +1439,7 @@ public class NrCharBase : INrCharInput, ICloneable
 								if (flag2)
 								{
 									MsgBoxUI msgBoxUI2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-									msgBoxUI2.SetMsg(new YesDelegate(this.OnBattleInjuryOk), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("20"), eMsgType.MB_OK_CANCEL);
+									msgBoxUI2.SetMsg(new YesDelegate(this.OnBattleInjuryOk), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("20"), eMsgType.MB_OK_CANCEL, 2);
 								}
 								else
 								{
@@ -1554,16 +1573,24 @@ public class NrCharBase : INrCharInput, ICloneable
 		switch (this.m_eCharKindType)
 		{
 		case eCharKindType.CKT_USER:
+		{
 			if (this.GetID() == 1)
 			{
 				return;
 			}
-			NrTSingleton<CRightClickMenu>.Instance.CreateUI(this.GetPersonID(), this.GetCharUnique(), this.m_kPersonInfo.GetCharName(), CRightClickMenu.KIND.USER_CLICK, CRightClickMenu.TYPE.NAME_SECTION_3);
+			bool isGuildUser = false;
+			NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetCharByPersonID(this.GetPersonID()) as NrCharUser;
+			if (nrCharUser != null && nrCharUser.GetUserGuildName() != string.Empty && nrCharUser.GetUserGuildName() != string.Empty)
+			{
+				isGuildUser = true;
+			}
+			NrTSingleton<CRightClickMenu>.Instance.CreateUI(this.GetPersonID(), this.GetCharUnique(), this.m_kPersonInfo.GetCharName(), CRightClickMenu.KIND.USER_CLICK, CRightClickMenu.TYPE.NAME_SECTION_3, isGuildUser);
 			break;
+		}
 		case eCharKindType.CKT_MONSTER:
 			if (this.IsCharStateAtb(16384L) || this.IsCharStateAtb(32768L))
 			{
-				NrTSingleton<CRightClickMenu>.Instance.CreateUI(this.GetPersonID(), this.GetCharUnique(), this.m_kPersonInfo.GetCharName(), CRightClickMenu.KIND.MONSTER_CLICK, CRightClickMenu.TYPE.NAME_SECTION_2);
+				NrTSingleton<CRightClickMenu>.Instance.CreateUI(this.GetPersonID(), this.GetCharUnique(), this.m_kPersonInfo.GetCharName(), CRightClickMenu.KIND.MONSTER_CLICK, CRightClickMenu.TYPE.NAME_SECTION_2, false);
 			}
 			break;
 		}
@@ -1778,7 +1805,7 @@ public class NrCharBase : INrCharInput, ICloneable
 		this.m_kHeadUpEntity.MakeName(this.m_eCharKindType, gradeTexture, text, ridestate);
 	}
 
-	public void MakeCharGuildNameShow(string strGuildName, long i64GuildID)
+	public void MakeCharGuildNameShow(string strGuildName, long i64GuildID, bool bGuildWar = false)
 	{
 		if (!NrTSingleton<NkClientLogic>.Instance.IsWorldScene())
 		{
@@ -1808,7 +1835,7 @@ public class NrCharBase : INrCharInput, ICloneable
 			this.m_kHeadUpEntity.SetSubChar(true);
 			this.m_kHeadUpEntity.SetShowHeadUp(true);
 		}
-		this.m_kHeadUpEntity.MakeCharGuild(this.m_eCharKindType, i64GuildID, strGuildName, new Color(0f, 1f, 0f), ridestate);
+		this.m_kHeadUpEntity.MakeCharGuild(this.m_eCharKindType, i64GuildID, strGuildName, bGuildWar, ridestate);
 	}
 
 	public bool MakeChatText(string chattext, bool checkshowstatus)
@@ -2182,77 +2209,80 @@ public class NrCharBase : INrCharInput, ICloneable
 						NrCharBase nrCharBase2 = @char[i];
 						if (nrCharBase2 != null)
 						{
-							if (!(null == nrCharBase2.GetCharObject()))
+							if (nrCharBase2.GetCharKindInfo() != null)
 							{
-								if (nrCharBase2.GetCharObject().activeInHierarchy)
+								if (!(null == nrCharBase2.GetCharObject()))
 								{
-									if (!(this.GetCharObject() == null))
+									if (nrCharBase2.GetCharObject().activeInHierarchy)
 									{
-										float num3 = Vector3.Distance(this.GetCharObject().transform.position, nrCharBase2.GetCharObject().transform.position);
-										if (num2 > num3)
+										if (!(this.GetCharObject() == null))
 										{
-											if (nrCharBase2.GetCharKindInfo().IsATB(16777216L))
+											float num3 = Vector3.Distance(this.GetCharObject().transform.position, nrCharBase2.GetCharObject().transform.position);
+											if (num2 > num3)
 											{
-												if (!nrCharBase2.m_bSubChar)
+												if (nrCharBase2.GetCharKindInfo().IsATB(16777216L))
 												{
-													if (nrCharBase2.GetCharKindInfo().IsATB(16L))
+													if (!nrCharBase2.m_bSubChar)
 													{
-														if (!nrCharBase2.GetCharKindInfo().IsATB(8589934592L) && !NrTSingleton<NkQuestManager>.Instance.IsQuestMonster(nrCharBase2.GetCharKindInfo().GetCharKind()))
+														if (nrCharBase2.GetCharKindInfo().IsATB(16L))
 														{
-															goto IL_363;
-														}
-														num2 = num3;
-														nrCharBase = nrCharBase2;
-													}
-													else if (nrCharBase2.GetCharKindInfo().IsATB(4L) && !nrCharBase2.IsCharStateAtb(16384L))
-													{
-														if (!NrTSingleton<NkQuestManager>.Instance.IsQuestMonster(nrCharBase2.GetCharKindInfo().GetCharKind()))
-														{
-															goto IL_363;
-														}
-														num2 = num3;
-														nrCharBase = nrCharBase2;
-													}
-													else if (nrCharBase2.GetCharKindInfo().IsATB(8L))
-													{
-														if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_COMPLETE)
-														{
-															nrCharBase = nrCharBase2;
-															break;
-														}
-														if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ACCEPTABLE)
-														{
+															if (!nrCharBase2.GetCharKindInfo().IsATB(8589934592L) && !NrTSingleton<NkQuestManager>.Instance.IsQuestMonster(nrCharBase2.GetCharKindInfo().GetCharKind()))
+															{
+																goto IL_374;
+															}
 															num2 = num3;
 															nrCharBase = nrCharBase2;
 														}
-														else if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ONGOING)
+														else if (nrCharBase2.GetCharKindInfo().IsATB(4L) && !nrCharBase2.IsCharStateAtb(16384L))
 														{
+															if (!NrTSingleton<NkQuestManager>.Instance.IsQuestMonster(nrCharBase2.GetCharKindInfo().GetCharKind()))
+															{
+																goto IL_374;
+															}
 															num2 = num3;
 															nrCharBase = nrCharBase2;
 														}
-														else
+														else if (nrCharBase2.GetCharKindInfo().IsATB(8L))
 														{
-															if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_DAYQUEST_COMPLETE)
+															if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_COMPLETE)
 															{
 																nrCharBase = nrCharBase2;
 																break;
 															}
-															if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_DAYQUEST_ACCEPTABLE)
+															if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ACCEPTABLE)
 															{
 																num2 = num3;
 																nrCharBase = nrCharBase2;
 															}
-															else if (NrTSingleton<NkQuestManager>.Instance.IsQuestMonster(nrCharBase2.GetCharKindInfo().GetCharKind()))
+															else if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ONGOING)
 															{
 																num2 = num3;
 																nrCharBase = nrCharBase2;
+															}
+															else
+															{
+																if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_DAYQUEST_COMPLETE)
+																{
+																	nrCharBase = nrCharBase2;
+																	break;
+																}
+																if (nrCharBase2.m_eQuestState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_DAYQUEST_ACCEPTABLE)
+																{
+																	num2 = num3;
+																	nrCharBase = nrCharBase2;
+																}
+																else if (NrTSingleton<NkQuestManager>.Instance.IsQuestMonster(nrCharBase2.GetCharKindInfo().GetCharKind()))
+																{
+																	num2 = num3;
+																	nrCharBase = nrCharBase2;
+																}
 															}
 														}
-													}
-													if (this.IsNearNPCMenuOpen(nrCharBase2))
-													{
-														nrCharBase = nrCharBase2;
-														break;
+														if (this.IsNearNPCMenuOpen(nrCharBase2))
+														{
+															nrCharBase = nrCharBase2;
+															break;
+														}
 													}
 												}
 											}
@@ -2261,7 +2291,7 @@ public class NrCharBase : INrCharInput, ICloneable
 								}
 							}
 						}
-						IL_363:;
+						IL_374:;
 					}
 				}
 				else
@@ -2377,7 +2407,7 @@ public class NrCharBase : INrCharInput, ICloneable
 
 	private void MakeFadeIn()
 	{
-		if (NrTSingleton<NkClientLogic>.Instance.IsNPCTalkState() && (int)this.m_kIDInfo.m_nCharUnique != NrTSingleton<NkClientLogic>.Instance.GetNpcTalkCharUnique() && !this.m_bExceptHideForLoad)
+		if (!this.IsMyChar() && NrTSingleton<NkClientLogic>.Instance.IsNPCTalkState() && (int)this.m_kIDInfo.m_nCharUnique != NrTSingleton<NkClientLogic>.Instance.GetNpcTalkCharUnique() && !this.m_bExceptHideForLoad)
 		{
 			return;
 		}
@@ -2477,7 +2507,7 @@ public class NrCharBase : INrCharInput, ICloneable
 	protected void OnRecoveryShader()
 	{
 		this.MakeCharName(false, this.GetUserColosseumGrade());
-		this.MakeCharGuildNameShow(this.GetUserGuildName(), this.GetUserGuildID());
+		this.MakeCharGuildNameShow(this.GetUserGuildName(), this.GetUserGuildID(), this.GetGuildWar());
 		this.m_k3DChar.OnRecoveryEnchantWeapon();
 		if (NrTSingleton<NkClientLogic>.Instance.IsWorldScene())
 		{
@@ -2806,6 +2836,12 @@ public class NrCharBase : INrCharInput, ICloneable
 
 	public bool IsNearNPCMenuOpen(NrCharBase kChar)
 	{
-		return kChar.GetCharKindInfo().IsATB(274877906944L) || kChar.GetCharKindInfo().IsATB(549755813888L) || kChar.GetCharKindInfo().IsATB(1099511627776L) || kChar.GetCharKindInfo().IsATB(2199023255552L) || kChar.GetCharKindInfo().IsATB(512L) || kChar.GetCharKindInfo().IsATB(562949953421312L) || kChar.GetCharKindInfo().IsATB(1125899906842624L) || kChar.GetCharKindInfo().IsATB(4503599627370496L) || kChar.GetCharKindInfo().IsATB(18014398509481984L) || kChar.GetCharKindInfo().IsATB(36028797018963968L);
+		return kChar.GetCharKindInfo().IsATB(274877906944L) || kChar.GetCharKindInfo().IsATB(549755813888L) || kChar.GetCharKindInfo().IsATB(1099511627776L) || kChar.GetCharKindInfo().IsATB(2199023255552L) || kChar.GetCharKindInfo().IsATB(512L) || kChar.GetCharKindInfo().IsATB(562949953421312L) || kChar.GetCharKindInfo().IsATB(1125899906842624L) || kChar.GetCharKindInfo().IsATB(4503599627370496L) || kChar.GetCharKindInfo().IsATB(18014398509481984L) || kChar.GetCharKindInfo().IsATB(36028797018963968L) || kChar.GetCharKindInfo().IsATB(288230376151711744L) || kChar.GetCharKindInfo().IsATB(1152921504606846976L) || kChar.GetCharKindInfo().IsATB(33554432L);
+	}
+
+	private bool IsMyChar()
+	{
+		NrCharBase @char = NrTSingleton<NkCharManager>.Instance.GetChar(1);
+		return @char != null && @char == this;
 	}
 }

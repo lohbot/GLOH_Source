@@ -1206,6 +1206,11 @@ public abstract class SpriteRoot : MonoBehaviour, IUseCamera, IEZLinkedListItem<
 		}
 		this.clippingRect = value;
 		this.localClipRect = Rect3D.MultFast(this.clippingRect, base.transform.worldToLocalMatrix).GetRect();
+		if (this.localClipRect.width < 0f)
+		{
+			this.localClipRect.width = -this.localClipRect.width;
+			this.localClipRect.x = this.localClipRect.x - this.localClipRect.width;
+		}
 		this.clipped = true;
 		this.CalcSize();
 		this.UpdateUVs();

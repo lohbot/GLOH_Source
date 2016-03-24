@@ -7,7 +7,7 @@ using UnityForms;
 
 public class BabelTowerGuildBossLobbyDlg : Form
 {
-	private const float BOSSHP_BAR_WIDTH = 390f;
+	private const float BOSSHP_BAR_WIDTH = 400f;
 
 	private const float DAMAGE_BAR_WIDTH = 400f;
 
@@ -39,6 +39,7 @@ public class BabelTowerGuildBossLobbyDlg : Form
 		float y = 0f;
 		base.SetLocation(x, y);
 		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
+		base.DonotDepthChange(1005f);
 	}
 
 	public override void SetComponent()
@@ -60,6 +61,11 @@ public class BabelTowerGuildBossLobbyDlg : Form
 		Button expr_12A = this.m_bCancel;
 		expr_12A.Click = (EZValueChangedDelegate)Delegate.Combine(expr_12A.Click, new EZValueChangedDelegate(this.OnClickCancelGuildBoss));
 		this.DateSetting();
+		PlunderSolNumDlg plunderSolNumDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.PLUNDERSOLNUM_DLG) as PlunderSolNumDlg;
+		if (plunderSolNumDlg != null)
+		{
+			plunderSolNumDlg.SetTitle(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1965"));
+		}
 	}
 
 	public void OnClickCancelGuildBoss(IUIObject obj)
@@ -135,7 +141,7 @@ public class BabelTowerGuildBossLobbyDlg : Form
 				"maxnum",
 				num
 			});
-			msgBoxUI.SetMsg(new YesDelegate(this.OnCompleteGuildBossBatch), null, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnCompleteGuildBossBatch), null, textFromMessageBox, empty2, eMsgType.MB_OK_CANCEL, 2);
 			return;
 		}
 		this.OnCompleteGuildBossBatch(null);
@@ -155,6 +161,7 @@ public class BabelTowerGuildBossLobbyDlg : Form
 		SoldierBatch.SOLDIERBATCH.SaveGuildBossBatchSolInfo();
 		GS_NEWGUILD_BOSS_STARTBATTLE_REQ gS_NEWGUILD_BOSS_STARTBATTLE_REQ = new GS_NEWGUILD_BOSS_STARTBATTLE_REQ();
 		gS_NEWGUILD_BOSS_STARTBATTLE_REQ.i16Floor = SoldierBatch.GUILDBOSS_INFO.m_i16Floor;
+		gS_NEWGUILD_BOSS_STARTBATTLE_REQ.nCombinationUnique = NrTSingleton<SolCombination_BatchSelectInfoManager>.Instance.GetUserSelectedUniqeKey(0);
 		int num = 0;
 		for (int i = 0; i < 9; i++)
 		{
@@ -192,7 +199,7 @@ public class BabelTowerGuildBossLobbyDlg : Form
 		});
 		this.m_lBossHp.Text = empty;
 		float num = (float)SoldierBatch.GUILDBOSS_INFO.m_i32BossHP / (float)babelGuildBossinfo.m_nBossMaxHP;
-		this.m_dtHpBar.SetSize(390f * num, this.m_dtHpBar.GetSize().y);
+		this.m_dtHpBar.SetSize(400f * num, this.m_dtHpBar.GetSize().y);
 		string name = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(babelGuildBossinfo.m_nBossKind);
 		this.m_lBossName.Text = name;
 		string empty2 = string.Empty;
@@ -205,7 +212,7 @@ public class BabelTowerGuildBossLobbyDlg : Form
 			name
 		});
 		this.m_lBossTip.Text = empty2;
-		this.m_dtBoss.SetTexture(eCharImageType.LARGE, babelGuildBossinfo.m_nBossKind, 0);
+		this.m_dtBoss.SetTexture(eCharImageType.LARGE, babelGuildBossinfo.m_nBossKind, 0, string.Empty);
 		this.BattleUserCheck();
 	}
 

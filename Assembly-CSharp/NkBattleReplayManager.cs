@@ -25,6 +25,8 @@ public class NkBattleReplayManager : NrTSingleton<NkBattleReplayManager>
 
 	private bool m_bSaveReplay;
 
+	public bool m_bHiddenEnemyName;
+
 	public List<NkBattleReplay> m_SaveList;
 
 	private string m_szLoadFile = string.Empty;
@@ -311,6 +313,7 @@ public class NkBattleReplayManager : NrTSingleton<NkBattleReplayManager>
 	public void ReplayStart()
 	{
 		Battle.Replay = true;
+		Battle.PlayAddRate = 0f;
 		this.m_bReplay = true;
 		this.m_fReplayStartTime = Time.time;
 		if (this.m_szLoadFile != string.Empty)

@@ -32,7 +32,7 @@ public class MineTutorialStepDlg : Form
 	{
 		this.backImage = (base.GetControl("NPCTalk_BG") as DrawTexture);
 		this.m_CenterNpcImage = (base.GetControl("DrawTexture_NPCFace01") as DrawTexture);
-		this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, 242, -1);
+		this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, 242, -1, string.Empty);
 		this.m_CenterNpcName = (base.GetControl("NPCTalk_npcname") as Label);
 		this.m_CenterNpcName.Text = NrTSingleton<NrCharKindInfoManager>.Instance.GetName(242);
 		this.m_CenterNpcNameBack[0] = (base.GetControl("DrawTexture_NPCTalk_npcnameBG_left_line") as DrawTexture);
@@ -103,12 +103,12 @@ public class MineTutorialStepDlg : Form
 	{
 		if (this.m_CurStep == 1L)
 		{
-			SendPacket.GetInstance().SendIDType(1718);
+			SendPacket.GetInstance().SendIDType(1728);
 		}
 		else if (this.m_CurStep == 2L)
 		{
 			NrTSingleton<NkQuestManager>.Instance.NPCAutoMove(125);
-			SendPacket.GetInstance().SendIDType(1718);
+			SendPacket.GetInstance().SendIDType(1728);
 			this.Close();
 		}
 	}

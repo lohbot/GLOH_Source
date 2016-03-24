@@ -5,6 +5,7 @@ using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
 using TsBundle;
+using UnityEngine;
 using UnityForms;
 
 public class ExchangeItemDlg : Form
@@ -91,6 +92,7 @@ public class ExchangeItemDlg : Form
 		this.m_kList = (base.GetControl("newlistbox_itemexchange") as NewListBox);
 		this.m_kList.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickList));
 		this.m_kSelectItem = (base.GetControl("ImageView_equip") as ItemTexture);
+		this.m_kSelectItem.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSelectItem));
 		this.m_kMinus = (base.GetControl("Button_CountDown") as Button);
 		this.m_kMinus.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickMinus));
 		this.m_kPlus = (base.GetControl("Button_CountUp") as Button);
@@ -488,7 +490,7 @@ public class ExchangeItemDlg : Form
 		{
 			if (0 < current.m_nBuyPoint)
 			{
-				NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true, string.Empty);
 				string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(current.m_nItemUnique);
 				newListItem.SetListItemData(1, NrTSingleton<ItemManager>.Instance.GetItemTexture(current.m_nItemUnique), null, null, null);
 				newListItem.SetListItemData(2, itemNameByItemUnique, null, null, null);
@@ -569,7 +571,7 @@ public class ExchangeItemDlg : Form
 		{
 			if (0 < current.m_nExchangePoint)
 			{
-				NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_kList.ColumnNum, true, string.Empty);
 				string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(current.m_nItemUnique);
 				newListItem.SetListItemData(1, NrTSingleton<ItemManager>.Instance.GetItemTexture(current.m_nItemUnique), null, null, null);
 				newListItem.SetListItemData(2, itemNameByItemUnique, null, null, null);
@@ -627,6 +629,13 @@ public class ExchangeItemDlg : Form
 		}
 	}
 
+	public void Result()
+	{
+		this.ResultMessage();
+		this.UpdateUI();
+		this.ClickList(null);
+	}
+
 	public void ResultMessage()
 	{
 		if (this.m_eType == ExchangeItemDlg.TYPE.TYPE_EXCHANGE_TICKET)
@@ -674,5 +683,29 @@ public class ExchangeItemDlg : Form
 			Main_UI_SystemMessage.ADDMessage(empty2, SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 		}
 		this.m_nResultItemUnique = 0;
+	}
+
+	private void ClickSelectItem(IUIObject obj)
+	{
+		ItemTooltipDlg itemTooltipDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMTOOLTIP_DLG) as ItemTooltipDlg;
+		if (this.m_kSelectItem.Data is ITEM)
+		{
+			ITEM pkItem = (ITEM)this.m_kSelectItem.Data;
+			itemTooltipDlg.Set_Tooltip((G_ID)base.WindowID, pkItem, null, false);
+		}
+		else if (this.m_kSelectItem.Data is PointTable)
+		{
+			PointTable pointTable = (PointTable)this.m_kSelectItem.Data;
+			ITEM iTEM = new ITEM();
+			iTEM.Init();
+			iTEM.m_nItemUnique = pointTable.m_nItemUnique;
+			iTEM.m_nItemNum = 1;
+			itemTooltipDlg.Set_Tooltip((G_ID)base.WindowID, iTEM, null, false);
+		}
+		else
+		{
+			Debug.LogError("Can't Find Obj type");
+			itemTooltipDlg.Close();
+		}
 	}
 }

@@ -4,7 +4,7 @@ using TsLibs;
 
 public class NrTable_PointTable : NrTableBase
 {
-	public NrTable_PointTable(string strFilePath) : base(strFilePath, true)
+	public NrTable_PointTable(string strFilePath) : base(strFilePath)
 	{
 	}
 

@@ -23,6 +23,8 @@ public class SOL_GUIDE : NrTableData
 
 	public byte m_i8Legend;
 
+	public short m_i16LegendSort;
+
 	public SOL_GUIDE() : base(NrTableData.eResourceType.eRT_CHARSOL_GUIDE)
 	{
 		this.Init();
@@ -40,6 +42,7 @@ public class SOL_GUIDE : NrTableData
 		this.m_i32SkillText = 0;
 		this.m_i8Alchemy = 1;
 		this.m_i8Legend = 1;
+		this.m_i16LegendSort = 0;
 	}
 
 	public override void SetData(TsDataReader.Row row)

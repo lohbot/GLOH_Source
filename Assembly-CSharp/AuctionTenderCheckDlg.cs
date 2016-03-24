@@ -282,7 +282,7 @@ public class AuctionTenderCheckDlg : Form
 			"count",
 			num
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.MessageBoxMyCost), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1104"), empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MessageBoxMyCost), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1104"), empty, eMsgType.MB_OK_CANCEL, 2);
 		msgBoxUI.Show();
 	}
 

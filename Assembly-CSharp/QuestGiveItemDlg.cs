@@ -41,7 +41,7 @@ public class QuestGiveItemDlg : Form
 		this.listBox.SetColumnRect(1, 17, 17, 80, 80);
 		this.listBox.SetColumnRect(2, 114, 21, 240, 30, SpriteText.Anchor_Pos.Middle_Left, 22f);
 		this.listBox.SetColumnRect(3, 114, 62, 80, 25, SpriteText.Anchor_Pos.Middle_Left, 22f);
-		this.listBox.SetColumnRect(4, 150, 80, 80, 26, SpriteText.Anchor_Pos.Middle_Center, 22f);
+		this.listBox.SetColumnRect(4, 205, 60, 140, 35, SpriteText.Anchor_Pos.Middle_Center, 21f);
 		this.giveItemButton = (base.GetControl("Button_ok") as Button);
 		this.giveItemButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickGiveItem));
 		for (int i = 0; i < 3; i++)
@@ -109,7 +109,7 @@ public class QuestGiveItemDlg : Form
 						listItem.SetColumnGUIContent(3, this.m_State.kQuest.GetQuestCommon().cQuestCondition[i].i64ParamVal.ToString() + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("442"));
 						if (Protocol_Item.Is_EquipItem(this.m_ItemUISet[i].m_Item.m_nItemUnique))
 						{
-							listItem.SetColumnGUIContent(4, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1522"), "Win_B_BasicBtnSS", i, new EZValueChangedDelegate(this.OnChange));
+							listItem.SetColumnGUIContent(4, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1522"), "Win_B_NewTileBtnOrange", i, new EZValueChangedDelegate(this.OnChange));
 						}
 						else
 						{

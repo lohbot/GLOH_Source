@@ -10,7 +10,7 @@ public class CExchangeJewelry : CNpcUI
 		this.m_kMenu[3] = new NPC_UI();
 		this.m_kMenu[4] = new NPC_UI();
 		this.m_kMenu[5] = new NPC_UI();
-		if (NrTSingleton<ContentsLimitManager>.Instance.IsExploration())
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsExchangeJewelry())
 		{
 			string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2596");
 			this.m_kMenu[0].strMenu = textFromInterface;

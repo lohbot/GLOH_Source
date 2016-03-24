@@ -2,6 +2,7 @@ using GameMessage;
 using SERVICE;
 using System;
 using System.Text;
+using TsBundle;
 using UnityEngine;
 
 namespace UnityForms
@@ -25,6 +26,8 @@ namespace UnityForms
 		public string AttachEffectKeyName = "child_effect";
 
 		public string UIBundleTag = "UI_BUNDLE";
+
+		public bool bLangMode;
 
 		public bool NoticeStoryChat;
 
@@ -261,7 +264,7 @@ namespace UnityForms
 
 		public static bool IsUse256Texture()
 		{
-			return TsPlatform.IsLowSystemMemory || NrGlobalReference.IsLiteVersion() || TsPlatform.IsIPhone;
+			return true;
 		}
 
 		public Vector3 GetEffectUIPos(Vector2 ScreenPos)
@@ -296,14 +299,14 @@ namespace UnityForms
 			{
 				return;
 			}
-			if (autoSpriteControlBase.GetSize().x == 115f)
+			if (autoSpriteControlBase.GetSize().x == 115f || autoSpriteControlBase.GetSize().x == 116f)
 			{
 				obj.transform.localScale = new Vector3(1.6f, 1.6f, 1f);
 				obj.transform.localPosition = new Vector3(58f, -58f, obj.transform.localPosition.z);
-				Transform transform = obj.transform.FindChild("fx_aura_01");
-				if (null != transform)
+				Transform child = NkUtil.GetChild(obj.transform, "fx_aura_01");
+				if (null != child)
 				{
-					transform.transform.localPosition = new Vector3(58f, -58f, transform.transform.localPosition.z);
+					child.transform.localPosition = new Vector3(-31.5f, -30f, child.transform.localPosition.z);
 				}
 			}
 			else if (autoSpriteControlBase.GetSize().x == 504f && autoSpriteControlBase.GetSize().y == 448f)
@@ -342,68 +345,68 @@ namespace UnityForms
 					{
 						if (strCheckString[i] < 'a' || strCheckString[i] > 'z')
 						{
-							if ((eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORQA && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORTSTORE && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORNAVER && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_BANDNAVER && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_BANDGOOGLE && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORKAKAO && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KAKAOTSTORE && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORLOCAL && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORQA && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORAPPSTORE && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORKAKAO) || strCheckString[i] < '가' || strCheckString[i] > '힣')
+							if ((eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL_MOBILE && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORQA && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORTSTORE && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORNAVER && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_BANDNAVER && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_BANDGOOGLE && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KORKAKAO && eCurrentService != eSERVICE_AREA.SERVICE_ANDROID_KAKAOTSTORE && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORLOCAL && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORQA && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORAPPSTORE && eCurrentService != eSERVICE_AREA.SERVICE_IOS_KORKAKAO) || strCheckString[i] < '가' || strCheckString[i] > '힣')
 							{
 								if (eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_GLOBALCHNQA || eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_GLOBALCHNLOCAL || eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_CNLOCAL || eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_CNQA || eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_CNTEST || eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_CNREVIEW || eCurrentService == eSERVICE_AREA.SERVICE_IOS_CNQA || eCurrentService == eSERVICE_AREA.SERVICE_IOS_CNTEST)
 								{
 									if (strCheckString[i] >= '⺀' && strCheckString[i] <= '⻿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '\u3000' && strCheckString[i] <= '〿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '㌀' && strCheckString[i] <= '㏿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '㐀' && strCheckString[i] <= '䶵')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '一' && strCheckString[i] <= '鿿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '豈' && strCheckString[i] <= '﫿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 								}
 								if (eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_JPQA || eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_JPQALINE || eCurrentService == eSERVICE_AREA.SERVICE_ANDROID_JPLINE || eCurrentService == eSERVICE_AREA.SERVICE_IOS_JPQA || eCurrentService == eSERVICE_AREA.SERVICE_IOS_JPQALINE || eCurrentService == eSERVICE_AREA.SERVICE_IOS_JPLINE)
 								{
 									if (strCheckString[i] >= '぀' && strCheckString[i] <= 'ゟ')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '゠' && strCheckString[i] <= 'ヿ')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= 'ㇰ' && strCheckString[i] <= 'ㇿ')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '！' && strCheckString[i] <= 'ﾟ')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '㌀' && strCheckString[i] <= '㏿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '㐀' && strCheckString[i] <= '䶵')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '一' && strCheckString[i] <= '鿿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 									if (strCheckString[i] >= '豈' && strCheckString[i] <= '﫿')
 									{
-										goto IL_385;
+										goto IL_38D;
 									}
 								}
 								return true;
@@ -411,13 +414,93 @@ namespace UnityForms
 						}
 					}
 				}
-				IL_385:;
+				IL_38D:;
 			}
 			return false;
 		}
 
-		public static void SaveLineImagFile(Texture2D texture, object obj)
+		public static void SaveLineGameFriendImagFile(Texture2D texture, object obj)
 		{
+		}
+
+		public static void SaveLineFriendImagFile(Texture2D texture, object obj)
+		{
+		}
+
+		public void LoadUITexture()
+		{
+		}
+
+		public void SetUITextureMaterial(WWWItem _item, object _param)
+		{
+			if (this == null)
+			{
+				return;
+			}
+			if (_item.isCanceled)
+			{
+				return;
+			}
+			if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+			{
+				Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+				if (null != texture2D)
+				{
+					Material material = (Material)CResources.Load(NrTSingleton<UIDataManager>.Instance.GetString(UIDataManager.filePath, "Material/AT2 Texture01 1024 mobile"));
+					if (null != material)
+					{
+						material.mainTexture = texture2D;
+					}
+				}
+			}
+		}
+
+		public void SetItemTextureMaterial(WWWItem _item, object _param)
+		{
+			if (this == null)
+			{
+				return;
+			}
+			if (_item.isCanceled)
+			{
+				return;
+			}
+			if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+			{
+				Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+				if (null != texture2D)
+				{
+					Material material = (Material)CResources.Load(NrTSingleton<UIDataManager>.Instance.GetString(UIDataManager.filePath, "Material/Item_Icon/Item001_mobile"));
+					if (null != material)
+					{
+						material.mainTexture = texture2D;
+					}
+				}
+			}
+		}
+
+		public void SetBattleSkillTextureMaterial(WWWItem _item, object _param)
+		{
+			if (this == null)
+			{
+				return;
+			}
+			if (_item.isCanceled)
+			{
+				return;
+			}
+			if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+			{
+				Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+				if (null != texture2D)
+				{
+					Material material = (Material)CResources.Load(NrTSingleton<UIDataManager>.Instance.GetString(UIDataManager.filePath, "Material/BattleSkill_Icon/BattleSkill001_mobile"));
+					if (null != material)
+					{
+						material.mainTexture = texture2D;
+					}
+				}
+			}
 		}
 	}
 }

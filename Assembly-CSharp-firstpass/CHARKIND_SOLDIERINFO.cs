@@ -5,6 +5,8 @@ public class CHARKIND_SOLDIERINFO : NrTableData
 {
 	public string CharCode = string.Empty;
 
+	public int i32BaseCharKind;
+
 	public byte bBaseRank;
 
 	public long i64NeedMoney;
@@ -24,6 +26,7 @@ public class CHARKIND_SOLDIERINFO : NrTableData
 	{
 		this.CharCode = string.Empty;
 		this.bBaseRank = 0;
+		this.i32BaseCharKind = 0;
 		for (int i = 0; i < 5; i++)
 		{
 			this.kElement_CharData[i].InitData();

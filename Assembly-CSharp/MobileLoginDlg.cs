@@ -15,7 +15,6 @@ public class MobileLoginDlg : Form
 		Form form = this;
 		form.TopMost = true;
 		instance.LoadFileAll(ref form, "Login/DLG_MobileLogin", G_ID.MOBILELOGIN_DLG, false);
-		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMMALL_DLG);
 		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.LOGINRATING_DLG);
 	}
 

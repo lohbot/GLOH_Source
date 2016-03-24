@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableCharKindClassInfo : NrTableBase
 {
-	public NkTableCharKindClassInfo() : base(CDefinePath.CHARKIND_CLASSINFO_URL, true)
+	public NkTableCharKindClassInfo() : base(CDefinePath.CHARKIND_CLASSINFO_URL)
 	{
 		NrTSingleton<NrCharKindInfoManager>.Instance.SetClassTypeCodeInfo("CLS_ALL", 9223372036854775807L);
 	}

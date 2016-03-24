@@ -10,10 +10,10 @@ public static class TsFix
 	[DebuggerHidden]
 	private static IEnumerable<AudioSource> _FindAudioSources(Transform target)
 	{
-		TsFix.<_FindAudioSources>c__Iterator25 <_FindAudioSources>c__Iterator = new TsFix.<_FindAudioSources>c__Iterator25();
+		TsFix.<_FindAudioSources>c__Iterator27 <_FindAudioSources>c__Iterator = new TsFix.<_FindAudioSources>c__Iterator27();
 		<_FindAudioSources>c__Iterator.target = target;
 		<_FindAudioSources>c__Iterator.<$>target = target;
-		TsFix.<_FindAudioSources>c__Iterator25 expr_15 = <_FindAudioSources>c__Iterator;
+		TsFix.<_FindAudioSources>c__Iterator27 expr_15 = <_FindAudioSources>c__Iterator;
 		expr_15.$PC = -2;
 		return expr_15;
 	}

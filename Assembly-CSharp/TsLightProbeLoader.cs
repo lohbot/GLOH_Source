@@ -28,11 +28,11 @@ public class TsLightProbeLoader : MonoBehaviour
 	[DebuggerHidden]
 	public IEnumerable Load(string path)
 	{
-		TsLightProbeLoader.<Load>c__Iterator6A <Load>c__Iterator6A = new TsLightProbeLoader.<Load>c__Iterator6A();
-		<Load>c__Iterator6A.path = path;
-		<Load>c__Iterator6A.<$>path = path;
-		<Load>c__Iterator6A.<>f__this = this;
-		TsLightProbeLoader.<Load>c__Iterator6A expr_1C = <Load>c__Iterator6A;
+		TsLightProbeLoader.<Load>c__Iterator70 <Load>c__Iterator = new TsLightProbeLoader.<Load>c__Iterator70();
+		<Load>c__Iterator.path = path;
+		<Load>c__Iterator.<$>path = path;
+		<Load>c__Iterator.<>f__this = this;
+		TsLightProbeLoader.<Load>c__Iterator70 expr_1C = <Load>c__Iterator;
 		expr_1C.$PC = -2;
 		return expr_1C;
 	}

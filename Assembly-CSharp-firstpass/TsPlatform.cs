@@ -1,3 +1,4 @@
+using GameMessage;
 using SERVICE;
 using System;
 using System.IO;
@@ -40,7 +41,7 @@ public static class TsPlatform
 
 		void PlayMovieAtPath(string path, float fVolume = 1f);
 
-		void PlayMovieURL(string url, Color bgColor, bool bShowToast = true, float fVolum = 1f);
+		void PlayMovieURL(string url, Color bgColor, bool bIsBGMMute, bool bShowToast = true, float fVolum = 1f);
 
 		void RePlayMovieAlertMsg();
 
@@ -103,6 +104,8 @@ public static class TsPlatform
 		bool isEmulator();
 
 		bool isEmulatorTest();
+
+		string isMacro();
 
 		void PlatformLoginComplete();
 
@@ -236,7 +239,7 @@ public static class TsPlatform
 		{
 		}
 
-		public void PlayMovieURL(string url, Color bgColor, bool bShowToast = true, float fVolum = 1f)
+		public void PlayMovieURL(string url, Color bgColor, bool bIsBGMMute, bool bShowToast = true, float fVolum = 1f)
 		{
 		}
 
@@ -375,6 +378,11 @@ public static class TsPlatform
 			return false;
 		}
 
+		public string isMacro()
+		{
+			return string.Empty;
+		}
+
 		public void PlatformLoginComplete()
 		{
 		}
@@ -441,7 +449,7 @@ public static class TsPlatform
 		{
 		}
 
-		public virtual void PlayMovieURL(string url, Color bgColor, bool bShowToast = true, float fVolum = 1f)
+		public virtual void PlayMovieURL(string url, Color bgColor, bool bIsBGMMute, bool bShowToast = true, float fVolum = 1f)
 		{
 		}
 
@@ -549,6 +557,11 @@ public static class TsPlatform
 			return false;
 		}
 
+		public virtual string isMacro()
+		{
+			return string.Empty;
+		}
+
 		public virtual void PlatformLoginComplete()
 		{
 		}
@@ -567,13 +580,13 @@ public static class TsPlatform
 			return string.Empty;
 		}
 
-		public virtual void ShowToast(string sms)
-		{
-		}
-
 		public virtual string GetIPAddress()
 		{
 			return string.Empty;
+		}
+
+		public virtual void ShowToast(string sms)
+		{
 		}
 
 		public virtual string GetPhonyNumber()
@@ -679,11 +692,15 @@ public static class TsPlatform
 			Debug.LogWarning("AndroidOperator._strIdentifierName ====>>> " + TsPlatform.AndroidOperator._strIdentifierName);
 		}
 
-		public override void PlayMovieURL(string url, Color bgColor, bool bShowToast = true, float fVolum = 1f)
+		public override void PlayMovieURL(string url, Color bgColor, bool bIsBGMMute, bool bShowToast = true, float fVolum = 1f)
 		{
 			if (TsPlatform.IsEditor)
 			{
 				return;
+			}
+			if (bIsBGMMute && url.Contains("mp4"))
+			{
+				fVolum = 0f;
 			}
 			using (AndroidJavaClass androidJavaClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
 			{
@@ -696,6 +713,7 @@ public static class TsPlatform
 						bShowToast,
 						fVolum
 					});
+					MsgHandler.Handle("PlayMovieTime", new object[0]);
 				}
 			}
 		}
@@ -1239,7 +1257,7 @@ public static class TsPlatform
 				return;
 			}
 			eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
-			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORQA || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORTSTORE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORNAVER || currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_BANDNAVER)
+			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE)
 			{
 				using (AndroidJavaClass androidJavaClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
 				{
@@ -1271,6 +1289,29 @@ public static class TsPlatform
 					using (AndroidJavaClass androidJavaClass2 = new AndroidJavaClass(TsPlatform.AndroidOperator._strIdentifierName))
 					{
 						result = androidJavaClass2.CallStatic<bool>("isEmulator", new object[]
+						{
+							@static
+						});
+					}
+				}
+			}
+			return result;
+		}
+
+		public override string isMacro()
+		{
+			if (TsPlatform.IsEditor)
+			{
+				return string.Empty;
+			}
+			string result;
+			using (AndroidJavaClass androidJavaClass = new AndroidJavaClass("com.unity3d.player.UnityPlayer"))
+			{
+				using (AndroidJavaObject @static = androidJavaClass.GetStatic<AndroidJavaObject>("currentActivity"))
+				{
+					using (AndroidJavaClass androidJavaClass2 = new AndroidJavaClass(TsPlatform.AndroidOperator._strIdentifierName))
+					{
+						result = androidJavaClass2.CallStatic<string>("isMacro", new object[]
 						{
 							@static
 						});

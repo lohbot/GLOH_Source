@@ -86,7 +86,7 @@ public class NkAutoRelogin : NrTSingleton<NkAutoRelogin>
 	public void No_Delegate(object a_oObject)
 	{
 		Debug.LogWarning("Quit application");
-		NrTSingleton<NrMainSystem>.Instance.QuitGame();
+		NrTSingleton<NrMainSystem>.Instance.QuitGame(true);
 		this.bRequestRelogin = false;
 	}
 
@@ -108,7 +108,7 @@ public class NkAutoRelogin : NrTSingleton<NkAutoRelogin>
 		}
 		else if (TsPlatform.IsIPhone)
 		{
-			msgBoxUI.SetMsg(new YesDelegate(this.Yes_Delegate), null, textFromMessageBox, textFromMessageBox2, eMsgType.MB_OK);
+			msgBoxUI.SetMsg(new YesDelegate(this.Yes_Delegate), null, textFromMessageBox, textFromMessageBox2, eMsgType.MB_OK, 2);
 			msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2083"));
 		}
 		else
@@ -158,6 +158,10 @@ public class NkAutoRelogin : NrTSingleton<NkAutoRelogin>
 			if (this.bRequestRelogin)
 			{
 				return;
+			}
+			if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.WAIT_DLG))
+			{
+				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.WAIT_DLG);
 			}
 			this.m_eAutoReloginState = NkAutoRelogin.eAUTORELOGIN_STATE.E_AUTORELOGIN_STATE_RECONNECTING;
 			this.bRequestRelogin = false;

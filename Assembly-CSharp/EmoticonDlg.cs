@@ -1,15 +1,15 @@
 using System;
+using System.Collections.Generic;
+using UnityEngine;
 using UnityForms;
 
 public class EmoticonDlg : Form
 {
-	private Button[] _btEmotion = new Button[20];
-
-	private Label[] _lbEmoticon = new Label[20];
-
-	private FlashLabel[] _flbEmoticon = new FlashLabel[20];
+	private NewListBox _nlbEmo;
 
 	private CHAT_TYPE m_eChatType;
+
+	private float fTime = Time.realtimeSinceStartup + 0.5f;
 
 	public override void InitializeComponent()
 	{
@@ -17,31 +17,48 @@ public class EmoticonDlg : Form
 		Form form = this;
 		form.TopMost = true;
 		instance.LoadFileAll(ref form, "Chat/DLG_Emoticon", G_ID.EMOTICON_DLG, true);
+		form.AlwaysUpdate = true;
 	}
 
 	public override void SetComponent()
 	{
-		for (int i = 0; i < this._btEmotion.Length; i++)
+		Dictionary<string, UIEmoticonInfo> uIEmoticonDictionary = NrTSingleton<UIEmoticonManager>.Instance.UIEmoticonDictionary;
+		this._nlbEmo = (base.GetControl("NLB_Emo") as NewListBox);
+		NewListItem newListItem = new NewListItem(this._nlbEmo.ColumnNum, true, string.Empty);
+		int num = 0;
+		foreach (KeyValuePair<string, UIEmoticonInfo> current in uIEmoticonDictionary)
 		{
-			this._btEmotion[i] = (base.GetControl("Main_I_ChatE" + i.ToString()) as Button);
-			Button expr_33 = this._btEmotion[i];
-			expr_33.Click = (EZValueChangedDelegate)Delegate.Combine(expr_33.Click, new EZValueChangedDelegate(this.OnClickEmoticon));
-			this._lbEmoticon[i] = (base.GetControl("Label_I_ChatE" + i.ToString()) as Label);
-			this._btEmotion[i].data = "^" + this._lbEmoticon[i].Text;
-			this._flbEmoticon[i] = (base.GetControl("FlashLabel_I_ChatE" + i.ToString()) as FlashLabel);
-			this._flbEmoticon[i].SetFlashLabel((string)this._btEmotion[i].data);
+			int num2 = num * 3;
+			string text = current.Key;
+			text = text.Replace("^", string.Empty);
+			newListItem.SetListItemData(num2, string.Empty, current.Key, new EZValueChangedDelegate(this.OnClickEmoticon), null);
+			newListItem.SetListItemData(num2 + 1, current.Key, null, null, null);
+			newListItem.SetListItemData(num2 + 2, text, null, null, null);
+			num++;
+			if (num >= 3)
+			{
+				num = 0;
+				this._nlbEmo.Add(newListItem);
+				newListItem = new NewListItem(this._nlbEmo.ColumnNum, true, string.Empty);
+			}
 		}
+		this._nlbEmo.RepositionItems();
+		this.fTime = Time.realtimeSinceStartup + 0.5f;
+	}
+
+	public override void OnLoad()
+	{
+		base.OnLoad();
 	}
 
 	private void OnClickEmoticon(IUIObject obj)
 	{
-		Button button = obj as Button;
-		if (this.m_eChatType == CHAT_TYPE.BABELPARTY)
+		if (this.m_eChatType == CHAT_TYPE.BABELPARTY || this.m_eChatType == CHAT_TYPE.MYTHRAID)
 		{
 			BabelTower_ChatDlg babelTower_ChatDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BABELTOWER_CHAT) as BabelTower_ChatDlg;
 			if (babelTower_ChatDlg != null)
 			{
-				babelTower_ChatDlg.AddChatText((string)button.data);
+				babelTower_ChatDlg.AddChatText((string)obj.Data);
 			}
 		}
 		else if (this.m_eChatType == CHAT_TYPE.NUM)
@@ -49,7 +66,7 @@ public class EmoticonDlg : Form
 			New_Whisper_Dlg new_Whisper_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.WHISPER_DLG) as New_Whisper_Dlg;
 			if (new_Whisper_Dlg != null)
 			{
-				new_Whisper_Dlg.AddChatText((string)button.data);
+				new_Whisper_Dlg.AddChatText((string)obj.Data);
 			}
 		}
 		else if (this.m_eChatType == CHAT_TYPE.STORYCHAT)
@@ -57,12 +74,12 @@ public class EmoticonDlg : Form
 			StoryChatDetailDlg storyChatDetailDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.STORYCHATDETAIL_DLG) as StoryChatDetailDlg;
 			if (storyChatDetailDlg != null)
 			{
-				storyChatDetailDlg.AddComment((string)button.data);
+				storyChatDetailDlg.AddComment((string)obj.Data);
 			}
 		}
 		else
 		{
-			ChatManager.AddChatText((string)button.data);
+			ChatManager.AddChatText((string)obj.Data);
 		}
 	}
 
@@ -83,6 +100,33 @@ public class EmoticonDlg : Form
 		if (new_Whisper_Dlg != null)
 		{
 			new_Whisper_Dlg.InteractivePanel.twinFormID = G_ID.NONE;
+		}
+	}
+
+	public override void Update()
+	{
+		if (this.fTime > Time.realtimeSinceStartup)
+		{
+			return;
+		}
+		if (TsPlatform.IsEditor)
+		{
+			if (NkInputManager.GetMouseButtonUp(0) || NkInputManager.GetMouseButtonUp(1))
+			{
+				G_ID g_ID = (G_ID)NrTSingleton<FormsManager>.Instance.MouseOverFormID();
+				if (!NrTSingleton<FormsManager>.Instance.IsMouseOverForm() || g_ID != G_ID.EMOTICON_DLG)
+				{
+					this.Close();
+				}
+			}
+		}
+		else if (TsPlatform.IsMobile && Input.touchCount > 0 && Input.GetTouch(0).phase == TouchPhase.Ended)
+		{
+			G_ID g_ID2 = (G_ID)NrTSingleton<FormsManager>.Instance.MouseOverFormID();
+			if (!NrTSingleton<FormsManager>.Instance.IsMouseOverForm() || g_ID2 != G_ID.EMOTICON_DLG)
+			{
+				this.Close();
+			}
 		}
 	}
 }

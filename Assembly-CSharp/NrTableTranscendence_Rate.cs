@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableTranscendence_Rate : NrTableBase
 {
-	public NrTableTranscendence_Rate() : base(CDefinePath.TRANSCENDENCE_RATE_URL, true)
+	public NrTableTranscendence_Rate() : base(CDefinePath.TRANSCENDENCE_RATE_URL)
 	{
 	}
 

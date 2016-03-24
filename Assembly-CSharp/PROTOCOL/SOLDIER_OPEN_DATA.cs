@@ -21,5 +21,7 @@ namespace PROTOCOL
 		public int i32HeartRate;
 
 		public short i16SolRecruitImageIndex;
+
+		public int i32ItemUnique;
 	}
 }

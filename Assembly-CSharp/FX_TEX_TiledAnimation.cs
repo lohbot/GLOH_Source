@@ -129,9 +129,9 @@ public class FX_TEX_TiledAnimation : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator Start()
 	{
-		FX_TEX_TiledAnimation.<Start>c__Iterator66 <Start>c__Iterator = new FX_TEX_TiledAnimation.<Start>c__Iterator66();
-		<Start>c__Iterator.<>f__this = this;
-		return <Start>c__Iterator;
+		FX_TEX_TiledAnimation.<Start>c__Iterator6C <Start>c__Iterator6C = new FX_TEX_TiledAnimation.<Start>c__Iterator6C();
+		<Start>c__Iterator6C.<>f__this = this;
+		return <Start>c__Iterator6C;
 	}
 
 	private void OnDisable()

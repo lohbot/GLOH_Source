@@ -33,7 +33,7 @@ public class GameGuideCertifyEMAIL : GameGuideInfo
 		{
 			return false;
 		}
-		if (1L < kMyCharInfo.m_nActivityPoint)
+		if (1L < kMyCharInfo.m_nActivityPoint && NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 		{
 			return false;
 		}

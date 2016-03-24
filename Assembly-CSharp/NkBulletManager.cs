@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class NkBulletManager : NrTSingleton<NkBulletManager>
 {
@@ -52,7 +53,14 @@ public class NkBulletManager : NrTSingleton<NkBulletManager>
 		BULLET_INFO bulletInfo = this.GetBulletInfo(szBullet_KIND);
 		if (bulletInfo == null)
 		{
-			TsLog.Assert(false, "Bullet Create Fail " + pkSourceChar.Get3DName() + " Kind : " + szBullet_KIND, new object[0]);
+			if (TsPlatform.IsEditor)
+			{
+				Debug.LogError("Bullet Create Fail " + pkSourceChar.Get3DName() + " Kind : " + szBullet_KIND);
+			}
+			else
+			{
+				TsLog.Assert(false, "Bullet Create Fail " + pkSourceChar.Get3DName() + " Kind : " + szBullet_KIND, new object[0]);
+			}
 			return false;
 		}
 		NkBulletUnit nkBulletUnit = new NkBulletUnit();

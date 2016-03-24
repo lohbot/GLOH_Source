@@ -4,23 +4,30 @@ using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
 using System;
 using TsBundle;
+using UnityEngine;
 using UnityForms;
 
 public class MineSearchDlg : Form
 {
+	private Button m_btBack;
+
 	private DrawTexture m_dtBG;
 
 	private Button m_btList;
 
 	private Button m_btClose;
 
-	private Button[] m_btSearchGrade = new Button[5];
+	private Button[] m_btSearchGrade = new Button[6];
 
 	private Label m_lagoMineJoinCount;
 
-	private Label[] m_laSearchGradeName = new Label[5];
+	private Label[] m_laSearchGradeName = new Label[6];
 
-	private DrawTexture[] m_dtSearchGradeTextBG = new DrawTexture[5];
+	private DrawTexture[] m_dtSearchGradeTextBG = new DrawTexture[6];
+
+	private DrawTexture m_dtMine05BG;
+
+	private DrawTexture m_dtMine05BG_Background;
 
 	private Button m_btMineGuideWebcall;
 
@@ -35,37 +42,47 @@ public class MineSearchDlg : Form
 		base.Scale = true;
 		instance.LoadFileAll(ref form, "Mine/DLG_MineExploration", G_ID.MINE_SEARCH_DLG, false, true);
 		base.ShowBlackBG(1f);
+		NrTSingleton<GuildWarManager>.Instance.Send_GS_GUILDWAR_IS_WAR_TIME_REQ();
 	}
 
 	public override void SetComponent()
 	{
+		this.m_btBack = (base.GetControl("BT_Back") as Button);
+		Button expr_1C = this.m_btBack;
+		expr_1C.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C.Click, new EZValueChangedDelegate(this.OnClickBack));
 		this.m_dtBG = (base.GetControl("DT_SubBG") as DrawTexture);
 		this.m_dtBG.SetTextureFromBundle("UI/Mine/bg_mineexploration");
 		this.m_btList = (base.GetControl("BT_MineList01") as Button);
-		Button expr_42 = this.m_btList;
-		expr_42.Click = (EZValueChangedDelegate)Delegate.Combine(expr_42.Click, new EZValueChangedDelegate(this.OnClickCurrentState));
+		Button expr_7F = this.m_btList;
+		expr_7F.Click = (EZValueChangedDelegate)Delegate.Combine(expr_7F.Click, new EZValueChangedDelegate(this.OnClickCurrentState));
 		this.m_btClose = (base.GetControl("BT_MineExit01") as Button);
-		Button expr_7F = this.m_btClose;
-		expr_7F.Click = (EZValueChangedDelegate)Delegate.Combine(expr_7F.Click, new EZValueChangedDelegate(this.OnClickClose));
+		Button expr_BC = this.m_btClose;
+		expr_BC.Click = (EZValueChangedDelegate)Delegate.Combine(expr_BC.Click, new EZValueChangedDelegate(this.OnClickClose));
 		this.m_lagoMineJoinCount = (base.GetControl("LB_Text02") as Label);
-		for (byte b = 1; b < 5; b += 1)
+		this.m_dtMine05BG = (base.GetControl("DT_Mine05BG") as DrawTexture);
+		this.m_dtMine05BG_Background = (base.GetControl("DrawTexture_TitleBGBottomLeft") as DrawTexture);
+		for (byte b = 1; b < 6; b += 1)
 		{
 			this.m_laSearchGradeName[(int)b] = (base.GetControl(string.Format("LB_MineName0{0}", b)) as Label);
+			BoxCollider boxCollider = (BoxCollider)this.m_laSearchGradeName[(int)b].GetComponent(typeof(BoxCollider));
+			if (null != boxCollider)
+			{
+				UnityEngine.Object.Destroy(boxCollider);
+			}
 			this.m_btSearchGrade[(int)b] = (base.GetControl(string.Format("BT_Mine0{0}", b)) as Button);
 			this.m_dtSearchGradeTextBG[(int)b] = (base.GetControl(string.Format("DT_Mine0{0}_TextBG02", b)) as DrawTexture);
 			this.m_btSearchGrade[(int)b].Data = b;
-			Button expr_141 = this.m_btSearchGrade[(int)b];
-			expr_141.Click = (EZValueChangedDelegate)Delegate.Combine(expr_141.Click, new EZValueChangedDelegate(this.OnBtnClickSearch));
+			Button expr_1D9 = this.m_btSearchGrade[(int)b];
+			expr_1D9.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1D9.Click, new EZValueChangedDelegate(this.OnBtnClickSearch));
 			if (!NrTSingleton<ContentsLimitManager>.Instance.IsValidMineGrade(b))
 			{
-				this.m_btSearchGrade[(int)b].Hide(true);
-				this.m_laSearchGradeName[(int)b].Hide(true);
-				this.m_dtSearchGradeTextBG[(int)b].Hide(true);
+				this.SetGrade(b, false);
 			}
 		}
+		this.SetGrade(5, false);
 		this.m_btMineGuideWebcall = (base.GetControl("BT_MineExit01") as Button);
-		Button expr_1C4 = this.m_btMineGuideWebcall;
-		expr_1C4.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1C4.Click, new EZValueChangedDelegate(this.OnClickMineGuideWebCall));
+		Button expr_242 = this.m_btMineGuideWebcall;
+		expr_242.Click = (EZValueChangedDelegate)Delegate.Combine(expr_242.Click, new EZValueChangedDelegate(this.OnClickMineGuideWebCall));
 		if (this.m_btMineGuideWebcall != null)
 		{
 			this.m_btMineGuideWebcall.Visible = false;
@@ -105,12 +122,28 @@ public class MineSearchDlg : Form
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "CLOSE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 	}
 
+	public void SetGrade(byte grade, bool IsVisible)
+	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsValidMineGrade(grade))
+		{
+			IsVisible = false;
+		}
+		this.m_btSearchGrade[(int)grade].Hide(!IsVisible);
+		this.m_laSearchGradeName[(int)grade].Hide(!IsVisible);
+		this.m_dtSearchGradeTextBG[(int)grade].Hide(!IsVisible);
+		if (grade == 5)
+		{
+			this.m_dtMine05BG.Hide(!IsVisible);
+			this.m_dtMine05BG_Background.Hide(!IsVisible);
+		}
+	}
+
 	public void SetTextUI()
 	{
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		string text = string.Empty;
 		string text2 = string.Empty;
-		for (byte b = 1; b < 5; b += 1)
+		for (byte b = 1; b < 6; b += 1)
 		{
 			string szColorNum = string.Empty;
 			MINE_DATA mineDataFromGrade = BASE_MINE_DATA.GetMineDataFromGrade(b);
@@ -129,14 +162,14 @@ public class MineSearchDlg : Form
 			this.m_laSearchGradeName[(int)b].SetText(text2);
 		}
 		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1832");
-		MINE_CONSTANT_Manager instance = MINE_CONSTANT_Manager.GetInstance();
+		int mineDayLimitCount = NrTSingleton<MineManager>.Instance.GetMineDayLimitCount();
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 		{
 			text,
 			"count1",
-			kMyCharInfo.GetCharDetail(8),
+			mineDayLimitCount - NrTSingleton<MineManager>.Instance.GetMineJoinCount(),
 			"count2",
-			instance.GetValue(eMINE_CONSTANT.eMINE_DAY_COUNT)
+			mineDayLimitCount
 		});
 		this.m_lagoMineJoinCount.SetText(text2);
 	}
@@ -186,16 +219,9 @@ public class MineSearchDlg : Form
 			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
-		long num = 0L;
-		MINE_CONSTANT_Manager instance = MINE_CONSTANT_Manager.GetInstance();
-		if (instance != null)
+		if (!NrTSingleton<MineManager>.Instance.IsEnoughMineJoinCount())
 		{
-			num = (long)instance.GetValue(eMINE_CONSTANT.eMINE_DAY_COUNT);
-		}
-		if (num > 0L && kMyCharInfo.GetCharDetail(8) >= num)
-		{
-			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405");
-			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		if (!NrTSingleton<ContentsLimitManager>.Instance.IsValidMineGrade(b))
@@ -215,26 +241,33 @@ public class MineSearchDlg : Form
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(mineDataFromGrade.MINE_GRADE_INTERFACEKEY)
 		});
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnSearch), b, title, message, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnSearch), b, title, message, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnSearch(object obj)
 	{
-		byte bySearchMineGrade = (byte)obj;
+		byte b = (byte)obj;
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsNewGuildWarLimit() && b == 5)
+		{
+			return;
+		}
 		GS_MINE_SEARCH_REQ gS_MINE_SEARCH_REQ = new GS_MINE_SEARCH_REQ();
-		gS_MINE_SEARCH_REQ.bySearchMineGrade = bySearchMineGrade;
+		gS_MINE_SEARCH_REQ.bSearchMineGrade = b;
 		gS_MINE_SEARCH_REQ.m_nMineID = 0L;
 		gS_MINE_SEARCH_REQ.m_nGuildID = 0L;
 		gS_MINE_SEARCH_REQ.m_nMode = 1;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MINE_SEARCH_REQ, gS_MINE_SEARCH_REQ);
 	}
 
+	public void OnClickBack(IUIObject obj)
+	{
+		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_GUILD_CURRENTSTATUSINFO_DLG);
+		this.Close();
+	}
+
 	public void OnClickCurrentState(IUIObject obj)
 	{
-		GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ = new GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ();
-		gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ.i64GuildID = NrTSingleton<NewGuildManager>.Instance.GetGuildID();
-		gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ.i32Page = 1;
-		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ, gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ);
+		NrTSingleton<MineManager>.Instance.Send_GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ(1, 1, 0L);
 	}
 
 	public void OnClickClose(IUIObject obj)

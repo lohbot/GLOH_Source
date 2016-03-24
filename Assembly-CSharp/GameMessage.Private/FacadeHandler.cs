@@ -28,10 +28,6 @@ namespace GameMessage.Private
 			MsgHandler.SetMsgHandler(new DefaultHandler());
 		}
 
-		public static void Init()
-		{
-		}
-
 		public static bool EndPreDownload()
 		{
 			FacadeHandler.MoveStage(Scene.Type.NPATCH_DOWNLOAD);
@@ -210,6 +206,7 @@ namespace GameMessage.Private
 
 		public static bool Rcv_LOGIN_USER_ACK()
 		{
+			Application.targetFrameRate = -1;
 			if (TsPlatform.IsWeb)
 			{
 				FacadeHandler.MoveStage(Scene.Type.INITIALIZE);
@@ -236,7 +233,8 @@ namespace GameMessage.Private
 		public static bool Req_CLIENT_VERIFY_REQ()
 		{
 			WS_CLIENT_VERIFY_REQ wS_CLIENT_VERIFY_REQ = new WS_CLIENT_VERIFY_REQ();
-			wS_CLIENT_VERIFY_REQ.nPlayerPlatformType = NrTSingleton<NkClientLogic>.Instance.GetPlayerPlatformType();
+			wS_CLIENT_VERIFY_REQ.nStoreType = NrTSingleton<NkClientLogic>.Instance.GetStoreType();
+			wS_CLIENT_VERIFY_REQ.nPlayerPlatformType = NrTSingleton<NkClientLogic>.Instance.GetAuthPlatformType();
 			int val = int.Parse(NrTSingleton<NrGlobalReference>.Instance.ResourcesVer);
 			wS_CLIENT_VERIFY_REQ.nPatchVersion = Math.Max(1001, val);
 			if (TsPlatform.IsAndroid)
@@ -287,7 +285,7 @@ namespace GameMessage.Private
 				MsgBoxUI msgBoxUI = (MsgBoxUI)NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG);
 				if (msgBoxUI != null)
 				{
-					msgBoxUI.SetMsg(new YesDelegate(FacadeHandler._OnMessageBoxOK_QuitGame), null, "경고", "scene 이 올바르지않아......\r\n어플을 재실행해주세요.\n" + StageSystem.GetCurrentStageName(), eMsgType.MB_OK);
+					msgBoxUI.SetMsg(new YesDelegate(FacadeHandler._OnMessageBoxOK_QuitGame), null, "경고", "scene 이 올바르지않아......\r\n어플을 재실행해주세요.\n" + StageSystem.GetCurrentStageName(), eMsgType.MB_OK, 2);
 				}
 			}
 			return flag;
@@ -296,12 +294,12 @@ namespace GameMessage.Private
 		public static void _OnMessageBoxOK_QuitGame(object a_oObject)
 		{
 			NrMobileAuthSystem.Instance.Auth.DeleteAuthInfo();
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 		}
 
 		public static bool Req_GS_AUTH_SESSION_REQ(long uid, int skey, long personid, byte mvServer, int nMode)
 		{
-			TsLog.LogError("!!!!!!!!!!!!!!!!!!!NETLOG==========GS_AUTH_SESSION_REQ", new object[0]);
+			TsLog.Log("!!!!!!!!!!!!!!!!!!!NETLOG==========GS_AUTH_SESSION_REQ", new object[0]);
 			GS_AUTH_SESSION_REQ gS_AUTH_SESSION_REQ = new GS_AUTH_SESSION_REQ();
 			gS_AUTH_SESSION_REQ.UID = NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_UID;
 			gS_AUTH_SESSION_REQ.SessionKey = NrTSingleton<NkCharManager>.Instance.m_kCharAccountInfo.m_siAuthSessionKey;
@@ -444,14 +442,7 @@ namespace GameMessage.Private
 
 		public static bool FacebookFriendInviteDlgShow()
 		{
-			if (TsPlatform.IsBand)
-			{
-				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.BAND_FRIENDS_DLG);
-			}
-			else
-			{
-				NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.FACEBOOK_FRIEND_INVITE);
-			}
+			NmFacebookManager.instance.FriendRequestMessage(null, null);
 			return true;
 		}
 
@@ -747,7 +738,7 @@ namespace GameMessage.Private
 				{
 					error = NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("Message3");
 				}
-				msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("LOGIN"), error, eMsgType.MB_OK);
+				msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromPreloadText("LOGIN"), error, eMsgType.MB_OK, 2);
 			}
 			NrTSingleton<NrMainSystem>.Instance.m_bIsAutoLogin = false;
 			Login_Select_PlatformDLG login_Select_PlatformDLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.LOGIN_SELECT_PLATFORM_DLG) as Login_Select_PlatformDLG;
@@ -843,7 +834,7 @@ namespace GameMessage.Private
 		public static bool QuitGame()
 		{
 			NrMobileAuthSystem.Instance.Auth.DeleteAuthInfo();
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 			return true;
 		}
 
@@ -859,7 +850,7 @@ namespace GameMessage.Private
 			}
 			else
 			{
-				NrTSingleton<NrMainSystem>.Instance.QuitGame();
+				NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 			}
 			return true;
 		}
@@ -919,6 +910,12 @@ namespace GameMessage.Private
 		public static bool PlatformLoginComplete()
 		{
 			TsPlatform.Operator.PlatformLoginComplete();
+			return true;
+		}
+
+		public static bool PlayMovieTime()
+		{
+			NmMainFrameWork.MoviePlayTime = Time.time;
 			return true;
 		}
 
@@ -1078,6 +1075,11 @@ namespace GameMessage.Private
 					TsAudio.SetMuteAudioType(EAudioType.BGM, true);
 					TsAudio.RefreshMuteAudio(EAudioType.BGM);
 				}
+				if (bMuteBGM)
+				{
+					TsAudio.SetMuteAudioType(EAudioType.MOVIE, true);
+					TsAudio.RefreshMuteAudio(EAudioType.MOVIE);
+				}
 				if (!bMuteEffect)
 				{
 					TsAudio.SetMuteAudioType(EAudioType.SFX, true);
@@ -1092,6 +1094,8 @@ namespace GameMessage.Private
 			{
 				if (!bMuteBGM)
 				{
+					TsAudio.SetMuteAudioType(EAudioType.BGM, false);
+					TsAudio.RefreshMuteAudio(EAudioType.BGM);
 					TsAudio.SetMuteAudioType(EAudioType.BGM, false);
 					TsAudio.RefreshMuteAudio(EAudioType.BGM);
 				}
@@ -1203,6 +1207,23 @@ namespace GameMessage.Private
 			return NrTSingleton<NrCharKindInfoManager>.Instance.GetSolGradeImg(kind, grade);
 		}
 
+		public static UIBaseInfoLoader GetLegendItemGrade(int ItemUnique)
+		{
+			ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(ItemUnique);
+			if (itemInfo == null)
+			{
+				return null;
+			}
+			byte nStarGrade = itemInfo.m_nStarGrade;
+			if (nStarGrade == 0)
+			{
+				return null;
+			}
+			string key = string.Empty;
+			key = "Win_I_WorrGradeS" + nStarGrade.ToString();
+			return NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(key);
+		}
+
 		public static string PortraitFileName(int kind, int solgrade)
 		{
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(kind);
@@ -1210,7 +1231,17 @@ namespace GameMessage.Private
 			{
 				return string.Empty;
 			}
-			return charKindInfo.GetPortraitFile1(solgrade);
+			return charKindInfo.GetPortraitFile1(solgrade, string.Empty);
+		}
+
+		public static string PortraitCostumeFileName(int kind, int solgrade, string costumePortrait)
+		{
+			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(kind);
+			if (charKindInfo == null)
+			{
+				return string.Empty;
+			}
+			return charKindInfo.GetPortraitFile1(solgrade, costumePortrait);
 		}
 
 		public static string GetTextFrom(string group, string index)
@@ -1299,7 +1330,7 @@ namespace GameMessage.Private
 			{
 				return false;
 			}
-			msgBoxUI.SetMsg(a_deYes, a_oObject, title, message, type);
+			msgBoxUI.SetMsg(a_deYes, a_oObject, title, message, type, 2);
 			msgBoxUI.Show();
 			return true;
 		}
@@ -1471,6 +1502,12 @@ namespace GameMessage.Private
 			case G_ID.DAILYDUNGEON_DIFFICULTY:
 				result = new DailyDungeon_Difficulty_Dlg();
 				break;
+			case G_ID.DAILYDUNGEON_SELECT:
+				result = new DailyDungeon_Select_Dlg();
+				break;
+			case G_ID.DAILYDUNGEON_MSGBOX:
+				result = new DailyDungeon_MsgBox_Dlg();
+				break;
 			case G_ID.BATTLE_HP_GROUP_DLG:
 				result = new Battle_HpDlg();
 				break;
@@ -1570,6 +1607,9 @@ namespace GameMessage.Private
 			case G_ID.BATTLE_COLOSSEUM_WAIT_DLG:
 				result = new Battle_Colosseum_WaitDlg();
 				break;
+			case G_ID.BATTLE_RADIOALARM_DLG:
+				result = new Battle_RadioAlarmDlg();
+				break;
 			case G_ID.LOGIN_DLG:
 				result = new LoginDlg();
 				break;
@@ -1615,6 +1655,9 @@ namespace GameMessage.Private
 			case G_ID.SOLMILITARYSELECT_DLG:
 				result = new SolMilitarySelectDlg();
 				break;
+			case G_ID.SOLMILITARYSELECT_CHALLENGEQUEST_DLG:
+				result = new SolMilitarySelectDlg_challengequest();
+				break;
 			case G_ID.SOLMILITARYPOSITION_DLG:
 				result = new SolMilitaryPositionDlg();
 				break;
@@ -1633,17 +1676,35 @@ namespace GameMessage.Private
 			case G_ID.SOLRECRUIT_DLG:
 				result = new SolRecruitDlg();
 				break;
+			case G_ID.SOLRECRUIT_CHALLENGEQUEST_DLG:
+				result = new SolRecruitDlg_ChallengeQuest();
+				break;
 			case G_ID.SOLRECRUITSUCCESS_DLG:
 				result = new SolRecruitSuccessDlg();
+				break;
+			case G_ID.SOLRECRUITSUCCESS_GROUP_DLG:
+				result = new SolRecruitSuccessGroupDlg();
+				break;
+			case G_ID.SOLRECRUITSUCCESS_RENEWAL_DLG:
+				result = new SolRecruitSuccess_RenewalDlg();
 				break;
 			case G_ID.SOLCOMPOSE_MAIN_DLG:
 				result = new SolComposeMainDlg();
 				break;
+			case G_ID.SOLCOMPOSE_MAIN_CHALLENGEQUEST_DLG:
+				result = new SolComposeMainDlg_challengequest();
+				break;
 			case G_ID.SOLCOMPOSE_LIST_DLG:
 				result = new SolComposeListDlg();
 				break;
+			case G_ID.SOLCOMPOSE_LIST_CHALLENGEQUEST_DLG:
+				result = new SolComposeListDlg_challengequest();
+				break;
 			case G_ID.SOLCOMPOSE_CHECK_DLG:
 				result = new SolComposeCheckDlg();
+				break;
+			case G_ID.SOLCOMPOSE_CHECK_CHALLENGEQUEST_DLG:
+				result = new SolComposeCheckDlg_challengequest();
 				break;
 			case G_ID.SOLCOMPOSE_SUCCESS_DLG:
 				result = new SolComposeSuccessDlg();
@@ -1735,6 +1796,9 @@ namespace GameMessage.Private
 			case G_ID.PLUNDER_RANKINFO_DLG:
 				result = new PlunderRankInfoDlg();
 				break;
+			case G_ID.PLUNDER_AUTOBATCH_DLG:
+				result = new NewExploration_AutoBatchDlg();
+				break;
 			case G_ID.COLOSSEUMMAIN_DLG:
 				result = new ColosseumDlg();
 				break;
@@ -1749,6 +1813,9 @@ namespace GameMessage.Private
 				break;
 			case G_ID.COLOSSEUMREWARD_EXPLAIN_DLG:
 				result = new ColosseumRewardExplainDlg();
+				break;
+			case G_ID.COLOSSEUM_HELP:
+				result = new ColosseumHelpDlg();
 				break;
 			case G_ID.COLOSSEUM_CHALLENGE_DLG:
 				result = new ColosseumChallenge();
@@ -1807,6 +1874,9 @@ namespace GameMessage.Private
 			case G_ID.BABELTOWER_MODESELECT_DLG:
 				result = new BabelTower_ModeSelect();
 				break;
+			case G_ID.BABELTOWER_FUNCTION_DLG:
+				result = new BabelTower_FunctionDlg();
+				break;
 			case G_ID.INITIATIVE_SET_DLG:
 				result = new InitiativeSetDlg();
 				break;
@@ -1831,6 +1901,12 @@ namespace GameMessage.Private
 			case G_ID.SOLDETAIL_SKILLICON_DLG:
 				result = new SolDetail_Skill_Dlg();
 				break;
+			case G_ID.SOLCOMBINATION_DLG:
+				result = new SolCombination_Dlg();
+				break;
+			case G_ID.SOLCOMBINATION_DIRECTION_DLG:
+				result = new SolCombinationDirection_Dlg();
+				break;
 			case G_ID.GMCOMMAND_DLG:
 				result = new GMCommand_Dlg();
 				break;
@@ -1846,6 +1922,12 @@ namespace GameMessage.Private
 			case G_ID.ITEM_BOX_RARERANDOM_DLG:
 				result = new Item_Box_RareRandom_Dlg();
 				break;
+			case G_ID.ITEM_BOX_CONTINUE_DLG:
+				result = new ItemBoxContinue_Dlg();
+				break;
+			case G_ID.ITEM_BOX_RANDOM_RESULT:
+				result = new Item_Box_Random_Result_Dlg();
+				break;
 			case G_ID.CONGRATURATIONDLG:
 				result = new Congraturation_DLG();
 				break;
@@ -1860,6 +1942,12 @@ namespace GameMessage.Private
 				break;
 			case G_ID.EXCHANGE_MYTHICSOL_DLG:
 				result = new ExchangeMythicSolDlg();
+				break;
+			case G_ID.EXCHANGE_GUILDWAR_DLG:
+				result = new ExchangeGuildWarDlg();
+				break;
+			case G_ID.EXCHANGE_EVENTITEM_DLG:
+				result = new EventItem_ExchangDlg();
 				break;
 			case G_ID.GUESTID_COMBINE_DLG:
 				result = new GuestIDCombineDlg();
@@ -1981,6 +2069,30 @@ namespace GameMessage.Private
 			case G_ID.TREASUREBOX_DLG:
 				result = new TreasureBox_DLG();
 				break;
+			case G_ID.MYTH_EVOLUTION_MAIN_DLG:
+				result = new Myth_Evolution_Main_DLG();
+				break;
+			case G_ID.MYTH_EVOLUTION_MAIN_CHALLENGEQUEST_DLG:
+				result = new Myth_Evolution_Main_DLG_ChallengeQuest();
+				break;
+			case G_ID.MYTH_LEGEND_INFO_DLG:
+				result = new Myth_Legend_Info_DLG();
+				break;
+			case G_ID.MYTH_LEGEND_INFO_CHALLENGEQUEST_DLG:
+				result = new Myth_Legend_Info_DLG_ChallengeQuest();
+				break;
+			case G_ID.MYTH_EVOLUTION_SKILLDETAIL_DLG:
+				result = new Myth_Evolution_SkillDetail_DLG();
+				break;
+			case G_ID.MYTH_EVOLUTION_TIME_DLG:
+				result = new Myth_Evolution_Time_DLG();
+				break;
+			case G_ID.MYTH_EVOLUTION_CHECK_DLG:
+				result = new Myth_Evolution_Check_DLG();
+				break;
+			case G_ID.MYTH_EVOLUTION_SUCCESS_DLG:
+				result = new Myth_Evolution_Success_DLG();
+				break;
 			case G_ID.MSGBOX_DLG:
 				result = new MsgBoxUI();
 				break;
@@ -1995,6 +2107,12 @@ namespace GameMessage.Private
 				break;
 			case G_ID.MSGBOX_TWOCHECK_DLG:
 				result = new MsgBoxTwoCheckUI();
+				break;
+			case G_ID.MSGBOX_AUTOSELL_DLG:
+				result = new MsgBoxAutoSellUI();
+				break;
+			case G_ID.BONUS_ITEM_INFO_DLG:
+				result = new BonusItemInfoDlg();
 				break;
 			case G_ID.INVENTORY_DLG:
 				result = new Inventory_Dlg();
@@ -2013,6 +2131,9 @@ namespace GameMessage.Private
 				break;
 			case G_ID.ITEMTOOLTIP_BUTTON:
 				result = new ItemTooltip_Btn_Dlg();
+				break;
+			case G_ID.SETITEMTOOLTIP_DLG:
+				result = new ItemSetTooltip_Dlg();
 				break;
 			case G_ID.CHAT_MAIN_DLG:
 				if (TsPlatform.IsWeb)
@@ -2074,9 +2195,6 @@ namespace GameMessage.Private
 				break;
 			case G_ID.POST_RECV_DLG:
 				result = new PostRecvDlg();
-				break;
-			case G_ID.POST_RESULT_DLG:
-				result = new PostResultDlg();
 				break;
 			case G_ID.POSTFRIEND_DLG:
 				result = new PostFriendDlg();
@@ -2150,11 +2268,17 @@ namespace GameMessage.Private
 			case G_ID.ITEMMALL_DLG:
 				result = new ItemMallDlg();
 				break;
+			case G_ID.ITEMMALL_CHALLENGEQUEST_DLG:
+				result = new ItemMallDlg_ChallengeQuest();
+				break;
 			case G_ID.ITEMMALL_PRODUCTDETAIL_DLG:
 				result = new ItemMallProductDetailDlg();
 				break;
 			case G_ID.ITEMMALL_SOL_DETAIL:
 				result = new ItemMallSolDetailDlg();
+				break;
+			case G_ID.ITEMMALL_POPUPSHOP_DLG:
+				result = new PoPupShopDlg();
 				break;
 			case G_ID.COUPON_DLG:
 				result = new CouponDlg();
@@ -2228,6 +2352,12 @@ namespace GameMessage.Private
 			case G_ID.MINE_WAITMILTARYINFO_DLG:
 				result = new MineWaitMiltaryInfoDlg();
 				break;
+			case G_ID.MINE_RECORD_DLG:
+				result = new MineRecordDlg();
+				break;
+			case G_ID.MINE_RECORD_GUILDWAR_DLG:
+				result = new MineRecordGuildWarDlg();
+				break;
 			case G_ID.DLG_DIRECTION:
 				result = new DirectionDLG();
 				break;
@@ -2248,6 +2378,12 @@ namespace GameMessage.Private
 				break;
 			case G_ID.NEWGUILD_CREATE_DLG:
 				result = new NewGuildCreateDlg();
+				break;
+			case G_ID.NEWGUILD_INVITE_MENU_DLG:
+				result = new NewGuildInviteMenuDlg();
+				break;
+			case G_ID.NEWGUILD_INVITE_INPUT_DLG:
+				result = new NewGuildInviteInputDlg();
 				break;
 			case G_ID.NEWGUILD_INVITE_DLG:
 				result = new NewGuildInviteDlg();
@@ -2291,6 +2427,15 @@ namespace GameMessage.Private
 			case G_ID.EVENT_DAILY_GIFT_DLG:
 				result = new DailyGift_Dlg();
 				break;
+			case G_ID.EVENT_NORMAL_ATTEND:
+				result = new Normal_Attend_Dlg();
+				break;
+			case G_ID.EVENT_NEW_ATTEND:
+				result = new New_Attend_Dlg();
+				break;
+			case G_ID.EVENT_REWARD_CHANGE_DLG:
+				result = new Attendance_RewardChange_Dlg();
+				break;
 			case G_ID.GOLDLACK_DLG:
 				result = new LackGold_dlg();
 				break;
@@ -2324,14 +2469,14 @@ namespace GameMessage.Private
 			case G_ID.EXPEDITION_BATTLE_RESULT_DLG:
 				result = new Battle_ResultExpeditionDlg();
 				break;
-			case G_ID.GUILDWAR_CONDITION_DLG:
-				result = new NewGuildWarConditionDlg();
-				break;
-			case G_ID.GUILDWAR_DETAILINFO_DLG:
-				result = new NewGuildWarDetailInfoDlg();
+			case G_ID.GUILDWAR_MAIN_DLG:
+				result = new GuildWarMainDlg();
 				break;
 			case G_ID.GUILDWAR_REWARDINFO_DLG:
 				result = new NewGuildWarRewardInfoDlg();
+				break;
+			case G_ID.GUILDWAR_LIST_DLG:
+				result = new GuildWarListDlg();
 				break;
 			case G_ID.AGIT_MAIN_DLG:
 				result = new Agit_MainDlg();
@@ -2357,8 +2502,113 @@ namespace GameMessage.Private
 			case G_ID.AGIT_GOLDENEGGDRAMA_DLG:
 				result = new Agit_GoldenEggDramaDlg();
 				break;
-			case G_ID.DECLAREWAR_GUILDLIST_DLG:
-				result = new DeclareWar_GuildListDlg();
+			case G_ID.LEVELUP_GUIDE_DLG:
+				result = new LevelupInfoDLG();
+				break;
+			case G_ID.HELPDESK_DLG:
+				result = new HelpDeskDlg();
+				break;
+			case G_ID.GAME_HELP_LIST:
+				result = new GameHelpList_Dlg();
+				break;
+			case G_ID.MYTHRAID_MODESELECT_DLG:
+				result = new MythRaid_ModeSelect_DLG();
+				break;
+			case G_ID.MYTHRAID_LOBBY_DLG:
+				result = new MythRaid_Lobby_DLG();
+				break;
+			case G_ID.MYTHRAID_USERLIST_DLG:
+				result = new MythRaidLobbyUserListDlg();
+				break;
+			case G_ID.MYTHRAID_RESULT_DLG:
+				result = new MythRaid_Result_DLG();
+				break;
+			case G_ID.MYTHRAID_BATTLEINFO_DLG:
+				result = new Battle_MythRaidBattleInfo_DLG();
+				break;
+			case G_ID.MYTHRAID_REWARDINFO_DLG:
+				result = new MythRaid_RewardInfo_DLG();
+				break;
+			case G_ID.MYTHRAID_GUARDIANSELECT_DLG:
+				result = new MythRaid_GuardianSelect_DLG();
+				break;
+			case G_ID.BATCH_CAHT_DLG:
+				result = new Batch_Chat_DLG();
+				break;
+			case G_ID.COSTUMEGUIDE_DLG:
+				result = new CostumeGuide_Dlg();
+				break;
+			case G_ID.COSTUMEROOM_DLG:
+				result = new CostumeRoom_Dlg();
+				break;
+			case G_ID.COSTUME_SKILLINFO_DLG:
+				result = new CostumeSkillInfo_Dlg();
+				break;
+			case G_ID.COSTUME_BUY_MSG_BOX:
+				result = new CostumeBuyMsgBox_Dlg();
+				break;
+			case G_ID.TIMESHOP_DLG:
+				result = new TimeShop_DLG();
+				break;
+			case G_ID.TIMESHOP_INFO_DLG:
+				result = new TimeShopInfo_DLG();
+				break;
+			case G_ID.GUILDBOSS_BATTLEINFO_DLG:
+				result = new Battle_GuildBossBattleInfo_DLG();
+				break;
+			case G_ID.INFICOMBINATION_DLG:
+				result = new InfiCombinationDlg();
+				break;
+			case G_ID.NEWEXPLORATION_MAIN_DLG:
+				result = new NewExplorationMainDlg();
+				break;
+			case G_ID.NEWEXPLORATION_FUNCTION_DLG:
+				result = new NewExploration_FunctionDlg();
+				break;
+			case G_ID.NEWEXPLORATION_AUTOBATTLE_DLG:
+				result = new NewExploration_AutoBattleDlg();
+				break;
+			case G_ID.NEWEXPLORATION_STAGEPOPUP_DLG:
+				result = new NewExploration_StagePopupDlg();
+				break;
+			case G_ID.NEWEXPLORATION_REPEAT_DLG:
+				result = new NewExploration_RepeatBgDlg();
+				break;
+			case G_ID.NEWEXPLORATION_ENDBOX_DLG:
+				result = new NewExploration_EndBoxDlg();
+				break;
+			case G_ID.NEWEXPLORATION_RESETBOX_DLG:
+				result = new NewExploration_ResetBoxDlg();
+				break;
+			case G_ID.ITEMEVOLUTION_DLG:
+				result = new ItemEvolution_Dlg();
+				break;
+			case G_ID.COMPLETEBOX_DLG:
+				result = new CompleteBox_DLG();
+				break;
+			case G_ID.ADVENTURECOLLECT_DLG:
+				result = new AdventureCollect_DLG();
+				break;
+			case G_ID.BATTLECOLLECT_DLG:
+				result = new BattleCollect_DLG();
+				break;
+			case G_ID.HEROCOLLECT_DLG:
+				result = new HeroCollect_DLG();
+				break;
+			case G_ID.HEROCOLLECT_CHALLENGEQUEST_DLG:
+				result = new HeroCollect_DLG_challengequest();
+				break;
+			case G_ID.GUILDCOLLECT_DLG:
+				result = new GuildCollect_DLG();
+				break;
+			case G_ID.DAILYDUNGEON_FUNCTION_DLG:
+				result = new DailyDungeon_Function_Dlg();
+				break;
+			case G_ID.DAILYDUNGEON_START_DLG:
+				result = new DailyDungeon_Start_Dlg();
+				break;
+			case G_ID.EXCHANGE_EVOLUTION_DLG:
+				result = new ExchangeEvolutionDlg();
 				break;
 			}
 			return result;

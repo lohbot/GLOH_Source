@@ -17,4 +17,6 @@ public class NkListSolInfo
 	public bool ShowLevel;
 
 	public bool ShowGrade = true;
+
+	public string SolCostumePortraitPath = string.Empty;
 }

@@ -11,6 +11,8 @@ public class LackGold_dlg : Form
 
 	private DrawTexture m_txNPCImg;
 
+	private Button m_btnClose;
+
 	private int m_ItemUnique;
 
 	private eITEMMALL_TYPE m_RequestMallType;
@@ -34,7 +36,9 @@ public class LackGold_dlg : Form
 		this.m_btnOK = (base.GetControl("Button_OK") as Button);
 		this.m_btnOK.AddValueChangedDelegate(new EZValueChangedDelegate(this.On_Mouse_Click));
 		this.m_txNPCImg = (base.GetControl("DrawTexture_NPCIMG") as DrawTexture);
-		this.m_txNPCImg.SetTexture(eCharImageType.LARGE, 242, -1);
+		this.m_txNPCImg.SetTexture(eCharImageType.LARGE, 242, -1, string.Empty);
+		this.m_btnClose = (base.GetControl("BT_Close") as Button);
+		this.m_btnClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.Click_Close));
 	}
 
 	public void SetData(long _LackGold)
@@ -105,6 +109,20 @@ public class LackGold_dlg : Form
 		return true;
 	}
 
+	public void SetDataTimeShop(int _iVipLevel)
+	{
+		string empty = string.Empty;
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("444"),
+			"viplevel",
+			_iVipLevel
+		});
+		this.m_lbText.SetText(empty);
+		this.m_txNPCImg.SetTexture(eCharImageType.MIDDLE, 242, -1, string.Empty);
+		this.m_btnOK.AddValueChangedDelegate(new EZValueChangedDelegate(this.Click_OK));
+	}
+
 	private void On_Mouse_Click(IUIObject a_oObject)
 	{
 		eITEMMALL_TYPE eItemMallType = eITEMMALL_TYPE.BUY_HEARTS;
@@ -125,6 +143,17 @@ public class LackGold_dlg : Form
 			eItemMallType = this.m_RequestMallType;
 		}
 		NrTSingleton<ItemMallItemManager>.Instance.Send_GS_ITEMMALL_INFO_REQ(eItemMallType, true);
+		this.Close();
+	}
+
+	private void Click_OK(IUIObject a_oObject)
+	{
+		NrTSingleton<ItemMallItemManager>.Instance.Send_GS_ITEMMALL_INFO_REQ(eITEMMALL_TYPE.BUY_HEARTS, true);
+		this.Close();
+	}
+
+	private void Click_Close(IUIObject _obj)
+	{
 		this.Close();
 	}
 }

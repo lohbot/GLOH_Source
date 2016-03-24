@@ -15,7 +15,7 @@ namespace NPatch
 			{
 				Console.WriteLine(status.totalStatus);
 			}
-			else if (status.taskType == TASKTYPE.DOWNLOADPACK)
+			else if (status.taskType == TASKTYPE.DOWNLOAD)
 			{
 				Console.WriteLine(string.Concat(new object[]
 				{
@@ -69,8 +69,17 @@ namespace NPatch
 		{
 		}
 
+		public virtual void OnEndPrepack()
+		{
+		}
+
 		public virtual void OnErrorFileVerifier(List<string> errorList)
 		{
+		}
+
+		public virtual bool OnCheckFinalClientVersion(Launcher.ClientInfo info)
+		{
+			return true;
 		}
 
 		public virtual void OnFinish(ERRORLEVEL errorLevel, string errorString)

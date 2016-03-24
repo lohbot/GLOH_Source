@@ -189,7 +189,7 @@ public class SoldierBatch_Input : InputCommandLayer
 
 	public void SetMakeUpChar(long SolID, long nFriendPersonID, int nFriendCharKind, byte nObjectID)
 	{
-		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER)
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_BABEL_TOWER || SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
 		{
 			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
 			if (SoldierBatch.BABELTOWER_INFO.Count != 1 && charPersonInfo.GetSoldierInfoFromSolID(SolID) == null)

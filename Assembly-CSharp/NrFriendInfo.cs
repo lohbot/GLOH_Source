@@ -136,9 +136,9 @@ public class NrFriendInfo
 	[DebuggerHidden]
 	public IEnumerable GetFriendInfoValues()
 	{
-		NrFriendInfo.<GetFriendInfoValues>c__Iterator9 <GetFriendInfoValues>c__Iterator = new NrFriendInfo.<GetFriendInfoValues>c__Iterator9();
-		<GetFriendInfoValues>c__Iterator.<>f__this = this;
-		NrFriendInfo.<GetFriendInfoValues>c__Iterator9 expr_0E = <GetFriendInfoValues>c__Iterator;
+		NrFriendInfo.<GetFriendInfoValues>c__IteratorC <GetFriendInfoValues>c__IteratorC = new NrFriendInfo.<GetFriendInfoValues>c__IteratorC();
+		<GetFriendInfoValues>c__IteratorC.<>f__this = this;
+		NrFriendInfo.<GetFriendInfoValues>c__IteratorC expr_0E = <GetFriendInfoValues>c__IteratorC;
 		expr_0E.$PC = -2;
 		return expr_0E;
 	}

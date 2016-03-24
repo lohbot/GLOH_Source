@@ -15,7 +15,9 @@ public class Inventory_Dlg : Form
 	{
 		eSTATE_NONE,
 		eSTATE_MULTISELL,
-		eSTATE_MULTILOCK
+		eSTATE_MULTILOCK,
+		eSTATE_MULTIBREAK,
+		eSTATE_MULTIDELETE
 	}
 
 	private const float BLINK_TIME = 0.5f;
@@ -36,15 +38,21 @@ public class Inventory_Dlg : Form
 
 	private Button m_btDelete;
 
-	private Button m_btItemReforge;
-
 	private Button m_btItemSell;
 
 	private Button m_btLock;
 
-	private string m_strDeleteName = string.Empty;
+	private Button m_btItemBreak;
 
-	private string m_strItemReforge = string.Empty;
+	private Button m_HelpButton;
+
+	private Button m_btnAddGold;
+
+	private CheckBox m_ckSelectAll;
+
+	private Label m_lbSelectAll;
+
+	private string m_strDeleteName = string.Empty;
 
 	private VerticalSlider m_Slider;
 
@@ -58,11 +66,31 @@ public class Inventory_Dlg : Form
 
 	private int m_BlinkPosType;
 
+	private UIButton _GuideItem;
+
+	private UIListItemContainer _GuideSlot;
+
+	private float _ButtonZ;
+
+	private int m_nWinID;
+
+	private List<ITEM> m_ItemBreakList = new List<ITEM>();
+
 	private static byte s_byTab = 1;
 
 	private GameObject m_goSelect;
 
 	private Vector3 m_vSelectPosition;
+
+	private GameObject rootGameObject;
+
+	private Animation aniGameObject;
+
+	private bool bRequest;
+
+	private bool bLoadActionReforge;
+
+	public bool bSendRequest;
 
 	private G_ID m_eParentForm;
 
@@ -118,15 +146,14 @@ public class Inventory_Dlg : Form
 		}
 		this.m_strDeleteName = "Button_InThrowOut";
 		this.m_btDelete = (base.GetControl(this.m_strDeleteName) as Button);
-		this.m_btDelete.ToolTip = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("400");
-		this.m_btDelete.Hide(false);
-		this.m_strItemReforge = "Button_ReforgeBtn";
-		this.m_btItemReforge = (base.GetControl(this.m_strItemReforge) as Button);
-		this.m_btItemReforge.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickItemReforge));
+		this.m_btDelete.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickInThrowOut));
+		this.m_btDelete.Visible = false;
 		this.m_btItemSell = (base.GetControl("Button_Sell") as Button);
 		this.m_btItemSell.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickItemSell));
 		this.m_btLock = (base.GetControl("Button_Lock01") as Button);
 		this.m_btLock.AddValueChangedDelegate(new EZValueChangedDelegate(this.onClickItemLock));
+		this.m_btItemBreak = (base.GetControl("BT_break") as Button);
+		this.m_btItemBreak.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickItemBreak));
 		this.m_tbToolbar = (base.GetControl("ToolBar_ToolBar1") as Toolbar);
 		string[] array = new string[]
 		{
@@ -140,8 +167,8 @@ public class Inventory_Dlg : Form
 		for (int i = 0; i < array.Length; i++)
 		{
 			this.m_tbToolbar.Control_Tab[i].Text = NrTSingleton<UIDataManager>.Instance.GetString(NrTSingleton<CTextParser>.Instance.GetTextColor("1002"), array[i]);
-			UIPanelTab expr_2AF = this.m_tbToolbar.Control_Tab[i];
-			expr_2AF.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_2AF.ButtonClick, new EZValueChangedDelegate(this.On_Tab_Button));
+			UIPanelTab expr_2A0 = this.m_tbToolbar.Control_Tab[i];
+			expr_2A0.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_2A0.ButtonClick, new EZValueChangedDelegate(this.On_Tab_Button));
 		}
 		this.m_tbToolbar.SetFirstTab(0);
 		Protocol_Item.s_deMoneyDelegate = (Action)Delegate.Combine(Protocol_Item.s_deMoneyDelegate, new Action(this.Money_Refresh));
@@ -154,13 +181,44 @@ public class Inventory_Dlg : Form
 		drawTexture.SetTexture("Win_T_ItemSelected");
 		base.InteractivePanel.MakeChild(this.m_goSelect);
 		this.m_goSelect.SetActive(false);
+		this.m_HelpButton = (base.GetControl("Help_Button") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
+		this.m_ckSelectAll = (base.GetControl("CheckBox_button_AllCheck") as CheckBox);
+		if (this.m_ckSelectAll != null)
+		{
+			this.m_ckSelectAll.AddValueChangedDelegate(new EZValueChangedDelegate(this.MultiSelect));
+			this.m_lbSelectAll = (base.GetControl("Label_AllCheck") as Label);
+		}
+		this.m_btnAddGold = (base.GetControl("Button_AddGold") as Button);
+		this.m_btnAddGold.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickBuyGold));
 		this.Item_Draw((int)Inventory_Dlg.s_byTab);
 		base.SetScreenCenter();
+		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+		ITEMMALL_POPUPSHOP atbToIDX = NrTSingleton<ItemMallPoPupShopManager>.Instance.GetAtbToIDX(ItemMallPoPupShopManager.ePoPupShop_Type.InvenOpen);
+		if (atbToIDX != null)
+		{
+			GS_ITEMSHOP_ITEMPOPUP_INFO_REQ gS_ITEMSHOP_ITEMPOPUP_INFO_REQ = new GS_ITEMSHOP_ITEMPOPUP_INFO_REQ();
+			gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i64PersonID = myCharInfo.m_PersonID;
+			gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i64Idx = (long)atbToIDX.m_Idx;
+			gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i32ATB = 4;
+			SendPacket.GetInstance().SendObject(2536, gS_ITEMSHOP_ITEMPOPUP_INFO_REQ);
+		}
 		NrTSingleton<FiveRocksEventManager>.Instance.Placement("inven_open");
 	}
 
 	public override void OnClose()
 	{
+		if (this.bLoadActionReforge && null != this.rootGameObject && null != this.aniGameObject)
+		{
+			this.SendServerItemBreak();
+			UnityEngine.Object.DestroyImmediate(this.rootGameObject);
+			this.bLoadActionReforge = false;
+			this.bRequest = false;
+			this.aniGameObject = null;
+			TsAudio.RestoreMuteAllAudio();
+			TsAudio.RefreshAllMuteAudio();
+			NkInputManager.IsInputMode = true;
+		}
 		if (null != this.c_cCopyItem)
 		{
 			UnityEngine.Object.Destroy(this.c_cCopyItem.gameObject);
@@ -175,6 +233,7 @@ public class Inventory_Dlg : Form
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEMSELL_DLG);
 		NrTSingleton<ChallengeManager>.Instance.ShowNotice();
 		this.InitLockList();
+		this.HideUIGuide();
 	}
 
 	public override void Hide()
@@ -196,6 +255,110 @@ public class Inventory_Dlg : Form
 		base.SetScreenCenter();
 	}
 
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		this.SetTap(1);
+		this.HideUIGuide();
+		this.m_nWinID = winID;
+		if (null != this._GuideItem)
+		{
+			this._ButtonZ = this._GuideItem.GetLocation().z;
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				if (uI_UIGuide.GetLocation().z == base.GetLocation().z)
+				{
+					uI_UIGuide.SetLocation(uI_UIGuide.GetLocationX(), uI_UIGuide.GetLocationY(), uI_UIGuide.GetLocation().z - 10f);
+				}
+				this._GuideItem.EffectAni = false;
+				Vector2 x = new Vector2(base.GetLocationX() + this._GuideItem.GetLocationX() + 72f, base.GetLocationY() + this._GuideItem.GetLocationY() - 14f);
+				uI_UIGuide.Move(x, UI_UIGuide.eTIPPOS.TOP);
+				this._ButtonZ = this._GuideItem.gameObject.transform.localPosition.z;
+				this._GuideItem.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+				this._GuideItem.AlphaAni(1f, 0.5f, -0.5f);
+			}
+		}
+		else
+		{
+			int num = 0;
+			if (!int.TryParse(param1, out num))
+			{
+				return;
+			}
+			for (int i = 0; i < this.c_ivImageView.Count; i++)
+			{
+				UIListItemContainer item = this.c_ivImageView.GetItem(i);
+				if (!(item == null))
+				{
+					ImageSlot imageSlot = item.Data as ImageSlot;
+					if (imageSlot != null)
+					{
+						ITEM iTEM = imageSlot.c_oItem as ITEM;
+						if (iTEM != null && iTEM.m_nItemID > 0L)
+						{
+							if (iTEM.m_nItemUnique == num)
+							{
+								this._GuideSlot = item;
+								break;
+							}
+						}
+					}
+				}
+			}
+			if (this._GuideSlot != null)
+			{
+				this._GuideSlot.isDraggable = false;
+				this._ButtonZ = this._GuideSlot.gameObject.transform.localPosition.z;
+				UI_UIGuide uI_UIGuide2 = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+				if (uI_UIGuide2 != null)
+				{
+					uI_UIGuide2.SetLocation(uI_UIGuide2.GetLocationX(), uI_UIGuide2.GetLocationY(), base.GetLocation().z - 10f);
+					Vector2 x2 = new Vector2(base.GetLocationX() + this.c_ivImageView.GetLocationX() + this._GuideSlot.gameObject.transform.localPosition.x + 74f, base.GetLocationY() + this.c_ivImageView.GetLocationY() - this._GuideSlot.gameObject.transform.localPosition.y + 17f);
+					uI_UIGuide2.Move(x2, UI_UIGuide.eTIPPOS.TOP);
+					this._ButtonZ = this._GuideSlot.gameObject.transform.localPosition.z;
+					this._GuideSlot.gameObject.transform.localPosition = new Vector3(this._GuideSlot.gameObject.transform.localPosition.x, this._GuideSlot.gameObject.transform.localPosition.y, uI_UIGuide2.GetLocation().z - base.GetLocation().z - 1f);
+					this._GuideSlot.AlphaAni(1f, 0.5f, -0.5f);
+				}
+			}
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+			this._GuideItem.StopAni();
+			this._GuideItem.AlphaAni(1f, 1f, 0f);
+		}
+		if (null != this._GuideSlot)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideSlot.StopAni();
+			this._GuideSlot.AlphaAni(1f, 1f, 0f);
+			this._GuideSlot.isDraggable = true;
+			this._GuideSlot.gameObject.transform.localPosition = new Vector3(this._GuideSlot.gameObject.transform.localPosition.x, this._GuideSlot.gameObject.transform.localPosition.y, this._ButtonZ);
+		}
+		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+		if (uI_UIGuide != null)
+		{
+			uI_UIGuide.CloseUI = true;
+			uI_UIGuide.Close();
+		}
+		this._GuideItem = null;
+		this._GuideSlot = null;
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.BetterGear.ToString());
+		}
+	}
+
 	private void OnClickItemReforge(IUIObject obj)
 	{
 		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REFORGEMAIN_DLG))
@@ -206,11 +369,12 @@ public class Inventory_Dlg : Form
 				reforgeMainDlg.Show();
 			}
 		}
+		this.HideUIGuide();
 	}
 
 	private void OnClickItemSell(IUIObject obj)
 	{
-		if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTILOCK)
+		if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTILOCK || this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK)
 		{
 			this.InitMultiItem();
 		}
@@ -221,6 +385,7 @@ public class Inventory_Dlg : Form
 			this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("701"));
 			this.m_btItemSell.SetButtonTextureKey("Win_B_AcceptBtn02");
 			this.m_State = Inventory_Dlg.eSTATE.eSTATE_MULTISELL;
+			this.MultiItemSellDiable(true);
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("12"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
 		}
 		else
@@ -235,6 +400,37 @@ public class Inventory_Dlg : Form
 			}
 			this.InitMultiItem();
 		}
+		this.HideUIGuide();
+	}
+
+	private void OnClickInThrowOut(IUIObject obj)
+	{
+		if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTILOCK || this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK)
+		{
+			this.InitMultiItem();
+		}
+		if (!this.c_ivImageView.GetMultiSelectMode())
+		{
+			this.c_ivImageView.ClearSelectedItems();
+			this.c_ivImageView.SetMultiSelectMode(true);
+			this.m_btDelete.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3214"));
+			this.m_btDelete.SetButtonTextureKey("Win_B_AcceptBtn02");
+			this.m_State = Inventory_Dlg.eSTATE.eSTATE_MULTIDELETE;
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("836"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+		}
+		else
+		{
+			if (this.c_ivImageView.SelectedItems.Count == 0)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("837"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+			else
+			{
+				this.MultiIemDelete();
+			}
+			this.InitMultiItem();
+		}
+		this.HideUIGuide();
 	}
 
 	private void onClickItemLock(IUIObject obj)
@@ -252,11 +448,51 @@ public class Inventory_Dlg : Form
 		}
 	}
 
+	private void OnClickItemBreak(IUIObject obj)
+	{
+		if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTILOCK || this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTISELL)
+		{
+			this.InitMultiItem();
+		}
+		if (!this.c_ivImageView.GetMultiSelectMode())
+		{
+			this.c_ivImageView.ClearSelectedItems();
+			this.c_ivImageView.SetMultiSelectMode(true);
+			this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("777"));
+			this.m_btItemBreak.SetButtonTextureKey("Win_B_AcceptBtn02");
+			this.m_State = Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK;
+			if (this.MultiItemBreakDiable(true) > 0)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("825"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+			else
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("11"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
+		}
+		else
+		{
+			if (this.c_ivImageView.SelectedItems.Count == 0)
+			{
+				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("207"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+			}
+			else
+			{
+				this.MultiIemBreak();
+			}
+			this.InitMultiItem();
+		}
+		this.HideUIGuide();
+	}
+
 	public void InitMultiItem()
 	{
 		this.c_ivImageView.SetMultiSelectMode(false);
 		this.c_ivImageView.ClearSelectedItems();
-		this.m_State = Inventory_Dlg.eSTATE.eSTATE_NONE;
+		if (this.m_ckSelectAll != null)
+		{
+			this.m_ckSelectAll.SetCheckState(0);
+		}
 		if (this.m_btItemSell != null)
 		{
 			this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("79"));
@@ -267,10 +503,29 @@ public class Inventory_Dlg : Form
 			this.m_btLock.SetButtonTextureKey("Win_I_Lock01");
 			this.m_btLock.SetButtonTextureKey("Win_B_AcceptBtn");
 		}
+		if (this.m_btItemBreak != null)
+		{
+			this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("420"));
+			this.m_btItemBreak.SetButtonTextureKey("Win_B_AcceptBtn");
+		}
+		if (this.m_btDelete != null)
+		{
+			this.m_btDelete.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3213"));
+			this.m_btDelete.SetButtonTextureKey("Win_B_AcceptBtn");
+		}
 		if (this.m_lockList.Count != 0)
 		{
 			this.InitLockList();
 		}
+		if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK)
+		{
+			this.MultiItemBreakDiable(false);
+		}
+		if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTISELL)
+		{
+			this.MultiItemSellDiable(false);
+		}
+		this.m_State = Inventory_Dlg.eSTATE.eSTATE_NONE;
 	}
 
 	public void InitLockList()
@@ -316,16 +571,16 @@ public class Inventory_Dlg : Form
 		ITEM iTEM = null;
 		int num2 = 0;
 		bool bRankItem = false;
-		foreach (KeyValuePair<int, IUIListObject> current in this.c_ivImageView.SelectedItems)
+		foreach (KeyValuePair<int, UIListItemContainer> current in this.c_ivImageView.SelectedItems)
 		{
-			IUIListObject value = current.Value;
+			UIListItemContainer value = current.Value;
 			if (value != null)
 			{
 				ImageSlot imageSlot = value.Data as ImageSlot;
 				if (imageSlot != null)
 				{
 					ITEM iTEM2 = imageSlot.c_oItem as ITEM;
-					if (iTEM2 != null && iTEM2.m_nItemUnique > 0)
+					if (iTEM2 != null && iTEM2.m_nItemUnique > 0 && !iTEM2.IsLock())
 					{
 						switch (NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(iTEM2.m_nItemUnique))
 						{
@@ -340,27 +595,25 @@ public class Inventory_Dlg : Form
 								return result;
 							}
 							ITEM_SELL itemSellData = NrTSingleton<ITEM_SELL_Manager>.Instance.GetItemSellData(itemInfo.m_nQualityLevel, (int)iTEM2.GetRank());
-							if (itemSellData == null)
+							if (itemSellData != null)
 							{
-								bool result = false;
-								return result;
+								num += itemSellData.nItemSellMoney;
+								if (iTEM == null)
+								{
+									iTEM = iTEM2;
+									num2 = itemSellData.nItemSellMoney;
+								}
+								if (num2 < itemSellData.nItemSellMoney)
+								{
+									iTEM = iTEM2;
+									num2 = itemSellData.nItemSellMoney;
+								}
+								if (iTEM2.GetRank() >= eITEM_RANK_TYPE.ITEM_RANK_A)
+								{
+									bRankItem = true;
+								}
+								list.Add(iTEM2);
 							}
-							num += itemSellData.nItemSellMoney;
-							if (iTEM == null)
-							{
-								iTEM = iTEM2;
-								num2 = itemSellData.nItemSellMoney;
-							}
-							if (num2 < itemSellData.nItemSellMoney)
-							{
-								iTEM = iTEM2;
-								num2 = itemSellData.nItemSellMoney;
-							}
-							if (iTEM2.GetRank() >= eITEM_RANK_TYPE.ITEM_RANK_A)
-							{
-								bRankItem = true;
-							}
-							list.Add(iTEM2);
 							break;
 						}
 						default:
@@ -381,6 +634,111 @@ public class Inventory_Dlg : Form
 				itemSellDlg.SetMultiItemSellInfo(list, num, iTEM, bRankItem);
 				return true;
 			}
+		}
+		return false;
+	}
+
+	private bool MultiIemBreak()
+	{
+		this.m_ItemBreakList.Clear();
+		ITEM iTEM = null;
+		int num = 0;
+		bool bRankItem = false;
+		int num2 = 0;
+		int num3 = 0;
+		int itemUnique = 0;
+		foreach (KeyValuePair<int, UIListItemContainer> current in this.c_ivImageView.SelectedItems)
+		{
+			UIListItemContainer value = current.Value;
+			if (value != null)
+			{
+				ImageSlot imageSlot = value.Data as ImageSlot;
+				if (imageSlot != null)
+				{
+					ITEM iTEM2 = imageSlot.c_oItem as ITEM;
+					if (iTEM2 != null && iTEM2.m_nItemUnique > 0 && !iTEM2.IsLock())
+					{
+						switch (NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(iTEM2.m_nItemUnique))
+						{
+						case eITEM_PART.ITEMPART_WEAPON:
+						case eITEM_PART.ITEMPART_ARMOR:
+						case eITEM_PART.ITEMPART_ACCESSORY:
+						{
+							ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(iTEM2.m_nItemUnique);
+							if (itemInfo != null)
+							{
+								ITEM_BREAK iTEM_BREAK = NrTSingleton<Item_Break_Manager>.Instance.Get_RankData(itemInfo.m_nQualityLevel, 6);
+								if (iTEM_BREAK != null)
+								{
+									int num4 = iTEM2.m_nOption[5];
+									num4 += iTEM2.m_nOption[9];
+									num2 += iTEM_BREAK.i32ItemNum_Min + num4 * iTEM_BREAK.i32Skill_increase_itemnum;
+									num3 += iTEM_BREAK.i32ItemNum_Max + num4 * iTEM_BREAK.i32Skill_increase_itemnum;
+									itemUnique = iTEM_BREAK.i32ItemUnique;
+									if (iTEM == null)
+									{
+										iTEM = iTEM2;
+										num = itemInfo.m_nQualityLevel;
+									}
+									if (num < itemInfo.m_nQualityLevel)
+									{
+										iTEM = iTEM2;
+										num = itemInfo.m_nQualityLevel;
+									}
+									if (iTEM2.GetRank() >= eITEM_RANK_TYPE.ITEM_RANK_SS)
+									{
+										bRankItem = true;
+										this.m_ItemBreakList.Add(iTEM2);
+									}
+								}
+							}
+							break;
+						}
+						default:
+							return false;
+						}
+					}
+				}
+			}
+		}
+		if (this.m_ItemBreakList.Count > 0)
+		{
+			ItemSellDlg itemSellDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMSELL_DLG) as ItemSellDlg;
+			if (itemSellDlg != null)
+			{
+				itemSellDlg.SetMultiItemBreakInfo(this.m_ItemBreakList, iTEM, bRankItem, itemUnique, num2, num3);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private bool MultiIemDelete()
+	{
+		List<ITEM> list = new List<ITEM>();
+		foreach (KeyValuePair<int, UIListItemContainer> current in this.c_ivImageView.SelectedItems)
+		{
+			UIListItemContainer value = current.Value;
+			if (value != null)
+			{
+				ImageSlot imageSlot = value.Data as ImageSlot;
+				if (imageSlot != null)
+				{
+					ITEM iTEM = imageSlot.c_oItem as ITEM;
+					if (iTEM != null && iTEM.m_nItemUnique > 0 && !iTEM.IsLock())
+					{
+						if (NrTSingleton<ItemManager>.Instance.GetItemInfo(iTEM.m_nItemUnique) == null)
+						{
+							return false;
+						}
+						list.Add(iTEM);
+					}
+				}
+			}
+		}
+		if (list.Count > 0)
+		{
+			NrTSingleton<FormsManager>.Instance.ShowMessageBox(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3213"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("420"), eMsgType.MB_OK_CANCEL, new YesDelegate(this.SendServerItemDelete), list);
 		}
 		return false;
 	}
@@ -497,6 +855,22 @@ public class Inventory_Dlg : Form
 			{
 				this.m_btItemSell.Visible = true;
 			}
+			if (this.m_btItemBreak != null)
+			{
+				this.m_btItemBreak.Visible = true;
+			}
+			if (this.m_ckSelectAll != null)
+			{
+				this.m_ckSelectAll.Visible = true;
+			}
+			if (this.m_lbSelectAll != null)
+			{
+				this.m_lbSelectAll.Visible = true;
+			}
+			if (this.m_btDelete != null)
+			{
+				this.m_btDelete.Visible = false;
+			}
 			this.m_btLock.Hide(false);
 		}
 		else
@@ -504,6 +878,22 @@ public class Inventory_Dlg : Form
 			if (this.m_btItemSell != null)
 			{
 				this.m_btItemSell.Visible = false;
+			}
+			if (this.m_btItemBreak != null)
+			{
+				this.m_btItemBreak.Visible = false;
+			}
+			if (this.m_ckSelectAll != null)
+			{
+				this.m_ckSelectAll.Visible = false;
+			}
+			if (this.m_lbSelectAll != null)
+			{
+				this.m_lbSelectAll.Visible = false;
+			}
+			if (this.m_btDelete != null)
+			{
+				this.m_btDelete.Visible = true;
 			}
 			this.m_btLock.Hide(true);
 		}
@@ -536,6 +926,17 @@ public class Inventory_Dlg : Form
 			this.m_BlinkCount = 0;
 			this.mTime = 0f;
 		}
+		if (this.bLoadActionReforge && null != this.rootGameObject && null != this.aniGameObject && !this.aniGameObject.isPlaying)
+		{
+			UnityEngine.Object.DestroyImmediate(this.rootGameObject);
+			this.bLoadActionReforge = false;
+			this.bRequest = false;
+			this.aniGameObject = null;
+			TsAudio.RestoreMuteAllAudio();
+			TsAudio.RefreshAllMuteAudio();
+			this.SendServerItemBreak();
+			NkInputManager.IsInputMode = true;
+		}
 	}
 
 	public void SetBlinkValueStart(int PosType)
@@ -565,16 +966,16 @@ public class Inventory_Dlg : Form
 	{
 		for (int i = 0; i < this.c_ivImageView.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = this.c_ivImageView.GetItem(i) as UIListItemContainer;
-			if (!(uIListItemContainer == null))
+			UIListItemContainer item = this.c_ivImageView.GetItem(i);
+			if (!(item == null))
 			{
-				ImageSlot imageSlot = uIListItemContainer.Data as ImageSlot;
+				ImageSlot imageSlot = item.Data as ImageSlot;
 				if (imageSlot != null)
 				{
 					ITEM iTEM = imageSlot.c_oItem as ITEM;
 					if (iTEM != null && iTEM.m_nItemID > 0L)
 					{
-						uIListItemContainer.SetLocked(iTEM.IsLock());
+						item.SetLocked(iTEM.IsLock());
 					}
 				}
 			}
@@ -843,7 +1244,7 @@ public class Inventory_Dlg : Form
 		}
 		else
 		{
-			uIListItemContainer = (uIScrollList.MouseItem as UIListItemContainer);
+			uIListItemContainer = uIScrollList.MouseItem;
 		}
 		if (uIListItemContainer == null)
 		{
@@ -887,27 +1288,73 @@ public class Inventory_Dlg : Form
 		{
 			return;
 		}
+		this.HideUIGuide();
 		if (this.c_ivImageView.GetMultiSelectMode())
 		{
-			if (this.c_ivImageView.SelectedItems.Count == 0)
+			if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTISELL)
 			{
-				this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
-				this.InitMultiItem();
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("207"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				if (this.c_ivImageView.SelectedItems.Count == 0)
+				{
+					this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
+					this.InitMultiItem();
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("207"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
+				else if (this.c_ivImageView.SelectedItems.Count < 30)
+				{
+					this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
+				}
+				else if (this.c_ivImageView.SelectedItems.Count > 30)
+				{
+					this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("205"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
+				if (uIListItemContainer.IsDisable())
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("201"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+					this.c_ivImageView.RemoveSelectedItems(uIListItemContainer);
+				}
+				if (iTEM.m_nLock > 0)
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("726"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
 			}
-			else if (this.c_ivImageView.SelectedItems.Count < 30)
+			else if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK)
 			{
-				this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
+				if (this.c_ivImageView.SelectedItems.Count == 0)
+				{
+					this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("420"));
+					this.InitMultiItem();
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("207"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
+				else if (this.c_ivImageView.SelectedItems.Count < 30)
+				{
+					this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("420"));
+				}
+				else if (this.c_ivImageView.SelectedItems.Count > 30)
+				{
+					this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("420"));
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("205"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
+				if (uIListItemContainer.IsDisable() || iTEM.m_nLock > 0)
+				{
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("826"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
 			}
-			else if (this.c_ivImageView.SelectedItems.Count > 30)
+			else if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTIDELETE)
 			{
-				this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("205"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				if (this.c_ivImageView.SelectedItems.Count == 0)
+				{
+					this.InitMultiItem();
+					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("207"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
+				}
+				else if (this.c_ivImageView.SelectedItems.Count < 30)
+				{
+					this.m_btDelete.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3213"));
+				}
 			}
-			if (iTEM.m_nLock > 0)
+			if (iTEM.m_nLock > 0 || uIListItemContainer.IsDisable())
 			{
 				this.c_ivImageView.RemoveSelectedItems(uIListItemContainer);
-				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("726"), SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN);
 			}
 			return;
 		}
@@ -933,8 +1380,44 @@ public class Inventory_Dlg : Form
 		}
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.TOOLTIP_DLG);
 		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ITEMTOOLTIP_DLG);
-		ItemTooltipDlg itemTooltipDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMTOOLTIP_DLG) as ItemTooltipDlg;
-		itemTooltipDlg.Set_Tooltip((G_ID)base.WindowID, iTEM, null, false);
+		ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(iTEM.m_nItemUnique);
+		if (itemInfo != null && itemInfo.IsItemATB(16L) && !itemInfo.IsItemATB(16384L))
+		{
+			ItemBoxContinue_Dlg itemBoxContinue_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+			if (itemBoxContinue_Dlg != null)
+			{
+				itemBoxContinue_Dlg.SetItemData(iTEM, ItemBoxContinue_Dlg.SHOW_TYPE.ITEM_RANDOMBOX);
+			}
+		}
+		else if (NrTSingleton<ItemManager>.Instance.isItemGoldBar(iTEM.m_nItemUnique))
+		{
+			ItemBoxContinue_Dlg itemBoxContinue_Dlg2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+			if (itemBoxContinue_Dlg2 != null)
+			{
+				itemBoxContinue_Dlg2.SetItemData(iTEM, ItemBoxContinue_Dlg.SHOW_TYPE.ITEM_GOLDBAR);
+			}
+		}
+		else if (NrTSingleton<ItemManager>.Instance.isExchangeItem(iTEM.m_nItemUnique))
+		{
+			ItemBoxContinue_Dlg itemBoxContinue_Dlg3 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+			if (itemBoxContinue_Dlg3 != null)
+			{
+				itemBoxContinue_Dlg3.SetItemData(iTEM, ItemBoxContinue_Dlg.SHOW_TYPE.ITEM_EXCHANGE);
+			}
+		}
+		else if (NrTSingleton<ItemManager>.Instance.isBattleSpeedItem(iTEM.m_nItemUnique))
+		{
+			ItemBoxContinue_Dlg itemBoxContinue_Dlg4 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+			if (itemBoxContinue_Dlg4 != null)
+			{
+				itemBoxContinue_Dlg4.SetItemData(iTEM, ItemBoxContinue_Dlg.SHOW_TYPE.ITEM_BATTLESPEED);
+			}
+		}
+		else
+		{
+			ItemTooltipDlg itemTooltipDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEMTOOLTIP_DLG) as ItemTooltipDlg;
+			itemTooltipDlg.Set_Tooltip((G_ID)base.WindowID, iTEM, null, false);
+		}
 	}
 
 	private void CreateRightClickUI(ITEM itemdata)
@@ -1036,7 +1519,7 @@ public class Inventory_Dlg : Form
 							iTEM = (imageSlot.c_oItem as ITEM);
 							if (iTEM == null)
 							{
-								goto IL_2F7;
+								goto IL_27C;
 							}
 						}
 						if (!(null == dragDropParams.dragObj.DropTarget.transform))
@@ -1057,17 +1540,6 @@ public class Inventory_Dlg : Form
 											}
 											Protocol_Item.DeleteItem(iTEM);
 										}
-										else if (name == this.m_strItemReforge)
-										{
-											if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REFORGEMAIN_DLG) && !NrTSingleton<FormsManager>.Instance.IsShow(G_ID.REFORGEMAIN_DLG))
-											{
-												NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.REFORGERESULT_DLG);
-												ReforgeMainDlg reforgeMainDlg = (ReforgeMainDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.REFORGEMAIN_DLG);
-												reforgeMainDlg.Show();
-												reforgeMainDlg.Set_Value(iTEM);
-												reforgeMainDlg.SetSolID(0L);
-											}
-										}
 										else
 										{
 											UIListItemContainer component = dragDropParams.dragObj.DropTarget.GetComponent<UIListItemContainer>();
@@ -1076,27 +1548,27 @@ public class Inventory_Dlg : Form
 												component = parent.GetComponent<UIListItemContainer>();
 												if (component == null)
 												{
-													goto IL_2F7;
+													goto IL_27C;
 												}
 											}
 											if (component.Data == null)
 											{
-												goto IL_2F7;
+												goto IL_27C;
 											}
 											ImageSlot imageSlot2 = component.Data as ImageSlot;
 											if (imageSlot2 == null)
 											{
-												goto IL_2F7;
+												goto IL_27C;
 											}
 											G_ID windowID = (G_ID)imageSlot2.WindowID;
 											if (windowID != G_ID.POST_DLG)
 											{
 												if (windowID == G_ID.REFORGEMAIN_DLG)
 												{
-													ReforgeMainDlg reforgeMainDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.REFORGEMAIN_DLG) as ReforgeMainDlg;
-													if (reforgeMainDlg2 != null)
+													ReforgeMainDlg reforgeMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.REFORGEMAIN_DLG) as ReforgeMainDlg;
+													if (reforgeMainDlg != null)
 													{
-														reforgeMainDlg2.OnItemDragDrop(imageSlot);
+														reforgeMainDlg.OnItemDragDrop(imageSlot);
 													}
 												}
 											}
@@ -1110,7 +1582,7 @@ public class Inventory_Dlg : Form
 											}
 											if (!Protocol_Item.MoveItem(dragDropParams))
 											{
-												goto IL_2F7;
+												goto IL_27C;
 											}
 											dragDropParams.dragObj.DropHandled = true;
 										}
@@ -1123,7 +1595,7 @@ public class Inventory_Dlg : Form
 						}
 					}
 				}
-				IL_2F7:
+				IL_27C:
 				if (null != this.c_cCopyItem)
 				{
 					UnityEngine.Object.Destroy(this.c_cCopyItem.gameObject);
@@ -1230,5 +1702,222 @@ public class Inventory_Dlg : Form
 			}
 		}
 		return result;
+	}
+
+	public void MultiSelect(IUIObject a_oObject)
+	{
+		if (this.m_ckSelectAll.IsChecked())
+		{
+			this.c_ivImageView.SetMultiSelectMode(true);
+			for (int i = 0; i < this.c_ivImageView.Count; i++)
+			{
+				UIListItemContainer item = this.c_ivImageView.GetItem(i);
+				if (!(item == null))
+				{
+					ImageSlot imageSlot = item.Data as ImageSlot;
+					if (imageSlot != null)
+					{
+						ITEM iTEM = imageSlot.c_oItem as ITEM;
+						if (iTEM != null && iTEM.m_nItemID > 0L)
+						{
+							this.c_ivImageView.AutoMultiClickItem(item, this.m_ckSelectAll.IsChecked());
+						}
+					}
+				}
+			}
+		}
+		else
+		{
+			this.c_ivImageView.ClearSelectedItems();
+			if (this.m_State != Inventory_Dlg.eSTATE.eSTATE_MULTISELL && this.m_State != Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK)
+			{
+				this.c_ivImageView.SetMultiSelectMode(false);
+			}
+		}
+		if (this.m_ckSelectAll.IsChecked())
+		{
+			if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTISELL)
+			{
+				this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
+			}
+			else if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK)
+			{
+				this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("420"));
+			}
+			else if (this.m_State != Inventory_Dlg.eSTATE.eSTATE_MULTILOCK)
+			{
+				this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("78"));
+				this.m_btItemSell.SetButtonTextureKey("Win_B_AcceptBtn02");
+				this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("420"));
+				this.m_btItemBreak.SetButtonTextureKey("Win_B_AcceptBtn02");
+			}
+		}
+		else if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTISELL)
+		{
+			this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("701"));
+		}
+		else if (this.m_State == Inventory_Dlg.eSTATE.eSTATE_MULTIBREAK)
+		{
+			this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("777"));
+		}
+		else
+		{
+			if (this.m_btItemBreak != null)
+			{
+				this.m_btItemBreak.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("420"));
+				this.m_btItemBreak.SetButtonTextureKey("Win_B_AcceptBtn");
+			}
+			if (this.m_btItemSell != null)
+			{
+				this.m_btItemSell.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("79"));
+				this.m_btItemSell.SetButtonTextureKey("Win_B_AcceptBtn");
+			}
+		}
+	}
+
+	public int MultiItemBreakDiable(bool bDisable)
+	{
+		int num = 0;
+		for (int i = 0; i < this.c_ivImageView.Count; i++)
+		{
+			UIListItemContainer item = this.c_ivImageView.GetItem(i);
+			if (!(item == null))
+			{
+				ImageSlot imageSlot = item.Data as ImageSlot;
+				if (imageSlot != null)
+				{
+					ITEM iTEM = imageSlot.c_oItem as ITEM;
+					if (iTEM != null && iTEM.m_nItemID > 0L)
+					{
+						ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(iTEM.m_nItemUnique);
+						if (itemInfo != null)
+						{
+							if (NrTSingleton<Item_Break_Manager>.Instance.Get_RankData(itemInfo.m_nQualityLevel, 6) == null)
+							{
+								item.SetDisable(bDisable);
+							}
+							else
+							{
+								num++;
+							}
+						}
+					}
+				}
+			}
+		}
+		return num;
+	}
+
+	public void MultiItemSellDiable(bool bDisable)
+	{
+		for (int i = 0; i < this.c_ivImageView.Count; i++)
+		{
+			UIListItemContainer item = this.c_ivImageView.GetItem(i);
+			if (!(item == null))
+			{
+				ImageSlot imageSlot = item.Data as ImageSlot;
+				if (imageSlot != null)
+				{
+					ITEM iTEM = imageSlot.c_oItem as ITEM;
+					if (iTEM != null && iTEM.m_nItemID > 0L)
+					{
+						ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(iTEM.m_nItemUnique);
+						if (itemInfo != null)
+						{
+							if (NrTSingleton<ITEM_SELL_Manager>.Instance.GetItemSellData(itemInfo.m_nQualityLevel, (int)iTEM.GetRank()) == null)
+							{
+								item.SetDisable(bDisable);
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	public void ActionItemBreak()
+	{
+		if (!this.bRequest)
+		{
+			string str = string.Format("{0}", "UI/Item/fx_reinforce" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
+			WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			wWWItem.SetItemType(ItemType.USER_ASSETB);
+			wWWItem.SetCallback(new PostProcPerItem(this.SetActionItemBreak), null);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+			this.bRequest = true;
+		}
+	}
+
+	private void SetActionItemBreak(WWWItem _item, object _param)
+	{
+		Main_UI_SystemMessage.CloseUI();
+		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.rootGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+				effectUIPos.z = 300f;
+				this.rootGameObject.transform.position = effectUIPos;
+				NkUtil.SetAllChildLayer(this.rootGameObject, GUICamera.UILayer);
+				base.InteractivePanel.MakeChild(this.rootGameObject);
+				this.aniGameObject = this.rootGameObject.GetComponentInChildren<Animation>();
+				this.bLoadActionReforge = true;
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.rootGameObject);
+				}
+				TsAudio.StoreMuteAllAudio();
+				TsAudio.SetExceptMuteAllAudio(EAudioType.UI, true);
+				TsAudio.RefreshAllMuteAudio();
+				NkInputManager.IsInputMode = false;
+			}
+		}
+	}
+
+	public void SendServerItemBreak()
+	{
+		GS_DISASSEMBLEITEM_REQ gS_DISASSEMBLEITEM_REQ = new GS_DISASSEMBLEITEM_REQ();
+		for (int i = 0; i < this.m_ItemBreakList.Count; i++)
+		{
+			if (this.m_ItemBreakList[i] != null && this.m_ItemBreakList[i].m_nItemUnique > 0)
+			{
+				gS_DISASSEMBLEITEM_REQ.SrcItemID[i] = this.m_ItemBreakList[i].m_nItemID;
+			}
+		}
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_DISASSEMBLEITEM_REQ, gS_DISASSEMBLEITEM_REQ);
+	}
+
+	public void SendServerItemDelete(object a_oObject)
+	{
+		List<ITEM> list = a_oObject as List<ITEM>;
+		if (list != null)
+		{
+			GS_ITEM_MULTI_DELETE_REQ gS_ITEM_MULTI_DELETE_REQ = new GS_ITEM_MULTI_DELETE_REQ();
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i] != null && list[i].m_nItemUnique > 0)
+				{
+					gS_ITEM_MULTI_DELETE_REQ.SrcItemID[i] = list[i].m_nItemID;
+				}
+			}
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_ITEM_MULTI_DELETE_REQ, gS_ITEM_MULTI_DELETE_REQ);
+		}
+	}
+
+	public void OnClickBuyGold(IUIObject obj)
+	{
+		NrTSingleton<ItemMallItemManager>.Instance.Send_GS_ITEMMALL_INFO_REQ(eITEMMALL_TYPE.BUY_GOLD, true);
+	}
+
+	public void AddBreakItem(ITEM pItem)
+	{
+		this.m_ItemBreakList.Clear();
+		if (this.m_ItemBreakList != null)
+		{
+			this.m_ItemBreakList.Add(pItem);
+		}
 	}
 }

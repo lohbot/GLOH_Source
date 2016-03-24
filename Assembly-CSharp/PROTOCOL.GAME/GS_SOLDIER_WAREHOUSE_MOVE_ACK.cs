@@ -13,7 +13,7 @@ namespace PROTOCOL.GAME
 
 		public BATTLESKILL_DATA[] BattleSkillData = new BATTLESKILL_DATA[6];
 
-		public long[] SolSubData = new long[14];
+		public long[] SolSubData = new long[16];
 
 		public ITEM[] EquipItem = new ITEM[6];
 

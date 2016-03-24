@@ -6,6 +6,6 @@ namespace PROTOCOL.GAME
 	{
 		public int Result;
 
-		public byte Observer;
+		public byte BattleStartOption;
 	}
 }

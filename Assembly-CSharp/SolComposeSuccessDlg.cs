@@ -1,5 +1,6 @@
 using GAME;
 using System;
+using System.Collections.Generic;
 using TsBundle;
 using UnityEngine;
 using UnityForms;
@@ -46,6 +47,10 @@ public class SolComposeSuccessDlg : Form
 
 	private Button btnOk;
 
+	private List<int> guideWinIDList = new List<int>();
+
+	private UIButton _Touch;
+
 	private string[] arPerpertyKeys = new string[]
 	{
 		"1209",
@@ -63,8 +68,6 @@ public class SolComposeSuccessDlg : Form
 	};
 
 	private GameObject rootGameObject;
-
-	private NkSoldierInfo m_Solinfo;
 
 	private NkSoldierInfo m_TargetSolInfo;
 
@@ -108,6 +111,11 @@ public class SolComposeSuccessDlg : Form
 				});
 				lbControl[i].SetText(empty);
 			}
+			TsLog.Log("arCurrentValue[{0}] = {1}", new object[]
+			{
+				i,
+				arCurrentValue[i]
+			});
 		}
 	}
 
@@ -128,10 +136,10 @@ public class SolComposeSuccessDlg : Form
 		array[1] = charKindInfo.GetGradePlusVIT(solgrade);
 		array[2] = charKindInfo.GetGradePlusDEX(solgrade);
 		array[3] = charKindInfo.GetGradePlusINT(solgrade);
-		array[0] += (int)((short)charKindInfo.GetIncSTR(solgrade, (int)nLevel));
-		array[1] += (int)((short)charKindInfo.GetIncVIT(solgrade, (int)nLevel));
-		array[2] += (int)((short)charKindInfo.GetIncDEX(solgrade, (int)nLevel));
-		array[3] += (int)((short)charKindInfo.GetIncINT(solgrade, (int)nLevel));
+		array[0] += charKindInfo.GetIncSTR(solgrade, (int)nLevel);
+		array[1] += charKindInfo.GetIncVIT(solgrade, (int)nLevel);
+		array[2] += charKindInfo.GetIncDEX(solgrade, (int)nLevel);
+		array[3] += charKindInfo.GetIncINT(solgrade, (int)nLevel);
 		TsLog.Log("Grade : {4} Level : {5} ,STR : {0} VIT : {1} DEX: {2} INT:{3}", new object[]
 		{
 			array[0],
@@ -298,7 +306,8 @@ public class SolComposeSuccessDlg : Form
 				this.Show();
 				if (this.m_TargetSolInfo.IsLeader() && this.m_bLevelUP)
 				{
-					AlarmManager.GetInstance().ShowLevelUpAlarm();
+					AlarmManager.GetInstance().ShowLevelUpAlarm1();
+					AlarmManager.GetInstance().ShowLevelUpAlarm2();
 				}
 			}
 		}
@@ -349,7 +358,8 @@ public class SolComposeSuccessDlg : Form
 					this.SolRank.SetTexture(solLargeGradeImg2);
 				}
 			}
-			this.dtImg.SetTexture(eCharImageType.LARGE, kSolInfo.GetCharKind(), (int)kSolInfo.GetGrade());
+			int costumeUnique = (int)kSolInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
+			this.dtImg.SetTexture(eCharImageType.LARGE, kSolInfo.GetCharKind(), (int)kSolInfo.GetGrade(), NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(costumeUnique));
 			long num = kSolInfo.GetNextExp() - kSolInfo.GetCurBaseExp();
 			float num2 = ((float)num - (float)kSolInfo.GetRemainExp()) / (float)num;
 			if (num2 > 1f)
@@ -391,8 +401,6 @@ public class SolComposeSuccessDlg : Form
 					int[] levelChangeValue = this.GetLevelChangeValue(kSolInfo, (short)lPreLevel, (short)level, (int)bPreGrade);
 					this.SetTextShowOrNot(ref this.m_lbLevelUpStat, levelChangeValue);
 				}
-				this.FacebookButtonSet(false);
-				this.m_Solinfo = null;
 			}
 			if (nAddEvolutionExp > 0L)
 			{
@@ -467,11 +475,6 @@ public class SolComposeSuccessDlg : Form
 					}
 					this.m_txCurRank.SetTexture(solLargeGradeImg3);
 					base.SetShowLayer(4, true);
-					if (kSolInfo.GetGrade() >= 4)
-					{
-						this.FacebookButtonSet(true);
-						this.m_Solinfo = kSolInfo;
-					}
 					int[] gradeChangeValue = this.GetGradeChangeValue(kSolInfo, kSolInfo.GetLevel(), (int)bPreGrade, (int)kSolInfo.GetGrade());
 					this.SetTextShowOrNot(ref this.m_lbRankUpStat, gradeChangeValue);
 				}
@@ -512,36 +515,97 @@ public class SolComposeSuccessDlg : Form
 		}
 	}
 
-	private void FacebookButtonSet(bool bShow)
-	{
-		if (bShow && !TsPlatform.IsBand && !NrTSingleton<ContentsLimitManager>.Instance.IsFacebookLimit())
-		{
-			this.btnOk.SetButtonTextureKey("Win_B_FaceBook");
-			this.btnOk.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("183"));
-		}
-		else
-		{
-			this.btnOk.SetButtonTextureKey("Win_B_BasicBtn01");
-			this.btnOk.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10"));
-		}
-	}
-
 	private void BtnClickOk(IUIObject obj)
 	{
-		if (this.m_Solinfo != null && !TsPlatform.IsBand && !NrTSingleton<ContentsLimitManager>.Instance.IsFacebookLimit())
+		this.HideTouch(false);
+		SolComposeMainDlg_challengequest solComposeMainDlg_challengequest = (SolComposeMainDlg_challengequest)NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_CHALLENGEQUEST_DLG);
+		if (solComposeMainDlg_challengequest != null)
 		{
-			Facebook_Feed_Dlg facebook_Feed_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.FACEBOOK_FEED_DLG) as Facebook_Feed_Dlg;
-			if (facebook_Feed_Dlg != null)
-			{
-				facebook_Feed_Dlg.SetType(eFACEBOOK_FEED_TYPE.ENCHANT_SOL, this.m_Solinfo);
-			}
+			solComposeMainDlg_challengequest.ClearRecommendChallenge();
 		}
 		this.Close();
 	}
 
+	private void ClickTimeLine(IUIObject obj)
+	{
+	}
+
 	public override void OnClose()
 	{
+		this.HideTouch(true);
 		base.OnClose();
 		Resources.UnloadUnusedAssets();
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		if (string.IsNullOrEmpty(param1))
+		{
+			return;
+		}
+		if (this.guideWinIDList != null && !this.guideWinIDList.Contains(winID))
+		{
+			this.guideWinIDList.Add(winID);
+		}
+		string[] array = param1.Split(new char[]
+		{
+			','
+		});
+		if (array == null || array.Length != 4)
+		{
+			return;
+		}
+		IUIObject control = base.GetControl(array[0]);
+		if (control == null)
+		{
+			return;
+		}
+		if (this._Touch == null)
+		{
+			this._Touch = UICreateControl.Button("touch", "Main_I_Touch01", 196f, 154f);
+		}
+		if (this._Touch == null)
+		{
+			return;
+		}
+		int anchor = int.Parse(array[1]);
+		this._Touch.SetAnchor((SpriteRoot.ANCHOR_METHOD)anchor);
+		this._Touch.PlayAni(true);
+		this._Touch.gameObject.SetActive(true);
+		this._Touch.gameObject.transform.parent = control.gameObject.transform;
+		this._Touch.transform.position = new Vector3(control.transform.position.x, control.transform.position.y, control.transform.position.z - 3f);
+		float x = float.Parse(array[2]);
+		float y = float.Parse(array[3]);
+		this._Touch.transform.eulerAngles = new Vector3(x, y, this._Touch.transform.eulerAngles.z);
+		BoxCollider component = this._Touch.gameObject.GetComponent<BoxCollider>();
+		if (null != component)
+		{
+			UnityEngine.Object.Destroy(component);
+		}
+	}
+
+	private void HideTouch(bool closeUI)
+	{
+		if (this._Touch != null && this._Touch.gameObject != null)
+		{
+			this._Touch.gameObject.SetActive(false);
+		}
+		if (!closeUI)
+		{
+			return;
+		}
+		if (this.guideWinIDList == null)
+		{
+			return;
+		}
+		foreach (int current in this.guideWinIDList)
+		{
+			UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)current) as UI_UIGuide;
+			if (uI_UIGuide != null)
+			{
+				uI_UIGuide.CloseUI = true;
+			}
+		}
+		this._Touch = null;
 	}
 }

@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_MythicSolTable : NrTableBase
 {
-	public NrTable_MythicSolTable(string strFilePath) : base(strFilePath, true)
+	public NrTable_MythicSolTable(string strFilePath) : base(strFilePath)
 	{
 	}
 

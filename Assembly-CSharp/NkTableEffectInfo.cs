@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableEffectInfo : NrTableBase
 {
-	public NkTableEffectInfo() : base(CDefinePath.EFFECT_INFO_URL, true)
+	public NkTableEffectInfo() : base(CDefinePath.EFFECT_INFO_URL)
 	{
 	}
 

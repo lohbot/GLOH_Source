@@ -98,11 +98,7 @@ public class BillingManager_TStore : BillingManager
 		{
 			GS_BILLINGCHECK_REQ gS_BILLINGCHECK_REQ = new GS_BILLINGCHECK_REQ();
 			gS_BILLINGCHECK_REQ.i64ItemMallIndex = NrTSingleton<ItemMallItemManager>.Instance.GetItemIndex(text);
-			string strTid = this.m_strTid;
-			if (!long.TryParse(strTid, out gS_BILLINGCHECK_REQ.UniqueCode))
-			{
-				return;
-			}
+			TKString.StringChar(this.m_strTid, ref gS_BILLINGCHECK_REQ.UniqueCode);
 			TKString.StringChar(this.Receipt.ToString(), ref gS_BILLINGCHECK_REQ.Receipt);
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BILLINGCHECK_REQ, gS_BILLINGCHECK_REQ);
 			PlayerPrefs.SetString(NrPrefsKey.SHOP_PRODUCT_ID, gS_BILLINGCHECK_REQ.i64ItemMallIndex.ToString());
@@ -174,7 +170,11 @@ public class BillingManager_TStore : BillingManager
 			return;
 		}
 		this.m_ProductID = strItem;
-		string text = string.Format("1{0:yyMMddHHmmss}", DateTime.Now);
+		string text = string.Format("1{0:yyMMddHHmmss}_{1}", DateTime.Now, NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID);
+		PlayerPrefs.SetString(NrPrefsKey.BUY_PRODUCT_ID, strItem);
+		PlayerPrefs.SetString(NrPrefsKey.BUY_UNIQUE_CODE, text);
+		PlayerPrefs.SetString(NrPrefsKey.BUY_DATE, string.Format("{0:yyyyMMdd}", DateTime.Now));
+		PlayerPrefs.Save();
 		int num = this.AndroidPlugin.Call<int>("PaymentRequest", new object[]
 		{
 			this._appid,
@@ -194,10 +194,6 @@ public class BillingManager_TStore : BillingManager
 		}
 		else
 		{
-			PlayerPrefs.SetString(NrPrefsKey.BUY_PRODUCT_ID, strItem);
-			PlayerPrefs.SetString(NrPrefsKey.BUY_UNIQUE_CODE, text);
-			PlayerPrefs.SetString(NrPrefsKey.BUY_DATE, string.Format("{0:yyyyMMdd}", DateTime.Now));
-			PlayerPrefs.Save();
 			this.m_strTid = text;
 		}
 	}
@@ -210,6 +206,7 @@ public class BillingManager_TStore : BillingManager
 		gS_BILLING_ITEM_RECODE_REQ.i64ItemMallIndex = NrTSingleton<ItemMallItemManager>.Instance.GetItemIndex(this.m_ProductID);
 		NrTSingleton<ItemMallItemManager>.Instance.RecodeErrorMessage(ref gS_BILLING_ITEM_RECODE_REQ, strMsg);
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BILLING_ITEM_RECODE_REQ, gS_BILLING_ITEM_RECODE_REQ);
+		this.EnableCloseItemMallDlg();
 		this.CheckRestoreItem();
 	}
 
@@ -218,6 +215,8 @@ public class BillingManager_TStore : BillingManager
 		PlayerPrefs.SetString(NrPrefsKey.BUY_PRODUCT_ID, string.Empty);
 		PlayerPrefs.SetString(NrPrefsKey.BUY_UNIQUE_CODE, string.Empty);
 		PlayerPrefs.SetString(NrPrefsKey.BUY_DATE, string.Empty);
+		PlayerPrefs.Save();
+		TsLog.LogError("ClearData!!!", new object[0]);
 		this.m_bRecovery = false;
 		this.m_bRecoverytem = false;
 		this.m_bRecovery = false;
@@ -289,8 +288,14 @@ public class BillingManager_TStore : BillingManager
 			this.ClearData();
 			return;
 		}
+		bool flag = false;
 		XmlNode xmlNode = elementsByTagName[0].SelectSingleNode("status");
 		if (xmlNode == null || xmlNode.InnerText != "0")
+		{
+			flag = true;
+		}
+		xmlNode = elementsByTagName[0].SelectSingleNode("detail");
+		if (flag)
 		{
 			GS_BILLING_ITEM_RECODE_REQ gS_BILLING_ITEM_RECODE_REQ2 = new GS_BILLING_ITEM_RECODE_REQ();
 			gS_BILLING_ITEM_RECODE_REQ2.i8Type = 4;
@@ -298,14 +303,13 @@ public class BillingManager_TStore : BillingManager
 			gS_BILLING_ITEM_RECODE_REQ2.i64ItemMallIndex = NrTSingleton<ItemMallItemManager>.Instance.GetItemIndex(@string);
 			if (xmlNode == null)
 			{
-				NrTSingleton<ItemMallItemManager>.Instance.RecodeErrorMessage(ref gS_BILLING_ITEM_RECODE_REQ2, "Data== null");
+				NrTSingleton<ItemMallItemManager>.Instance.RecodeErrorMessage(ref gS_BILLING_ITEM_RECODE_REQ2, "Status Error Data== null");
 			}
 			else
 			{
-				NrTSingleton<ItemMallItemManager>.Instance.RecodeErrorMessage(ref gS_BILLING_ITEM_RECODE_REQ2, "Data.InnerText  =" + xmlNode.InnerText);
+				NrTSingleton<ItemMallItemManager>.Instance.RecodeErrorMessage(ref gS_BILLING_ITEM_RECODE_REQ2, "Status Error detail  =" + xmlNode.InnerText);
 			}
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BILLING_ITEM_RECODE_REQ, gS_BILLING_ITEM_RECODE_REQ2);
-			Debug.Log("ErrorStep!!!!!!!!!!");
 			this.ClearData();
 			return;
 		}
@@ -387,11 +391,7 @@ public class BillingManager_TStore : BillingManager
 		GS_BILLINGITEM_CHECK gS_BILLINGITEM_CHECK = new GS_BILLINGITEM_CHECK();
 		TKString.StringChar(string3, ref gS_BILLINGITEM_CHECK.Date);
 		string string4 = PlayerPrefs.GetString(NrPrefsKey.BUY_UNIQUE_CODE, string.Empty);
-		if (!long.TryParse(string4, out gS_BILLINGITEM_CHECK.UniqueCode))
-		{
-			Debug.Log("strTID == long  " + string4);
-			return;
-		}
+		TKString.StringChar(string4, ref gS_BILLINGITEM_CHECK.UniqueCode);
 		TKString.StringChar(@string, ref gS_BILLINGITEM_CHECK.ProductID);
 		gS_BILLINGITEM_CHECK.i64ItemMallIndex = NrTSingleton<ItemMallItemManager>.Instance.GetItemIndex(@string);
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BILLINGITEM_CHECK, gS_BILLINGITEM_CHECK);
@@ -410,5 +410,18 @@ public class BillingManager_TStore : BillingManager
 	public bool IsCheckRestoreItem()
 	{
 		return this.m_bRecoverytem;
+	}
+
+	public void EnableCloseItemMallDlg()
+	{
+		ItemMallDlg itemMallDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMMALL_DLG) as ItemMallDlg;
+		if (itemMallDlg != null)
+		{
+			itemMallDlg.CloseEnable = true;
+			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.MSGBOX_DLG))
+			{
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.MSGBOX_DLG);
+			}
+		}
 	}
 }

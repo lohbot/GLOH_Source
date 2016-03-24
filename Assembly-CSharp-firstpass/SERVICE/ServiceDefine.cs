@@ -20,6 +20,8 @@ namespace SERVICE
 
 		public const int BILLING_RECEIPT = 4000;
 
+		public const int BILLING_UNIQUECODE = 128;
+
 		public const int BAND_MARKET_TYPE = 10;
 
 		public const int BAND_OS_TYPE = 10;
@@ -29,8 +31,6 @@ namespace SERVICE
 		public const int LOGINIP_NUM = 3;
 
 		public const int BILLING_DATE = 10;
-
-		public const int BILLING_UNIQUE_CODE = 16;
 
 		public const int BILLING_PRODUCT_ID = 12;
 	}

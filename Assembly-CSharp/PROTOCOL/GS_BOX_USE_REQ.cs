@@ -13,5 +13,9 @@ namespace PROTOCOL
 		public int m_nItemPos;
 
 		public int m_nArrayIndex;
+
+		public byte m_byAllOpen;
+
+		public int m_nItemCount;
 	}
 }

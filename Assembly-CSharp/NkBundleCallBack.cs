@@ -403,17 +403,17 @@ public class NkBundleCallBack : NrTSingleton<NkBundleCallBack>
 	[DebuggerHidden]
 	public IEnumerator LoadAsyncCallback(IDownloadedItem wItem, object kParamObject, string name, Type type)
 	{
-		NkBundleCallBack.<LoadAsyncCallback>c__IteratorA <LoadAsyncCallback>c__IteratorA = new NkBundleCallBack.<LoadAsyncCallback>c__IteratorA();
-		<LoadAsyncCallback>c__IteratorA.wItem = wItem;
-		<LoadAsyncCallback>c__IteratorA.kParamObject = kParamObject;
-		<LoadAsyncCallback>c__IteratorA.name = name;
-		<LoadAsyncCallback>c__IteratorA.type = type;
-		<LoadAsyncCallback>c__IteratorA.<$>wItem = wItem;
-		<LoadAsyncCallback>c__IteratorA.<$>kParamObject = kParamObject;
-		<LoadAsyncCallback>c__IteratorA.<$>name = name;
-		<LoadAsyncCallback>c__IteratorA.<$>type = type;
-		<LoadAsyncCallback>c__IteratorA.<>f__this = this;
-		return <LoadAsyncCallback>c__IteratorA;
+		NkBundleCallBack.<LoadAsyncCallback>c__IteratorD <LoadAsyncCallback>c__IteratorD = new NkBundleCallBack.<LoadAsyncCallback>c__IteratorD();
+		<LoadAsyncCallback>c__IteratorD.wItem = wItem;
+		<LoadAsyncCallback>c__IteratorD.kParamObject = kParamObject;
+		<LoadAsyncCallback>c__IteratorD.name = name;
+		<LoadAsyncCallback>c__IteratorD.type = type;
+		<LoadAsyncCallback>c__IteratorD.<$>wItem = wItem;
+		<LoadAsyncCallback>c__IteratorD.<$>kParamObject = kParamObject;
+		<LoadAsyncCallback>c__IteratorD.<$>name = name;
+		<LoadAsyncCallback>c__IteratorD.<$>type = type;
+		<LoadAsyncCallback>c__IteratorD.<>f__this = this;
+		return <LoadAsyncCallback>c__IteratorD;
 	}
 
 	public void StartDownloadPlayerAnimations()

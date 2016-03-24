@@ -301,7 +301,7 @@ public class TournamentLobbyDlg : Form
 		int num2 = 0;
 		for (int i = 0; i < num; i++)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true, string.Empty);
 			for (int j = 0; j < this.m_nSolLineCount; j++)
 			{
 				int iIndex = i * this.m_nSolLineCount + j;
@@ -386,10 +386,10 @@ public class TournamentLobbyDlg : Form
 			{
 				return;
 			}
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
+			if (item != null)
 			{
-				DrawTexture drawTexture = uIListItemContainer.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
+				DrawTexture drawTexture = item.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
 				if (drawTexture != null)
 				{
 					if (!flag && flag2)
@@ -420,7 +420,7 @@ public class TournamentLobbyDlg : Form
 							{
 								this.m_nBanSolKind[(int)this.m_eActiveAlly][i + this.m_nStartIndex] = tOURNAMENT_LOBBY_LISTBOX_DATA.nSoldierKind;
 								this.m_dtBanTexture[(int)this.m_eActiveAlly][i + this.m_nStartIndex].m_dtSol.Visible = true;
-								this.m_dtBanTexture[(int)this.m_eActiveAlly][i + this.m_nStartIndex].m_dtSol.SetTexture(eCharImageType.SMALL, tOURNAMENT_LOBBY_LISTBOX_DATA.nSoldierKind, 0);
+								this.m_dtBanTexture[(int)this.m_eActiveAlly][i + this.m_nStartIndex].m_dtSol.SetTexture(eCharImageType.SMALL, tOURNAMENT_LOBBY_LISTBOX_DATA.nSoldierKind, 0, string.Empty);
 								break;
 							}
 						}
@@ -497,10 +497,10 @@ public class TournamentLobbyDlg : Form
 			{
 				return;
 			}
-			UIListItemContainer uIListItemContainer2 = (UIListItemContainer)this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
-			if (uIListItemContainer2 != null)
+			UIListItemContainer item2 = this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
+			if (item2 != null)
 			{
-				DrawTexture drawTexture2 = uIListItemContainer2.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
+				DrawTexture drawTexture2 = item2.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
 				if (drawTexture2 != null)
 				{
 					if (!flag3 && flag4)
@@ -600,7 +600,7 @@ public class TournamentLobbyDlg : Form
 			DrawTexture drawTexture = obj as DrawTexture;
 			if (drawTexture != null)
 			{
-				drawTexture.SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0);
+				drawTexture.SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0, string.Empty);
 				for (int i = 0; i < this.SELECTCOUNT[this.m_nSelectStep]; i++)
 				{
 					if (this.m_SelectSoldier[(int)this.m_eActiveAlly][i + this.m_nStartIndex].m_nSoldierKind == this.m_nSelectSolKind)
@@ -650,7 +650,7 @@ public class TournamentLobbyDlg : Form
 			DrawTexture drawTexture2 = this.m_dtSolPos[(int)this.m_eActiveAlly][this.m_RandSolPos.nPos];
 			if (drawTexture2 != null)
 			{
-				drawTexture2.SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0);
+				drawTexture2.SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0, string.Empty);
 				for (int j = 0; j < this.SELECTCOUNT[this.m_nSelectStep]; j++)
 				{
 					if (this.m_SelectSoldier[(int)this.m_eActiveAlly][j + this.m_nStartIndex].m_nSoldierKind == this.m_nSelectSolKind)
@@ -816,10 +816,10 @@ public class TournamentLobbyDlg : Form
 		}
 		if (this.m_FirstSoldierKind != null)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbSolList.GetItem(this.m_FirstSoldierKind.nItemIndex);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbSolList.GetItem(this.m_FirstSoldierKind.nItemIndex);
+			if (item != null)
 			{
-				DrawTexture drawTexture = uIListItemContainer.GetElement(this.SOLFRAME + this.m_FirstSoldierKind.nDataIndex) as DrawTexture;
+				DrawTexture drawTexture = item.GetElement(this.SOLFRAME + this.m_FirstSoldierKind.nDataIndex) as DrawTexture;
 				if (drawTexture != null)
 				{
 					Transform child = NkUtil.GetChild(drawTexture.transform, "child_effect");
@@ -832,10 +832,10 @@ public class TournamentLobbyDlg : Form
 		}
 		if (this.m_SecondSoldierKind != null)
 		{
-			UIListItemContainer uIListItemContainer2 = (UIListItemContainer)this.m_lbSolList.GetItem(this.m_SecondSoldierKind.nItemIndex);
-			if (uIListItemContainer2 != null)
+			UIListItemContainer item2 = this.m_lbSolList.GetItem(this.m_SecondSoldierKind.nItemIndex);
+			if (item2 != null)
 			{
-				DrawTexture drawTexture2 = uIListItemContainer2.GetElement(this.SOLFRAME + this.m_SecondSoldierKind.nDataIndex) as DrawTexture;
+				DrawTexture drawTexture2 = item2.GetElement(this.SOLFRAME + this.m_SecondSoldierKind.nDataIndex) as DrawTexture;
 				if (drawTexture2 != null)
 				{
 					Transform child2 = NkUtil.GetChild(drawTexture2.transform, "child_effect");
@@ -870,7 +870,7 @@ public class TournamentLobbyDlg : Form
 			{
 				this.m_nBanSolKind[(int)ACK.nActiveAlly][i + num2] = ACK.nSoldierKind[i];
 				this.m_dtBanTexture[(int)ACK.nActiveAlly][i + num2].m_dtSol.Visible = true;
-				this.m_dtBanTexture[(int)ACK.nActiveAlly][i + num2].m_dtSol.SetTexture(eCharImageType.SMALL, ACK.nSoldierKind[i], 0);
+				this.m_dtBanTexture[(int)ACK.nActiveAlly][i + num2].m_dtSol.SetTexture(eCharImageType.SMALL, ACK.nSoldierKind[i], 0, string.Empty);
 				this.ActiveBanMark(ACK.nSoldierKind[i]);
 			}
 		}
@@ -892,7 +892,7 @@ public class TournamentLobbyDlg : Form
 				this.m_SelectSoldier[(int)ACK.nActiveAlly][i + num4].m_nSoldierPos = (int)ACK.nSolPos[i];
 				this.m_SelectSoldier[(int)ACK.nActiveAlly][i + num4].m_eSetStep = (eTMLOBBY_STEP)ACK.eLobbyStep;
 				this.m_dtSolPos[(int)ACK.nActiveAlly][(int)ACK.nSolPos[i]].Visible = true;
-				this.m_dtSolPos[(int)ACK.nActiveAlly][(int)ACK.nSolPos[i]].SetTexture(eCharImageType.SMALL, ACK.nSoldierKind[i], 0);
+				this.m_dtSolPos[(int)ACK.nActiveAlly][(int)ACK.nSolPos[i]].SetTexture(eCharImageType.SMALL, ACK.nSoldierKind[i], 0, string.Empty);
 				TournamentLobbyDlg.SOLPOS_DRAWTEXTURE sOLPOS_DRAWTEXTURE = this.m_dtSolPos[(int)ACK.nActiveAlly][(int)ACK.nSolPos[i]].Data as TournamentLobbyDlg.SOLPOS_DRAWTEXTURE;
 				if (sOLPOS_DRAWTEXTURE != null)
 				{
@@ -914,7 +914,7 @@ public class TournamentLobbyDlg : Form
 				this.m_SelectSoldier[(int)ACK.nActiveAlly][i].m_nSoldierKind = ACK.nSoldierKind[i];
 				this.m_SelectSoldier[(int)ACK.nActiveAlly][i].m_nSoldierPos = (int)ACK.nSolPos[i];
 				this.m_dtSolPos[(int)ACK.nActiveAlly][(int)ACK.nSolPos[i]].Visible = true;
-				this.m_dtSolPos[(int)ACK.nActiveAlly][(int)ACK.nSolPos[i]].SetTexture(eCharImageType.SMALL, ACK.nSoldierKind[i], 0);
+				this.m_dtSolPos[(int)ACK.nActiveAlly][(int)ACK.nSolPos[i]].SetTexture(eCharImageType.SMALL, ACK.nSoldierKind[i], 0, string.Empty);
 			}
 		}
 	}
@@ -927,16 +927,16 @@ public class TournamentLobbyDlg : Form
 		}
 		for (int i = 0; i < this.m_lbSolList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbSolList.GetItem(i);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbSolList.GetItem(i);
+			if (item != null)
 			{
 				for (int j = 0; j < this.m_nSolLineCount; j++)
 				{
-					ItemTexture itemTexture = uIListItemContainer.GetElement(this.SOLFACE + j) as ItemTexture;
+					ItemTexture itemTexture = item.GetElement(this.SOLFACE + j) as ItemTexture;
 					TOURNAMENT_LOBBY_LISTBOX_DATA tOURNAMENT_LOBBY_LISTBOX_DATA = itemTexture.Data as TOURNAMENT_LOBBY_LISTBOX_DATA;
 					if (tOURNAMENT_LOBBY_LISTBOX_DATA != null && tOURNAMENT_LOBBY_LISTBOX_DATA.nSoldierKind == nBanKind)
 					{
-						DrawTexture drawTexture = uIListItemContainer.GetElement(this.BANMARK + j) as DrawTexture;
+						DrawTexture drawTexture = item.GetElement(this.BANMARK + j) as DrawTexture;
 						if (drawTexture != null)
 						{
 							drawTexture.Visible = true;
@@ -955,12 +955,12 @@ public class TournamentLobbyDlg : Form
 		}
 		for (int i = 0; i < this.m_lbSolList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbSolList.GetItem(i);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbSolList.GetItem(i);
+			if (item != null)
 			{
 				for (int j = 0; j < this.m_nSolLineCount; j++)
 				{
-					DrawTexture drawTexture = uIListItemContainer.GetElement(this.SOLFRAME + j) as DrawTexture;
+					DrawTexture drawTexture = item.GetElement(this.SOLFRAME + j) as DrawTexture;
 					if (drawTexture != null)
 					{
 						drawTexture.SetTexture("Win_T_ItemEmpty02");
@@ -978,16 +978,16 @@ public class TournamentLobbyDlg : Form
 		}
 		for (int i = 0; i < this.m_lbSolList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbSolList.GetItem(i);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbSolList.GetItem(i);
+			if (item != null)
 			{
 				for (int j = 0; j < this.m_nSolLineCount; j++)
 				{
-					ItemTexture itemTexture = uIListItemContainer.GetElement(this.SOLFACE + j) as ItemTexture;
+					ItemTexture itemTexture = item.GetElement(this.SOLFACE + j) as ItemTexture;
 					TOURNAMENT_LOBBY_LISTBOX_DATA tOURNAMENT_LOBBY_LISTBOX_DATA = itemTexture.Data as TOURNAMENT_LOBBY_LISTBOX_DATA;
 					if (tOURNAMENT_LOBBY_LISTBOX_DATA != null && tOURNAMENT_LOBBY_LISTBOX_DATA.nSoldierKind == nSoldierKind)
 					{
-						DrawTexture drawTexture = uIListItemContainer.GetElement(this.SOLFRAME + j) as DrawTexture;
+						DrawTexture drawTexture = item.GetElement(this.SOLFRAME + j) as DrawTexture;
 						if (drawTexture != null)
 						{
 							drawTexture.SetTexture("Win_T_ItemEmpty02");
@@ -1053,7 +1053,7 @@ public class TournamentLobbyDlg : Form
 						int nSoldierPos = this.m_SelectSoldier[(int)this.m_eMyAlly][j].m_nSoldierPos;
 						this.m_SelectSoldier[(int)this.m_eMyAlly][j].m_nSoldierPos = nPos2;
 						this.m_dtSolPos[(int)this.m_eMyAlly][nSoldierPos].SetTexture("Win_T_ItemEmpty");
-						this.m_dtSolPos[(int)this.m_eMyAlly][nPos2].SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0);
+						this.m_dtSolPos[(int)this.m_eMyAlly][nPos2].SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0, string.Empty);
 						this.m_nSelectSolKind = 0;
 						this.m_dtSolPosFrame[(int)this.m_eMyAlly][nSoldierPos].SetTexture("Win_T_ItemEmpty");
 						return;
@@ -1069,7 +1069,7 @@ public class TournamentLobbyDlg : Form
 					{
 						num2 = this.m_SelectSoldier[(int)this.m_eMyAlly][j].m_nSoldierPos;
 						this.m_SelectSoldier[(int)this.m_eMyAlly][j].m_nSoldierPos = nPos2;
-						this.m_dtSolPos[(int)this.m_eMyAlly][nPos2].SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0);
+						this.m_dtSolPos[(int)this.m_eMyAlly][nPos2].SetTexture(eCharImageType.SMALL, this.m_nSelectSolKind, 0, string.Empty);
 						break;
 					}
 				}
@@ -1082,7 +1082,7 @@ public class TournamentLobbyDlg : Form
 					if (this.m_SelectSoldier[(int)this.m_eMyAlly][j].m_nSoldierKind == num)
 					{
 						this.m_SelectSoldier[(int)this.m_eMyAlly][j].m_nSoldierPos = num2;
-						this.m_dtSolPos[(int)this.m_eMyAlly][num2].SetTexture(eCharImageType.SMALL, num, 0);
+						this.m_dtSolPos[(int)this.m_eMyAlly][num2].SetTexture(eCharImageType.SMALL, num, 0, string.Empty);
 						break;
 					}
 				}
@@ -1235,12 +1235,12 @@ public class TournamentLobbyDlg : Form
 		}
 		for (int k = 0; k < this.m_lbSolList.Count; k++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbSolList.GetItem(k);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbSolList.GetItem(k);
+			if (item != null)
 			{
 				for (int l = 0; l < this.m_nSolLineCount; l++)
 				{
-					ItemTexture itemTexture = uIListItemContainer.GetElement(this.SOLFACE + l) as ItemTexture;
+					ItemTexture itemTexture = item.GetElement(this.SOLFACE + l) as ItemTexture;
 					TOURNAMENT_LOBBY_LISTBOX_DATA tOURNAMENT_LOBBY_LISTBOX_DATA = itemTexture.Data as TOURNAMENT_LOBBY_LISTBOX_DATA;
 					if (tOURNAMENT_LOBBY_LISTBOX_DATA != null && tOURNAMENT_LOBBY_LISTBOX_DATA.nSoldierKind == colosseumEnableBatchSoldierKind)
 					{
@@ -1365,10 +1365,10 @@ public class TournamentLobbyDlg : Form
 				{
 					return;
 				}
-				UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
-				if (uIListItemContainer != null)
+				UIListItemContainer item = this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
+				if (item != null)
 				{
-					DrawTexture drawTexture = uIListItemContainer.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
+					DrawTexture drawTexture = item.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
 					if (drawTexture != null)
 					{
 						drawTexture.SetTexture("Win_T_ItemEmpty02");
@@ -1439,10 +1439,10 @@ public class TournamentLobbyDlg : Form
 				{
 					return;
 				}
-				UIListItemContainer uIListItemContainer2 = (UIListItemContainer)this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
-				if (uIListItemContainer2 != null)
+				UIListItemContainer item2 = this.m_lbSolList.GetItem(tOURNAMENT_LOBBY_LISTBOX_DATA.nItemIndex);
+				if (item2 != null)
 				{
-					DrawTexture drawTexture2 = uIListItemContainer2.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
+					DrawTexture drawTexture2 = item2.GetElement(this.SOLFRAME + tOURNAMENT_LOBBY_LISTBOX_DATA.nDataIndex) as DrawTexture;
 					if (drawTexture2 != null)
 					{
 						drawTexture2.SetTexture("Win_T_ItemEmpty02");

@@ -11,5 +11,7 @@ namespace PROTOCOL.GAME
 		public bool bGuildPortrait;
 
 		public char[] szGuildName = new char[11];
+
+		public bool bGuildWar;
 	}
 }

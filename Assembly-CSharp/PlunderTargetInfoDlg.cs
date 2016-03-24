@@ -1,3 +1,4 @@
+using GAME;
 using System;
 using UnityForms;
 
@@ -19,6 +20,8 @@ public class PlunderTargetInfoDlg : Form
 		Form form = this;
 		base.Scale = true;
 		instance.LoadFileAll(ref form, "Plunder/dlg_pvp_opponentinfo", G_ID.PLUNDERTARGETINFO_DLG, false);
+		base.ChangeSceneDestory = false;
+		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
 	}
 
 	public override void SetComponent()
@@ -30,7 +33,7 @@ public class PlunderTargetInfoDlg : Form
 		this.m_lbRank.SetText(string.Empty);
 		this.m_lbStraightWin = (base.GetControl("Label_win2") as Label);
 		this.m_lbStraightWin.SetText(string.Empty);
-		float y = 0f;
+		float y = 55f;
 		float x = GUICamera.width - base.GetSize().x;
 		base.SetLocation(x, y, base.GetLocation().z);
 		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_PLUNDER)
@@ -61,42 +64,65 @@ public class PlunderTargetInfoDlg : Form
 		}
 	}
 
-	public void SetTargetInfoInfiBattle(string strEnemyName, short iLevel, int iRank, int iStraightWin)
+	public void SetTargetInfoInfiBattle(bool bTargetShow, string strEnemyName, short iLevel, int iRank, int iStraightWin)
 	{
-		this.m_lCharName.Text = strEnemyName;
-		this.m_lCharLevel.Text = "Lv. " + iLevel.ToString();
-		string text = string.Empty;
-		if (0 < iRank)
+		if (bTargetShow)
 		{
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+			this.m_lCharName.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3176");
+			this.m_lCharLevel.SetText(string.Empty);
+			this.m_lbRank.SetText(string.Empty);
+			this.m_lbStraightWin.SetText(string.Empty);
+			COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
+			string empty = string.Empty;
+			if (instance != null)
 			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1413"),
-				"rank",
-				iRank
-			});
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("850"),
+					"time",
+					instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_INFIBATTLE_BLIND_MATCH_TIME)
+				});
+				Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			}
 		}
 		else
 		{
-			text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2225");
-		}
-		this.m_lbRank.SetText(text);
-		if (0 <= iStraightWin)
-		{
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+			this.m_lCharName.Text = strEnemyName;
+			this.m_lCharLevel.Text = "Lv. " + iLevel.ToString();
+			string text = string.Empty;
+			if (0 < iRank)
 			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2221"),
-				"count",
-				iStraightWin
-			});
-			this.m_lbStraightWin.SetText(text);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1413"),
+					"rank",
+					iRank
+				});
+			}
+			else
+			{
+				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2225");
+			}
+			this.m_lbRank.SetText(text);
+			if (0 <= iStraightWin)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2221"),
+					"count",
+					iStraightWin
+				});
+				this.m_lbStraightWin.SetText(text);
+			}
+			if (iLevel == 0)
+			{
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleCharLevel = 1;
+			}
+			else
+			{
+				NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleCharLevel = (int)iLevel;
+			}
 		}
-		if (iLevel == 0)
-		{
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleCharLevel = 1;
-		}
-		else
-		{
-			NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.InfiBattleCharLevel = (int)iLevel;
-		}
+		SoldierBatch.SOLDIERBATCH.SetEnemyUserName(this.m_lCharName.Text);
 	}
 }

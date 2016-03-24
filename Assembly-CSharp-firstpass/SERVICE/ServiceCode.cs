@@ -16,6 +16,7 @@ namespace SERVICE
 		public static void Init()
 		{
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL, "korlocal");
+			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_ANDROID_KORLOCAL_MOBILE, "korlocalmobile");
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_ANDROID_KORQA, "korqa");
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_ANDROID_KORTSTORE, "kortstore");
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_ANDROID_KORGOOGLE, "korgoogle");
@@ -48,13 +49,13 @@ namespace SERVICE
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_KORQA, "korqa");
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_KORAPPSTORE, "korappstore");
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_KORKAKAO, "korkakao");
-			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_USQA, "usqa");
-			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_USIOS, "usios");
+			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_USQA, "usiosqa");
+			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_USIOS, "usioslive");
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_CNQA, "cnqa");
 			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_CNTEST, "test");
-			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_JPQA, "lgloh");
-			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_JPQALINE, "lgloh");
-			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_JPLINE, "lgloh");
+			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_JPQA, "LGLOH");
+			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_JPQALINE, "LGLOH");
+			ServiceCode.m_dicMobileCode.Add(eSERVICE_AREA.SERVICE_IOS_JPLINE, "LGLOH");
 		}
 
 		public static eSERVICE_AREA GetServiceArea(string servicecode)

@@ -8,6 +8,7 @@ namespace GAME
 		POST,
 		GAMEGUIDE,
 		ATTEND_REWARD,
+		MINE_RECORED,
 		END
 	}
 }

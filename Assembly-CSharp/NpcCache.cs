@@ -98,12 +98,12 @@ public static class NpcCache
 	[DebuggerHidden]
 	private static IEnumerator RemoveTimer(string key, NpcCache.CachingItem item)
 	{
-		NpcCache.<RemoveTimer>c__Iterator7 <RemoveTimer>c__Iterator = new NpcCache.<RemoveTimer>c__Iterator7();
-		<RemoveTimer>c__Iterator.key = key;
-		<RemoveTimer>c__Iterator.item = item;
-		<RemoveTimer>c__Iterator.<$>key = key;
-		<RemoveTimer>c__Iterator.<$>item = item;
-		return <RemoveTimer>c__Iterator;
+		NpcCache.<RemoveTimer>c__IteratorA <RemoveTimer>c__IteratorA = new NpcCache.<RemoveTimer>c__IteratorA();
+		<RemoveTimer>c__IteratorA.key = key;
+		<RemoveTimer>c__IteratorA.item = item;
+		<RemoveTimer>c__IteratorA.<$>key = key;
+		<RemoveTimer>c__IteratorA.<$>item = item;
+		return <RemoveTimer>c__IteratorA;
 	}
 
 	private static void RemoveCached(string key, NpcCache.CachingItem item)

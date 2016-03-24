@@ -31,6 +31,6 @@ public class ITEMSKILL_INFO : NrTableData
 		row.GetColumn(1, out this.m_strItemType);
 		row.GetColumn(2, out this.SkillUnique);
 		row.GetColumn(3, out this.PrefixText);
-		row.GetColumn(29, out this.iAuctionSearch);
+		row.GetColumn(36, out this.iAuctionSearch);
 	}
 }

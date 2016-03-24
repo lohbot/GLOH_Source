@@ -1,5 +1,9 @@
 using GAME;
+using PROTOCOL;
+using PROTOCOL.GAME;
+using PROTOCOL.GAME.ID;
 using System;
+using System.IO;
 using TsBundle;
 using UnityEngine;
 using UnityForms;
@@ -16,6 +20,15 @@ public class Battle_Control_Dlg : Form
 	{
 		eSKILL_COUNT_01,
 		eSKILL_COUNT_MAX
+	}
+
+	public enum eGUARDIANEFFECT
+	{
+		eGUARDIANEFFECT_NONE,
+		eGUARDIANEFFECT_UI,
+		eGUARDIANEFFECT_UIEND,
+		eGUARDIANEFFECT_MOVIE,
+		eGUARDIANEFFECT_MOVIEEND
 	}
 
 	private DrawTexture[] m_dwSkillIcon;
@@ -62,19 +75,23 @@ public class Battle_Control_Dlg : Form
 
 	private Button m_btTarget;
 
-	private Label m_lbTarget;
-
-	private DrawTexture m_dwTargetBG07_0;
-
-	private DrawTexture m_dwTargetBG07_1;
-
-	private DrawTexture m_dwTargetBG07_2;
-
 	private Box menuNotice;
 
 	private Label m_lbTargetNotice;
 
+	private DrawTexture m_dwAngelSkillGauge_BG;
+
+	private DrawTexture m_dwAngelSkillIcon;
+
+	private DrawTexture m_dwAngelSkillGauge;
+
+	private Button m_btGuardAngelSkill;
+
+	private Label lb_Guardian_Skillname;
+
 	private BATTLESKILL_DETAIL[] m_BSkillDetail;
+
+	private BATTLESKILL_BASE[] m_BSkillBase;
 
 	private GameObject[] m_goSkillActiveEffect;
 
@@ -83,6 +100,12 @@ public class Battle_Control_Dlg : Form
 	private GameObject m_goAngerActiveEffect;
 
 	private int m_nNowGetAngerlyPoint;
+
+	private int m_nNowGetAngelAngerlyPoint;
+
+	private float m_fAngelAngerProgress;
+
+	private float m_fBeforeAngelAngerPercent = -1f;
 
 	private float m_fAngerProgressHeight;
 
@@ -96,7 +119,38 @@ public class Battle_Control_Dlg : Form
 
 	private int m_nMaxAngryPoint = 1000;
 
+	private int m_nMaxAngelAngryPoint = 1000;
+
 	private int m_nTargetButtonCount;
+
+	private int m_nSelectGuardAngelUnique;
+
+	private MYTHRAID_GUARDIANANGEL_INFO m_nSelectGuardAngelInfo;
+
+	private string effect_file_name = string.Empty;
+
+	private GameObject m_EffectGameObject;
+
+	private MYTHRAID_GUARDIANANGEL_INFO currentInvokeAngelInfo;
+
+	public long Angelskill_Invoke_PersonID;
+
+	private float m_fMovieBlockTime;
+
+	public bool bESC;
+
+	public Battle_Control_Dlg.eGUARDIANEFFECT e_guardianEffect;
+
+	public Label Damage
+	{
+		get
+		{
+			return this.m_lbNowAngerNum;
+		}
+		private set
+		{
+		}
+	}
 
 	public override void InitializeComponent()
 	{
@@ -143,19 +197,40 @@ public class Battle_Control_Dlg : Form
 			this.m_btSkillInfo.Visible = true;
 		}
 		this.m_dwAngerFrame = (base.GetControl("DT_AngerFrame") as DrawTexture);
-		Texture2D texture = CResources.Load(NrTSingleton<UIDataManager>.Instance.FilePath + "Texture/AngerBG") as Texture2D;
+		Texture2D texture = Resources.Load(NrTSingleton<UIDataManager>.Instance.FilePath + "Texture/AngerBG") as Texture2D;
 		this.m_dwAngerFrame.SetTexture(texture);
 		this.m_lbNeedSkillAngerNum = (base.GetControl("LB_SkillAnger") as Label);
 		this.m_lbNowAngerNum = (base.GetControl("LB_AngerNum") as Label);
 		this.m_lbNowAngerNum.SetText(this.m_nNowGetAngerlyPoint.ToString());
+		this.AngryTextAniSetting();
 		this.m_dwSkillIcon = new DrawTexture[1];
 		this.m_btSkill = new Button[1];
 		this.m_BSkillDetail = new BATTLESKILL_DETAIL[1];
+		this.m_BSkillBase = new BATTLESKILL_BASE[1];
 		this.m_goSkillActiveEffect = new GameObject[1];
 		this.m_goSkillClickEffect = new GameObject[1];
+		this.m_nMaxAngelAngryPoint = (int)BATTLE_CONSTANT_Manager.GetInstance().GetValue(eBATTLE_CONSTANT.eBATTLE_CONSTANT_MYTHRAID_ANGELPOINT_MAX);
+		this.m_nNowGetAngelAngerlyPoint = (int)BATTLE_CONSTANT_Manager.GetInstance().GetValue(eBATTLE_CONSTANT.eBATTLE_CONSTANT_MYTHRAID_ANGELPOINT_START);
 		this.m_dwAngerPrg = (base.GetControl("DT_AngerBG") as DrawTexture);
 		this.m_fAngerProgressHeight = this.m_dwAngerPrg.GetSize().y;
 		this.m_dwAngerPrg.Visible = false;
+		this.m_dwAngelSkillGauge_BG = (base.GetControl("DT_Angelpoint_Gauge_BG") as DrawTexture);
+		this.m_dwAngelSkillIcon = (base.GetControl("DT_AngelSkillIcon") as DrawTexture);
+		NrTSingleton<FormsManager>.Instance.RequestAttachUIEffect("UI/mythicraid/fx_mythbutton_ui_mobile", this.m_dwAngelSkillIcon, this.m_dwAngelSkillIcon.GetSize());
+		this.m_dwAngelSkillGauge = (base.GetControl("DT_Angelpoint_Gauge") as DrawTexture);
+		this.m_dwAngelSkillGauge.SetLocation(this.m_dwAngelSkillGauge_BG.GetLocationX() + 10f, this.m_dwAngelSkillGauge_BG.GetLocationY() + 5f);
+		this.m_fAngelAngerProgress = this.m_dwAngelSkillGauge.GetSize().x;
+		this.m_btGuardAngelSkill = (base.GetControl("BTN_AngerSkillUse") as Button);
+		Button expr_275 = this.m_btGuardAngelSkill;
+		expr_275.Click = (EZValueChangedDelegate)Delegate.Combine(expr_275.Click, new EZValueChangedDelegate(this.OnClickGuardAngelSkill));
+		this.m_nSelectGuardAngelUnique = NrTSingleton<MythRaidManager>.Instance.m_iGuardAngelUnique;
+		this.lb_Guardian_Skillname = (base.GetControl("LB_Guardian_Skillname") as Label);
+		MYTHRAID_GUARDIANANGEL_INFO mythRaidGuardAngelInfo = NrTSingleton<NrBaseTableManager>.Instance.GetMythRaidGuardAngelInfo(this.m_nSelectGuardAngelUnique);
+		if (mythRaidGuardAngelInfo != null)
+		{
+			this.m_nSelectGuardAngelInfo = mythRaidGuardAngelInfo;
+			this.m_dwAngelSkillIcon.SetTexture(NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillIconTexture(this.m_nSelectGuardAngelInfo.SKILLUNIQUE));
+		}
 		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
 		{
 			if (Battle.BabelPartyCount == 1)
@@ -166,6 +241,10 @@ public class Battle_Control_Dlg : Form
 			{
 				this.m_nMaxAngryPoint = 2000;
 			}
+		}
+		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			this.m_nMaxAngryPoint = 1500;
 		}
 		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS)
 		{
@@ -185,10 +264,8 @@ public class Battle_Control_Dlg : Form
 			this.m_dwSkillIcon[i] = (base.GetControl(name) as DrawTexture);
 			name = string.Format("btn0{0}", (i + 1).ToString());
 			this.m_btSkill[i] = (base.GetControl(name) as Button);
-			this.m_btSkill[i].AddMouseOverDelegate(new EZValueChangedDelegate(this.MouseOverSkill));
-			this.m_btSkill[i].AddMouseOutDelegate(new EZValueChangedDelegate(this.MouseOutSkill));
-			Button expr_2E8 = this.m_btSkill[i];
-			expr_2E8.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2E8.Click, new EZValueChangedDelegate(this.OnClickBattleSkill));
+			Button expr_460 = this.m_btSkill[i];
+			expr_460.Click = (EZValueChangedDelegate)Delegate.Combine(expr_460.Click, new EZValueChangedDelegate(this.OnClickBattleSkill));
 			NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_SKILL_ACTIVE", this.m_btSkill[i], this.m_btSkill[i].GetSize());
 			this.m_btSkill[i].AddGameObjectDelegate(new EZGameObjectDelegate(this.ButtonAddEffectDelegate));
 		}
@@ -198,12 +275,33 @@ public class Battle_Control_Dlg : Form
 		{
 			base.ShowLayer(2);
 		}
+		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			base.ShowLayer(1);
+			base.SetShowLayer(3, true);
+			this.UpdateAngelSkillData(true);
+		}
+		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+		{
+			base.ShowLayer(1);
+			this.SetControl_PreviewHero(true);
+		}
+		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+		{
+			base.ShowLayer(1);
+			this.SetControl_PreviewHero(false);
+		}
 		else
 		{
 			base.ShowLayer(1);
 		}
 		this._SetDialogPos();
 		this.SetAngergaugeFX_Click(false);
+		if (NrTSingleton<NkQuestManager>.Instance.IsWorldFirst())
+		{
+			this.m_btChat.Visible = false;
+		}
+		this.bESC = false;
 	}
 
 	public void SetOrderControl()
@@ -222,10 +320,6 @@ public class Battle_Control_Dlg : Form
 		this.m_lbFriendHelp = (base.GetControl("Label_control_Friendhelp") as Label);
 		this.m_lbAutoBattle = (base.GetControl("Label_control_Auto") as Label);
 		this.m_btTarget = (base.GetControl("btn_target") as Button);
-		this.m_lbTarget = (base.GetControl("Label_target") as Label);
-		this.m_dwTargetBG07_0 = (base.GetControl("DT_ButtonBG07") as DrawTexture);
-		this.m_dwTargetBG07_1 = (base.GetControl("DT_ControlBG07") as DrawTexture);
-		this.m_dwTargetBG07_2 = (base.GetControl("DT_ControlBG07_1") as DrawTexture);
 		this.menuNotice = (base.GetControl("Box_Notice") as Box);
 		this.menuNotice.Visible = false;
 		this.m_lbTargetNotice = (base.GetControl("Label_Label6") as Label);
@@ -233,24 +327,31 @@ public class Battle_Control_Dlg : Form
 		this.m_lbTargetNotice.Visible = false;
 		if (this.m_btMove)
 		{
-			Button expr_200 = this.m_btMove;
-			expr_200.Click = (EZValueChangedDelegate)Delegate.Combine(expr_200.Click, new EZValueChangedDelegate(this.OnClickMove));
+			Button expr_1A8 = this.m_btMove;
+			expr_1A8.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1A8.Click, new EZValueChangedDelegate(this.OnClickMove));
 			this.m_btMove.controlIsEnabled = true;
 			this.m_btMove.ToolTip = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1384");
 			this.m_btMove.EffectAni = false;
 		}
 		if (this.m_btTurnOver)
 		{
-			Button expr_269 = this.m_btTurnOver;
-			expr_269.Click = (EZValueChangedDelegate)Delegate.Combine(expr_269.Click, new EZValueChangedDelegate(this.OnClickTurnOver));
+			Button expr_211 = this.m_btTurnOver;
+			expr_211.Click = (EZValueChangedDelegate)Delegate.Combine(expr_211.Click, new EZValueChangedDelegate(this.OnClickTurnOver));
 			this.m_btTurnOver.controlIsEnabled = true;
 			this.m_btTurnOver.ToolTip = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1388");
 			this.m_btTurnOver.EffectAni = false;
+			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
+			{
+				Button expr_27B = this.m_btTurnOver;
+				expr_27B.Click = (EZValueChangedDelegate)Delegate.Remove(expr_27B.Click, new EZValueChangedDelegate(this.OnClickTurnOver));
+				Button expr_2A2 = this.m_btTurnOver;
+				expr_2A2.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2A2.Click, new EZValueChangedDelegate(this.OnClickUsingDisable));
+			}
 		}
 		if (this.m_btRetreat)
 		{
-			Button expr_2D2 = this.m_btRetreat;
-			expr_2D2.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2D2.Click, new EZValueChangedDelegate(this.OnClickRetreat));
+			Button expr_2D9 = this.m_btRetreat;
+			expr_2D9.Click = (EZValueChangedDelegate)Delegate.Combine(expr_2D9.Click, new EZValueChangedDelegate(this.OnClickRetreat));
 			this.m_btRetreat.controlIsEnabled = true;
 			this.m_btRetreat.EffectAni = false;
 			if (!Battle.BATTLE.Observer)
@@ -263,16 +364,16 @@ public class Battle_Control_Dlg : Form
 			}
 			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
 			{
-				Button expr_36A = this.m_btRetreat;
-				expr_36A.Click = (EZValueChangedDelegate)Delegate.Remove(expr_36A.Click, new EZValueChangedDelegate(this.OnClickRetreat));
-				Button expr_391 = this.m_btRetreat;
-				expr_391.Click = (EZValueChangedDelegate)Delegate.Combine(expr_391.Click, new EZValueChangedDelegate(this.OnClickUsingDisable));
+				Button expr_371 = this.m_btRetreat;
+				expr_371.Click = (EZValueChangedDelegate)Delegate.Remove(expr_371.Click, new EZValueChangedDelegate(this.OnClickRetreat));
+				Button expr_398 = this.m_btRetreat;
+				expr_398.Click = (EZValueChangedDelegate)Delegate.Combine(expr_398.Click, new EZValueChangedDelegate(this.OnClickUsingDisable));
 			}
 		}
 		if (this.m_btRetreatOnly)
 		{
-			Button expr_3C8 = this.m_btRetreatOnly;
-			expr_3C8.Click = (EZValueChangedDelegate)Delegate.Combine(expr_3C8.Click, new EZValueChangedDelegate(this.OnClickRetreat));
+			Button expr_3CF = this.m_btRetreatOnly;
+			expr_3CF.Click = (EZValueChangedDelegate)Delegate.Combine(expr_3CF.Click, new EZValueChangedDelegate(this.OnClickRetreat));
 			this.m_btRetreatOnly.controlIsEnabled = true;
 			this.m_btRetreatOnly.EffectAni = false;
 			if (!Battle.BATTLE.Observer)
@@ -286,38 +387,38 @@ public class Battle_Control_Dlg : Form
 		}
 		if (this.m_btFriendHelp)
 		{
-			Button expr_45F = this.m_btFriendHelp;
-			expr_45F.Click = (EZValueChangedDelegate)Delegate.Combine(expr_45F.Click, new EZValueChangedDelegate(this.OnClickContinueFriendHelp));
+			Button expr_466 = this.m_btFriendHelp;
+			expr_466.Click = (EZValueChangedDelegate)Delegate.Combine(expr_466.Click, new EZValueChangedDelegate(this.OnClickContinueFriendHelp));
 			this.m_btFriendHelp.controlIsEnabled = true;
 			this.m_btFriendHelp.ToolTip = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1386");
 			this.m_btFriendHelp.EffectAni = false;
 			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
 			{
-				Button expr_4C9 = this.m_btFriendHelp;
-				expr_4C9.Click = (EZValueChangedDelegate)Delegate.Remove(expr_4C9.Click, new EZValueChangedDelegate(this.OnClickContinueFriendHelp));
-				Button expr_4F0 = this.m_btFriendHelp;
-				expr_4F0.Click = (EZValueChangedDelegate)Delegate.Combine(expr_4F0.Click, new EZValueChangedDelegate(this.OnClickUsingDisable));
+				Button expr_4D0 = this.m_btFriendHelp;
+				expr_4D0.Click = (EZValueChangedDelegate)Delegate.Remove(expr_4D0.Click, new EZValueChangedDelegate(this.OnClickContinueFriendHelp));
+				Button expr_4F7 = this.m_btFriendHelp;
+				expr_4F7.Click = (EZValueChangedDelegate)Delegate.Combine(expr_4F7.Click, new EZValueChangedDelegate(this.OnClickUsingDisable));
 			}
 		}
 		if (this.m_btAutoBattle)
 		{
-			Button expr_527 = this.m_btAutoBattle;
-			expr_527.Click = (EZValueChangedDelegate)Delegate.Combine(expr_527.Click, new EZValueChangedDelegate(this.OnClickAutoBattle));
+			Button expr_52E = this.m_btAutoBattle;
+			expr_52E.Click = (EZValueChangedDelegate)Delegate.Combine(expr_52E.Click, new EZValueChangedDelegate(this.OnClickAutoBattle));
 			this.m_btAutoBattle.controlIsEnabled = true;
 			this.m_btAutoBattle.ToolTip = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1385");
 			this.m_btAutoBattle.EffectAni = false;
 			if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_TUTORIAL)
 			{
-				Button expr_591 = this.m_btAutoBattle;
-				expr_591.Click = (EZValueChangedDelegate)Delegate.Remove(expr_591.Click, new EZValueChangedDelegate(this.OnClickAutoBattle));
-				Button expr_5B8 = this.m_btAutoBattle;
-				expr_5B8.Click = (EZValueChangedDelegate)Delegate.Combine(expr_5B8.Click, new EZValueChangedDelegate(this.OnClickUsingDisable));
+				Button expr_598 = this.m_btAutoBattle;
+				expr_598.Click = (EZValueChangedDelegate)Delegate.Remove(expr_598.Click, new EZValueChangedDelegate(this.OnClickAutoBattle));
+				Button expr_5BF = this.m_btAutoBattle;
+				expr_5BF.Click = (EZValueChangedDelegate)Delegate.Combine(expr_5BF.Click, new EZValueChangedDelegate(this.OnClickUsingDisable));
 			}
 		}
 		if (this.m_btTarget && !Battle.BATTLE.Observer && (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PLUNDER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_INFINITY) && !TsPlatform.IsIPhone)
 		{
-			Button expr_629 = this.m_btTarget;
-			expr_629.Click = (EZValueChangedDelegate)Delegate.Combine(expr_629.Click, new EZValueChangedDelegate(this.OnClickTarget));
+			Button expr_630 = this.m_btTarget;
+			expr_630.Click = (EZValueChangedDelegate)Delegate.Combine(expr_630.Click, new EZValueChangedDelegate(this.OnClickTarget));
 			this.m_btTarget.controlIsEnabled = true;
 			this.m_btTarget.EffectAni = false;
 			NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_SKILL_ACTIVE", this.m_btTarget, this.m_btTarget.GetSize());
@@ -397,8 +498,8 @@ public class Battle_Control_Dlg : Form
 		}
 		if (this.m_btChat)
 		{
-			Button expr_859 = this.m_btChat;
-			expr_859.Click = (EZValueChangedDelegate)Delegate.Combine(expr_859.Click, new EZValueChangedDelegate(this.OnClickChat));
+			Button expr_860 = this.m_btChat;
+			expr_860.Click = (EZValueChangedDelegate)Delegate.Combine(expr_860.Click, new EZValueChangedDelegate(this.OnClickChat));
 		}
 		this.SetOberver();
 	}
@@ -480,7 +581,7 @@ public class Battle_Control_Dlg : Form
 		{
 			return;
 		}
-		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT)
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_COLOSSEUM || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("156"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
@@ -568,7 +669,7 @@ public class Battle_Control_Dlg : Form
 		if (NrTSingleton<NkBabelMacroManager>.Instance.IsMacro())
 		{
 			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			msgBoxUI.SetMsg(new YesDelegate(this.RequestBabelMacroStopAndAutoBattle), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("187"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("188"), eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.RequestBabelMacroStopAndAutoBattle), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("187"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("188"), eMsgType.MB_OK_CANCEL, 2);
 			return;
 		}
 		if (Battle.BATTLE != null)
@@ -576,7 +677,7 @@ public class Battle_Control_Dlg : Form
 			this.SetAngergaugeFX_Click(false);
 			Battle.BATTLE.Init_BattleSkill_Input(true);
 			Battle.BATTLE.GRID_MANAGER.ActiveAttackGridCanTarget();
-			Battle.BATTLE.Send_GS_BATTLE_AUTO_REQ();
+			Battle.BATTLE.ChangeBattleAuto();
 		}
 	}
 
@@ -597,7 +698,7 @@ public class Battle_Control_Dlg : Form
 			this.SetAngergaugeFX_Click(false);
 			Battle.BATTLE.Init_BattleSkill_Input(true);
 			Battle.BATTLE.GRID_MANAGER.ActiveAttackGridCanTarget();
-			Battle.BATTLE.Send_GS_BATTLE_AUTO_REQ();
+			Battle.BATTLE.ChangeBattleAuto();
 		}
 	}
 
@@ -624,6 +725,19 @@ public class Battle_Control_Dlg : Form
 			{
 				message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("167");
 			}
+			else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW)
+			{
+				textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3293");
+				message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("439");
+			}
+			else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+			{
+				if (NrTSingleton<NewExplorationManager>.Instance.AutoBattle)
+				{
+					NrTSingleton<NewExplorationManager>.Instance.SetAutoBattle(false, false, false);
+				}
+				message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("125");
+			}
 			else
 			{
 				message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("125");
@@ -634,12 +748,31 @@ public class Battle_Control_Dlg : Form
 			textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1767");
 			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("102");
 		}
-		msgBoxUI.SetMsg(new YesDelegate(this.OnRetreatkOK), null, textFromInterface, message, eMsgType.MB_OK_CANCEL);
+		string a_oObject = string.Empty;
+		if (this.bESC)
+		{
+			a_oObject = "FromESC";
+		}
+		msgBoxUI.SetMsg(new YesDelegate(this.OnRetreatkOK), a_oObject, new NoDelegate(this.OnRetreatkCancle), null, textFromInterface, message, eMsgType.MB_OK_CANCEL);
 	}
 
 	public void OnRetreatkOK(object a_oObject)
 	{
+		if (this.bESC)
+		{
+			NrTSingleton<NrMainSystem>.Instance.GetMainCore().EscGame_Cancle();
+		}
+		this.bESC = false;
 		Battle.BATTLE.Send_GS_BATTLE_CLOSE_REQ();
+	}
+
+	public void OnRetreatkCancle(object a_oObject)
+	{
+		if (this.bESC)
+		{
+			NrTSingleton<NrMainSystem>.Instance.GetMainCore().EscGame_Cancle();
+		}
+		this.bESC = false;
 	}
 
 	public void RequestTurnOver()
@@ -656,7 +789,7 @@ public class Battle_Control_Dlg : Form
 		string message = string.Empty;
 		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("182");
 		message = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("183");
-		msgBoxUI.SetMsg(new YesDelegate(this.OnTurnOverOK), null, textFromMessageBox, message, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnTurnOverOK), null, textFromMessageBox, message, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnTurnOverOK(object a_oObject)
@@ -677,6 +810,7 @@ public class Battle_Control_Dlg : Form
 		{
 			base.ShowLayer(1);
 		}
+		this.bESC = false;
 		base.Show();
 	}
 
@@ -688,6 +822,48 @@ public class Battle_Control_Dlg : Form
 			this.m_goAngerActiveEffect.SetActive(false);
 			UnityEngine.Object.Destroy(this.m_goAngerActiveEffect);
 			this.m_goAngerActiveEffect = null;
+		}
+	}
+
+	public void UpdateAngelSkillData(bool canShow)
+	{
+		float num;
+		if (this.m_nNowGetAngelAngerlyPoint == this.m_nMaxAngelAngryPoint)
+		{
+			num = this.m_fAngelAngerProgress;
+		}
+		else
+		{
+			num = this.m_fAngelAngerProgress * ((float)this.m_nNowGetAngelAngerlyPoint / (float)this.m_nMaxAngelAngryPoint);
+		}
+		if (this.m_fBeforeAngelAngerPercent != num)
+		{
+			this.m_dwAngelSkillGauge.SetSize(num, this.m_dwAngelSkillGauge.GetSize().y);
+			if (num == 0f)
+			{
+				this.m_dwAngelSkillGauge.Visible = false;
+			}
+			else
+			{
+				this.m_dwAngelSkillGauge.Visible = true;
+			}
+			this.m_fBeforeAngelAngerPercent = num;
+		}
+		if (canShow)
+		{
+			BATTLESKILL_DETAIL battleSkillDetail = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillDetail(this.m_nSelectGuardAngelInfo.SKILLUNIQUE, 1);
+			if (this.m_nNowGetAngelAngerlyPoint >= battleSkillDetail.m_nSkillNeedAngerlyPoint)
+			{
+				this.GuardianAngelSkillUI(true);
+			}
+			else
+			{
+				this.GuardianAngelSkillUI(false);
+			}
+		}
+		else
+		{
+			this.GuardianAngelSkillUI(false);
 		}
 	}
 
@@ -719,6 +895,7 @@ public class Battle_Control_Dlg : Form
 			for (int i = 0; i < 1; i++)
 			{
 				this.m_BSkillDetail[i] = null;
+				this.m_BSkillBase[i] = null;
 				this.m_dwSkillIcon[i].controlIsEnabled = false;
 				this.m_dwSkillIcon[i].Visible = false;
 				this.m_lbNeedSkillAngerNum.Visible = false;
@@ -753,9 +930,11 @@ public class Battle_Control_Dlg : Form
 					this.m_lbNeedSkillAngerNum.Visible = true;
 					int battleSkillLevel = nkBattleChar.GetSoldierInfo().GetBattleSkillLevel(num);
 					BATTLESKILL_DETAIL battleSkillDetail = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillDetail(num, battleSkillLevel);
+					BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(num);
 					if (battleSkillDetail != null)
 					{
 						this.m_BSkillDetail[i] = battleSkillDetail;
+						this.m_BSkillBase[i] = battleSkillBase;
 						if (!this.CheckBattleSkillUseAble(num, battleSkillDetail.m_nSkillNeedAngerlyPoint) || nkBattleChar.IsBattleCharATB(32))
 						{
 							this.m_dwSkillIcon[i].color.a = 1f;
@@ -771,6 +950,7 @@ public class Battle_Control_Dlg : Form
 				else
 				{
 					this.m_BSkillDetail[i] = null;
+					this.m_BSkillBase[i] = null;
 					this.m_dwSkillIcon[i].controlIsEnabled = false;
 					this.m_dwSkillIcon[i].Visible = false;
 					this.m_lbNeedSkillAngerNum.Visible = false;
@@ -786,6 +966,40 @@ public class Battle_Control_Dlg : Form
 		}
 	}
 
+	public void SetAngelAngerlyPoint(int nGuardAngelUnique, int AngerlyPoint)
+	{
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID && this.m_nSelectGuardAngelUnique == nGuardAngelUnique)
+		{
+			if (AngerlyPoint >= this.m_nMaxAngelAngryPoint)
+			{
+				AngerlyPoint = this.m_nMaxAngelAngryPoint;
+			}
+			else if (AngerlyPoint < 0)
+			{
+				AngerlyPoint = 0;
+			}
+			this.m_nNowGetAngelAngerlyPoint = AngerlyPoint;
+			this.UpdateAngelSkillData(true);
+		}
+	}
+
+	public void SetAngelAngerlyPointForce(int AngerlyPoint)
+	{
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			if (AngerlyPoint >= this.m_nMaxAngelAngryPoint)
+			{
+				AngerlyPoint = this.m_nMaxAngelAngryPoint;
+			}
+			else if (AngerlyPoint < 0)
+			{
+				AngerlyPoint = 0;
+			}
+			this.m_nNowGetAngelAngerlyPoint = AngerlyPoint;
+			this.UpdateAngelSkillData(true);
+		}
+	}
+
 	public void SetAngerlyPoint(int AngerlyPoint)
 	{
 		if (AngerlyPoint >= this.m_nMaxAngryPoint)
@@ -794,6 +1008,19 @@ public class Battle_Control_Dlg : Form
 		}
 		this.m_nNowGetAngerlyPoint = AngerlyPoint;
 		this.SetAngryText();
+	}
+
+	public void AddAngelAngerlyPoint(int AngelAngerlyPoint)
+	{
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID)
+		{
+			this.m_nNowGetAngelAngerlyPoint += AngelAngerlyPoint;
+			if (this.m_nNowGetAngelAngerlyPoint >= this.m_nMaxAngelAngryPoint)
+			{
+				this.m_nNowGetAngelAngerlyPoint = this.m_nMaxAngelAngryPoint;
+			}
+			this.UpdateAngelSkillData(true);
+		}
 	}
 
 	public void AddAngerlyPoint(int AngerlyPoint)
@@ -837,17 +1064,20 @@ public class Battle_Control_Dlg : Form
 	{
 		base.Update();
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
+		if (Battle.BATTLE == null)
 		{
 			return;
 		}
-		if (kMyCharInfo.GetAutoBattle() == E_BF_AUTO_TYPE.AUTO)
+		if (Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PREVIEW && Battle.BATTLE.BattleRoomtype != eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
 		{
-			this.m_btAutoBattle.SetControlState(UIButton.CONTROL_STATE.ACTIVE);
-		}
-		else if (kMyCharInfo.GetAutoBattle() == E_BF_AUTO_TYPE.MANUAL)
-		{
-			this.m_btAutoBattle.SetControlState(UIButton.CONTROL_STATE.NORMAL);
+			if (kMyCharInfo.GetAutoBattle() == E_BF_AUTO_TYPE.AUTO)
+			{
+				this.m_btAutoBattle.SetControlState(UIButton.CONTROL_STATE.ACTIVE);
+			}
+			else if (kMyCharInfo.GetAutoBattle() == E_BF_AUTO_TYPE.MANUAL)
+			{
+				this.m_btAutoBattle.SetControlState(UIButton.CONTROL_STATE.NORMAL);
+			}
 		}
 		int targetBtCount = Battle.BATTLE.GetTargetBtCount();
 		if (0 < targetBtCount)
@@ -875,13 +1105,14 @@ public class Battle_Control_Dlg : Form
 			{
 				this.menuNotice.Visible = false;
 			}
-			if (this.m_btTarget.Visible)
+			if (this.m_btTarget.GetEnableD())
 			{
-				this.m_btTarget.Visible = false;
-				this.m_lbTarget.Visible = false;
-				this.m_dwTargetBG07_0.Visible = false;
-				this.m_dwTargetBG07_1.Visible = false;
-				this.m_dwTargetBG07_2.Visible = false;
+				this.m_btTarget.SetEnabled(false);
+				Transform child = NkUtil.GetChild(this.m_btTarget.transform, "child_effect");
+				if (child != null)
+				{
+					UnityEngine.Object.Destroy(child.gameObject);
+				}
 				this.m_lbTargetNotice.Visible = false;
 			}
 		}
@@ -906,6 +1137,32 @@ public class Battle_Control_Dlg : Form
 		else if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BUBBLEGAMEGUIDE_DLG) != null)
 		{
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BUBBLEGAMEGUIDE_DLG);
+		}
+		switch (this.e_guardianEffect)
+		{
+		case Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_UI:
+			if (this.m_EffectGameObject != null & !this.m_EffectGameObject.GetComponentInChildren<Animation>().isPlaying)
+			{
+				this.e_guardianEffect = Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_UIEND;
+			}
+			break;
+		case Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_UIEND:
+			this.e_guardianEffect = Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_MOVIE;
+			this.lb_Guardian_Skillname.SetText(string.Empty);
+			this.lb_Guardian_Skillname.Visible = false;
+			this.PlayMovie();
+			this.m_fMovieBlockTime = Time.time;
+			break;
+		case Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_MOVIE:
+			if (this.m_fMovieBlockTime > 0f && Time.time - this.m_fMovieBlockTime >= 8f)
+			{
+				this.MovieEnd();
+			}
+			break;
+		case Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_MOVIEEND:
+			this.e_guardianEffect = Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_NONE;
+			this.Send_GS_BATTLE_ANGEL_ORDER_REQ();
+			break;
 		}
 	}
 
@@ -944,6 +1201,44 @@ public class Battle_Control_Dlg : Form
 				break;
 			}
 		}
+	}
+
+	public void Send_GS_BATTLE_ANGEL_ORDER_REQ()
+	{
+		if (this.Angelskill_Invoke_PersonID != NrTSingleton<NkCharManager>.Instance.GetChar(1).GetPersonID())
+		{
+			return;
+		}
+		GS_BATTLE_ANGEL_ORDER_REQ gS_BATTLE_ANGEL_ORDER_REQ = new GS_BATTLE_ANGEL_ORDER_REQ();
+		gS_BATTLE_ANGEL_ORDER_REQ.nMythRaidRoomIndex = SoldierBatch.MYTHRAID_INFO.m_nMythRaidRoomIndex;
+		gS_BATTLE_ANGEL_ORDER_REQ.nGuardAngelUnique = this.m_nSelectGuardAngelUnique;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_BATTLE_ANGEL_ORDER_REQ, gS_BATTLE_ANGEL_ORDER_REQ);
+	}
+
+	public void OnClickGuardAngelSkill(IUIObject obj)
+	{
+		if (Battle.BATTLE.GetBattleRoomState() != eBATTLE_ROOM_STATE.eBATTLE_ROOM_STATE_ACTION)
+		{
+			return;
+		}
+		if (this.m_fStartBlockTime > 0f)
+		{
+			return;
+		}
+		this.m_fStartBlockTime = Time.time;
+		if (this.m_nSelectGuardAngelUnique < 0)
+		{
+			return;
+		}
+		if (Battle.BATTLE.CurrentTurnAlly != Battle.BATTLE.MyAlly)
+		{
+			return;
+		}
+		if (!Battle.BATTLE.IsEnableOrderTime)
+		{
+			return;
+		}
+		this.Send_EffectStart_Packet();
 	}
 
 	public void OnClickBattleSkill(IUIObject obj)
@@ -1101,7 +1396,7 @@ public class Battle_Control_Dlg : Form
 
 	public void SetAngryText()
 	{
-		this.m_lbNowAngerNum.SetText(this.m_nNowGetAngerlyPoint.ToString());
+		this.AngryLabelUpdate(this.m_nNowGetAngerlyPoint.ToString());
 		NkBattleChar nkBattleChar = Battle.BATTLE.SelectBattleSkillChar();
 		if (nkBattleChar != null)
 		{
@@ -1205,5 +1500,156 @@ public class Battle_Control_Dlg : Form
 			}
 		}
 		return num;
+	}
+
+	private void AngryTextAniSetting()
+	{
+		if (this.m_lbNowAngerNum == null)
+		{
+			Debug.LogError("ERROR, Battle_Control_Dlg.cs, AngryTextAniSetting(), m_lbNowAngerNum is Null");
+			return;
+		}
+		UILabelStepByStepAni uILabelStepByStepAni = this.m_lbNowAngerNum.transform.gameObject.AddComponent<UILabelStepByStepAni>();
+		uILabelStepByStepAni._loopTime = -1f;
+		uILabelStepByStepAni._loopInterval = 0.01f;
+		uILabelStepByStepAni._nextValueStopInterval = 0.1f;
+		uILabelStepByStepAni._reverse = true;
+		uILabelStepByStepAni._changePartUpdate = true;
+		uILabelStepByStepAni._useComma = false;
+	}
+
+	private void AngryLabelUpdate(string angry)
+	{
+		UILabelStepByStepAni component = this.m_lbNowAngerNum.GetComponent<UILabelStepByStepAni>();
+		if (component == null)
+		{
+			Debug.LogError("ERROR, Battle_Control_Dlg.cs, AngryLabelUpdate(), textAni is Null");
+			return;
+		}
+		component.Clear();
+		this.m_lbNowAngerNum.SetText(angry);
+	}
+
+	private void GuardianAngelSkillUI(bool _visible)
+	{
+		float alpha;
+		if (_visible)
+		{
+			alpha = 1f;
+		}
+		else
+		{
+			alpha = 0.3f;
+		}
+		if (this.m_dwAngelSkillIcon.transform.childCount > 0)
+		{
+			this.m_dwAngelSkillIcon.transform.GetChild(0).gameObject.SetActive(_visible);
+		}
+		this.m_dwAngelSkillIcon.color.a = 1f;
+		this.m_dwAngelSkillIcon.SetAlpha(alpha);
+		this.m_btGuardAngelSkill.SetEnabled(_visible);
+	}
+
+	public void GuardianAngelEffectStart(int angelUnique)
+	{
+		if (this.m_nSelectGuardAngelInfo == null)
+		{
+			Debug.LogError("There no GuardianAngelInfo.");
+			return;
+		}
+		this.currentInvokeAngelInfo = NrTSingleton<NrBaseTableManager>.Instance.GetMythRaidGuardAngelInfo(angelUnique);
+		EFFECT_INFO effectInfo = NrTSingleton<NkEffectManager>.Instance.GetEffectInfo(this.currentInvokeAngelInfo.EFFECTKEY);
+		this.effect_file_name = string.Format("{0}{1}", "effect/instant/", effectInfo.MOBILE_BUNDLE_PATH);
+		WWWItem wWWItem = Holder.TryGetOrCreateBundle(this.effect_file_name + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+		wWWItem.SetItemType(ItemType.USER_ASSETB);
+		wWWItem.SetCallback(new PostProcPerItem(this.ActionEffect), null);
+		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+		this.UpdateAngelSkillData(false);
+	}
+
+	private void ActionEffect(WWWItem _item, object _param)
+	{
+		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.m_EffectGameObject = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				Vector2 screenPos = new Vector2((float)(Screen.width / 2), (float)(Screen.height / 2));
+				Vector3 effectUIPos = base.GetEffectUIPos(screenPos);
+				effectUIPos.z = 3f;
+				this.m_EffectGameObject.transform.position = effectUIPos;
+				NkUtil.SetAllChildLayer(this.m_EffectGameObject, GUICamera.UILayer);
+				base.InteractivePanel.MakeChild(this.m_EffectGameObject);
+				this.e_guardianEffect = Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_UI;
+				TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "BATTLE", "MYTH_SKILL", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_EffectGameObject);
+				}
+				Transform child = NkUtil.GetChild(this.m_EffectGameObject.transform, "fx_text");
+				this.lb_Guardian_Skillname.Visible = true;
+				this.lb_Guardian_Skillname.transform.position = child.position;
+				BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(this.currentInvokeAngelInfo.SKILLUNIQUE);
+				this.lb_Guardian_Skillname.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillBase.m_strTextKey));
+			}
+		}
+	}
+
+	private void PlayMovie()
+	{
+		if (this.currentInvokeAngelInfo == null)
+		{
+			Debug.LogError("There no currentInvokeAngelInfo.");
+			return;
+		}
+		string text = string.Format("{0}/{1}", NrTSingleton<NrGlobalReference>.Instance.basePath, this.currentInvokeAngelInfo.MOOVIEKEY);
+		if (File.Exists(text))
+		{
+			Debug.LogError("Cannot find this File : " + text);
+			this.MovieEnd();
+			return;
+		}
+		NmMainFrameWork.PlayMovieURL(text, false, false, false);
+	}
+
+	public void MovieEnd()
+	{
+		this.e_guardianEffect = Battle_Control_Dlg.eGUARDIANEFFECT.eGUARDIANEFFECT_MOVIEEND;
+	}
+
+	private void Send_EffectStart_Packet()
+	{
+		SendPacket.GetInstance().SendIDType(258);
+	}
+
+	private void SetControl_PreviewHero(bool isChatOff)
+	{
+		if (this.m_btTurnOver != null)
+		{
+			this.m_btTurnOver.SetEnabled(false);
+		}
+		if (this.m_btMove != null)
+		{
+			this.m_btMove.SetEnabled(false);
+		}
+		if (this.m_btFriendHelp != null)
+		{
+			this.m_btFriendHelp.SetEnabled(false);
+		}
+		if (this.m_btAutoBattle != null)
+		{
+			this.m_btAutoBattle.SetEnabled(false);
+		}
+		if (this.m_btChat != null && isChatOff)
+		{
+			this.m_btChat.Visible = false;
+		}
+	}
+
+	public void ShowRetreatWithCancel()
+	{
+		this.bESC = true;
+		this.OnClickRetreat(null);
 	}
 }

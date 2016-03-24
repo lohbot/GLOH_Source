@@ -1,4 +1,5 @@
 using GAME;
+using Ndoors.Framework.Stage;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
@@ -11,19 +12,106 @@ public class SolDetail_Info_Dlg : Form
 	public enum eSOLTOOLBAR
 	{
 		eSOLGUILDE,
-		eEIEMENTSOL,
 		eLEGENDELEMENTSOL,
+		eEIEMENTSOL,
 		eMAX_TOOLBAR
 	}
 
-	private enum eElement_MsgType
+	private class SolMythSkillSlotControl
 	{
-		eElement_NONE,
-		eElement_NOTSOL,
-		eElement_NEEDEXP,
-		eElement_NEEDGRADE,
-		eElement_SOLHEIGHT,
-		eElement_OK
+		private Button m_btMythSkill;
+
+		private Button m_btMythSkill_Lock;
+
+		private DrawTexture m_dtMythSkillIcon;
+
+		private DrawTexture m_dtLock;
+
+		private DrawTexture m_dtMythBox;
+
+		private DrawTexture m_dtMythSkillBox;
+
+		private Label m_lbMythSkillName;
+
+		private Label m_lbMythSkill;
+
+		private int m_i32MythSkillUnique;
+
+		public void SetComponent(SolDetail_Info_Dlg parent)
+		{
+			this.m_btMythSkill = (parent.GetControl("Btn_MythSkill") as Button);
+			this.m_btMythSkill_Lock = (parent.GetControl("Btn_MythSkill_Lock") as Button);
+			this.m_dtMythSkillIcon = (parent.GetControl("DT_MythSkillIcon") as DrawTexture);
+			this.m_dtLock = (parent.GetControl("DT_Lock") as DrawTexture);
+			this.m_dtMythBox = (parent.GetControl("DT_MythBox") as DrawTexture);
+			this.m_dtMythSkillBox = (parent.GetControl("DT_MythSkillBox") as DrawTexture);
+			this.m_lbMythSkillName = (parent.GetControl("LB_MythSkillName") as Label);
+			this.m_lbMythSkill = (parent.GetControl("LB_MythSkill") as Label);
+			this.m_btMythSkill.Click = new EZValueChangedDelegate(this.OnClickMyth);
+			this.m_btMythSkill_Lock.Click = new EZValueChangedDelegate(this.OnClickMyth);
+			this.SetEmpty();
+		}
+
+		public void SetEmpty()
+		{
+			this.m_btMythSkill.Visible = false;
+			this.m_btMythSkill_Lock.Visible = false;
+			this.m_dtMythSkillIcon.Visible = false;
+			this.m_dtLock.Visible = false;
+			this.m_dtMythBox.Visible = false;
+			this.m_dtMythSkillBox.Visible = false;
+			this.m_lbMythSkillName.Visible = false;
+			this.m_lbMythSkill.Visible = false;
+		}
+
+		public void ShowInfo(SolSlotData cSlotData)
+		{
+			this.SetEmpty();
+			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(cSlotData.i32KindInfo);
+			BATTLESKILL_BASE mythBattleSkill = charKindInfo.GetMythBattleSkill();
+			if (mythBattleSkill == null)
+			{
+				return;
+			}
+			this.m_i32MythSkillUnique = mythBattleSkill.m_nSkillUnique;
+			if (cSlotData.bSolGrade >= 10)
+			{
+				this.m_btMythSkill.Visible = true;
+			}
+			else
+			{
+				this.m_btMythSkill_Lock.Visible = true;
+				this.m_dtLock.Visible = true;
+			}
+			this.m_dtMythSkillIcon.Visible = true;
+			this.m_dtMythBox.Visible = true;
+			this.m_dtMythSkillBox.Visible = true;
+			this.m_lbMythSkillName.Visible = true;
+			this.m_lbMythSkill.Visible = true;
+			UIBaseInfoLoader battleSkillIconTexture = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillIconTexture(mythBattleSkill.m_nSkillUnique);
+			this.m_dtMythSkillIcon.SetTexture(battleSkillIconTexture);
+			string empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1293"),
+				"skillname",
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(mythBattleSkill.m_strTextKey)
+			});
+			this.m_lbMythSkillName.Text = empty;
+		}
+
+		public void OnClickMyth(IUIObject obj)
+		{
+			if (this.m_i32MythSkillUnique <= 0)
+			{
+				return;
+			}
+			SolDetail_Skill_Dlg solDetail_Skill_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLDETAIL_SKILLICON_DLG) as SolDetail_Skill_Dlg;
+			if (solDetail_Skill_Dlg != null)
+			{
+				solDetail_Skill_Dlg.SetSkillData(this.m_i32MythSkillUnique, this.m_i32MythSkillUnique, true);
+			}
+		}
 	}
 
 	private SolSlotData m_SelectSlotData;
@@ -34,11 +122,11 @@ public class SolDetail_Info_Dlg : Form
 
 	private Button m_Button_MovieBtn;
 
-	private Label m_Label_Movie;
-
 	private Toolbar m_Toolbar;
 
 	private Button m_ButtonSkillIcon;
+
+	private Button m_btClose;
 
 	private SolDetailDlgTool m_SolInterfaceTool = new SolDetailDlgTool();
 
@@ -54,8 +142,6 @@ public class SolDetail_Info_Dlg : Form
 
 	private Button m_Button_ok;
 
-	private Label m_Label_Reincarnate;
-
 	private Button m_Button_Help;
 
 	private NewListBox m_NewListBox_Reincarnate;
@@ -66,17 +152,13 @@ public class SolDetail_Info_Dlg : Form
 
 	private Label m_Label_Notice;
 
-	private DrawTexture m_DrawTexture_Item;
+	private Button m_Button_Costume;
 
-	private Label m_Label_Essence;
+	private Label m_Label_Costume;
 
-	private Button m_Button_Legend;
+	private SolDetail_Info_Dlg.SolMythSkillSlotControl m_cMythSkillControl;
 
-	private DrawTexture m_DrawTexture_Time;
-
-	private Label m_Label_Time;
-
-	private SolDetail_Info_Dlg.eElement_MsgType[] m_eElement_Msg = new SolDetail_Info_Dlg.eElement_MsgType[5];
+	private eElement_MsgType[] m_eElement_Msg = new eElement_MsgType[5];
 
 	private ElementSol m_Element_SolID = new ElementSol();
 
@@ -94,22 +176,20 @@ public class SolDetail_Info_Dlg : Form
 		this.m_Toolbar.Control_Tab[0].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1648");
 		UIPanelTab expr_44 = this.m_Toolbar.Control_Tab[0];
 		expr_44.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_44.ButtonClick, new EZValueChangedDelegate(this.ClickToolbar));
-		this.m_Toolbar.Control_Tab[1].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1645");
-		UIPanelTab expr_93 = this.m_Toolbar.Control_Tab[1];
+		this.m_Toolbar.Control_Tab[2].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1645");
+		UIPanelTab expr_93 = this.m_Toolbar.Control_Tab[2];
 		expr_93.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_93.ButtonClick, new EZValueChangedDelegate(this.ClickToolbar));
-		this.m_Toolbar.Control_Tab[2].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2852");
-		UIPanelTab expr_E2 = this.m_Toolbar.Control_Tab[2];
+		this.m_Toolbar.Control_Tab[1].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2852");
+		UIPanelTab expr_E2 = this.m_Toolbar.Control_Tab[1];
 		expr_E2.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_E2.ButtonClick, new EZValueChangedDelegate(this.ClickToolbar));
+		this.m_Toolbar.Control_Tab[1].Visible = false;
 		this.m_SolInterfaceTool.m_Label_Character_Name = (base.GetControl("Label_character_name") as Label);
 		this.m_SolInterfaceTool.m_Label_SeasonNum = (base.GetControl("Label_SeasonNum") as Label);
 		this.m_SolInterfaceTool.m_DrawTexture_rank = (base.GetControl("DrawTexture_rank") as DrawTexture);
 		this.m_SolInterfaceTool.m_Label_Rank2 = (base.GetControl("Label_rank2") as Label);
 		this.m_SolInterfaceTool.m_DrawTexture_Character = (base.GetControl("DrawTexture_character") as DrawTexture);
 		this.m_Button_MovieBtn = (base.GetControl("Button_MovieBtn") as Button);
-		this.m_Button_MovieBtn.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnIntroMovieButton));
-		this.m_Button_MovieBtn.Visible = false;
-		this.m_Label_Movie = (base.GetControl("LB_Movie") as Label);
-		this.m_Label_Movie.Visible = false;
+		this.m_Button_MovieBtn.AddValueChangedDelegate(new EZValueChangedDelegate(this.Click_PreViewHero));
 		this.m_SolInterfaceTool.m_DrawTexture_Event = (base.GetControl("DrawTexture_Event") as DrawTexture);
 		this.m_SolInterfaceTool.m_Label_EventDate = (base.GetControl("Label_EventDate") as Label);
 		for (int i = 0; i < 2; i++)
@@ -127,9 +207,8 @@ public class SolDetail_Info_Dlg : Form
 		this.m_ScrollLabel_info = (base.GetControl("ScrollLabel_info") as ScrollLabel);
 		this.m_Button_ok = (base.GetControl("btn_ok") as Button);
 		this.m_Button_ok.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickOK));
-		this.m_Label_Reincarnate = (base.GetControl("Label_Reincarnate") as Label);
 		this.m_Button_Help = (base.GetControl("Button_Help") as Button);
-		this.m_Button_Help.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickHelp));
+		this.m_Button_Help.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
 		this.m_NewListBox_Reincarnate = (base.GetControl("NewListBox_Reincarnate") as NewListBox);
 		this.m_NewListBox_Reincarnate.touchScroll = false;
 		this.m_Button_Reincarnate = (base.GetControl("btn_Reincarnate") as Button);
@@ -137,14 +216,14 @@ public class SolDetail_Info_Dlg : Form
 		this.m_Button_Reincarnate.SetEnabled(false);
 		this.m_Label_Gold = (base.GetControl("Label_Gold2") as Label);
 		this.m_Label_Notice = (base.GetControl("Label_Label38") as Label);
-		this.m_Label_Essence = (base.GetControl("Label_Essence2") as Label);
-		this.m_Button_Legend = (base.GetControl("btn_Legend") as Button);
-		this.m_Button_Legend.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickLegendReincarnate));
-		this.m_Button_Legend.SetEnabled(false);
-		this.m_DrawTexture_Item = (base.GetControl("DrawTexture_EssenceIcon") as DrawTexture);
-		this.m_DrawTexture_Time = (base.GetControl("DT_LegendTimeBg") as DrawTexture);
-		this.m_Label_Time = (base.GetControl("Label_LegendTime") as Label);
 		this.m_Toolbar.SetSelectTabIndex(0);
+		this.m_btClose = (base.GetControl("Close_Button") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
+		this.m_Button_Costume = (base.GetControl("Btn_Costume") as Button);
+		this.m_Button_Costume.AddValueChangedDelegate(new EZValueChangedDelegate(this.OnClickCostume));
+		this.m_Label_Costume = (base.GetControl("LB_Costume") as Label);
+		this.m_cMythSkillControl = new SolDetail_Info_Dlg.SolMythSkillSlotControl();
+		this.m_cMythSkillControl.SetComponent(this);
 		base.SetShowLayer(1, true);
 		base.SetShowLayer(2, false);
 		base.SetShowLayer(3, false);
@@ -169,7 +248,7 @@ public class SolDetail_Info_Dlg : Form
 			return;
 		}
 		this.m_SolInterfaceTool.m_kSelectCharKindInfo = charKindInfo;
-		this.m_SolInterfaceTool.SetCharImg(this.m_SelectSlotData.bSolGrade - 1);
+		this.m_SolInterfaceTool.SetCharImg(this.m_SelectSlotData.bSolGrade - 1, string.Empty);
 		this.m_SolInterfaceTool.SetHeroEventLabel(this.m_SelectSlotData.bSolGrade);
 		this.m_SolInterfaceTool.SetSkillIcon();
 		this.m_SolInterfaceTool.m_Label_Rank2.Visible = false;
@@ -189,13 +268,13 @@ public class SolDetail_Info_Dlg : Form
 			this.m_SolInterfaceTool.m_DrawTexture_rank.Visible = true;
 		}
 		this.m_Button_MovieBtn.data = this.m_SelectSlotData.i32KindInfo;
-		this.m_Button_MovieBtn.Visible = false;
-		this.m_Label_Movie.Visible = false;
-		if (charKindInfo.GetCHARKIND_INFO().SOLINTRO != "0")
+		bool visible = NrTSingleton<NrCharCostumeTableManager>.Instance.IsCostumeKind(charKindInfo.GetCharKind());
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsCostumeLimit())
 		{
-			this.m_Button_MovieBtn.Visible = true;
-			this.m_Label_Movie.Visible = true;
+			visible = false;
 		}
+		this.m_Button_Costume.Visible = visible;
+		this.m_Label_Costume.Visible = visible;
 		BASE_SOLGRADEINFO cHARKIND_SOLGRADEINFO = charKindInfo.GetCHARKIND_SOLGRADEINFO((int)(this.m_SelectSlotData.bSolGrade - 1));
 		if (cHARKIND_SOLGRADEINFO != null)
 		{
@@ -203,10 +282,10 @@ public class SolDetail_Info_Dlg : Form
 			int num2 = charKindInfo.GetGradePlusDEX((int)(this.m_SelectSlotData.bSolGrade - 1));
 			int num3 = charKindInfo.GetGradePlusINT((int)(this.m_SelectSlotData.bSolGrade - 1));
 			int num4 = charKindInfo.GetGradePlusVIT((int)(this.m_SelectSlotData.bSolGrade - 1));
-			num += charKindInfo.GetIncSTR((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)this.m_SelectSlotData.bSolGrade));
-			num2 += charKindInfo.GetIncDEX((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)this.m_SelectSlotData.bSolGrade));
-			num3 += charKindInfo.GetIncINT((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)this.m_SelectSlotData.bSolGrade));
-			num4 += charKindInfo.GetIncVIT((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)this.m_SelectSlotData.bSolGrade));
+			num += charKindInfo.GetIncSTR((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)(this.m_SelectSlotData.bSolGrade - 1)));
+			num2 += charKindInfo.GetIncDEX((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)(this.m_SelectSlotData.bSolGrade - 1)));
+			num3 += charKindInfo.GetIncINT((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)(this.m_SelectSlotData.bSolGrade - 1)));
+			num4 += charKindInfo.GetIncVIT((int)(this.m_SelectSlotData.bSolGrade - 1), (int)charKindInfo.GetGradeMaxLevel((short)(this.m_SelectSlotData.bSolGrade - 1)));
 			this.m_Label_Stats_str2.SetText(num.ToString());
 			this.m_Label_Stats_dex2.SetText(num2.ToString());
 			this.m_Label_Stats_vit2.SetText(num4.ToString());
@@ -220,41 +299,43 @@ public class SolDetail_Info_Dlg : Form
 			this.m_Label_Stats_int2.SetText("0");
 		}
 		this.m_ScrollLabel_info.SetScrollLabel(charKindInfo.GetDesc());
-		bool flag = false;
 		if (!NrTSingleton<ContentsLimitManager>.Instance.IsElementKind(charKindInfo.GetCharKind()))
 		{
 			if (!NrTSingleton<NrTableSolGuideManager>.Instance.GetCharKindAlchemy(charKindInfo.GetCharKind()))
-			{
-				this.m_Toolbar.Control_Tab[1].Visible = false;
-			}
-			else
-			{
-				this.m_Toolbar.Control_Tab[1].Visible = true;
-				flag = true;
-			}
-			if (!NrTSingleton<NrTableSolGuideManager>.Instance.GetCharKindLegend(charKindInfo.GetCharKind()))
 			{
 				this.m_Toolbar.Control_Tab[2].Visible = false;
 			}
 			else
 			{
 				this.m_Toolbar.Control_Tab[2].Visible = true;
-				flag = true;
-			}
-			if (flag && this.m_MaterialSol.i32BaseCharKind != charKindInfo.GetCharKind())
-			{
-				GS_ELEMENTMATERIAL_REQ gS_ELEMENTMATERIAL_REQ = new GS_ELEMENTMATERIAL_REQ();
-				gS_ELEMENTMATERIAL_REQ.i32BaseCharKind = SlotData.i32KindInfo;
-				SendPacket.GetInstance().SendObject(1842, gS_ELEMENTMATERIAL_REQ);
+				CHARKIND_SOLDIERINFO guide_Col = NrTSingleton<NrBaseTableManager>.Instance.GetGuide_Col(charKindInfo.GetCharKind());
+				if (guide_Col != null)
+				{
+					int[] array = new int[5];
+					byte[] array2 = new byte[5];
+					for (int i = 0; i < 5; i++)
+					{
+						array[i] = guide_Col.kElement_CharData[i].GetCharCharKind();
+						array2[i] = guide_Col.kElement_CharData[i].GetCharCharRank();
+					}
+					SolDetail_Info_Dlg solDetail_Info_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLDETAIL_DLG) as SolDetail_Info_Dlg;
+					solDetail_Info_Dlg.SetElEmentMaterial(guide_Col.i32BaseCharKind, guide_Col.bBaseRank, array, array2, guide_Col.i64NeedMoney);
+				}
 			}
 		}
+		if (Scene.CurScene == Scene.Type.SOLDIER_BATCH)
+		{
+			this.m_Toolbar.Control_Tab[2].Visible = false;
+			this.m_Toolbar.Control_Tab[1].Visible = false;
+		}
+		this.m_cMythSkillControl.ShowInfo(SlotData);
 	}
 
-	public void SetElEmentMaterial(int i32BaseCharKind, byte i8BaseGrade, int[] i32MaterialCharKind, byte[] i8MaterialGrade, long i64Money, byte i8LegendBaseGrade, int[] i32LegendMaterialCharKind, byte[] i8LegendMaterialGrade, long i64LegendMoney, int i32LegendItemUnique, int i32LegendEssencs)
+	public void SetElEmentMaterial(int i32BaseCharKind, byte i8BaseGrade, int[] i32MaterialCharKind, byte[] i8MaterialGrade, long i64Money)
 	{
 		if (this.m_SelectSlotData.i32KindInfo == i32BaseCharKind)
 		{
-			this.m_MaterialSol.Set(i32BaseCharKind, i8BaseGrade, i32MaterialCharKind, i8MaterialGrade, i64Money, i8LegendBaseGrade, i32LegendMaterialCharKind, i8LegendMaterialGrade, i64LegendMoney, i32LegendItemUnique, i32LegendEssencs);
+			this.m_MaterialSol.Set(i32BaseCharKind, i8BaseGrade, i32MaterialCharKind, i8MaterialGrade, i64Money);
 		}
 	}
 
@@ -286,17 +367,17 @@ public class SolDetail_Info_Dlg : Form
 			if (NrTSingleton<NrGlobalReference>.Instance.useCache)
 			{
 				string str = string.Format("{0}SOLINTRO/", Option.GetProtocolRootPath(Protocol.HTTP));
-				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL(str + sOLINTRO + ".mp4", true, false, true);
 			}
 			else
 			{
-				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false);
+				NmMainFrameWork.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/SOLINTRO/" + sOLINTRO + ".mp4", true, false, true);
 			}
 		}
 		else
 		{
 			string str2 = string.Format("{0}SOLINTRO/", NrTSingleton<NrGlobalReference>.Instance.basePath);
-			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false);
+			NmMainFrameWork.PlayMovieURL(str2 + sOLINTRO + ".mp4", true, false, true);
 		}
 	}
 
@@ -313,7 +394,7 @@ public class SolDetail_Info_Dlg : Form
 		SolDetail_Skill_Dlg solDetail_Skill_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLDETAIL_SKILLICON_DLG) as SolDetail_Skill_Dlg;
 		if (solDetail_Skill_Dlg != null)
 		{
-			solDetail_Skill_Dlg.SetSkillData(this.m_SelectSlotData.i32SkillUnique, this.m_SelectSlotData.i32SkillText);
+			solDetail_Skill_Dlg.SetSkillData(this.m_SelectSlotData.i32SkillUnique, this.m_SelectSlotData.i32SkillText, false);
 		}
 	}
 
@@ -323,6 +404,7 @@ public class SolDetail_Info_Dlg : Form
 		base.SetShowLayer(2, false);
 		base.SetShowLayer(3, false);
 		base.SetShowLayer(4, false);
+		base.SetShowLayer(6, true);
 		this.m_bLayer3Show = false;
 		this.SetSolKind(this.m_SelectSlotData);
 	}
@@ -334,17 +416,12 @@ public class SolDetail_Info_Dlg : Form
 		base.SetShowLayer(3, false);
 		base.SetShowLayer(4, false);
 		this.m_bLayer3Show = false;
+		base.SetShowLayer(6, false);
 		this.SetElementGui();
 	}
 
 	private void SetLegendElementLayerShow()
 	{
-		base.SetShowLayer(1, false);
-		base.SetShowLayer(2, true);
-		base.SetShowLayer(3, false);
-		base.SetShowLayer(4, true);
-		this.m_bLayer3Show = false;
-		this.SetLegendElementGui();
 	}
 
 	private void ClickToolbar(IUIObject obj)
@@ -354,12 +431,12 @@ public class SolDetail_Info_Dlg : Form
 		{
 			return;
 		}
-		if (uIPanelTab.panel.index == 1)
+		if (uIPanelTab.panel.index == 2)
 		{
 			this.m_Toolbar.SetSelectTabIndex(uIPanelTab.panel.index);
 			this.SetElementLayerShow();
 		}
-		else if (uIPanelTab.panel.index == 2)
+		else if (uIPanelTab.panel.index == 1)
 		{
 			this.m_Toolbar.SetSelectTabIndex(uIPanelTab.panel.index);
 			this.SetLegendElementLayerShow();
@@ -373,11 +450,92 @@ public class SolDetail_Info_Dlg : Form
 
 	public void SetTabButtonHide(SolDetail_Info_Dlg.eSOLTOOLBAR eSolToolBar)
 	{
-		if (SolDetail_Info_Dlg.eSOLTOOLBAR.eEIEMENTSOL > eSolToolBar || SolDetail_Info_Dlg.eSOLTOOLBAR.eMAX_TOOLBAR <= eSolToolBar)
+		if (SolDetail_Info_Dlg.eSOLTOOLBAR.eLEGENDELEMENTSOL > eSolToolBar || SolDetail_Info_Dlg.eSOLTOOLBAR.eMAX_TOOLBAR <= eSolToolBar)
 		{
 			return;
 		}
 		this.m_Toolbar.Control_Tab[(int)eSolToolBar].Visible = false;
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			if (this.m_Toolbar.SeletedToolIndex == 2)
+			{
+				gameHelpList_Dlg.SetViewType(eHELP_LIST.Soldier_Alchemy.ToString());
+			}
+			else if (this.m_Toolbar.SeletedToolIndex == 1)
+			{
+				gameHelpList_Dlg.SetViewType(eHELP_LIST.Soldier_Descent.ToString());
+			}
+		}
+	}
+
+	private void Click_PreViewHero(IUIObject obj)
+	{
+		if (obj == null)
+		{
+			return;
+		}
+		int num = (int)obj.Data;
+		if (NrTSingleton<NkCharManager>.Instance.GetChar(1) == null)
+		{
+			return;
+		}
+		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(num);
+		if (charKindInfo == null)
+		{
+			TsLog.LogOnlyEditor(" [Click_PreViewHero] == SOL CHARKIND ERROR {0}" + num + " !!");
+			return;
+		}
+		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
+		if (msgBoxUI == null)
+		{
+			return;
+		}
+		msgBoxUI.SetMsg(new YesDelegate(this.MessageBox_PreviewHero), charKindInfo.GetCharKind(), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3293"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("438"), eMsgType.MB_OK_CANCEL, 2);
+		msgBoxUI.Show();
+	}
+
+	private void MessageBox_PreviewHero(object a_oObject)
+	{
+		int num = (int)a_oObject;
+		if (num < 0)
+		{
+			return;
+		}
+		GS_PREVIEW_HERO_START_REQ gS_PREVIEW_HERO_START_REQ = new GS_PREVIEW_HERO_START_REQ();
+		gS_PREVIEW_HERO_START_REQ.i32CharKind = num;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_PREVIEW_HERO_START_REQ, gS_PREVIEW_HERO_START_REQ);
+		SolGuide_Dlg solGuide_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLGUIDE_DLG) as SolGuide_Dlg;
+		if (solGuide_Dlg != null)
+		{
+			solGuide_Dlg.ChangeSceneDestory = false;
+			solGuide_Dlg.Hide();
+			NrTSingleton<NkClientLogic>.Instance.GidPrivewHero = 166;
+		}
+	}
+
+	private void OnClickCostume(IUIObject obj)
+	{
+		if (this.m_SolInterfaceTool == null || this.m_SolInterfaceTool.m_kSelectCharKindInfo == null)
+		{
+			return;
+		}
+		NrCharKindInfo kSelectCharKindInfo = this.m_SolInterfaceTool.m_kSelectCharKindInfo;
+		if (!NrTSingleton<NrCharCostumeTableManager>.Instance.IsCostumeKind(kSelectCharKindInfo.GetCharKind()))
+		{
+			return;
+		}
+		CostumeRoom_Dlg costumeRoom_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.COSTUMEROOM_DLG) as CostumeRoom_Dlg;
+		if (costumeRoom_Dlg == null)
+		{
+			return;
+		}
+		costumeRoom_Dlg.InitCostumeRoom(kSelectCharKindInfo.GetCharKind(), null);
+		costumeRoom_Dlg.Show();
 	}
 
 	public void SetElementGui()
@@ -424,8 +582,8 @@ public class SolDetail_Info_Dlg : Form
 		this.m_SolInterfaceTool.m_DrawTexture_rank.SetTexture(solLargeGradeImg);
 		if (this.m_SelectSlotData.i32KindInfo == 0)
 		{
-			this.m_Toolbar.Control_Tab[1].Visible = false;
 			this.m_Toolbar.Control_Tab[2].Visible = false;
+			this.m_Toolbar.Control_Tab[1].Visible = false;
 			return;
 		}
 		this.m_SolInterfaceTool.SetSeason(b);
@@ -438,11 +596,11 @@ public class SolDetail_Info_Dlg : Form
 			{
 				this.m_MaterialSol.GetCharData((byte)i, ref num, ref bCharRank);
 			}
-			this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NONE;
+			this.m_eElement_Msg[i] = eElement_MsgType.eElement_NONE;
 			if (num != 0)
 			{
-				NewListItem item = new NewListItem(this.m_NewListBox_Reincarnate.ColumnNum, true);
-				this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
+				NewListItem item = new NewListItem(this.m_NewListBox_Reincarnate.ColumnNum, true, string.Empty);
+				this.m_eElement_Msg[i] = eElement_MsgType.eElement_NOTSOL;
 				this.SetReincarnateListBox(ref item, i, num, bCharRank, false);
 				this.m_NewListBox_Reincarnate.Add(item);
 			}
@@ -461,11 +619,11 @@ public class SolDetail_Info_Dlg : Form
 				{
 					this.m_MaterialSol.GetCharData((byte)j, ref num, ref bCharRank);
 				}
-				this.m_eElement_Msg[j] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NONE;
+				this.m_eElement_Msg[j] = eElement_MsgType.eElement_NONE;
 				if (num != 0)
 				{
-					NewListItem item2 = new NewListItem(this.m_NewListBox_Reincarnate.ColumnNum, true);
-					this.m_eElement_Msg[j] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
+					NewListItem item2 = new NewListItem(this.m_NewListBox_Reincarnate.ColumnNum, true, string.Empty);
+					this.m_eElement_Msg[j] = eElement_MsgType.eElement_NOTSOL;
 					this.SetReincarnateListBox(ref item2, j, num, bCharRank, true);
 					this.m_NewListBox_Reincarnate.Add(item2);
 				}
@@ -492,6 +650,8 @@ public class SolDetail_Info_Dlg : Form
 		}
 		item.SetListItemData(8, false);
 		item.SetListItemData(9, false);
+		item.SetListItemData(10, false);
+		item.SetListItemData(11, false);
 		NkListSolInfo nkListSolInfo = new NkListSolInfo();
 		nkListSolInfo.SolCharKind = i32CharKind;
 		nkListSolInfo.SolGrade = (int)(bCharRank - 1);
@@ -499,7 +659,7 @@ public class SolDetail_Info_Dlg : Form
 		item.SetListItemData(4, charKindInfo.GetName(), null, null, null);
 		text = this.GetElementSolMsg(this.m_eElement_Msg[i]);
 		item.SetListItemData(5, text, null, null, null);
-		if (this.m_eElement_Msg[i] == SolDetail_Info_Dlg.eElement_MsgType.eElement_OK || this.m_eElement_Msg[i] == SolDetail_Info_Dlg.eElement_MsgType.eElement_SOLHEIGHT)
+		if (this.m_eElement_Msg[i] == eElement_MsgType.eElement_OK || this.m_eElement_Msg[i] == eElement_MsgType.eElement_SOLHEIGHT)
 		{
 			item.SetListItemData(0, true);
 			item.SetListItemData(1, false);
@@ -570,7 +730,7 @@ public class SolDetail_Info_Dlg : Form
 		{
 			base.SetLayerZ(3, -1f);
 		}
-		if (this.m_Toolbar.SeletedToolIndex == 2)
+		if (this.m_Toolbar.SeletedToolIndex == 1)
 		{
 			this.m_Label_Notice.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2851"));
 		}
@@ -580,7 +740,7 @@ public class SolDetail_Info_Dlg : Form
 		}
 	}
 
-	private NkSoldierInfo GetBattleSolDataCheck(ref SolDetail_Info_Dlg.eElement_MsgType eElement_Msg, int i32CharKind, byte bCharGrade)
+	private NkSoldierInfo GetBattleSolDataCheck(ref eElement_MsgType eElement_Msg, int i32CharKind, byte bCharGrade)
 	{
 		NkSoldierInfo result = null;
 		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
@@ -591,20 +751,34 @@ public class SolDetail_Info_Dlg : Form
 		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 		foreach (NkSoldierInfo current in readySolList.GetList().Values)
 		{
-			if (current != null && current.GetSolPosType() == 0 && current.GetCharKind() == i32CharKind)
+			if (current != null)
 			{
-				this.GetSolGradeCheck(ref result, ref eElement_Msg, current, bCharGrade - 1);
+				if (current.GetSolID() != NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().GetFaceSolID())
+				{
+					if (current.GetSolPosType() == 0 && current.GetCharKind() == i32CharKind && current.GetLegendType() == 0 && !current.IsAtbCommonFlag(1L))
+					{
+						this.GetSolGradeCheck(ref result, ref eElement_Msg, current, bCharGrade - 1);
+					}
+				}
 			}
 		}
 		return result;
 	}
 
-	private void GetSolGradeCheck(ref NkSoldierInfo pkSolinfo, ref SolDetail_Info_Dlg.eElement_MsgType eElement_Msg, NkSoldierInfo pkReadySolinfo, byte bCharGrade)
+	private void GetSolGradeCheck(ref NkSoldierInfo pkSolinfo, ref eElement_MsgType eElement_Msg, NkSoldierInfo pkReadySolinfo, byte bCharGrade)
 	{
 		if (NrTSingleton<ContentsLimitManager>.Instance.IsSolGuideCharKindInfo(pkReadySolinfo.GetCharKind()))
 		{
-			eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
+			eElement_Msg = eElement_MsgType.eElement_NOTSOL;
 			TsLog.LogOnlyEditor("!!!! CONTENTLIMIT SOL CHARKIND ERROR {0}" + this.m_SelectSlotData.i32KindInfo + " !!");
+			return;
+		}
+		if (pkReadySolinfo == null)
+		{
+			return;
+		}
+		if (pkReadySolinfo.IsCostumeEquip())
+		{
 			return;
 		}
 		if (pkReadySolinfo.GetMaxSkillLevel())
@@ -613,7 +787,7 @@ public class SolDetail_Info_Dlg : Form
 			{
 				if (pkReadySolinfo.GetGrade() == bCharGrade)
 				{
-					if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_OK)
+					if (eElement_Msg == eElement_MsgType.eElement_OK)
 					{
 						if (pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
 						{
@@ -622,59 +796,59 @@ public class SolDetail_Info_Dlg : Form
 					}
 					else
 					{
-						eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_OK;
+						eElement_Msg = eElement_MsgType.eElement_OK;
 						pkSolinfo = pkReadySolinfo;
 					}
 				}
-				else if (eElement_Msg < SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE)
+				else if (eElement_Msg < eElement_MsgType.eElement_NEEDGRADE)
 				{
-					eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_SOLHEIGHT;
+					eElement_Msg = eElement_MsgType.eElement_SOLHEIGHT;
 					pkSolinfo = pkReadySolinfo;
 				}
-				else if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_SOLHEIGHT && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
+				else if (eElement_Msg == eElement_MsgType.eElement_SOLHEIGHT && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
 				{
 					pkSolinfo = pkReadySolinfo;
 				}
 			}
-			else if (eElement_Msg < SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE)
+			else if (eElement_Msg < eElement_MsgType.eElement_NEEDGRADE)
 			{
-				eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE;
+				eElement_Msg = eElement_MsgType.eElement_NEEDGRADE;
 				pkSolinfo = pkReadySolinfo;
 			}
-			else if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
+			else if (eElement_Msg == eElement_MsgType.eElement_NEEDGRADE && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
 			{
 				pkSolinfo = pkReadySolinfo;
 			}
 		}
-		else if (eElement_Msg < SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDEXP)
+		else if (eElement_Msg < eElement_MsgType.eElement_NEEDEXP)
 		{
-			eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDEXP;
+			eElement_Msg = eElement_MsgType.eElement_NEEDEXP;
 			pkSolinfo = pkReadySolinfo;
 		}
-		else if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDEXP && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
+		else if (eElement_Msg == eElement_MsgType.eElement_NEEDEXP && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
 		{
 			pkSolinfo = pkReadySolinfo;
 		}
 	}
 
-	private string GetElementSolMsg(SolDetail_Info_Dlg.eElement_MsgType eType)
+	private string GetElementSolMsg(eElement_MsgType eType)
 	{
 		string result = string.Empty;
 		switch (eType)
 		{
-		case SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL:
+		case eElement_MsgType.eElement_NOTSOL:
 			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1649");
 			break;
-		case SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDEXP:
+		case eElement_MsgType.eElement_NEEDEXP:
 			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1650");
 			break;
-		case SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE:
+		case eElement_MsgType.eElement_NEEDGRADE:
 			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1651");
 			break;
-		case SolDetail_Info_Dlg.eElement_MsgType.eElement_SOLHEIGHT:
+		case eElement_MsgType.eElement_SOLHEIGHT:
 			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1691");
 			break;
-		case SolDetail_Info_Dlg.eElement_MsgType.eElement_OK:
+		case eElement_MsgType.eElement_OK:
 			result = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1575");
 			break;
 		}
@@ -690,7 +864,7 @@ public class SolDetail_Info_Dlg : Form
 		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1706");
 		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("164");
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnReincarnateOK), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnReincarnateOK), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnReincarnateOK(object a_oObject)
@@ -709,10 +883,10 @@ public class SolDetail_Info_Dlg : Form
 			{
 				this.m_MaterialSol.GetCharData((byte)i, ref num, ref bCharGrade);
 			}
-			this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
+			this.m_eElement_Msg[i] = eElement_MsgType.eElement_NOTSOL;
 			if (num == 0)
 			{
-				this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_OK;
+				this.m_eElement_Msg[i] = eElement_MsgType.eElement_OK;
 				array[i] = 0L;
 			}
 			else
@@ -791,12 +965,85 @@ public class SolDetail_Info_Dlg : Form
 		bool result = true;
 		for (int i = 0; i < 5; i++)
 		{
-			if (this.m_eElement_Msg[i] >= SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL && this.m_eElement_Msg[i] <= SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE)
+			if (this.m_eElement_Msg[i] >= eElement_MsgType.eElement_NOTSOL && this.m_eElement_Msg[i] <= eElement_MsgType.eElement_NEEDGRADE)
 			{
 				result = false;
 			}
 		}
 		return result;
+	}
+
+	private bool SetButtonLegendReincarnate()
+	{
+		bool result = true;
+		for (int i = 0; i < 5; i++)
+		{
+			if (this.m_eElement_Msg[i] >= eElement_MsgType.eElement_NOTSOL && this.m_eElement_Msg[i] <= eElement_MsgType.eElement_NEEDGRADE)
+			{
+				result = false;
+			}
+		}
+		for (int j = 0; j < 5; j++)
+		{
+			NkSoldierInfo legendSolInfo = this.m_Element_SolID.GetLegendSolInfo(j);
+			if (legendSolInfo == null)
+			{
+				result = false;
+				break;
+			}
+			if (legendSolInfo.GetFriendPersonID() != 0L)
+			{
+				result = false;
+				break;
+			}
+			for (int k = 0; k < 6; k++)
+			{
+				if (legendSolInfo.GetEquipItemInfo() != null)
+				{
+					ITEM item = legendSolInfo.GetEquipItemInfo().m_kItem[k].GetItem();
+					if (item != null)
+					{
+						if (item.m_nItemUnique != 0)
+						{
+							result = false;
+							break;
+						}
+					}
+				}
+			}
+		}
+		return result;
+	}
+
+	private void OnClickUseSol(IUIObject obj)
+	{
+		int num = (int)obj.Data;
+		if (num < 0 || num > 5)
+		{
+			return;
+		}
+		long[] array = new long[5];
+		for (int i = 0; i < 5; i++)
+		{
+			NkSoldierInfo legendSolInfo = this.m_Element_SolID.GetLegendSolInfo(i);
+			if (legendSolInfo != null)
+			{
+				array[i] = this.m_Element_SolID.GetLegendSolInfo(i).GetSolID();
+			}
+			else
+			{
+				array[i] = 0L;
+			}
+		}
+		SolMilitarySelectDlg solMilitarySelectDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLMILITARYSELECT_DLG) as SolMilitarySelectDlg;
+		if (solMilitarySelectDlg != null)
+		{
+			solMilitarySelectDlg.SetLocationByForm(this);
+			solMilitarySelectDlg.SetFocus();
+			solMilitarySelectDlg.SetLegendElement(this.m_SelectSlotData.i32KindInfo, array, (byte)num);
+			solMilitarySelectDlg.SetSortList();
+			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+		}
 	}
 
 	private void OnClickUnsetSolHelp(IUIObject obj)
@@ -843,415 +1090,6 @@ public class SolDetail_Info_Dlg : Form
 		}
 	}
 
-	public void SetLegendElementGui()
-	{
-		this.m_Button_Legend.SetEnabled(false);
-		this.m_NewListBox_Reincarnate.Clear();
-		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(this.m_SelectSlotData.i32KindInfo);
-		if (charKindInfo == null)
-		{
-			TsLog.LogOnlyEditor("!!!! SOL CHARKIND ERROR {0}" + this.m_SelectSlotData.i32KindInfo + " !!");
-			return;
-		}
-		if (this.m_SolInterfaceTool == null)
-		{
-			TsLog.LogOnlyEditor("!!!! SOL CHARKIND ERROR {0}" + this.m_SelectSlotData.i32KindInfo + " !!");
-			return;
-		}
-		this.m_SolInterfaceTool.m_kSelectCharKindInfo = charKindInfo;
-		if (this.m_MaterialSol == null)
-		{
-			TsLog.LogOnlyEditor("!!!! m_MaterialSol ERROR {0}" + this.m_SelectSlotData.i32KindInfo + " !!");
-			return;
-		}
-		if (this.m_MaterialSol.i32BaseCharKind != this.m_SelectSlotData.i32KindInfo)
-		{
-			this.m_MaterialSol.Init();
-		}
-		this.m_Label_Reincarnate.Visible = false;
-		this.m_Button_Reincarnate.Visible = false;
-		byte b = 0;
-		if (this.m_MaterialSol.i32BaseCharKind == this.m_SelectSlotData.i32KindInfo)
-		{
-			b = this.m_MaterialSol.i8LegendBaseGrade;
-		}
-		if (b < 0)
-		{
-			b = 0;
-		}
-		this.m_SolInterfaceTool.m_DrawTexture_rank.Visible = true;
-		short legendType = NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(this.m_SelectSlotData.i32KindInfo, (int)(b - 1));
-		UIBaseInfoLoader solLargeGradeImg = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolLargeGradeImg(this.m_SelectSlotData.i32KindInfo, (int)(b - 1));
-		if (0 < legendType)
-		{
-			this.m_SolInterfaceTool.m_DrawTexture_rank.SetSize(solLargeGradeImg.UVs.width, solLargeGradeImg.UVs.height);
-		}
-		this.m_SolInterfaceTool.m_DrawTexture_rank.SetTexture(solLargeGradeImg);
-		if (this.m_SelectSlotData.i32KindInfo == 0)
-		{
-			this.m_Toolbar.Control_Tab[1].Visible = false;
-			this.m_Toolbar.Control_Tab[2].Visible = false;
-			return;
-		}
-		this.m_SolInterfaceTool.SetSeason(b);
-		this.m_SolInterfaceTool.SetHeroEventLabel(b);
-		int num = 0;
-		byte bCharRank = 0;
-		this.m_Element_SolID.Init();
-		for (int i = 0; i < 5; i++)
-		{
-			if (this.m_MaterialSol.i32BaseCharKind == this.m_SelectSlotData.i32KindInfo)
-			{
-				this.m_MaterialSol.GetLegendCharData((byte)i, ref num, ref bCharRank);
-			}
-			this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NONE;
-			if (num != 0)
-			{
-				NewListItem item = new NewListItem(this.m_NewListBox_Reincarnate.ColumnNum, true);
-				this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
-				this.SetLegendReincarnateListBox(ref item, i, num, bCharRank, false);
-				this.m_NewListBox_Reincarnate.Add(item);
-			}
-		}
-		this.m_NewListBox_Reincarnate.RepositionItems();
-		if (this.m_MaterialSol.i32LegendItemUnique > 0)
-		{
-			this.m_DrawTexture_Item.BaseInfoLoderImage = NrTSingleton<ItemManager>.Instance.GetItemTexture(this.m_MaterialSol.i32LegendItemUnique);
-		}
-		if (this.m_MaterialSol.i32BaseCharKind == this.m_SelectSlotData.i32KindInfo)
-		{
-			long i64LegendMoney = this.m_MaterialSol.i64LegendMoney;
-			int i32LegendEssencs = this.m_MaterialSol.i32LegendEssencs;
-			this.m_Label_Gold.SetText(ANNUALIZED.Convert(i64LegendMoney));
-			this.m_Label_Essence.SetText(ANNUALIZED.Convert(i32LegendEssencs));
-		}
-		long charSubData = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_LEGENDMAKETIME);
-		long curTime = PublicMethod.GetCurTime();
-		bool flag = this.SetButtonReincarnate();
-		if (curTime < charSubData)
-		{
-			flag = false;
-			string text = string.Empty;
-			long i64Time = charSubData - PublicMethod.GetCurTime();
-			text = this.GetTimeToString(i64Time);
-			this.m_Label_Time.SetText(text);
-		}
-		else
-		{
-			this.m_DrawTexture_Time.Visible = false;
-			this.m_Label_Time.Visible = false;
-		}
-		this.m_Button_Reincarnate.SetEnabled(flag);
-		if (flag)
-		{
-			num = 0;
-			bCharRank = 0;
-			this.m_NewListBox_Reincarnate.Clear();
-			this.m_Element_SolID.Init();
-			for (int j = 0; j < 5; j++)
-			{
-				if (this.m_MaterialSol.i32BaseCharKind == this.m_SelectSlotData.i32KindInfo)
-				{
-					this.m_MaterialSol.GetLegendCharData((byte)j, ref num, ref bCharRank);
-				}
-				this.m_eElement_Msg[j] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NONE;
-				if (num != 0)
-				{
-					NewListItem item2 = new NewListItem(this.m_NewListBox_Reincarnate.ColumnNum, true);
-					this.m_eElement_Msg[j] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
-					this.SetLegendReincarnateListBox(ref item2, j, num, bCharRank, true);
-					this.m_NewListBox_Reincarnate.Add(item2);
-				}
-			}
-			this.m_NewListBox_Reincarnate.RepositionItems();
-			this.m_Button_Legend.SetEnabled(true);
-		}
-	}
-
-	private void SetLegendReincarnateListBox(ref NewListItem item, int i, int i32CharKind, byte bCharRank, bool bElement)
-	{
-		string text = string.Empty;
-		NkSoldierInfo legendBattleSolDataCheck = this.GetLegendBattleSolDataCheck(ref this.m_eElement_Msg[i], i32CharKind, bCharRank);
-		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(i32CharKind);
-		if (charKindInfo == null)
-		{
-			TsLog.LogOnlyEditor("!!!!!!!!!! SolGuild - Element CharKind " + i32CharKind + " Error");
-			return;
-		}
-		item.SetListItemData(8, false);
-		item.SetListItemData(9, false);
-		NkListSolInfo nkListSolInfo = new NkListSolInfo();
-		nkListSolInfo.SolCharKind = i32CharKind;
-		nkListSolInfo.SolGrade = (int)(bCharRank - 1);
-		item.SetListItemData(3, nkListSolInfo, null, null, null);
-		item.SetListItemData(4, charKindInfo.GetName(), null, null, null);
-		text = this.GetElementSolMsg(this.m_eElement_Msg[i]);
-		item.SetListItemData(5, text, null, null, null);
-		if (this.m_eElement_Msg[i] == SolDetail_Info_Dlg.eElement_MsgType.eElement_OK || this.m_eElement_Msg[i] == SolDetail_Info_Dlg.eElement_MsgType.eElement_SOLHEIGHT)
-		{
-			item.SetListItemData(0, true);
-			item.SetListItemData(1, false);
-			if (legendBattleSolDataCheck == null)
-			{
-				item.SetListItemData(7, false);
-				return;
-			}
-			item.SetListItemData(7, legendBattleSolDataCheck.GetListSolInfo(false), null, null, null);
-			this.m_Element_SolID.SetLegendSol(i32CharKind, legendBattleSolDataCheck.m_kBase.SolID);
-		}
-		else
-		{
-			item.SetListItemData(0, false);
-			item.SetListItemData(1, true);
-			if (legendBattleSolDataCheck == null)
-			{
-				item.SetListItemData(7, false);
-				return;
-			}
-			item.SetListItemData(7, legendBattleSolDataCheck.GetListSolInfo(false), null, null, null);
-			this.m_Element_SolID.SetLegendSol(i32CharKind, legendBattleSolDataCheck.m_kBase.SolID);
-		}
-		if (bElement)
-		{
-			bool flag = false;
-			for (int j = 0; j < 6; j++)
-			{
-				if (legendBattleSolDataCheck.GetEquipItemInfo() != null)
-				{
-					ITEM item2 = legendBattleSolDataCheck.GetEquipItemInfo().m_kItem[j].GetItem();
-					if (item2 == null)
-					{
-						TsLog.LogWarning("!!!!!!!!!!!!!! CharKind {0} : Item pos{1}  ==  ITEM NULL ", new object[]
-						{
-							i32CharKind,
-							j
-						});
-					}
-					else if (item2.m_nItemUnique != 0)
-					{
-						flag = true;
-					}
-				}
-			}
-			if (flag)
-			{
-				item.SetListItemData(5, false);
-				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("627");
-				item.SetListItemData(8, true);
-				item.SetListItemData(9, true);
-				item.SetListItemData(9, text, legendBattleSolDataCheck, new EZValueChangedDelegate(this.OnClickReleaseEquip), null);
-			}
-			else if (legendBattleSolDataCheck.GetFriendPersonID() != 0L)
-			{
-				item.SetListItemData(5, false);
-				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("74");
-				item.SetListItemData(8, true);
-				item.SetListItemData(9, true);
-				item.SetListItemData(9, text, legendBattleSolDataCheck, new EZValueChangedDelegate(this.OnClickUnsetSolHelp), null);
-			}
-		}
-		item.Data = legendBattleSolDataCheck.GetSolID();
-	}
-
-	private void OnClickLegendReincarnate(IUIObject obj)
-	{
-		if (obj == null)
-		{
-			return;
-		}
-		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1706");
-		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("164");
-		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnLegendReincarnateOK), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL);
-	}
-
-	public void OnLegendReincarnateOK(object a_oObject)
-	{
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
-		{
-			return;
-		}
-		int num = 0;
-		byte bCharGrade = 0;
-		long[] array = new long[5];
-		this.m_Element_SolID.Init();
-		for (int i = 0; i < 5; i++)
-		{
-			if (this.m_MaterialSol.i32BaseCharKind == this.m_SelectSlotData.i32KindInfo)
-			{
-				this.m_MaterialSol.GetLegendCharData((byte)i, ref num, ref bCharGrade);
-			}
-			this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
-			if (num == 0)
-			{
-				this.m_eElement_Msg[i] = SolDetail_Info_Dlg.eElement_MsgType.eElement_OK;
-				array[i] = 0L;
-			}
-			else
-			{
-				NkSoldierInfo legendBattleSolDataCheck = this.GetLegendBattleSolDataCheck(ref this.m_eElement_Msg[i], num, bCharGrade);
-				if (legendBattleSolDataCheck == null)
-				{
-					Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1649"), SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
-					return;
-				}
-				this.m_Element_SolID.SetLegendSol(num, legendBattleSolDataCheck.m_kBase.SolID);
-				if (legendBattleSolDataCheck.GetSolPosType() != 0)
-				{
-					if (legendBattleSolDataCheck.GetSolPosType() == 2 || legendBattleSolDataCheck.GetSolPosType() == 6)
-					{
-						Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("384"), SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
-						return;
-					}
-					TsLog.LogWarning("!!!!!!!!!!!!!! CharKind {0} : SOL Pos{1}  ==  Char Sol Pos Type", new object[]
-					{
-						num,
-						legendBattleSolDataCheck.GetSolPosType()
-					});
-					return;
-				}
-				else
-				{
-					for (int j = 0; j < 6; j++)
-					{
-						ITEM item = legendBattleSolDataCheck.GetEquipItemInfo().m_kItem[j].GetItem();
-						if (item == null)
-						{
-							TsLog.LogWarning("!!!!!!!!!!!!!! CharKind {0} : Item pos{1}  ==  ITEM NULL ", new object[]
-							{
-								num,
-								j
-							});
-							return;
-						}
-						if (item.m_nItemUnique != 0)
-						{
-							Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("383"), SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
-							return;
-						}
-					}
-					if (legendBattleSolDataCheck.GetFriendPersonID() != 0L)
-					{
-						TsLog.LogWarning("!!!!!!!!!!!!!! CharKind {0} : Set FriendSOLHELP ", new object[]
-						{
-							legendBattleSolDataCheck.GetName()
-						});
-						return;
-					}
-					array[i] = legendBattleSolDataCheck.GetSolID();
-				}
-			}
-		}
-		long num2 = 0L;
-		int num3 = 0;
-		if (this.m_MaterialSol.i32BaseCharKind == this.m_SelectSlotData.i32KindInfo)
-		{
-			num2 = this.m_MaterialSol.i64LegendMoney;
-			num3 = NkUserInventory.GetInstance().GetItemCnt(this.m_MaterialSol.i32LegendItemUnique);
-		}
-		if (num2 > kMyCharInfo.m_Money)
-		{
-			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("89"), SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
-			return;
-		}
-		if (num3 < this.m_MaterialSol.i32LegendEssencs)
-		{
-			string empty = string.Empty;
-			string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(this.m_MaterialSol.i32LegendItemUnique);
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("780"),
-				"target",
-				itemNameByItemUnique
-			});
-			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NORMAL_SYSTEM_MESSAGE);
-			return;
-		}
-		GS_ELEMENT_LEGENDSOL_GET_REQ gS_ELEMENT_LEGENDSOL_GET_REQ = new GS_ELEMENT_LEGENDSOL_GET_REQ();
-		gS_ELEMENT_LEGENDSOL_GET_REQ.i64PersonID = kMyCharInfo.m_PersonID;
-		gS_ELEMENT_LEGENDSOL_GET_REQ.i32CharKind = this.m_SelectSlotData.i32KindInfo;
-		gS_ELEMENT_LEGENDSOL_GET_REQ.i64SolID = array;
-		SendPacket.GetInstance().SendObject(1840, gS_ELEMENT_LEGENDSOL_GET_REQ);
-	}
-
-	private NkSoldierInfo GetLegendBattleSolDataCheck(ref SolDetail_Info_Dlg.eElement_MsgType eElement_Msg, int i32CharKind, byte bCharGrade)
-	{
-		NkSoldierInfo result = null;
-		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
-		if (charPersonInfo == null || NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
-		{
-			return result;
-		}
-		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-		foreach (NkSoldierInfo current in readySolList.GetList().Values)
-		{
-			if (current != null && current.GetSolPosType() == 0 && current.GetCharKind() == i32CharKind && !this.m_Element_SolID.GetLegendSolCheck(i32CharKind, current.m_kBase.SolID))
-			{
-				this.GetLegendSolGradeCheck(ref result, ref eElement_Msg, current, bCharGrade - 1);
-			}
-		}
-		return result;
-	}
-
-	private void GetLegendSolGradeCheck(ref NkSoldierInfo pkSolinfo, ref SolDetail_Info_Dlg.eElement_MsgType eElement_Msg, NkSoldierInfo pkReadySolinfo, byte bCharGrade)
-	{
-		if (NrTSingleton<ContentsLimitManager>.Instance.IsSolGuideCharKindInfo(pkReadySolinfo.GetCharKind()))
-		{
-			eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_NOTSOL;
-			TsLog.LogOnlyEditor("!!!! CONTENTLIMIT SOL CHARKIND ERROR {0}" + this.m_SelectSlotData.i32KindInfo + " !!");
-			return;
-		}
-		if (pkReadySolinfo.GetMaxSkillLevel())
-		{
-			if (pkReadySolinfo.GetGrade() >= bCharGrade)
-			{
-				if (pkReadySolinfo.GetGrade() == bCharGrade)
-				{
-					if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_OK)
-					{
-						if (pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
-						{
-							pkSolinfo = pkReadySolinfo;
-						}
-					}
-					else
-					{
-						eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_OK;
-						pkSolinfo = pkReadySolinfo;
-					}
-				}
-				else if (eElement_Msg < SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE)
-				{
-					eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_SOLHEIGHT;
-					pkSolinfo = pkReadySolinfo;
-				}
-				else if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_SOLHEIGHT && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
-				{
-					pkSolinfo = pkReadySolinfo;
-				}
-			}
-			else if (eElement_Msg < SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE)
-			{
-				eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE;
-				pkSolinfo = pkReadySolinfo;
-			}
-			else if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDGRADE && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
-			{
-				pkSolinfo = pkReadySolinfo;
-			}
-		}
-		else if (eElement_Msg < SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDEXP)
-		{
-			eElement_Msg = SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDEXP;
-			pkSolinfo = pkReadySolinfo;
-		}
-		else if (eElement_Msg == SolDetail_Info_Dlg.eElement_MsgType.eElement_NEEDEXP && pkSolinfo.GetEvolutionExp() > pkReadySolinfo.GetEvolutionExp())
-		{
-			pkSolinfo = pkReadySolinfo;
-		}
-	}
-
 	public string GetTimeToString(long i64Time)
 	{
 		string empty = string.Empty;
@@ -1259,28 +1097,27 @@ public class SolDetail_Info_Dlg : Form
 		{
 			long totalDayFromSec = PublicMethod.GetTotalDayFromSec(i64Time);
 			long hourFromSec = PublicMethod.GetHourFromSec(i64Time);
+			long minuteFromSec = PublicMethod.GetMinuteFromSec(i64Time);
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{
 				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2858"),
 				"day",
 				totalDayFromSec,
 				"hour",
-				hourFromSec
+				hourFromSec,
+				"min",
+				minuteFromSec
 			});
 		}
 		return empty;
 	}
 
-	public void GetSelectToolBarRefresh()
+	public void GetSelectToolBarRefresh(long i64SolID)
 	{
 		int seletedToolIndex = this.m_Toolbar.SeletedToolIndex;
-		if (seletedToolIndex == 1)
+		if (seletedToolIndex == 2)
 		{
 			this.SetElementLayerShow();
-		}
-		else if (seletedToolIndex == 2)
-		{
-			this.SetLegendElementLayerShow();
 		}
 	}
 }

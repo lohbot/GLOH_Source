@@ -33,5 +33,7 @@ namespace PROTOCOL.GAME
 		public byte i8UpgradeSolPosType;
 
 		public int i32Result;
+
+		public int i32CostumeUnique;
 	}
 }

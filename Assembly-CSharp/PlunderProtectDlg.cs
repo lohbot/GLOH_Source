@@ -64,7 +64,7 @@ public class PlunderProtectDlg : Form
 			value.ToString()
 		});
 		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("150");
-		msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKAgree), b, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKAgree), b, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void OnAgree2(IUIObject obj)
@@ -92,7 +92,7 @@ public class PlunderProtectDlg : Form
 			value.ToString()
 		});
 		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("150");
-		msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKAgree), b, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKAgree), b, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void MsgBoxOKAgree(object a_oObject)

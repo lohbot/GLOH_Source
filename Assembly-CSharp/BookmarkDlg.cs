@@ -1,10 +1,8 @@
 using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
-using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
-using TsBundle;
 using UnityEngine;
 using UnityForms;
 
@@ -12,21 +10,14 @@ public class BookmarkDlg : Form
 {
 	public enum TYPE
 	{
-		SOLINFO,
-		SOLRECRUIT,
-		SOLCOMPOSE,
+		HERO,
 		ADVENTURE,
+		BATTLE,
+		NEWGUILD,
 		INVEN,
 		COMMUNITY,
-		NEWGUILD,
-		WORLDMAP,
-		BABEL,
 		HEROBATTLE,
-		INFIBATTLE,
-		FIGHT,
 		EXPLORATION,
-		MINE,
-		MAINEVENT,
 		MAX_NUM
 	}
 
@@ -90,29 +81,23 @@ public class BookmarkDlg : Form
 		this.bookmarkList.Reserve = false;
 		this.bookmarkList.viewableArea = new Vector2(this.bookmarkList.GetSize().x, num);
 		this.bookmarkList.UseColumnRect = true;
-		this.bookmarkList.ColumnNum = 4;
-		this.bookmarkList.itemSpacing = 30f;
-		this.bookmarkList.SetColumnRect(0, new Rect(6f, 0f, 90f, 90f));
-		this.bookmarkList.SetColumnRect(1, new Rect(0f, 87f, 100f, 28f), SpriteText.Anchor_Pos.Middle_Center, 22f);
+		this.bookmarkList.ColumnNum = 5;
+		this.bookmarkList.itemSpacing = 28f;
+		this.bookmarkList.SetColumnRect(0, new Rect(2f, 0f, 104f, 104f));
+		this.bookmarkList.SetColumnRect(1, new Rect(0f, 85f, 108f, 28f), SpriteText.Anchor_Pos.Middle_Center, 22f);
 		this.bookmarkList.SetColumnRect(2, new Rect(0f, 0f, 50f, 50f));
 		this.bookmarkList.SetColumnRect(3, new Rect(0f, 0f, 50f, 50f), SpriteText.Anchor_Pos.Middle_Center, 28f);
+		this.bookmarkList.SetColumnRect(4, new Rect(2f, 0f, 104f, 104f));
 		this.bookmarkList.AddSliderDelegate();
-		this.bookmarkList.SetLocation(5, 0);
-		this.mapFun.Add(BookmarkDlg.TYPE.SOLINFO, new FunDelegate(this.ClickSolInfo));
-		this.mapFun.Add(BookmarkDlg.TYPE.SOLRECRUIT, new FunDelegate(this.ClickRecruitSol));
-		this.mapFun.Add(BookmarkDlg.TYPE.SOLCOMPOSE, new FunDelegate(this.ClickCompose));
-		this.mapFun.Add(BookmarkDlg.TYPE.INVEN, new FunDelegate(this.ClickInven));
-		this.mapFun.Add(BookmarkDlg.TYPE.WORLDMAP, new FunDelegate(this.ClickWorldMap));
-		this.mapFun.Add(BookmarkDlg.TYPE.FIGHT, new FunDelegate(this.ClickFightDlg));
-		this.mapFun.Add(BookmarkDlg.TYPE.ADVENTURE, new FunDelegate(this.ClickAdventure));
-		this.mapFun.Add(BookmarkDlg.TYPE.COMMUNITY, new FunDelegate(this.ClickCommunity));
+		this.bookmarkList.SetLocation(0, 0);
+		this.mapFun.Add(BookmarkDlg.TYPE.HERO, new FunDelegate(this.ClickHeroCollect));
+		this.mapFun.Add(BookmarkDlg.TYPE.ADVENTURE, new FunDelegate(this.ClickAdventureCollect));
+		this.mapFun.Add(BookmarkDlg.TYPE.BATTLE, new FunDelegate(this.ClickBattleCollect));
 		this.mapFun.Add(BookmarkDlg.TYPE.NEWGUILD, new FunDelegate(this.ClickNewGuild));
+		this.mapFun.Add(BookmarkDlg.TYPE.INVEN, new FunDelegate(this.ClickInven));
+		this.mapFun.Add(BookmarkDlg.TYPE.COMMUNITY, new FunDelegate(this.ClickCommunity));
 		this.mapFun.Add(BookmarkDlg.TYPE.HEROBATTLE, new FunDelegate(this.ClickHeroBattle));
-		this.mapFun.Add(BookmarkDlg.TYPE.INFIBATTLE, new FunDelegate(this.ClickInfiBattle));
-		this.mapFun.Add(BookmarkDlg.TYPE.BABEL, new FunDelegate(this.ClickBabel));
 		this.mapFun.Add(BookmarkDlg.TYPE.EXPLORATION, new FunDelegate(this.ClickExploration));
-		this.mapFun.Add(BookmarkDlg.TYPE.MINE, new FunDelegate(this.ClickMine));
-		this.mapFun.Add(BookmarkDlg.TYPE.MAINEVENT, new FunDelegate(this.ClickEvent));
 		this.SetBookmarkInfo();
 		this.upButton = (base.GetControl("SlideGuideBTN01") as Button);
 		this.upButton.SetLocation(this.upButton.GetLocation().x, this.upButton.GetLocationY(), this.upButton.GetLocation().z - 1.1f);
@@ -129,14 +114,16 @@ public class BookmarkDlg : Form
 		}
 		this.up = (base.GetControl("SlideGuideBG01") as DrawTexture);
 		this.up.SetLocation(this.up.GetLocation().x, this.up.GetLocationY(), this.up.GetLocation().z - 1f);
-		this.down = (base.GetControl("SlideGuideBtn01") as DrawTexture);
+		this.down = (base.GetControl("SlideGuideBG02") as DrawTexture);
 		this.down.SetLocation(this.down.GetLocation().x, num - this.down.GetSize().y, this.down.GetLocation().z - 1f);
-		this.downButton.SetLocation(this.downButton.GetLocation().x, this.down.GetLocationY() + 76f, this.downButton.GetLocation().z - 1.1f);
+		this.downButton.SetLocation(this.downButton.GetLocation().x, this.down.GetLocationY() + 18f, this.downButton.GetLocation().z - 1.1f);
 		this.upButton.Visible = false;
 		this.up.Visible = false;
+		this.downButton.Visible = false;
+		this.down.Visible = false;
 		this.hideBG = (base.GetControl("DT_HideBG") as DrawTexture);
 		num = (GUICamera.height - this.hideBG.GetSize().y) / 2f;
-		this.hideBG.SetLocation(-this.hideBG.GetSize().x + 2f, num);
+		this.hideBG.SetLocation(-this.hideBG.GetSize().x + 16f, num);
 		this.hideArrow = (base.GetControl("DT_HideArrow") as DrawTexture);
 		this.hideButton = (base.GetControl("Button_Hide") as Button);
 		this.hideButton.SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickHide));
@@ -145,6 +132,19 @@ public class BookmarkDlg : Form
 		num = (GUICamera.height - this.hideButton.GetSize().y) / 2f;
 		this.hideButton.SetLocation(-this.hideButton.GetSize().x + 2f, num);
 		base.SetLocation(GUICamera.width - base.GetSizeX(), 0f);
+		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+		if (myCharInfo != null)
+		{
+			ITEMMALL_POPUPSHOP atbToIDX = NrTSingleton<ItemMallPoPupShopManager>.Instance.GetAtbToIDX(ItemMallPoPupShopManager.ePoPupShop_Type.Login);
+			if (atbToIDX != null)
+			{
+				GS_ITEMSHOP_ITEMPOPUP_INFO_REQ gS_ITEMSHOP_ITEMPOPUP_INFO_REQ = new GS_ITEMSHOP_ITEMPOPUP_INFO_REQ();
+				gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i64PersonID = myCharInfo.m_PersonID;
+				gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i64Idx = (long)atbToIDX.m_Idx;
+				gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i32ATB = 1;
+				SendPacket.GetInstance().SendObject(2536, gS_ITEMSHOP_ITEMPOPUP_INFO_REQ);
+			}
+		}
 		this.ShowHideOption(true);
 	}
 
@@ -190,18 +190,18 @@ public class BookmarkDlg : Form
 
 	public void Move()
 	{
+		if (base.IsMove)
+		{
+			return;
+		}
 		float num = (!this.hide) ? 1f : -1f;
 		if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) == null)
 		{
 			return;
 		}
 		float value = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG).GetSizeX() * num;
-		Form form = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG);
-		if (form != null)
-		{
-			form.Move(value);
-		}
-		form = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MAIN_QUEST);
+		base.Move(value);
+		Form form = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MAIN_QUEST);
 		if (form != null)
 		{
 			form.Move(value);
@@ -263,10 +263,10 @@ public class BookmarkDlg : Form
 		}
 		for (int i = 0; i < this.bookmarkList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.bookmarkList.GetItem(i);
-			if (null != uIListItemContainer)
+			UIListItemContainer item = this.bookmarkList.GetItem(i);
+			if (null != item)
 			{
-				UIButton uIButton = uIListItemContainer.GetElement(0) as UIButton;
+				UIButton uIButton = item.GetElement(0) as UIButton;
 				if (null != uIButton)
 				{
 					uIButton.transform.localPosition = new Vector3(6f, 0f, uIButton.transform.localPosition.z);
@@ -284,22 +284,6 @@ public class BookmarkDlg : Form
 		else
 		{
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.EVENT_MAIN);
-		}
-	}
-
-	public void ClickMine(IUIObject obj)
-	{
-		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo == null)
-		{
-			return;
-		}
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.MINE_MAINSELECT_DLG))
-		{
-			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.MINE_MAINSELECT_DLG);
-		}
-		else
-		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.MINE_MAINSELECT_DLG);
 		}
 	}
 
@@ -339,46 +323,10 @@ public class BookmarkDlg : Form
 		}
 	}
 
-	private void ClickSolInfo(IUIObject obj)
-	{
-		NrTSingleton<FormsManager>.Instance.ShowHide(G_ID.SOLMILITARYGROUP_DLG);
-		if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG).Visible)
-		{
-			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY-INFORMATION", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
-		}
-		else
-		{
-			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY-INFORMATION", "CLOSE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
-		}
-		SolMilitarySelectDlg solMilitarySelectDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYSELECT_DLG) as SolMilitarySelectDlg;
-		if (solMilitarySelectDlg != null)
-		{
-			solMilitarySelectDlg.CloseByParent(79);
-		}
-		NrTSingleton<FiveRocksEventManager>.Instance.Placement("solinfodlg_open");
-	}
-
 	private void ClickOutTerritory(IUIObject obj)
 	{
 		NrTSingleton<NkClientLogic>.Instance.SetClearMiddleStage();
 		NrTSingleton<NkCharManager>.Instance.DeleteTerritoryChar();
-	}
-
-	private void ClickRecruitSol(IUIObject obj)
-	{
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLRECRUIT_DLG))
-		{
-			GS_TICKET_SELL_INFO_REQ obj2 = new GS_TICKET_SELL_INFO_REQ();
-			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_TICKET_SELL_INFO_REQ, obj2);
-			if (null != this._Touch)
-			{
-				NkInputManager.IsAutoBlockInputMode = true;
-			}
-		}
-		else
-		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SOLRECRUIT_DLG);
-		}
 	}
 
 	private void ClickRepute(IUIObject obj)
@@ -392,22 +340,6 @@ public class BookmarkDlg : Form
 
 	private void ClickMarket(IUIObject obj)
 	{
-	}
-
-	private void ClickCompose(IUIObject obj)
-	{
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.SOLCOMPOSE_MAIN_DLG))
-		{
-			SolComposeMainDlg solComposeMainDlg = (SolComposeMainDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMPOSE_MAIN_DLG);
-			if (!solComposeMainDlg.Visible)
-			{
-				solComposeMainDlg.Show();
-			}
-		}
-		else
-		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.SOLCOMPOSE_MAIN_DLG);
-		}
 	}
 
 	private void ClickItemUpgrade(IUIObject obj)
@@ -426,74 +358,39 @@ public class BookmarkDlg : Form
 		}
 	}
 
-	private void ClickWorldMap(IUIObject obj)
+	private void ClickHeroCollect(IUIObject obj)
 	{
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.WORLD_MAP))
+		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.HEROCOLLECT_DLG))
 		{
-			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.WORLD_MAP);
+			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.HEROCOLLECT_DLG);
 		}
 		else
 		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.WORLD_MAP);
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.HEROCOLLECT_DLG);
 		}
 	}
 
-	private void ClickFightDlg(IUIObject obj)
+	private void ClickAdventureCollect(IUIObject obj)
 	{
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
+		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ADVENTURECOLLECT_DLG))
 		{
-			return;
-		}
-		int level = kMyCharInfo.GetLevel();
-		int value = COLOSSEUM_CONSTANT_Manager.GetInstance().GetValue(eCOLOSSEUM_CONSTANT.eCOLOSSEUM_CONSTANT_CHECK_LEVEL);
-		if (level < value)
-		{
-			string empty = string.Empty;
-			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("129");
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				textFromNotify,
-				"level",
-				value.ToString()
-			});
-			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		if (!NrTSingleton<NkClientLogic>.Instance.ShowDownLoadUI(0, 0))
-		{
-			return;
-		}
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.COLOSSEUMMAIN_DLG))
-		{
-			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.COLOSSEUMMAIN_DLG);
+			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.ADVENTURECOLLECT_DLG);
 		}
 		else
 		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.COLOSSEUMMAIN_DLG);
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ADVENTURECOLLECT_DLG);
 		}
 	}
 
-	private void ClickAdventure(IUIObject obj)
+	private void ClickBattleCollect(IUIObject _obj)
 	{
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.ADVENTURE_DLG))
+		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BATTLECOLLECT_DLG))
 		{
-			AdventureDlg adventureDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ADVENTURE_DLG) as AdventureDlg;
-			if (adventureDlg != null)
-			{
-				adventureDlg.DrawAdventure();
-			}
-			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "ADVENTURE", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
-			if (null != this._Touch)
-			{
-				NkInputManager.IsAutoBlockInputMode = true;
-			}
-			NrTSingleton<EventConditionHandler>.Instance.OpenUI.OnTrigger();
+			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BATTLECOLLECT_DLG);
 		}
 		else
 		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.ADVENTURE_DLG);
-			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "ADVENTURE", "CLOSE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BATTLECOLLECT_DLG);
 		}
 	}
 
@@ -519,7 +416,14 @@ public class BookmarkDlg : Form
 		{
 			return;
 		}
-		NrTSingleton<NewGuildManager>.Instance.Send_GS_NEWGUILD_INFO_REQ(1);
+		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.GUILDCOLLECT_DLG))
+		{
+			NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.GUILDCOLLECT_DLG);
+		}
+		else
+		{
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.GUILDCOLLECT_DLG);
+		}
 	}
 
 	private void ClickHeroBattle(IUIObject obj)
@@ -550,96 +454,12 @@ public class BookmarkDlg : Form
 			PlunderMainDlg plunderMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERMAIN_DLG) as PlunderMainDlg;
 			if (plunderMainDlg != null)
 			{
-				plunderMainDlg.SetMode(eMODE.eMODE_PLUNDER);
-				plunderMainDlg.SetTgValue(eMODE.eMODE_PLUNDER);
 				plunderMainDlg.Show();
 			}
 		}
 		else
 		{
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.PLUNDERMAIN_DLG);
-		}
-	}
-
-	private void ClickInfiBattle(IUIObject obj)
-	{
-		if (NrTSingleton<ContentsLimitManager>.Instance.IsInfiBattle())
-		{
-			if (!NrTSingleton<NkClientLogic>.Instance.ShowDownLoadUI(0, 0))
-			{
-				return;
-			}
-			if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.PLUNDERMAIN_DLG))
-			{
-				PlunderMainDlg plunderMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERMAIN_DLG) as PlunderMainDlg;
-				if (plunderMainDlg != null)
-				{
-					plunderMainDlg.SetMode(eMODE.eMODE_INFIBATTLE);
-					plunderMainDlg.SetTgValue(eMODE.eMODE_INFIBATTLE);
-					plunderMainDlg.Show();
-				}
-			}
-			else
-			{
-				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.PLUNDERMAIN_DLG);
-			}
-		}
-	}
-
-	public void ClickBabel(IUIObject obj)
-	{
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
-		{
-			return;
-		}
-		int level = kMyCharInfo.GetLevel();
-		int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BABELTOWER_LIMITLEVEL);
-		if (level < value)
-		{
-			string empty = string.Empty;
-			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("129");
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				textFromNotify,
-				"level",
-				value.ToString()
-			});
-			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
-			return;
-		}
-		if (!NrTSingleton<NkClientLogic>.Instance.ShowDownLoadUI(0, 0))
-		{
-			return;
-		}
-		if (kMyCharInfo.m_kFriendInfo.GetFriendCount() > 0 && kMyCharInfo.m_kFriendInfo.GetFriendsBaBelDataCount() == 0)
-		{
-			GS_FRIENDS_BABELTOWER_CLEARINFO_REQ obj2 = new GS_FRIENDS_BABELTOWER_CLEARINFO_REQ();
-			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_FRIENDS_BABELTOWER_CLEARINFO_REQ, obj2);
-		}
-		int value2 = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BABEL_HARD_LEVEL);
-		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BABELTOWERMAIN_DLG))
-		{
-			if (level < value2)
-			{
-				DirectionDLG directionDLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_DIRECTION) as DirectionDLG;
-				if (directionDLG != null)
-				{
-					if (kMyCharInfo.GetLevel() > 20)
-					{
-						directionDLG.SetDirection(DirectionDLG.eDIRECTIONTYPE.eDIRECTION_REDUCE);
-					}
-					directionDLG.ShowDirection(DirectionDLG.eDIRECTIONTYPE.eDIRECTION_BABEL, 1);
-				}
-			}
-			else
-			{
-				NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BABELTOWER_MODESELECT_DLG);
-			}
-		}
-		else
-		{
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BABELTOWERMAIN_DLG);
 		}
 	}
 
@@ -650,7 +470,7 @@ public class BookmarkDlg : Form
 			return;
 		}
 		this.bookmarkList.Clear();
-		for (int i = 0; i < 15; i++)
+		for (int i = 0; i < 8; i++)
 		{
 			ListItem listItem = this.GetListItem((BookmarkDlg.TYPE)i);
 			if (listItem != null)
@@ -659,6 +479,8 @@ public class BookmarkDlg : Form
 			}
 		}
 		this.bookmarkList.RepositionItems();
+		this.bookmarkList.SetLocation(0f, (base.GetSizeY() - (float)this.bookmarkList.Count * (this.bookmarkList.GetItem(0).gameObject.transform.localPosition.y - this.bookmarkList.GetItem(1).gameObject.transform.localPosition.y)) / 2f);
+		this.ShowMythRaidEffect();
 	}
 
 	public override void ChangedResolution()
@@ -685,61 +507,133 @@ public class BookmarkDlg : Form
 		ListItem listItem = new ListItem();
 		switch (type)
 		{
-		case BookmarkDlg.TYPE.SOLINFO:
+		case BookmarkDlg.TYPE.HERO:
 		{
 			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
 			if (charPersonInfo != null)
 			{
-				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_ChaInfo", BookmarkDlg.TYPE.SOLINFO, new EZValueChangedDelegate(this.ClickList));
-				listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1765"));
+				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_CharInfoBM", type, new EZValueChangedDelegate(this.ClickList));
+				listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1490"));
+				bool flag = false;
 				if (0 < charPersonInfo.GetUpgradeBattleSkillNum())
 				{
+					flag = true;
+				}
+				if (flag)
+				{
 					listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
-					listItem.SetColumnGUIContent(3, string.Empty, "Win_I_Notice03");
+					listItem.SetColumnGUIContent(3, string.Empty, "Win_I_Notice04");
 				}
 				listItem.Key = type;
 			}
 			break;
 		}
-		case BookmarkDlg.TYPE.SOLRECRUIT:
-		{
-			int num = NkUserInventory.GetInstance().GetFunctionItemNum(eITEM_SUPPLY_FUNCTION.SUPPLY_GETSOLDIER);
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Employ", BookmarkDlg.TYPE.SOLRECRUIT, new EZValueChangedDelegate(this.ClickList));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1704"));
-			if (0 < num)
-			{
-				if (99 < num)
-				{
-					num = 99;
-				}
-				listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
-				listItem.SetColumnStr(3, NrTSingleton<CTextParser>.Instance.GetTextColor("1002") + num.ToString());
-			}
-			listItem.Key = type;
-			break;
-		}
-		case BookmarkDlg.TYPE.SOLCOMPOSE:
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Synthesis", type, new EZValueChangedDelegate(this.ClickList));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1722"));
-			listItem.Key = type;
-			break;
 		case BookmarkDlg.TYPE.ADVENTURE:
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_AdvenRec.", type, new EZValueChangedDelegate(this.ClickList));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("66"));
+		{
+			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_WorldMapBM", type, new EZValueChangedDelegate(this.ClickList));
+			listItem.SetColumnGUIContent(1, string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("2002"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3459")));
+			bool flag2 = false;
 			if (NrTSingleton<NkAdventureManager>.Instance.IsAcceptQuest())
+			{
+				flag2 = true;
+			}
+			if (NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.IsGet_DailyDungeonReward())
+			{
+				flag2 = true;
+			}
+			if (flag2)
 			{
 				listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
 				listItem.SetColumnGUIContent(3, string.Empty, "Win_I_Notice04");
 			}
 			listItem.Key = type;
 			break;
+		}
+		case BookmarkDlg.TYPE.BATTLE:
+		{
+			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_InfiBattleBM", type, new EZValueChangedDelegate(this.ClickList));
+			listItem.SetColumnGUIContent(1, string.Format("{0}{1}", NrTSingleton<CTextParser>.Instance.GetTextColor("2002"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3460")));
+			bool flag3 = false;
+			if (NrTSingleton<MythRaidManager>.Instance.CanGetReward)
+			{
+				flag3 = true;
+			}
+			NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+			if (myCharInfo != null)
+			{
+				if (myCharInfo.InfiBattleReward == 0)
+				{
+					flag3 = true;
+				}
+				if (myCharInfo.ColosseumOldRank > 0)
+				{
+					flag3 = true;
+				}
+			}
+			if (NrTSingleton<NewExplorationManager>.Instance.CanGetTreasureData() != null || NrTSingleton<NewExplorationManager>.Instance.CanGetEndReward())
+			{
+				flag3 = true;
+			}
+			if (flag3)
+			{
+				listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
+				listItem.SetColumnGUIContent(3, string.Empty, "Win_I_Notice04");
+			}
+			listItem.Key = type;
+			break;
+		}
+		case BookmarkDlg.TYPE.NEWGUILD:
+			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_GuildBM", BookmarkDlg.TYPE.NEWGUILD, new EZValueChangedDelegate(this.ClickNewGuild));
+			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("17"));
+			if (0L < NrTSingleton<NewGuildManager>.Instance.GetGuildID())
+			{
+				int num = NrTSingleton<NewGuildManager>.Instance.GetReadyApplicantCount();
+				bool flag4 = false;
+				bool guildBossRewardInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetGuildBossRewardInfo();
+				if (guildBossRewardInfo)
+				{
+					flag4 = true;
+				}
+				bool guildBossCheck = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetGuildBossCheck();
+				if (guildBossCheck)
+				{
+					flag4 = true;
+				}
+				bool flag5 = NrTSingleton<NewGuildManager>.Instance.CanGetGoldenEggReward();
+				if (flag5)
+				{
+					flag4 = true;
+				}
+				if (0 < num || flag4)
+				{
+					if (99 < num)
+					{
+						num = 99;
+					}
+					if (0 < num)
+					{
+						listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
+						listItem.SetColumnStr(3, NrTSingleton<CTextParser>.Instance.GetTextColor("1002") + num.ToString());
+					}
+					else if (flag4)
+					{
+						listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice04");
+					}
+				}
+				else if (NrTSingleton<GuildWarManager>.Instance.CanGetGuildWarReward())
+				{
+					listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice04");
+				}
+			}
+			listItem.Key = type;
+			break;
 		case BookmarkDlg.TYPE.INVEN:
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Inven", type, new EZValueChangedDelegate(this.ClickList));
+			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_InventoryBM", type, new EZValueChangedDelegate(this.ClickList));
 			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1771"));
 			listItem.Key = type;
 			break;
 		case BookmarkDlg.TYPE.COMMUNITY:
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Invite", type, new EZValueChangedDelegate(this.ClickList));
+			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_FriendBM", type, new EZValueChangedDelegate(this.ClickList));
 			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("210"));
 			if (0 < NrTSingleton<NkCharManager>.Instance.AddExpHelpsolCount())
 			{
@@ -748,45 +642,10 @@ public class BookmarkDlg : Form
 			}
 			listItem.Key = type;
 			break;
-		case BookmarkDlg.TYPE.NEWGUILD:
-		{
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Guild", BookmarkDlg.TYPE.SOLRECRUIT, new EZValueChangedDelegate(this.ClickNewGuild));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("17"));
-			int num2 = NrTSingleton<NewGuildManager>.Instance.GetReadyApplicantCount();
-			bool guildBossCheck = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetGuildBossCheck();
-			if (0 < num2 || guildBossCheck)
-			{
-				if (99 < num2)
-				{
-					num2 = 99;
-				}
-				if (0 < num2)
-				{
-					listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
-					listItem.SetColumnStr(3, NrTSingleton<CTextParser>.Instance.GetTextColor("1002") + num2.ToString());
-				}
-				else if (guildBossCheck)
-				{
-					listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice04");
-				}
-			}
-			listItem.Key = type;
-			break;
-		}
-		case BookmarkDlg.TYPE.WORLDMAP:
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_WorldMap", type, new EZValueChangedDelegate(this.ClickList));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1769"));
-			listItem.Key = type;
-			break;
-		case BookmarkDlg.TYPE.BABEL:
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Babel", type, new EZValueChangedDelegate(this.ClickList));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("630"));
-			listItem.Key = type;
-			break;
 		case BookmarkDlg.TYPE.HEROBATTLE:
 			if (NrTSingleton<ContentsLimitManager>.Instance.IsHeroBattle())
 			{
-				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Pillage", type, new EZValueChangedDelegate(this.ClickList));
+				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_InfiBattleBM", type, new EZValueChangedDelegate(this.ClickList));
 				listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("43"));
 				listItem.Key = type;
 			}
@@ -795,35 +654,10 @@ public class BookmarkDlg : Form
 				listItem = null;
 			}
 			break;
-		case BookmarkDlg.TYPE.INFIBATTLE:
-			if (NrTSingleton<ContentsLimitManager>.Instance.IsInfiBattle())
-			{
-				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Pillage", type, new EZValueChangedDelegate(this.ClickList));
-				listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2218"));
-				listItem.Key = type;
-			}
-			else
-			{
-				listItem = null;
-			}
-			break;
-		case BookmarkDlg.TYPE.FIGHT:
-		{
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Expedition", type, new EZValueChangedDelegate(this.ClickList));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("577"));
-			NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
-			if (myCharInfo.ColosseumOldRank > 0)
-			{
-				listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
-				listItem.SetColumnGUIContent(3, string.Empty, "Win_I_Notice04");
-			}
-			listItem.Key = type;
-			break;
-		}
 		case BookmarkDlg.TYPE.EXPLORATION:
 			if (NrTSingleton<ContentsLimitManager>.Instance.IsExploration())
 			{
-				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Exploration", type, new EZValueChangedDelegate(this.ClickList));
+				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_ExploreBM", type, new EZValueChangedDelegate(this.ClickList));
 				listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("846"));
 				listItem.Key = type;
 			}
@@ -832,35 +666,6 @@ public class BookmarkDlg : Form
 				listItem = null;
 			}
 			break;
-		case BookmarkDlg.TYPE.MINE:
-			if (!NrTSingleton<ContentsLimitManager>.Instance.IsMineApply((short)NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetLevel()) || !NrTSingleton<ContentsLimitManager>.Instance.IsExpeditionLevel(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetLevel()))
-			{
-				listItem = null;
-			}
-			else
-			{
-				listItem.SetColumnGUIContent(0, string.Empty, "Main_B_MineWar", type, new EZValueChangedDelegate(this.ClickList));
-				listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1625"));
-				listItem.Key = type;
-			}
-			break;
-		case BookmarkDlg.TYPE.MAINEVENT:
-		{
-			int num3 = NrTSingleton<NrTable_BurnningEvent_Manager>.Instance.CurrentEventCount();
-			listItem.SetColumnGUIContent(0, string.Empty, "Main_B_Event", type, new EZValueChangedDelegate(this.ClickList));
-			listItem.SetColumnGUIContent(1, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("433"));
-			if (0 < num3)
-			{
-				if (99 < num3)
-				{
-					num3 = 99;
-				}
-				listItem.SetColumnGUIContent(2, string.Empty, "Win_I_Notice01");
-				listItem.SetColumnStr(3, NrTSingleton<CTextParser>.Instance.GetTextColor("1002") + num3.ToString());
-			}
-			listItem.Key = type;
-			break;
-		}
 		default:
 			listItem = null;
 			break;
@@ -919,7 +724,7 @@ public class BookmarkDlg : Form
 		this.oldZ = base.GetLocation().z;
 		base.SetLocation(base.GetLocationX(), base.GetLocationY(), NrTSingleton<FormsManager>.Instance.GetTopMostZ() + 1f);
 		BookmarkDlg.TYPE tYPE = (BookmarkDlg.TYPE)((int)Enum.Parse(typeof(BookmarkDlg.TYPE), param1));
-		this._GuideItem = (this.bookmarkList.GetItem((int)tYPE) as UIListItemContainer);
+		this._GuideItem = this.bookmarkList.GetItem((int)tYPE);
 		UIButton uIButton = this._GuideItem.GetElement(0) as UIButton;
 		if (null != uIButton)
 		{
@@ -931,7 +736,8 @@ public class BookmarkDlg : Form
 		{
 			this._GuideItem.AlphaAni(1f, 0.5f, -0.5f);
 		}
-		this.bookmarkList.ScrollPosition = (float)tYPE / 15f;
+		this.bookmarkList.ScrollPosition = (float)tYPE / 8f;
+		this.bookmarkList.RepositionItems();
 		if (null == this._Touch)
 		{
 			this._Touch = UICreateControl.Button("touch", "Main_I_Touch01", 196f, 154f);
@@ -1018,12 +824,12 @@ public class BookmarkDlg : Form
 	{
 		for (int i = 0; i < this.bookmarkList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = this.bookmarkList.GetItem(i) as UIListItemContainer;
-			if (!(null == uIListItemContainer))
+			UIListItemContainer item = this.bookmarkList.GetItem(i);
+			if (!(null == item))
 			{
-				if (uIListItemContainer.Data != null)
+				if (item.Data != null)
 				{
-					if (eTYPE == (BookmarkDlg.TYPE)((int)uIListItemContainer.Data))
+					if (eTYPE == (BookmarkDlg.TYPE)((int)item.Data))
 					{
 						return true;
 					}
@@ -1034,6 +840,10 @@ public class BookmarkDlg : Form
 	}
 
 	public void SetGuildApplicantGet(int iCount)
+	{
+	}
+
+	public void ShowMythRaidEffect()
 	{
 	}
 }

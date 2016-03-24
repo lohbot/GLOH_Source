@@ -305,7 +305,7 @@ public class TournamentMasterDlg : Form
 				"charname2",
 				tOURNAMENT_MATCH_LIST.m_szPlayer[1]
 			});
-			msgBoxUI.SetMsg(new YesDelegate(this.OnDeleteMatchOK), tOURNAMENT_MATCH_LIST, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1795"), empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnDeleteMatchOK), tOURNAMENT_MATCH_LIST, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1795"), empty, eMsgType.MB_OK_CANCEL, 2);
 		}
 	}
 
@@ -332,7 +332,7 @@ public class TournamentMasterDlg : Form
 		this.m_lbBattleMatchInfo.Clear();
 		foreach (TOURNAMENT_MATCH_LIST current in this.m_liMatchList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbBattleMatchInfo.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbBattleMatchInfo.ColumnNum, true, string.Empty);
 			string tournamentStateToString = this.GetTournamentStateToString(current.ePlayerState[0]);
 			newListItem.SetListItemData(7, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2387"), null, null, null);
 			newListItem.SetListItemData(8, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2388"), null, null, null);
@@ -489,15 +489,15 @@ public class TournamentMasterDlg : Form
 					string tournamentStateToString = this.GetTournamentStateToString(current.ePlayerState[i]);
 					for (int j = 0; j < this.m_liMatchList.Count; j++)
 					{
-						UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbBattleMatchInfo.GetItem(j);
-						if (uIListItemContainer != null)
+						UIListItemContainer item = this.m_lbBattleMatchInfo.GetItem(j);
+						if (item != null)
 						{
-							TextField textField = uIListItemContainer.GetElement(this.PLAYER1) as TextField;
+							TextField textField = item.GetElement(this.PLAYER1) as TextField;
 							if (textField != null && textField.GetText().Equals(value))
 							{
 								if (_NFY.nPlayerState == 9)
 								{
-									Label label = uIListItemContainer.GetElement(this.WINCOUNT1) as Label;
+									Label label = item.GetElement(this.WINCOUNT1) as Label;
 									if (label != null)
 									{
 										current.m_nWinCount[i] = current.m_nWinCount[i] + 1;
@@ -506,7 +506,7 @@ public class TournamentMasterDlg : Form
 								}
 								else
 								{
-									Label label2 = uIListItemContainer.GetElement(this.STATE1) as Label;
+									Label label2 = item.GetElement(this.STATE1) as Label;
 									if (label2 != null)
 									{
 										label2.SetText(tournamentStateToString);
@@ -514,12 +514,12 @@ public class TournamentMasterDlg : Form
 									}
 								}
 							}
-							textField = (uIListItemContainer.GetElement(this.PLAYER2) as TextField);
+							textField = (item.GetElement(this.PLAYER2) as TextField);
 							if (textField != null && textField.GetText().Equals(value))
 							{
 								if (_NFY.nPlayerState == 9)
 								{
-									Label label3 = uIListItemContainer.GetElement(this.WINCOUNT2) as Label;
+									Label label3 = item.GetElement(this.WINCOUNT2) as Label;
 									if (label3 != null)
 									{
 										current.m_nWinCount[i] = current.m_nWinCount[i] + 1;
@@ -528,7 +528,7 @@ public class TournamentMasterDlg : Form
 								}
 								else
 								{
-									Label label4 = uIListItemContainer.GetElement(this.STATE2) as Label;
+									Label label4 = item.GetElement(this.STATE2) as Label;
 									if (label4 != null)
 									{
 										label4.SetText(tournamentStateToString);
@@ -561,13 +561,13 @@ public class TournamentMasterDlg : Form
 	{
 		for (int i = 0; i < this.m_liMatchList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbBattleMatchInfo.GetItem(i);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbBattleMatchInfo.GetItem(i);
+			if (item != null)
 			{
-				TextField textField = uIListItemContainer.GetElement(this.PLAYER1) as TextField;
+				TextField textField = item.GetElement(this.PLAYER1) as TextField;
 				if (textField != null && textField.GetText().Equals(pkMatch.m_szPlayer[0]))
 				{
-					UIButton uIButton = uIListItemContainer.GetElement(this.BUTTON) as UIButton;
+					UIButton uIButton = item.GetElement(this.BUTTON) as UIButton;
 					if (uIButton != null)
 					{
 						if (pkMatch.eMatchState != eTOURNAMENT_PLAYER_STATE.eTOURNAMENT_PLAYER_STATE_NONE)
@@ -613,13 +613,13 @@ public class TournamentMasterDlg : Form
 	{
 		for (int i = 0; i < this.m_liMatchList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbBattleMatchInfo.GetItem(i);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbBattleMatchInfo.GetItem(i);
+			if (item != null)
 			{
-				TextField textField = uIListItemContainer.GetElement(this.PLAYER1) as TextField;
+				TextField textField = item.GetElement(this.PLAYER1) as TextField;
 				if (textField != null && textField.GetText().Equals(pkMatch.m_szPlayer[0]))
 				{
-					Label label = uIListItemContainer.GetElement(this.TURN) as Label;
+					Label label = item.GetElement(this.TURN) as Label;
 					if (label != null)
 					{
 						if (pkMatch.m_nStartTurnAlly == 0)
@@ -644,26 +644,26 @@ public class TournamentMasterDlg : Form
 	{
 		for (int i = 0; i < this.m_liMatchList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.m_lbBattleMatchInfo.GetItem(i);
-			if (uIListItemContainer != null)
+			UIListItemContainer item = this.m_lbBattleMatchInfo.GetItem(i);
+			if (item != null)
 			{
-				Label label = uIListItemContainer.GetElement(this.MATCHINDEX) as Label;
+				Label label = item.GetElement(this.MATCHINDEX) as Label;
 				if (label != null)
 				{
 					int num = int.Parse(label.GetText());
 					if (num == pkMatch.nIndex)
 					{
-						TextField textField = uIListItemContainer.GetElement(this.PLAYER1) as TextField;
+						TextField textField = item.GetElement(this.PLAYER1) as TextField;
 						if (textField != null && !textField.GetText().Equals(pkMatch.m_szPlayer[0]))
 						{
 							pkMatch.m_szPlayer[0] = textField.GetText();
 						}
-						textField = (uIListItemContainer.GetElement(this.PLAYER2) as TextField);
+						textField = (item.GetElement(this.PLAYER2) as TextField);
 						if (textField != null && !textField.GetText().Equals(pkMatch.m_szPlayer[1]))
 						{
 							pkMatch.m_szPlayer[1] = textField.GetText();
 						}
-						textField = (uIListItemContainer.GetElement(this.OBSERVER) as TextField);
+						textField = (item.GetElement(this.OBSERVER) as TextField);
 						if (textField != null && !textField.GetText().Equals(pkMatch.m_szObserver))
 						{
 							pkMatch.m_szObserver = textField.GetText();
@@ -763,7 +763,7 @@ public class TournamentMasterDlg : Form
 		tOURNAMENT_MATCH_LIST.m_nStartTurnAlly = 0;
 		tOURNAMENT_MATCH_LIST.bUseLoddy = bUseLobby;
 		this.m_liMatchList.Add(tOURNAMENT_MATCH_LIST);
-		NewListItem newListItem = new NewListItem(this.m_lbBattleMatchInfo.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_lbBattleMatchInfo.ColumnNum, true, string.Empty);
 		string tournamentStateToString = this.GetTournamentStateToString(tOURNAMENT_MATCH_LIST.ePlayerState[0]);
 		newListItem.SetListItemData(7, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2387"), null, null, null);
 		newListItem.SetListItemData(8, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2388"), null, null, null);

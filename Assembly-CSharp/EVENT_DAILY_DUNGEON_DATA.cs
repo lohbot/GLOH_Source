@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using TsLibs;
+using UnityEngine;
 
 public class EVENT_DAILY_DUNGEON_DATA : NrTableBase
 {
@@ -8,7 +9,7 @@ public class EVENT_DAILY_DUNGEON_DATA : NrTableBase
 
 	private static EVENT_DAILY_DUNGEON_DATA Instance;
 
-	public EVENT_DAILY_DUNGEON_DATA() : base(CDefinePath.DAILY_DUNGEON_URL, true)
+	public EVENT_DAILY_DUNGEON_DATA() : base(CDefinePath.DAILY_DUNGEON_URL)
 	{
 		this.m_dicDailyDungeonData = new Dictionary<sbyte, Dictionary<sbyte, EVENT_DAILY_DUNGEON_INFO>>();
 		this.m_dicDailyDungeonData.Clear();
@@ -72,5 +73,34 @@ public class EVENT_DAILY_DUNGEON_DATA : NrTableBase
 			}
 		}
 		return null;
+	}
+
+	public int GetDailyDungeonMapInfo(sbyte nDifficulty, sbyte nDayOfWeek)
+	{
+		if (this.m_dicDailyDungeonData.ContainsKey(nDayOfWeek))
+		{
+			Dictionary<sbyte, EVENT_DAILY_DUNGEON_INFO> dictionary = this.m_dicDailyDungeonData[nDayOfWeek];
+			if (dictionary != null && dictionary.ContainsKey(nDifficulty) && dictionary[nDifficulty] != null)
+			{
+				return dictionary[nDifficulty].i32MapIDX;
+			}
+		}
+		return 0;
+	}
+
+	public Vector3 GetDailyDungeonStartPos(sbyte nDifficulty, sbyte nDayOfWeek)
+	{
+		Vector3 zero = Vector3.zero;
+		if (this.m_dicDailyDungeonData.ContainsKey(nDayOfWeek))
+		{
+			Dictionary<sbyte, EVENT_DAILY_DUNGEON_INFO> dictionary = this.m_dicDailyDungeonData[nDayOfWeek];
+			if (dictionary != null && dictionary.ContainsKey(nDifficulty) && dictionary[nDifficulty] != null)
+			{
+				zero.x = dictionary[nDifficulty].fGridX;
+				zero.y = dictionary[nDifficulty].fGridY;
+				zero.z = dictionary[nDifficulty].fGridZ;
+			}
+		}
+		return zero;
 	}
 }

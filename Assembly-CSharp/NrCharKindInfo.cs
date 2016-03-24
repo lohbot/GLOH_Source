@@ -190,6 +190,10 @@ public class NrCharKindInfo
 		{
 			return this.m_pkCHARKIND_INFO.CharEffectGrade + "_SEVEN";
 		}
+		if (this.GetLegendType(solgrade) == 2)
+		{
+			return this.m_pkCHARKIND_INFO.CharEffectGrade + "_MYTH";
+		}
 		if (this.GetLegendType(solgrade) == 0)
 		{
 			return this.m_pkCHARKIND_INFO.CharEffectGrade;
@@ -286,17 +290,26 @@ public class NrCharKindInfo
 		return this.m_pkCHARKIND_ATTACKINFO.ATTACKGRID;
 	}
 
-	public string GetPortraitFile1(int solGrade = -1)
+	public string GetPortraitFile1(int solGrade = -1, string costumePortrait = "")
 	{
+		string text = string.Empty;
+		if (string.IsNullOrEmpty(costumePortrait))
+		{
+			text = this.m_pkCHARKIND_INFO.PortraitFile1;
+		}
+		else
+		{
+			text = costumePortrait;
+		}
 		if (0 >= this.m_pkCHARKIND_INFO.PortraitRank)
 		{
-			return this.m_pkCHARKIND_INFO.PortraitFile1;
+			return text;
 		}
 		if (solGrade == -1)
 		{
-			return NrTSingleton<UIDataManager>.Instance.GetString(this.m_pkCHARKIND_INFO.PortraitFile1, "_03");
+			return NrTSingleton<UIDataManager>.Instance.GetString(text, "_03");
 		}
-		return NrTSingleton<UIDataManager>.Instance.GetString(this.m_pkCHARKIND_INFO.PortraitFile1, "_0", (solGrade + 1).ToString());
+		return NrTSingleton<UIDataManager>.Instance.GetString(text, "_0", (solGrade + 1).ToString());
 	}
 
 	public string GetDesc()
@@ -720,7 +733,7 @@ public class NrCharKindInfo
 		{
 			return 0;
 		}
-		if (recruittype < 0 || recruittype >= 20)
+		if (recruittype < 0 || recruittype >= 23)
 		{
 			return 0;
 		}
@@ -810,9 +823,13 @@ public class NrCharKindInfo
 		return result;
 	}
 
-	public float GetAnimationEvent(int weapontype, int anitype, int eventype)
+	public float GetAnimationEvent(int weapontype, int anitype, int eventype, string costumeBundleName)
 	{
 		int aniEventWeaponKey = this.GetAniEventWeaponKey(weapontype);
+		if (!string.IsNullOrEmpty(costumeBundleName))
+		{
+			return NrTSingleton<NrCharAniInfoManager>.Instance.GetAnimationEvent(costumeBundleName, aniEventWeaponKey, anitype, eventype);
+		}
 		if (this.m_pkCharAniInfo == null)
 		{
 			return 1f;
@@ -820,19 +837,23 @@ public class NrCharKindInfo
 		return this.m_pkCharAniInfo.GetAnimationEvent(aniEventWeaponKey, anitype, eventype);
 	}
 
-	public int GetHitAniCount(int weapontype, int anitype)
+	public int GetHitAniCount(int weapontype, int anitype, string costumeBundleName)
 	{
+		int aniEventWeaponKey = this.GetAniEventWeaponKey(weapontype);
+		if (!string.IsNullOrEmpty(costumeBundleName))
+		{
+			return NrTSingleton<NrCharAniInfoManager>.Instance.GetHitAniCount(costumeBundleName, aniEventWeaponKey, anitype);
+		}
 		if (this.m_pkCharAniInfo == null)
 		{
 			return -1;
 		}
-		int aniEventWeaponKey = this.GetAniEventWeaponKey(weapontype);
 		return this.m_pkCharAniInfo.GetHitAniCount(aniEventWeaponKey, anitype);
 	}
 
 	public int GetBattleSkillLevel(int skillUnique)
 	{
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			if (this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique == skillUnique)
 			{
@@ -844,7 +865,7 @@ public class NrCharKindInfo
 
 	public int GetBattleSkillUnique(int index)
 	{
-		if (index < 0 || index >= 3)
+		if (index < 0 || index >= 6)
 		{
 			return 0;
 		}
@@ -853,7 +874,7 @@ public class NrCharKindInfo
 
 	public int GetBattleSkillLevelByIndex(int index)
 	{
-		if (index < 0 || index >= 3)
+		if (index < 0 || index >= 6)
 		{
 			return 0;
 		}
@@ -862,7 +883,7 @@ public class NrCharKindInfo
 
 	public int GetBattleSkillIndexByUnique(int skillUnique)
 	{
-		for (int i = 0; i < 3; i++)
+		for (int i = 0; i < 6; i++)
 		{
 			if (this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique == skillUnique)
 			{
@@ -870,5 +891,60 @@ public class NrCharKindInfo
 			}
 		}
 		return 0;
+	}
+
+	public int GetMythBattleSkillUniqueMaxCount()
+	{
+		int num = 0;
+		for (int i = 0; i < 6; i++)
+		{
+			if (this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique > 0)
+			{
+				BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique);
+				if (battleSkillBase != null && battleSkillBase.m_nMythSkillType > 0)
+				{
+					num++;
+				}
+			}
+		}
+		return num;
+	}
+
+	public int GetMythBattleSkillUniqueByIndex(int i32Idx)
+	{
+		int result = 0;
+		int num = 0;
+		for (int i = 0; i < 6; i++)
+		{
+			if (this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique > 0)
+			{
+				BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique);
+				if (battleSkillBase != null && battleSkillBase.m_nMythSkillType > 0)
+				{
+					if (num == i32Idx)
+					{
+						result = this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique;
+					}
+					num++;
+				}
+			}
+		}
+		return result;
+	}
+
+	public BATTLESKILL_BASE GetMythBattleSkill()
+	{
+		for (int i = 0; i < 6; i++)
+		{
+			if (this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique > 0)
+			{
+				BATTLESKILL_BASE battleSkillBase = NrTSingleton<BattleSkill_Manager>.Instance.GetBattleSkillBase(this.m_pkCHARKIND_STATINFO.kBattleSkillData[i].BattleSkillUnique);
+				if (battleSkillBase != null && battleSkillBase.m_nMythSkillType > 0)
+				{
+					return battleSkillBase;
+				}
+			}
+		}
+		return null;
 	}
 }

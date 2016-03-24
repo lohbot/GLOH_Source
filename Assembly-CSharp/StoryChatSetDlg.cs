@@ -1,3 +1,4 @@
+using GameMessage;
 using PROTOCOL;
 using PROTOCOL.GAME.ID;
 using System;
@@ -175,6 +176,17 @@ public class StoryChatSetDlg : Form
 		if (text.Length >= 200)
 		{
 			return;
+		}
+		if ("true" == MsgHandler.HandleReturn<string>("ReservedWordManagerIsUse", new object[0]))
+		{
+			text = MsgHandler.HandleReturn<string>("ReservedWordManagerReplaceWord", new object[]
+			{
+				text
+			});
+		}
+		if (text.Contains("*"))
+		{
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("797"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 		}
 		GS_STORYCHAT_SET_REQ gS_STORYCHAT_SET_REQ = new GS_STORYCHAT_SET_REQ();
 		gS_STORYCHAT_SET_REQ.m_nType = this.m_nType;

@@ -31,6 +31,13 @@ public class StageLoginMobile : AStage
 
 	public override void OnPrepareSceneChange()
 	{
+		UnityEngine.Debug.Log(string.Concat(new object[]
+		{
+			"!!!!! ScreenSize Width : ",
+			Screen.width,
+			", Height, : ",
+			Screen.height
+		}));
 		NrLoadPageScreen.DecideLoadingType(Scene.CurScene, this.SceneType());
 		NrLoadPageScreen.StepUpMain(1);
 		if (NrTSingleton<NrMainSystem>.Instance.m_ReLogin)
@@ -143,7 +150,7 @@ public class StageLoginMobile : AStage
 	[DebuggerHidden]
 	private IEnumerator _StageProcess()
 	{
-		return new StageLoginMobile.<_StageProcess>c__Iterator36();
+		return new StageLoginMobile.<_StageProcess>c__Iterator39();
 	}
 
 	public void BtnClickNexon(IUIObject obj)
@@ -171,42 +178,26 @@ public class StageLoginMobile : AStage
 	[DebuggerHidden]
 	private IEnumerator LoadLoginMainScene()
 	{
-		return new StageLoginMobile.<LoadLoginMainScene>c__Iterator37();
+		return new StageLoginMobile.<LoadLoginMainScene>c__Iterator3A();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator LoadLoginSleep()
 	{
-		return new StageLoginMobile.<LoadLoginSleep>c__Iterator38();
+		return new StageLoginMobile.<LoadLoginSleep>c__Iterator3B();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _RequestLoginNexonAuthorize()
 	{
-		StageLoginMobile.<_RequestLoginNexonAuthorize>c__Iterator39 <_RequestLoginNexonAuthorize>c__Iterator = new StageLoginMobile.<_RequestLoginNexonAuthorize>c__Iterator39();
-		<_RequestLoginNexonAuthorize>c__Iterator.<>f__this = this;
-		return <_RequestLoginNexonAuthorize>c__Iterator;
+		StageLoginMobile.<_RequestLoginNexonAuthorize>c__Iterator3C <_RequestLoginNexonAuthorize>c__Iterator3C = new StageLoginMobile.<_RequestLoginNexonAuthorize>c__Iterator3C();
+		<_RequestLoginNexonAuthorize>c__Iterator3C.<>f__this = this;
+		return <_RequestLoginNexonAuthorize>c__Iterator3C;
 	}
 
 	public void ShowPlatform()
 	{
 		string @string = PlayerPrefs.GetString(NrPrefsKey.PLAYER_PREFS_MOBILEAUTHKEY);
-		if (TsPlatform.IsIPhone)
-		{
-			Social.localUser.Authenticate(delegate(bool success)
-			{
-				if (success)
-				{
-					StageLoginMobile.m_bConnectGameCenter = true;
-					UnityEngine.Debug.LogWarning("Start Game Center Authenticate. !!!!!!!!!!!");
-				}
-				else
-				{
-					StageLoginMobile.m_bConnectGameCenter = false;
-					UnityEngine.Debug.LogWarning("Fail Start Game Center Authenticate. !!!!!!!!!!!");
-				}
-			});
-		}
 		if (!string.IsNullOrEmpty(@string))
 		{
 			MsgHandler.Handle("RequestAutoLogin", new object[0]);
@@ -331,16 +322,16 @@ public class StageLoginMobile : AStage
 	[DebuggerHidden]
 	private IEnumerator _RequestNoticePage()
 	{
-		StageLoginMobile.<_RequestNoticePage>c__Iterator3A <_RequestNoticePage>c__Iterator3A = new StageLoginMobile.<_RequestNoticePage>c__Iterator3A();
-		<_RequestNoticePage>c__Iterator3A.<>f__this = this;
-		return <_RequestNoticePage>c__Iterator3A;
+		StageLoginMobile.<_RequestNoticePage>c__Iterator3D <_RequestNoticePage>c__Iterator3D = new StageLoginMobile.<_RequestNoticePage>c__Iterator3D();
+		<_RequestNoticePage>c__Iterator3D.<>f__this = this;
+		return <_RequestNoticePage>c__Iterator3D;
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _RequestNoticeCheck()
 	{
-		StageLoginMobile.<_RequestNoticeCheck>c__Iterator3B <_RequestNoticeCheck>c__Iterator3B = new StageLoginMobile.<_RequestNoticeCheck>c__Iterator3B();
-		<_RequestNoticeCheck>c__Iterator3B.<>f__this = this;
-		return <_RequestNoticeCheck>c__Iterator3B;
+		StageLoginMobile.<_RequestNoticeCheck>c__Iterator3E <_RequestNoticeCheck>c__Iterator3E = new StageLoginMobile.<_RequestNoticeCheck>c__Iterator3E();
+		<_RequestNoticeCheck>c__Iterator3E.<>f__this = this;
+		return <_RequestNoticeCheck>c__Iterator3E;
 	}
 }

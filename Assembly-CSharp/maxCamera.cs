@@ -352,7 +352,7 @@ public class maxCamera : MonoBehaviour
 		Camera component = base.GetComponent<Camera>();
 		if (this.m_bUseCameraLevel && cAMERASETTING_DATA != null)
 		{
-			this.fieldOfView = Mathf.Lerp(this.m_fBeforeFov, cAMERASETTING_DATA.m_Fov, (Time.time - this.m_fLerpStartTime) / cAMERASETTING_DATA.m_LerpTime);
+			this.fieldOfView = Mathf.Lerp(this.m_fBeforeFov, cAMERASETTING_DATA.GetFOV(), (Time.time - this.m_fLerpStartTime) / cAMERASETTING_DATA.m_LerpTime);
 		}
 		component.fieldOfView = this.fieldOfView;
 	}
@@ -732,6 +732,22 @@ public class maxCamera : MonoBehaviour
 			this.minDistance = 18f;
 			this.currentDistance = 18f;
 			this.desiredDistance = 18f;
+			this.bCullisionCamera = false;
+			this.rotation = Quaternion.Euler(this.yDeg, this.xDeg, 0f);
+			base.transform.rotation = this.rotation;
+			this.CameraWork();
+		}
+		else if (nMode == 6)
+		{
+			this.UseCameraLevel = false;
+			this.yDeg = 60f;
+			this.yMinLimit = 60f;
+			this.yMaxLimit = 60f;
+			this.xDeg = 270f;
+			this.maxDistance = 25f;
+			this.minDistance = 25f;
+			this.currentDistance = 25f;
+			this.desiredDistance = 25f;
 			this.bCullisionCamera = false;
 			this.rotation = Quaternion.Euler(this.yDeg, this.xDeg, 0f);
 			base.transform.rotation = this.rotation;

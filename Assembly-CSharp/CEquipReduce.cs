@@ -5,11 +5,14 @@ public class CEquipReduce : CNpcUI
 {
 	public CEquipReduce()
 	{
-		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("984");
-		this.m_kMenu[0].strMenu = textFromInterface;
-		this.m_kMenu[0].byMenuType = NPC_UI.E_NPC_UI_TYPE.E_NPC_UI_TYPE_COMMON;
-		this.m_kMenu[0].strIconPath = string.Empty;
-		base.SetUIID(0, G_ID.REDUCEMAIN_DLG);
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsItemLevelCheckBlock())
+		{
+			string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("984");
+			this.m_kMenu[0].strMenu = textFromInterface;
+			this.m_kMenu[0].byMenuType = NPC_UI.E_NPC_UI_TYPE.E_NPC_UI_TYPE_COMMON;
+			this.m_kMenu[0].strIconPath = string.Empty;
+			base.SetUIID(0, G_ID.REDUCEMAIN_DLG);
+		}
 		if (NrTSingleton<ContentsLimitManager>.Instance.IsTradeCaralyst())
 		{
 			string textFromInterface2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1970");
@@ -17,6 +20,22 @@ public class CEquipReduce : CNpcUI
 			this.m_kMenu[1].byMenuType = NPC_UI.E_NPC_UI_TYPE.E_NPC_UI_TYPE_COMMON;
 			this.m_kMenu[1].strIconPath = "NPC_I_QuestI11";
 			base.SetUIID(1, G_ID.ITEMCOMPOSE_DLG);
+		}
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsItemEvolution(false))
+		{
+			string textFromInterface3 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3529");
+			this.m_kMenu[2].strMenu = textFromInterface3;
+			this.m_kMenu[2].byMenuType = NPC_UI.E_NPC_UI_TYPE.E_NPC_UI_TYPE_COMMON;
+			this.m_kMenu[2].strIconPath = "NPC_I_QuestI11";
+			base.SetUIID(2, G_ID.ITEMEVOLUTION_DLG);
+		}
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsItemEvolution(true))
+		{
+			string textFromInterface4 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3530");
+			this.m_kMenu[3].strMenu = textFromInterface4;
+			this.m_kMenu[3].byMenuType = NPC_UI.E_NPC_UI_TYPE.E_NPC_UI_TYPE_COMMON;
+			this.m_kMenu[3].strIconPath = "NPC_I_QuestI11";
+			base.SetUIID(3, G_ID.EXCHANGE_EVOLUTION_DLG);
 		}
 	}
 

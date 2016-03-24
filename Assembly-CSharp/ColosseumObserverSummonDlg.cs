@@ -65,7 +65,7 @@ public class ColosseumObserverSummonDlg : Form
 			if (charKindInfo != null)
 			{
 				string textureFromBundle = string.Empty;
-				textureFromBundle = "UI/Soldier/64/" + charKindInfo.GetPortraitFile1(0) + "_64";
+				textureFromBundle = "UI/Soldier/64/" + charKindInfo.GetPortraitFile1(0, string.Empty) + "_64";
 				this.m_itSol[i].SetTextureFromBundle(textureFromBundle);
 			}
 		}

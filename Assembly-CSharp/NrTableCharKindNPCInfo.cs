@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableCharKindNPCInfo : NrTableBase
 {
-	public NrTableCharKindNPCInfo() : base(CDefinePath.CHARKIND_NPCINFO_URL, true)
+	public NrTableCharKindNPCInfo() : base(CDefinePath.CHARKIND_NPCINFO_URL)
 	{
 	}
 

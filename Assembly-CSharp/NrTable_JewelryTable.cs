@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_JewelryTable : NrTableBase
 {
-	public NrTable_JewelryTable(string strFilePath) : base(strFilePath, true)
+	public NrTable_JewelryTable(string strFilePath) : base(strFilePath)
 	{
 	}
 

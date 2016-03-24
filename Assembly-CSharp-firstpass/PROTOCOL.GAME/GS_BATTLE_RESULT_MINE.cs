@@ -23,5 +23,9 @@ namespace PROTOCOL.GAME
 		public char[] szDefenceGuildName = new char[11];
 
 		public long i64BattleTime;
+
+		public bool bGiveComplete;
+
+		public bool bIsWin;
 	}
 }

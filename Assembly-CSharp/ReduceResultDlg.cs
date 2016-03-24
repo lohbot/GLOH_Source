@@ -11,6 +11,8 @@ public class ReduceResultDlg : Form
 
 	private DrawTexture m_dtItemBG;
 
+	private Label m_lbTitle;
+
 	private Label m_lbItem;
 
 	private Label m_lbInfo;
@@ -27,6 +29,8 @@ public class ReduceResultDlg : Form
 
 	private string m_strMessage = string.Empty;
 
+	private bool m_bAutoClose = true;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -36,16 +40,16 @@ public class ReduceResultDlg : Form
 
 	public override void SetComponent()
 	{
+		this.m_lbTitle = (base.GetControl("Label_title") as Label);
 		this.m_itItem = (base.GetControl("DrawTexture_equip3") as ItemTexture);
 		this.m_itItem.AddMouseOutDelegate(new EZValueChangedDelegate(this.On_Mouse_Out));
-		this.m_itItem.AddMouseOverDelegate(new EZValueChangedDelegate(this.On_Mouse_Over));
 		this.m_dtItemBG = (base.GetControl("DrawTexture_equip2") as DrawTexture);
 		this.m_lbItem = (base.GetControl("Label_equip2") as Label);
 		this.m_lbInfo = (base.GetControl("Label_stat2") as Label);
 		this.m_btConfirm = (base.GetControl("Button_Confirm") as Button);
 		this.m_btConfirm.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickConfirm));
 		base.SetScreenCenter();
-		base.SetupBalckBG("Win_T_BK", 0f, 0f, GUICamera.width * 1.43f, GUICamera.height * 1.43f, 0.5f);
+		base.SetupBalckBG("Win_T_BK", 0f, 0f, GUICamera.width * 1.43f, GUICamera.height * 1.43f, 0.5f, true, SpriteRoot.ANCHOR_METHOD.UPPER_LEFT, 0.1f);
 	}
 
 	public void ClickConfirm(IUIObject obj)
@@ -107,6 +111,62 @@ public class ReduceResultDlg : Form
 			this.m_lbInfo.SetText(this.m_strMessage);
 			this.m_bSuccess = true;
 		}
+		this.LoadSolComposeSuccessBundle();
+	}
+
+	public void SetResult(GS_DISASSEMBLEITEM_ACK pAck)
+	{
+		this.m_lbTitle.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2953"));
+		string empty = string.Empty;
+		if (pAck.DestItemUnique != 0)
+		{
+			this.m_itItem.SetItemTexture(pAck.DestItemUnique);
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1803"),
+				"itemname",
+				NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(pAck.DestItemUnique)
+			});
+			this.m_lbItem.SetText(empty);
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("411"),
+				"count",
+				pAck.DestItemNum
+			});
+			this.m_lbInfo.SetText(empty);
+			this.m_bSuccess = true;
+			this.LoadSolComposeSuccessBundle();
+			this.m_bAutoClose = false;
+		}
+	}
+
+	public void SetItemrepairResult(GS_ITEMSKILL_REINFORCE_ACK pAck)
+	{
+		ITEM itemFromItemID = NkUserInventory.GetInstance().GetItemFromItemID(pAck.i64BaseItemID);
+		if (itemFromItemID == null)
+		{
+			return;
+		}
+		this.m_lbTitle.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2969"));
+		string empty = string.Empty;
+		this.m_itItem.SetItemTexture(itemFromItemID.m_nItemUnique);
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1803"),
+			"itemname",
+			NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(itemFromItemID.m_nItemUnique)
+		});
+		this.m_lbItem.SetText(empty);
+		int num = itemFromItemID.m_nOption[7];
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2968"),
+			"count",
+			num
+		});
+		this.m_lbInfo.SetText(empty);
+		this.m_bSuccess = true;
 		this.LoadSolComposeSuccessBundle();
 	}
 
@@ -195,7 +255,10 @@ public class ReduceResultDlg : Form
 				UnityEngine.Object.DestroyImmediate(this.m_SlotEffect);
 			}
 			this.m_fStartTime = 0f;
-			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.REDUCERESULT_DLG);
+			if (this.m_bAutoClose)
+			{
+				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.REDUCERESULT_DLG);
+			}
 		}
 	}
 

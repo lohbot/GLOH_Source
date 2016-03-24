@@ -25,6 +25,10 @@ public class NewGuild
 
 	private string m_strGuildNotice = string.Empty;
 
+	private bool m_isGuildWar;
+
+	private bool m_bIsExitAgit;
+
 	private List<NewGuildMember> m_NewGuildMemberList = new List<NewGuildMember>();
 
 	private List<NewGuildApplicant> m_NewGuildApplicantList = new List<NewGuildApplicant>();
@@ -84,6 +88,16 @@ public class NewGuild
 		return this.m_strGuildNotice;
 	}
 
+	public bool IsGuildWar()
+	{
+		return this.m_isGuildWar;
+	}
+
+	public bool IsExitAgit()
+	{
+		return this.m_bIsExitAgit;
+	}
+
 	public void Clear()
 	{
 		this.m_lGuildID = 0L;
@@ -100,7 +114,12 @@ public class NewGuild
 		this.m_NewGuildApplicantList.Clear();
 	}
 
-	public void AddGuildInfo(NEWGUILD_INFO NewGuildInfo)
+	public void SetExitAgit(bool bIsExitAgit)
+	{
+		this.m_bIsExitAgit = bIsExitAgit;
+	}
+
+	public void SetGuildInfo(NEWGUILD_INFO NewGuildInfo)
 	{
 		this.m_lGuildID = NewGuildInfo.i64GuildID;
 		this.m_iLevel = NewGuildInfo.i16Level;
@@ -112,6 +131,10 @@ public class NewGuild
 		this.m_iRank = NewGuildInfo.i16Rank;
 		this.m_lFund = NewGuildInfo.i64Fund;
 		this.m_strGuildNotice = TKString.NEWString(NewGuildInfo.strGuildNotice);
+		this.m_isGuildWar = NewGuildInfo.bIsGuildWar;
+		this.m_bIsExitAgit = NewGuildInfo.bIsExitAgit;
+		NrTSingleton<GuildWarManager>.Instance.bIsGuildWar = NewGuildInfo.bIsGuildWar;
+		NrTSingleton<GuildWarManager>.Instance.bIsGuildWarCancelReservation = NewGuildInfo.bIsGuildWarCancelReservation;
 	}
 
 	public void AddMemberInfo(NEWGUILDMEMBER_INFO NewGuildMemberInfo)

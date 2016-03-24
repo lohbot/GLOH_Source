@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableMapInfo : NrTableBase
 {
-	public NkTableMapInfo() : base(CDefinePath.MAP_INFO_URL, true)
+	public NkTableMapInfo() : base(CDefinePath.MAP_INFO_URL)
 	{
 	}
 

@@ -35,7 +35,7 @@ public class NmFacebookManager
 
 	private bool m_FacebookLogin;
 
-	private bool m_bPublishPermission;
+	private bool m_bPublishPermission = true;
 
 	private bool m_bSendSync;
 
@@ -170,9 +170,9 @@ public class NmFacebookManager
 	[DebuggerHidden]
 	public IEnumerable FriendDataGetValue()
 	{
-		NmFacebookManager.<FriendDataGetValue>c__Iterator1D <FriendDataGetValue>c__Iterator1D = new NmFacebookManager.<FriendDataGetValue>c__Iterator1D();
-		<FriendDataGetValue>c__Iterator1D.<>f__this = this;
-		NmFacebookManager.<FriendDataGetValue>c__Iterator1D expr_0E = <FriendDataGetValue>c__Iterator1D;
+		NmFacebookManager.<FriendDataGetValue>c__Iterator1E <FriendDataGetValue>c__Iterator1E = new NmFacebookManager.<FriendDataGetValue>c__Iterator1E();
+		<FriendDataGetValue>c__Iterator1E.<>f__this = this;
+		NmFacebookManager.<FriendDataGetValue>c__Iterator1E expr_0E = <FriendDataGetValue>c__Iterator1E;
 		expr_0E.$PC = -2;
 		return expr_0E;
 	}
@@ -184,6 +184,12 @@ public class NmFacebookManager
 			return this.m_FriendsData[ID].m_Name;
 		}
 		return string.Empty;
+	}
+
+	public bool initFBUserData()
+	{
+		this.m_UserData.init();
+		return true;
 	}
 
 	private void completionHandler(string error, object result)
@@ -218,10 +224,10 @@ public class NmFacebookManager
 				NmFacebookManager.instance.FacebookLogin = true;
 				UnityEngine.Debug.LogWarning("FacebookAndroid Login");
 				FacebookAndroid.init(true);
-				FacebookAndroid.loginWithReadPermissions(new string[]
+				FacebookAndroid.loginWithPublishPermissions(new string[]
 				{
-					"email",
-					"user_friends"
+					"publish_actions",
+					"manage_friendlists"
 				});
 			}
 			else if (this.m_UserData.m_ID == string.Empty)
@@ -406,18 +412,7 @@ public class NmFacebookManager
 				this.IsFacebook = false;
 				return;
 			}
-			Dictionary<string, string> parameters = new Dictionary<string, string>
-			{
-				{
-					"to",
-					FriendId
-				},
-				{
-					"message",
-					message
-				}
-			};
-			FacebookAndroid.showDialog("apprequests", parameters);
+			FacebookAndroid.showAppInviteDialog("https://fb.me/896641427051249", "http://us-loh.s3.amazonaws.com/android_usgoogle/facebookimg/300.png");
 		}
 		this.IsFacebook = true;
 	}
@@ -469,7 +464,7 @@ public class NmFacebookManager
 				this.IsFacebook = false;
 				return;
 			}
-			Dictionary<string, string> parameters = new Dictionary<string, string>
+			Dictionary<string, object> parameters = new Dictionary<string, object>
 			{
 				{
 					"to",
@@ -492,7 +487,7 @@ public class NmFacebookManager
 					caption
 				}
 			};
-			FacebookAndroid.showDialog("feed", parameters);
+			FacebookAndroid.showFacebookShareDialog(parameters);
 		}
 		this.IsFacebook = true;
 	}
@@ -667,11 +662,12 @@ public class NmFacebookManager
 
 	private void reauthorizeWithPublishPermissions()
 	{
-		FacebookAndroid.reauthorizeWithPublishPermissions(new string[]
+		FacebookAndroid.loginWithPublishPermissions(new string[]
 		{
 			"publish_actions",
 			"manage_friendlists"
-		}, FacebookSessionDefaultAudience.Everyone);
+		});
+		TsLog.LogError("reauthorizeWithPublishPermissions!!!", new object[0]);
 		this.m_Step = FACEBOOK_STEP.RERMISSION;
 	}
 

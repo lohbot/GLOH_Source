@@ -11,5 +11,7 @@ namespace PROTOCOL
 		public int nCharKind;
 
 		public short nLevel;
+
+		public int nFaceCharCostumeUnique;
 	}
 }

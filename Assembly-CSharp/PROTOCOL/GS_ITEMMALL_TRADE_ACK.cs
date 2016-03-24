@@ -17,5 +17,7 @@ namespace PROTOCOL
 		public int i32BuyCount;
 
 		public VOUCHER_DATA VoucherData = new VOUCHER_DATA();
+
+		public bool bIsInvenFull;
 	}
 }

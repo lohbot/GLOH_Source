@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BABELGUILDBOSS_DATA : NrTableBase
 {
-	public NrTable_BABELGUILDBOSS_DATA() : base(CDefinePath.BABEL_GUILDBOSS_URL, true)
+	public NrTable_BABELGUILDBOSS_DATA() : base(CDefinePath.BABEL_GUILDBOSS_URL)
 	{
 	}
 

@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_CharSpend : NrTableBase
 {
-	public NrTable_CharSpend() : base(CDefinePath.CHARCHANGE_URL, true)
+	public NrTable_CharSpend() : base(CDefinePath.CHARCHANGE_URL)
 	{
 	}
 

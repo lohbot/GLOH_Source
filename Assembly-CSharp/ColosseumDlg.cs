@@ -7,6 +7,7 @@ using PROTOCOL.GAME.ID;
 using System;
 using System.Collections.Generic;
 using TsBundle;
+using UnityEngine;
 using UnityForms;
 
 public class ColosseumDlg : Form
@@ -15,13 +16,11 @@ public class ColosseumDlg : Form
 
 	private Label m_lbColosseumMatchPoint;
 
+	private Label m_lbCoinCount;
+
 	private Label m_lbColosseumRank;
 
 	private Label m_lbLeague;
-
-	private Label m_lbMatch01;
-
-	private Label m_lbMatch02;
 
 	private Button m_btRank;
 
@@ -37,13 +36,11 @@ public class ColosseumDlg : Form
 
 	private DrawTexture m_dtLeagureIcon;
 
+	private DrawTexture m_dtEffect;
+
 	private List<COLOSSEUM_RECORDINFO> record_list = new List<COLOSSEUM_RECORDINFO>();
 
 	private int[] m_arColosseumBatchCharKind = new int[3];
-
-	private DrawTexture m_dtRankMatch;
-
-	private DrawTexture m_dtNormalMatch;
 
 	private DrawTexture m_dtFormIcon;
 
@@ -51,9 +48,21 @@ public class ColosseumDlg : Form
 
 	private DrawTexture m_dtAiBattleIcon;
 
+	private Button m_Help_Button;
+
 	private bool m_bAiRequest;
 
 	public bool bReceiveBatchList;
+
+	private UIButton _GuideItem;
+
+	private float _ButtonZ;
+
+	private GameObject m_gbEffect_Fight;
+
+	private int m_nWinID;
+
+	private int m_nStep;
 
 	public override void InitializeComponent()
 	{
@@ -80,28 +89,39 @@ public class ColosseumDlg : Form
 		this.m_btRank = (base.GetControl("Button_rank") as Button);
 		Button expr_FA = this.m_btRank;
 		expr_FA.Click = (EZValueChangedDelegate)Delegate.Combine(expr_FA.Click, new EZValueChangedDelegate(this.ClickOnRank));
-		this.m_lbMatch01 = (base.GetControl("Label_Matching01") as Label);
-		this.m_lbMatch02 = (base.GetControl("Label_Matching02") as Label);
-		this.m_lbMatch02.Visible = false;
 		this.m_btAiMatch = (base.GetControl("Button_AIBattle") as Button);
-		Button expr_16F = this.m_btAiMatch;
-		expr_16F.Click = (EZValueChangedDelegate)Delegate.Combine(expr_16F.Click, new EZValueChangedDelegate(this.OnClickAIBattle));
+		Button expr_137 = this.m_btAiMatch;
+		expr_137.Click = (EZValueChangedDelegate)Delegate.Combine(expr_137.Click, new EZValueChangedDelegate(this.OnClickAIBattle));
 		this.m_btRewardInfo = (base.GetControl("Button_Info") as Button);
-		Button expr_1AC = this.m_btRewardInfo;
-		expr_1AC.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1AC.Click, new EZValueChangedDelegate(this.OnClickShowRewardInfo));
+		Button expr_174 = this.m_btRewardInfo;
+		expr_174.Click = (EZValueChangedDelegate)Delegate.Combine(expr_174.Click, new EZValueChangedDelegate(this.OnClickShowRewardInfo));
 		this.m_dBGImg = (base.GetControl("DT_Innerbg") as DrawTexture);
 		this.m_dBGImg.SetTextureFromBundle("UI/PvP/PvP_BG");
 		this.m_dtLeagureIcon = (base.GetControl("DT_LeagueIcon") as DrawTexture);
-		this.m_dtRankMatch = (base.GetControl("DrawTexture_RankMatch") as DrawTexture);
-		this.m_dtRankMatch.SetTextureFromBundle("ui/pvp/colo_icon01");
-		this.m_dtNormalMatch = (base.GetControl("DrawTexture_NormalMatch") as DrawTexture);
-		this.m_dtNormalMatch.SetTextureFromBundle("ui/pvp/colo_icon02");
 		this.m_dtFormIcon = (base.GetControl("DrawTexture_FormIcon") as DrawTexture);
 		this.m_dtFormIcon.SetTextureFromBundle("ui/pvp/colo_icon03");
 		this.m_dtRankIcon = (base.GetControl("DrawTexture_RankIcon") as DrawTexture);
 		this.m_dtRankIcon.SetTextureFromBundle("ui/pvp/colo_icon04");
 		this.m_dtAiBattleIcon = (base.GetControl("DrawTexture_AIBattleIcon") as DrawTexture);
 		this.m_dtAiBattleIcon.SetTextureFromBundle("ui/pvp/colo_icon05");
+		this.m_Help_Button = (base.GetControl("Help_Button") as Button);
+		Button expr_25F = this.m_Help_Button;
+		expr_25F.Click = (EZValueChangedDelegate)Delegate.Combine(expr_25F.Click, new EZValueChangedDelegate(this.OnClickHelp));
+		this.m_dtEffect = (base.GetControl("DT_effect_burning") as DrawTexture);
+		this.m_lbCoinCount = (base.GetControl("Label_Coincount") as Label);
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		int value = COLOSSEUM_CONSTANT_Manager.GetInstance().GetValue(eCOLOSSEUM_CONSTANT.eCOLOSSEUM_CONSTANT_ONEDAY_GIVEITEM_LIMITCOUNT);
+		short charDetailFromUnion = kMyCharInfo.GetCharDetailFromUnion(eCHAR_DETAIL_INFO.eCHAR_DETAIL_INFO_LIMIT_COUNT, 3);
+		string empty = string.Empty;
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3235"),
+			"count1",
+			charDetailFromUnion,
+			"count2",
+			value
+		});
+		this.m_lbCoinCount.SetText(empty);
 		GS_COLOSSEUM_BATCH_SOLDIERLIST_REQ gS_COLOSSEUM_BATCH_SOLDIERLIST_REQ = new GS_COLOSSEUM_BATCH_SOLDIERLIST_REQ();
 		gS_COLOSSEUM_BATCH_SOLDIERLIST_REQ.i32BatchKindTotal = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_nColosseumBatchKindTotal;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_COLOSSEUM_BATCH_SOLDIERLIST_REQ, gS_COLOSSEUM_BATCH_SOLDIERLIST_REQ);
@@ -121,6 +141,11 @@ public class ColosseumDlg : Form
 		this.ShowInfo();
 		base.Show();
 		this.GetColosseumBatchKind();
+		if (this._GuideItem != null)
+		{
+			this.GuidItemReposition();
+		}
+		this.LoadEffect();
 	}
 
 	public override void Update()
@@ -135,8 +160,10 @@ public class ColosseumDlg : Form
 
 	public override void OnClose()
 	{
+		this.HideUIGuide();
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "PLUNDER", "CLOSE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 		NrTSingleton<FiveRocksEventManager>.Instance.Placement("colosseum_out");
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.CHALLENGE_DLG);
 	}
 
 	public void AddRecordInfo(COLOSSEUM_RECORDINFO info)
@@ -238,14 +265,6 @@ public class ColosseumDlg : Form
 			}
 			this.m_lbColosseumRank.SetText(text2);
 		}
-		if (!myCharInfo.ColosseumMatching)
-		{
-			this.m_lbMatch01.Visible = false;
-		}
-		else
-		{
-			this.m_lbMatch01.Visible = true;
-		}
 	}
 
 	public void ClickStart(IUIObject obj)
@@ -288,7 +307,7 @@ public class ColosseumDlg : Form
 					"maxnum",
 					num2
 				});
-				msgBoxUI.SetMsg(new YesDelegate(this.OnStartMatch), null, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.OnStartMatch), null, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL, 2);
 				return;
 			}
 		}
@@ -299,7 +318,6 @@ public class ColosseumDlg : Form
 		GS_COLOSSEUM_START_REQ gS_COLOSSEUM_START_REQ = new GS_COLOSSEUM_START_REQ();
 		gS_COLOSSEUM_START_REQ.byMode = b;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_COLOSSEUM_START_REQ, gS_COLOSSEUM_START_REQ);
-		this.Close();
 	}
 
 	private void OnStartMatch(object a_oObject)
@@ -311,7 +329,6 @@ public class ColosseumDlg : Form
 			gS_COLOSSEUM_START_REQ.byMode = 2;
 		}
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_COLOSSEUM_START_REQ, gS_COLOSSEUM_START_REQ);
-		this.Close();
 	}
 
 	private void OnClickForm(object a_oObject)
@@ -362,6 +379,11 @@ public class ColosseumDlg : Form
 			gS_COLOSSEUM_START_REQ.byMode = 2;
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_COLOSSEUM_START_REQ, gS_COLOSSEUM_START_REQ);
 		}
+		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+		if (uI_UIGuide != null)
+		{
+			uI_UIGuide.Close();
+		}
 	}
 
 	public void OnClickShowRewardInfo(IUIObject obj)
@@ -370,6 +392,15 @@ public class ColosseumDlg : Form
 		if (colosseumRewardExplainDlg != null)
 		{
 			colosseumRewardExplainDlg.ShowColosseumRewardExplain();
+		}
+	}
+
+	public void OnClickHelp(IUIObject obj)
+	{
+		ColosseumHelpDlg colosseumHelpDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.COLOSSEUM_HELP) as ColosseumHelpDlg;
+		if (colosseumHelpDlg != null)
+		{
+			colosseumHelpDlg.Show();
 		}
 	}
 
@@ -400,6 +431,142 @@ public class ColosseumDlg : Form
 						this.m_arColosseumBatchCharKind[num] = n32SubData_2;
 						num++;
 					}
+				}
+			}
+		}
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		int num = 0;
+		if (!int.TryParse(param1, out num))
+		{
+			return;
+		}
+		if (num == 1)
+		{
+			if (this.CheckColosseumSolBatch())
+			{
+				UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)winID) as UI_UIGuide;
+				if (uI_UIGuide != null)
+				{
+					uI_UIGuide.CloseUI = true;
+					uI_UIGuide.Close();
+				}
+				return;
+			}
+			this._GuideItem = this.m_bAttackMakeUp;
+		}
+		else if (num == 2)
+		{
+			if (!this.CheckColosseumSolBatch())
+			{
+				UI_UIGuide uI_UIGuide2 = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)winID) as UI_UIGuide;
+				if (uI_UIGuide2 != null)
+				{
+					uI_UIGuide2.CloseUI = true;
+					uI_UIGuide2.Close();
+				}
+				return;
+			}
+			this._GuideItem = this.m_btAiMatch;
+		}
+		this.m_nWinID = winID;
+		this.m_nStep = num;
+		if (null != this._GuideItem)
+		{
+			UI_UIGuide uI_UIGuide3 = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+			if (uI_UIGuide3 != null)
+			{
+				this._GuideItem.EffectAni = false;
+				this._ButtonZ = this._GuideItem.GetLocation().z;
+				this.GuidItemReposition();
+			}
+		}
+	}
+
+	public void HideUIGuide()
+	{
+		if (null != this._GuideItem)
+		{
+			NrTSingleton<NkClientLogic>.Instance.SetNPCTalkState(false);
+			this._GuideItem.SetLocationZ(this._ButtonZ);
+		}
+		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+		if (uI_UIGuide != null)
+		{
+			uI_UIGuide.CloseUI = true;
+			uI_UIGuide.Close();
+		}
+		this._GuideItem = null;
+	}
+
+	public void GuidItemReposition()
+	{
+		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
+		if (uI_UIGuide != null)
+		{
+			Vector2 vector = new Vector2(base.GetLocationX() + this._GuideItem.GetLocationX() + 80f, base.GetLocationY() + this._GuideItem.GetLocationY() - 10f);
+			uI_UIGuide.Move(vector, vector);
+			this._GuideItem.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f);
+			if (this.m_nStep == 1)
+			{
+				this.m_dtFormIcon.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f - 0.1f);
+				this.m_dtFormIcon.AlphaAni(1f, 0.5f, -0.5f);
+			}
+			else if (this.m_nStep == 2)
+			{
+				this.m_dtAiBattleIcon.SetLocationZ(uI_UIGuide.GetLocation().z - base.GetLocation().z - 1f - 0.1f);
+				this.m_dtAiBattleIcon.AlphaAni(1f, 0.5f, -0.5f);
+			}
+		}
+	}
+
+	private bool CheckColosseumSolBatch()
+	{
+		int num = 0;
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		for (int i = 0; i < 3; i++)
+		{
+			if (kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_COLOSSEUMBATCH1 + i) != 0L)
+			{
+				num++;
+			}
+		}
+		return num > 0;
+	}
+
+	public void LoadEffect()
+	{
+		string str = string.Format("{0}{1}", "Effect/Instant/fx_ui_coloseum_infinity", NrTSingleton<UIDataManager>.Instance.AddFilePath);
+		WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+		wWWItem.SetItemType(ItemType.USER_ASSETB);
+		wWWItem.SetCallback(new PostProcPerItem(this.Effect_Fight), null);
+		TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
+	}
+
+	private void Effect_Fight(WWWItem _item, object _param)
+	{
+		if (null != _item.GetSafeBundle() && null != _item.GetSafeBundle().mainAsset)
+		{
+			GameObject gameObject = _item.GetSafeBundle().mainAsset as GameObject;
+			if (null != gameObject)
+			{
+				this.m_gbEffect_Fight = (UnityEngine.Object.Instantiate(gameObject) as GameObject);
+				if (this == null)
+				{
+					UnityEngine.Object.DestroyImmediate(this.m_gbEffect_Fight);
+					return;
+				}
+				Vector2 size = this.m_dtEffect.GetSize();
+				this.m_gbEffect_Fight.transform.parent = this.m_dtEffect.gameObject.transform;
+				this.m_gbEffect_Fight.transform.localPosition = new Vector3(size.x / 2f, -size.y / 2f, 0f);
+				this.m_gbEffect_Fight.transform.localScale = new Vector3(1.8f, 1.8f, 1f);
+				NkUtil.SetAllChildLayer(this.m_gbEffect_Fight, GUICamera.UILayer);
+				this.m_gbEffect_Fight.SetActive(true);
+				if (TsPlatform.IsMobile && TsPlatform.IsEditor)
+				{
+					NrTSingleton<NkClientLogic>.Instance.SetEditorShaderConvert(ref this.m_gbEffect_Fight);
 				}
 			}
 		}

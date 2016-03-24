@@ -28,6 +28,10 @@ namespace PROTOCOL.GAME
 
 		public byte[] nFriendBattlePos;
 
+		public int nCombinationUnique;
+
+		public bool bOpenMacro;
+
 		public GS_BABELTOWER_MACRO_BATTLE_START_REQ()
 		{
 			int num = 9;
@@ -36,6 +40,7 @@ namespace PROTOCOL.GAME
 			this.nFriendPersonID = new long[3];
 			this.nFriendSolID = new long[3];
 			this.nFriendBattlePos = new byte[3];
+			this.bOpenMacro = false;
 		}
 	}
 }

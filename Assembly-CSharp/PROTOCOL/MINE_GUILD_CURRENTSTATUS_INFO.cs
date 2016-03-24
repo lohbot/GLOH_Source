@@ -27,5 +27,11 @@ namespace PROTOCOL
 		public byte byCurrentStatusType;
 
 		public byte byJoinMilitary;
+
+		public bool bIsGuildWarAttackGuild;
+
+		public bool bIsGuildWarDefenceGuild;
+
+		public bool bIsAttackGuildNameHide;
 	}
 }

@@ -8,7 +8,6 @@ using SERVICE;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityForms;
 
 public class NkCharManager : NrTSingleton<NkCharManager>
 {
@@ -486,7 +485,9 @@ public class NkCharManager : NrTSingleton<NkCharManager>
 				{
 					int faceCharKind = this.m_kMyCharInfo.GetFaceCharKind();
 					byte faceSolGrade = this.m_kMyCharInfo.GetFaceSolGrade();
-					nrCharUser.ChangeCharModel(faceCharKind, faceSolGrade);
+					long faceSolID = this.m_kMyCharInfo.GetFaceSolID();
+					int faceCostumeUnique = this.m_kMyCharInfo.GetFaceCostumeUnique();
+					nrCharUser.ChangeCharModel(faceCharKind, faceSolGrade, faceSolID, faceCostumeUnique);
 				}
 				GS_CLIENT_STANDBY_REQ gS_CLIENT_STANDBY_REQ = new GS_CLIENT_STANDBY_REQ();
 				gS_CLIENT_STANDBY_REQ.Mode = 1;
@@ -498,7 +499,7 @@ public class NkCharManager : NrTSingleton<NkCharManager>
 				{
 					gS_CLIENT_STANDBY_REQ.LowMemory = 0;
 				}
-				if (TsPlatform.IsMobile && !TsPlatform.IsEditor && NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_CNTEST)
+				if (TsPlatform.IsMobile && !TsPlatform.IsEditor && (NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_CNTEST || NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_IOS_CNTEST))
 				{
 					NrTSingleton<NkClientLogic>.Instance.GetClientInfo(ref gS_CLIENT_STANDBY_REQ.kClientInfo);
 				}
@@ -525,7 +526,7 @@ public class NkCharManager : NrTSingleton<NkCharManager>
 						{
 							gS_CLIENT_STANDBY_REQ2.LowMemory = 0;
 						}
-						if (TsPlatform.IsMobile && !TsPlatform.IsEditor && NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_CNTEST)
+						if (TsPlatform.IsMobile && !TsPlatform.IsEditor && (NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_CNTEST || NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_IOS_CNTEST))
 						{
 							NrTSingleton<NkClientLogic>.Instance.GetClientInfo(ref gS_CLIENT_STANDBY_REQ2.kClientInfo);
 						}
@@ -910,15 +911,6 @@ public class NkCharManager : NrTSingleton<NkCharManager>
 		{
 			this.UpdatePlunderShieldTime();
 		}
-		if (this.m_isInjuryCureAllChar && !this.InjuryCureFirstSol())
-		{
-			this.IsInjuryCureAllChar = false;
-			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
-			if (solMilitaryGroupDlg != null)
-			{
-				solMilitaryGroupDlg.RefreshSolList();
-			}
-		}
 	}
 
 	public void LateUpdate()
@@ -1265,7 +1257,7 @@ public class NkCharManager : NrTSingleton<NkCharManager>
 				NrCharUser nrCharUser = @char as NrCharUser;
 				if (nrCharUser != null && makeinfo.kShapeInfo.kPartInfo != null)
 				{
-					nrCharUser.ChangeCharModel(makeinfo.kShapeInfo.nFaceCharKind, makeinfo.kShapeInfo.nFaceGrade);
+					nrCharUser.ChangeCharModel(makeinfo.kShapeInfo.nFaceCharKind, makeinfo.kShapeInfo.nFaceGrade, makeinfo.kShapeInfo.nFaceCharSolID, makeinfo.kShapeInfo.nFaceCostumeUnique);
 					nrCharUser.ChangeCharPartInfo(makeinfo.kShapeInfo.kPartInfo, true, true);
 				}
 			}
@@ -1436,7 +1428,7 @@ public class NkCharManager : NrTSingleton<NkCharManager>
 			}
 		}
 		NrCharBase @char = this.GetChar(1);
-		return @char != null && @char.IsReadyCharAction() && Time.time - this.m_fWorldLoadSafeTime > 1f;
+		return @char != null && @char.IsShaderRecovery() && Time.time - this.m_fWorldLoadSafeTime > 1f;
 	}
 
 	public string GetCharName()

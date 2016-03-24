@@ -148,7 +148,14 @@ public class SoldierBatchCamera
 		}
 		TsSceneSwitcher.Instance.Collect(TsSceneSwitcher.ESceneType.SoldierBatchScene, this.m_TargetGo);
 		child.camera.useOcclusionCulling = false;
-		component.SetCameraMode(5, Vector3.zero, 0f);
+		if (SoldierBatch.SOLDIER_BATCH_MODE == eSOLDIER_BATCH_MODE.MODE_MYTHRAID)
+		{
+			component.SetCameraMode(6, Vector3.zero, 0f);
+		}
+		else
+		{
+			component.SetCameraMode(5, Vector3.zero, 0f);
+		}
 		component.CameraWork();
 		return true;
 	}

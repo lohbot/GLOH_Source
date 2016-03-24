@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_AgitNPC : NrTableBase
 {
-	public NrTable_AgitNPC() : base(CDefinePath.AGIT_NPC_URL, true)
+	public NrTable_AgitNPC() : base(CDefinePath.AGIT_NPC_URL)
 	{
 	}
 

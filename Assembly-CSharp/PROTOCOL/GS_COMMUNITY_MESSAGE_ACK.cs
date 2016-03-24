@@ -25,7 +25,12 @@ namespace PROTOCOL
 			eGUILD_MESSAGE,
 			eGENERAL_RECRUIT_LUCKY,
 			eITEMGET_FRIEND,
-			eITEMGET_FRIENDGUILD
+			eITEMGET_FRIENDGUILD,
+			eGUILDWAR_START,
+			eGUILDWAR_END,
+			eMINE_START,
+			eMYTHRAID_START,
+			eGOLDEN_EGG
 		}
 
 		public enum ReceiveUserType
@@ -44,6 +49,8 @@ namespace PROTOCOL
 
 		public char[] szCharName = new char[21];
 
-		public int i32FaceCharKind;
+		public int i32Param;
+
+		public long i64Param;
 	}
 }

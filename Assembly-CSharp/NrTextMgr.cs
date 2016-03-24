@@ -111,6 +111,26 @@ public class NrTextMgr : NrTSingleton<NrTextMgr>
 		return true;
 	}
 
+	public List<NrTableBase> SubTextLIst()
+	{
+		List<NrTableBase> list = new List<NrTableBase>();
+		try
+		{
+			int num = 24;
+			for (int i = 1; i < num; i++)
+			{
+				string strFilePath = string.Format("textmanager/text_{0}", this.m_strGroupText[i]);
+				NrTableBase item = new NrTextTable_ForTsTxtMgr(this.m_strGroupText[i], (NrTextMgr.eTEXTMGR)i, strFilePath);
+				list.Add(item);
+			}
+		}
+		catch (Exception message)
+		{
+			Debug.LogError(message);
+		}
+		return list;
+	}
+
 	public List<NrTableBase> RequestTables()
 	{
 		List<NrTableBase> list = new List<NrTableBase>();

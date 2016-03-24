@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BattleSkill_Base : NrTableBase
 {
-	public NrTable_BattleSkill_Base() : base(CDefinePath.s_strBattleSkillBaseURL, true)
+	public NrTable_BattleSkill_Base() : base(CDefinePath.s_strBattleSkillBaseURL)
 	{
 	}
 
@@ -17,6 +17,7 @@ public class NrTable_BattleSkill_Base : NrTableBase
 			bATTLESKILL_BASE.m_nSkillAniSequenceCode = (int)NrTSingleton<BattleSkill_Manager>.Instance.GetCharAniType(bATTLESKILL_BASE.m_strParserCharAniType);
 			bATTLESKILL_BASE.m_nSkillBuffType = (int)NrTSingleton<BattleSkill_Manager>.Instance.GetBuffType(bATTLESKILL_BASE.m_strParserBuffType);
 			bATTLESKILL_BASE.m_nSkillAiType = (int)NrTSingleton<BattleSkill_Manager>.Instance.GetAiType(bATTLESKILL_BASE.m_strParserSkillAniType);
+			bATTLESKILL_BASE.m_nSkillTargetWeaponType = NrTSingleton<NkATB_Manager>.Instance.ParseTargetWeaponTypeATB(bATTLESKILL_BASE.m_strParserTargetWeaponType);
 			NrTSingleton<BattleSkill_Manager>.Instance.SetBattleSkillBase(bATTLESKILL_BASE);
 		}
 		return true;

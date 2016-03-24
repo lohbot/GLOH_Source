@@ -12,7 +12,7 @@ public class NrTextTable_ForTsTxtMgr : NrTableBase
 
 	private NrTextMgr.eTEXTMGR m_eTextMgr;
 
-	public NrTextTable_ForTsTxtMgr(string strGroupKey, NrTextMgr.eTEXTMGR eTextMgr, string strFilePath) : base(strFilePath, true)
+	public NrTextTable_ForTsTxtMgr(string strGroupKey, NrTextMgr.eTEXTMGR eTextMgr, string strFilePath) : base(strFilePath)
 	{
 		this.m_strGroupKey = strGroupKey;
 		this.m_eTextMgr = eTextMgr;

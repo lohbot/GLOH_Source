@@ -26,6 +26,8 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 
 	private float m_fScrollPos;
 
+	private bool m_bPlayMovie;
+
 	public ITEM[] CompleteItem = new ITEM[3];
 
 	private USER_QUEST_INFO m_UserQuestInfo = new USER_QUEST_INFO();
@@ -110,12 +112,26 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 
 	private int m_i32TotalQuestCount;
 
+	private bool m_bLoadCompletedQuest;
+
 	private Dictionary<string, QUEST_DROP_ITEM_List> m_QuestDropItem = new Dictionary<string, QUEST_DROP_ITEM_List>();
 
 	public Action<string> p_deQuestUpdate
 	{
 		get;
 		set;
+	}
+
+	public bool bPlayMovie
+	{
+		get
+		{
+			return this.m_bPlayMovie;
+		}
+		set
+		{
+			this.m_bPlayMovie = value;
+		}
 	}
 
 	public float ScrollPos
@@ -1968,7 +1984,7 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 		{
 			return;
 		}
-		if ((int)button.data == 181)
+		if ((int)button.data == 200)
 		{
 			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.QUEST_GROUP_REWARD);
 			this.m_bRewardShow = false;
@@ -2526,7 +2542,7 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 					{
 						GS_CHAT_REQ gS_CHAT_REQ = new GS_CHAT_REQ();
 						gS_CHAT_REQ.RoomUnique = 0;
-						gS_CHAT_REQ.ChatType = 7;
+						gS_CHAT_REQ.ChatType = 8;
 						text = NrTSingleton<UIDataManager>.Instance.GetString(NrTSingleton<CTextParser>.Instance.GetTextColor("1112"), text);
 						string @string = NrTSingleton<UIDataManager>.Instance.GetString(NrTSingleton<CTextParser>.Instance.GetTextColor("1112"), charByCharKind.GetCharName(), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1503"), text);
 						TKMarshal.StringChar(@string, ref gS_CHAT_REQ.szChatStr);
@@ -2600,7 +2616,7 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 				"maxnum",
 				num2.ToString()
 			});
-			msgBoxUI.SetMsg(new YesDelegate(this.OnBattleOK), cQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnBattleOK), cQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), empty, eMsgType.MB_OK_CANCEL, 2);
 			return;
 		}
 		bool flag2 = false;
@@ -2619,7 +2635,7 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 		if (flag2)
 		{
 			MsgBoxUI msgBoxUI2 = NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			msgBoxUI2.SetMsg(new YesDelegate(this.OnBattleInjuryOk), cQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("20"), eMsgType.MB_OK_CANCEL);
+			msgBoxUI2.SetMsg(new YesDelegate(this.OnBattleInjuryOk), cQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("21"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("20"), eMsgType.MB_OK_CANCEL, 2);
 		}
 		else
 		{
@@ -2779,7 +2795,7 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 			"mapname",
 			mapName
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL, 2);
 		msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"));
 		msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 		this.m_nAutoMoveMapIndex = destMapIndex;
@@ -2820,13 +2836,20 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 			"mapname",
 			mapName
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num, new NoDelegate(this.AutoMoveCancle), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL);
 		msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"));
 		msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 		this.m_nAutoMoveMapIndex = destMapIndex;
 		this.m_nAutoMoveGateIndex = num;
 		this.m_szAutoMoveQuestUnique = questUnique;
 		return true;
+	}
+
+	public void AutoMoveCancle(object obj)
+	{
+		this.m_szAutoMoveQuestUnique = string.Empty;
+		this.m_nAutoMoveMapIndex = 0;
+		this.m_nAutoMoveGateIndex = 0;
 	}
 
 	private bool IsWarp(int destMapIndex, float fDestX, float fDestY, float fDestZ)
@@ -2861,7 +2884,7 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 			"mapname",
 			mapName
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MapWarp), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), empty, eMsgType.MB_OK_CANCEL, 2);
 		msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("109"));
 		msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 		return true;
@@ -2926,6 +2949,40 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 		Resources.UnloadUnusedAssets();
 	}
 
+	public void PlayMovie(string szDramaCode)
+	{
+		if (NrTSingleton<NrGlobalReference>.Instance.localWWW)
+		{
+			if (NrTSingleton<NrGlobalReference>.Instance.useCache)
+			{
+				this.m_bPlayMovie = true;
+				string str = string.Format("{0}GameDrama/", Option.GetProtocolRootPath(Protocol.HTTP));
+				NrTSingleton<NrUserDeviceInfo>.Instance.PlayMovieURL(str + szDramaCode + ".mp4", Color.black, true, 1f, true);
+			}
+			else
+			{
+				this.m_bPlayMovie = true;
+				NrTSingleton<NrUserDeviceInfo>.Instance.PlayMovieURL("http://klohw.ndoors.com/at2mobile_android/GameDrama/" + szDramaCode + ".mp4", Color.black, true, 1f, true);
+			}
+		}
+		else
+		{
+			this.m_bPlayMovie = true;
+			string str2 = string.Format("{0}GameDrama/", NrTSingleton<NrGlobalReference>.Instance.basePath);
+			NrTSingleton<NrUserDeviceInfo>.Instance.PlayMovieURL(str2 + szDramaCode + ".mp4", Color.black, true, 1f, true);
+		}
+	}
+
+	public void SetLoadCompletedQuest(bool flag)
+	{
+		this.m_bLoadCompletedQuest = flag;
+	}
+
+	public bool IsLoadCompleteQuest()
+	{
+		return this.m_bLoadCompletedQuest;
+	}
+
 	private bool Add(CQuest Quest)
 	{
 		this.m_HashQuest.Add(Quest.GetQuestUnique(), Quest);
@@ -2949,6 +3006,7 @@ public class NkQuestManager : NrTSingleton<NkQuestManager>
 		this.m_HashQuestNpcPos.Clear();
 		this.m_HashAutoQuest.Clear();
 		this.m_i32TotalQuestCount = 0;
+		this.m_bLoadCompletedQuest = false;
 		return true;
 	}
 

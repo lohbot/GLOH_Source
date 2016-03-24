@@ -55,9 +55,9 @@ namespace NPatch
 		[DebuggerHidden]
 		private IEnumerator CheckPackCoroutine()
 		{
-			CheckPackListBehaviour.<CheckPackCoroutine>c__IteratorC <CheckPackCoroutine>c__IteratorC = new CheckPackListBehaviour.<CheckPackCoroutine>c__IteratorC();
-			<CheckPackCoroutine>c__IteratorC.<>f__this = this;
-			return <CheckPackCoroutine>c__IteratorC;
+			CheckPackListBehaviour.<CheckPackCoroutine>c__IteratorD <CheckPackCoroutine>c__IteratorD = new CheckPackListBehaviour.<CheckPackCoroutine>c__IteratorD();
+			<CheckPackCoroutine>c__IteratorD.<>f__this = this;
+			return <CheckPackCoroutine>c__IteratorD;
 		}
 	}
 }

@@ -7,5 +7,9 @@ namespace PROTOCOL.GAME
 		public int nBeforeRank;
 
 		public int nNewRank;
+
+		public int nUpperRankerDamage;
+
+		public long nUpperRankerPersonID;
 	}
 }

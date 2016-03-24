@@ -17,7 +17,7 @@ public class CTestDlg : Form
 	{
 		this.test1 = (base.GetControl("NLB_InteriorInfo") as NewListBox);
 		this.test1.Clear();
-		NewListItem newListItem = new NewListItem(this.test1.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.test1.ColumnNum, true, string.Empty);
 		newListItem.SetListItemData(0, "test11234", null, null, null);
 		newListItem.SetListItemData(1, "Main_B_Territory", null, null, null);
 		newListItem.SetListItemData(2, NkUserInventory.instance.GetItem(1, 0), null, null, null);

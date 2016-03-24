@@ -63,7 +63,7 @@ public class Battle_HpDlg : Form
 		this.MAXHP = (float)this.m_TargetChar.CastedTarget.GetMaxHP(false);
 		this.m_pkDrawTextureHP = (base.GetControl("DrawTexture_GauHpE") as DrawTexture);
 		this.fHpLength = this.m_pkDrawTextureHP.GetSize().x;
-		if ((Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT) && this.m_TargetChar.CastedTarget.Ally == Battle.BATTLE.MyAlly && !this.m_TargetChar.CastedTarget.MyChar)
+		if ((Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BABELTOWER || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_BOUNTYHUNT || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID) && this.m_TargetChar.CastedTarget.Ally == Battle.BATTLE.MyAlly && !this.m_TargetChar.CastedTarget.MyChar)
 		{
 			this.m_pkDrawTextureHP.SetTexture("Com_T_AllyHpPr");
 		}
@@ -186,13 +186,27 @@ public class Battle_HpDlg : Form
 
 	public void UpdateHP()
 	{
-		float num = (float)this.m_TargetChar.CastedTarget.GetSoldierInfo().GetHP();
-		if (num > this.MAXHP)
+		float num3;
+		if (NrTSingleton<MythRaidManager>.Instance.IsMythRaidBossCharKind(this.m_TargetChar.CastedTarget.GetCharKindInfo().GetCharKind()))
 		{
-			num = this.MAXHP;
+			float num = (float)Battle.BATTLE.BossCurrentHP;
+			float num2 = (float)Battle.BATTLE.BossMaxHP;
+			if (num > num2)
+			{
+				num = num2;
+			}
+			num3 = num / num2;
 		}
-		float num2 = num / this.MAXHP;
-		this.m_pkDrawTextureHP.SetSize(this.fHpLength * num2, this.m_pkDrawTextureHP.GetSize().y);
+		else
+		{
+			float num4 = (float)this.m_TargetChar.CastedTarget.GetSoldierInfo().GetHP();
+			if (num4 > this.MAXHP)
+			{
+				num4 = this.MAXHP;
+			}
+			num3 = num4 / this.MAXHP;
+		}
+		this.m_pkDrawTextureHP.SetSize(this.fHpLength * num3, this.m_pkDrawTextureHP.GetSize().y);
 		if (this.m_TargetChar.CastedTarget.MyChar)
 		{
 			Battle_CharinfoDlg battle_CharinfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BATTLE_CHARINFO_DLG) as Battle_CharinfoDlg;

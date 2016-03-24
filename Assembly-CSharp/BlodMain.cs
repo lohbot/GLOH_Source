@@ -83,8 +83,8 @@ public class BlodMain : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator RoughUpdate()
 	{
-		BlodMain.<RoughUpdate>c__Iterator6B <RoughUpdate>c__Iterator6B = new BlodMain.<RoughUpdate>c__Iterator6B();
-		<RoughUpdate>c__Iterator6B.<>f__this = this;
-		return <RoughUpdate>c__Iterator6B;
+		BlodMain.<RoughUpdate>c__Iterator71 <RoughUpdate>c__Iterator = new BlodMain.<RoughUpdate>c__Iterator71();
+		<RoughUpdate>c__Iterator.<>f__this = this;
+		return <RoughUpdate>c__Iterator;
 	}
 }

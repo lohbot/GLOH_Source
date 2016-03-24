@@ -3,6 +3,9 @@ using UnityEngine;
 
 public class GUICamera : MonoBehaviour
 {
+	[SerializeField]
+	private bool _use4_3;
+
 	private static float m_f32Width;
 
 	private static float m_f32Height;
@@ -92,6 +95,7 @@ public class GUICamera : MonoBehaviour
 						if (Screen.width == 1024 || Screen.width == 2048)
 						{
 							camera.orthographicSize = this.m_fFixedOrthographicSize * 1.31f;
+							camera.ResetAspect();
 						}
 						else
 						{
@@ -113,6 +117,7 @@ public class GUICamera : MonoBehaviour
 						camera.aspect = 1.7777f;
 					}
 				}
+				this.EditorCamSetting();
 				Vector3 position = new Vector3(0f, 0f, camera.transform.position.z);
 				position.x = camera.aspect * camera.orthographicSize;
 				position.y = -camera.orthographicSize;
@@ -174,5 +179,28 @@ public class GUICamera : MonoBehaviour
 			}
 		}
 		GUICamera.m_goCamera.SetActive(!GUICamera.m_goCamera.activeInHierarchy);
+	}
+
+	private void EditorCamSetting()
+	{
+		if (!TsPlatform.IsEditor)
+		{
+			return;
+		}
+		Camera component = base.gameObject.GetComponent<Camera>();
+		if (component == null)
+		{
+			return;
+		}
+		if (this._use4_3)
+		{
+			component.orthographicSize = this.m_fFixedOrthographicSize * 1.31f;
+			component.ResetAspect();
+		}
+	}
+
+	public bool is4_3()
+	{
+		return this._use4_3;
 	}
 }

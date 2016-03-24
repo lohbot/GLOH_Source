@@ -92,6 +92,11 @@ public class ContentsLimitManager : NrTSingleton<ContentsLimitManager>
 		{
 			mainMenuDlg.ShowHideButton();
 		}
+		MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+		if (myCharInfoDlg != null)
+		{
+			myCharInfoDlg.SetCurrentNoticeUpdate();
+		}
 	}
 
 	public bool isEmulator()
@@ -122,6 +127,11 @@ public class ContentsLimitManager : NrTSingleton<ContentsLimitManager>
 	public bool IsSolGuideCharKindInfo(int i32CharKindInfo)
 	{
 		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_SOLGUIDE) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_SOLGUIDE].IsSolCharKindinfo(i32CharKindInfo);
+	}
+
+	public bool IsSoldierRecruit(int i32CharKindInfo)
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_SOLDIER_RECRUIT) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_SOLDIER_RECRUIT].IsSoldierRecruit(i32CharKindInfo);
 	}
 
 	public bool IsGuildBoss()
@@ -284,6 +294,11 @@ public class ContentsLimitManager : NrTSingleton<ContentsLimitManager>
 		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_NEWGUILD) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_NEWGUILD].IsAgitLimit();
 	}
 
+	public bool IsGuildWarExchangeLimit()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_NEWGUILD) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_NEWGUILD].IsGuildWarExchangeLimit();
+	}
+
 	public bool IsExchangeJewelry()
 	{
 		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_EXCHANGE_JEWELRY) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_EXCHANGE_JEWELRY].IsExchangeJewelry();
@@ -300,7 +315,7 @@ public class ContentsLimitManager : NrTSingleton<ContentsLimitManager>
 
 	public bool IsHeroBattle()
 	{
-		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.ECONTENTSLIMIT_HEROBATTLE) && this.m_LimitDataDIC[eCONTENTSLIMIT.ECONTENTSLIMIT_HEROBATTLE].IsHeroBattle();
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_HEROBATTLE) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_HEROBATTLE].IsHeroBattle();
 	}
 
 	public bool IsVoucherLimit()
@@ -355,5 +370,126 @@ public class ContentsLimitManager : NrTSingleton<ContentsLimitManager>
 	public bool IsExtract()
 	{
 		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_EXTRACT) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_EXTRACT].IsExtract();
+	}
+
+	public bool IsQuestTalkSkip()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_QUESTTALK_SKIP) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_QUESTTALK_SKIP].IsQuestTalkSkip();
+	}
+
+	public bool IsLineFriendInviteButton()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_LINEFRIEND_INVITE) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_LINEFRIEND_INVITE].IsLineFriendInviteButton();
+	}
+
+	public bool IsMythRaidOn()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_MYTHRAID) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_MYTHRAID].IsMythRaidOn();
+	}
+
+	public bool IsRateUrl()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_RATEOPENURLBUTTON) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_RATEOPENURLBUTTON].IsRateUrl();
+	}
+
+	public bool IsChallenge()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_CHALLENGE_EVENT) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_CHALLENGE_EVENT].IsChallenge();
+	}
+
+	public bool IsTimeShop()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_TIMESHOP) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_TIMESHOP].IsTimeShop();
+	}
+
+	public bool IsAttend()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND].IsAttend();
+	}
+
+	public short Attend_Nomal_LastGroup()
+	{
+		if (this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND))
+		{
+			return this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND].Attend_LastGroup(1);
+		}
+		return 0;
+	}
+
+	public short Attend_New_LastGroup()
+	{
+		if (this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND))
+		{
+			return this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND].Attend_LastGroup(2);
+		}
+		return 0;
+	}
+
+	public short Attend_Return_LastGroup()
+	{
+		if (this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND))
+		{
+			return this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_ATTEND].Attend_LastGroup(3);
+		}
+		return 0;
+	}
+
+	public bool IsItemNormalSkillBlock()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_NORAML_ITEM_SKILL) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_NORAML_ITEM_SKILL].IsItemNormalSkillBlock();
+	}
+
+	public bool IsItemLevelCheckBlock()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_NORAML_ITEM_SKILL) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_NORAML_ITEM_SKILL].IsItemLevelCheckBlock();
+	}
+
+	public bool IsItemEvolution(bool isExchangeEvolution = false)
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_ITEMEVOLUTION) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_ITEMEVOLUTION].IsItemEvolution(isExchangeEvolution);
+	}
+
+	public bool IsNewExplorationLimit()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_NEWEXPLORATION) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_NEWEXPLORATION].IsNewExplorationLimit();
+	}
+
+	public short NewExplorationLimitLevel()
+	{
+		if (this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_NEWEXPLORATION))
+		{
+			return this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_NEWEXPLORATION].NewExplorationLimitLevel();
+		}
+		return 0;
+	}
+
+	public bool IsWillSpend()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_WILLSPEND) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_WILLSPEND].IsUseWillSpend();
+	}
+
+	public bool IsDailyDungeonLimit()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_DAILYDUNGEON) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_DAILYDUNGEON].IsDailyDungeonLimit();
+	}
+
+	public bool IsCostumeLimit()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_COSTUME) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_COSTUME].IsCostumeLimit();
+	}
+
+	public bool IsBattleStopLimit()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_BATTLESTOP) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_BATTLESTOP].IsBattleStopLimit();
+	}
+
+	public bool IsMineLimit()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_MINE) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_MINE].IsMineLimit();
+	}
+
+	public bool IsMythEvolutionLimit()
+	{
+		return this.m_LimitDataDIC.ContainsKey(eCONTENTSLIMIT.eCONTENTSLIMIT_MYTHEVOLUTION) && this.m_LimitDataDIC[eCONTENTSLIMIT.eCONTENTSLIMIT_MYTHEVOLUTION].IsMythEvolutionLimit();
 	}
 }

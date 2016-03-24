@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_ITEM_COMPOSE : NrTableBase
 {
-	public NrTable_ITEM_COMPOSE() : base(CDefinePath.s_strItemComposeURL, true)
+	public NrTable_ITEM_COMPOSE() : base(CDefinePath.s_strItemComposeURL)
 	{
 	}
 

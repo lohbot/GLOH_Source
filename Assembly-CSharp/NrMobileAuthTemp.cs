@@ -43,6 +43,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 
 	public void DeleteAuthInfo()
 	{
+		NrTSingleton<NkQuestManager>.Instance.SetLoadCompletedQuest(false);
 		PlayerPrefs.SetString(NrPrefsKey.PLAYER_PREFS_MOBILEAUTHKEY, string.Empty);
 		PlayerPrefs.SetInt(NrPrefsKey.LAST_AUTH_PLATFORM, 0);
 		PlayerPrefs.Save();
@@ -61,6 +62,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 	public void RequestLogin()
 	{
 		NrTSingleton<NkClientLogic>.Instance.SetLoginGameServer(true);
+		Debug.LogWarning("========== NrMobileAuthSystem.RequestLogin : SetLoginGameServer true ----- ");
 		string @string = PlayerPrefs.GetString(NrPrefsKey.PLAYER_PREFS_MOBILEAUTHKEY);
 		string uRL = string.Empty;
 		byte b = 3;
@@ -75,9 +77,14 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 			b = 1;
 			text = TsPlatform.APP_VERSION_IOS;
 		}
+		TsLog.LogError("AUTHKEY = {0}  SERVICECODE = {1}", new object[]
+		{
+			@string,
+			NrGlobalReference.SERVICECODE
+		});
 		if (!string.IsNullOrEmpty(@string) && @string.Length > 0 && !NrTSingleton<NrGlobalReference>.Instance.IsLocalServiceArea())
 		{
-			uRL = string.Format("{0}://{1}/mobile/android_server_ck.aspx?authkey={2}&platform={3}&GameVer={4}&HpType={5}&HpOS={6}&HpMem={7}&SolID={8}", new object[]
+			uRL = string.Format("{0}://{1}/mobile/android_server_ck.aspx?authkey={2}&platform={3}&GameVer={4}&HpType={5}&HpOS={6}&HpMem={7}", new object[]
 			{
 				(!NrTSingleton<NrGlobalReference>.Instance.IsLocalServiceArea()) ? "https" : "http",
 				NrGlobalReference.strWebPageDomain,
@@ -86,8 +93,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 				text,
 				SystemInfo.deviceModel,
 				SystemInfo.operatingSystem,
-				SystemInfo.systemMemorySize,
-				PlayerPrefs.GetString(NrPrefsKey.LATEST_SOLID, string.Empty)
+				SystemInfo.systemMemorySize
 			});
 			TsPlatform.Operator.OpenURL(uRL, this, true, true, false, true);
 		}
@@ -95,7 +101,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 		{
 			if (TsPlatform.IsAndroid)
 			{
-				uRL = string.Format("{0}://{1}/mobile/login.aspx?clientpath={2}&device={3}&platform={4}&GameVer={5}&HpType={6}&HpOS={7}&HpMem={8}&SolID={9}", new object[]
+				uRL = string.Format("{0}://{1}/mobile/login.aspx?clientpath={2}&device={3}&platform={4}&GameVer={5}&HpType={6}&HpOS={7}&HpMem={8}", new object[]
 				{
 					(!NrTSingleton<NrGlobalReference>.Instance.IsLocalServiceArea()) ? "https" : "http",
 					NrGlobalReference.strWebPageDomain,
@@ -105,13 +111,12 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 					text,
 					SystemInfo.deviceModel,
 					SystemInfo.operatingSystem,
-					SystemInfo.systemMemorySize,
-					PlayerPrefs.GetString(NrPrefsKey.LATEST_SOLID, string.Empty)
+					SystemInfo.systemMemorySize
 				});
 			}
 			else if (TsPlatform.IsIPhone || TsPlatform.IsIPad())
 			{
-				uRL = string.Format("{0}://{1}/mobile/login.aspx?clientpath={2}&device={3}&platform={4}&GameVer={5}&HpType={6}&HpMem={7}&SolID={8}", new object[]
+				uRL = string.Format("{0}://{1}/mobile/login.aspx?clientpath={2}&device={3}&platform={4}&GameVer={5}&HpType={6}&HpMem={7}", new object[]
 				{
 					(!NrTSingleton<NrGlobalReference>.Instance.IsLocalServiceArea()) ? "https" : "http",
 					NrGlobalReference.strWebPageDomain,
@@ -120,8 +125,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 					b.ToString(),
 					text,
 					SystemInfo.deviceModel,
-					SystemInfo.systemMemorySize,
-					PlayerPrefs.GetString(NrPrefsKey.LATEST_SOLID, string.Empty)
+					SystemInfo.systemMemorySize
 				});
 			}
 			TsPlatform.Operator.OpenURL(uRL, this, true, true, false, true);
@@ -146,7 +150,12 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 			b = 1;
 			text = TsPlatform.APP_VERSION_IOS;
 		}
-		uRL = string.Format("{0}://{1}/mobile/android_server_list.aspx?authkey={2}&platform={3}&GameVer={4}&HpType={5}&HpOS={6}&HpMem={7}&SolID={8}", new object[]
+		TsLog.LogError("AUTHKEY = {0}  SERVICECODE = {1}", new object[]
+		{
+			@string,
+			NrGlobalReference.SERVICECODE
+		});
+		uRL = string.Format("{0}://{1}/mobile/android_server_list.aspx?authkey={2}&platform={3}&GameVer={4}&HpType={5}&HpOS={6}&HpMem={7}", new object[]
 		{
 			(!NrTSingleton<NrGlobalReference>.Instance.IsLocalServiceArea()) ? "https" : "http",
 			NrGlobalReference.strWebPageDomain,
@@ -155,8 +164,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 			text,
 			SystemInfo.deviceModel,
 			SystemInfo.operatingSystem,
-			SystemInfo.systemMemorySize,
-			PlayerPrefs.GetString(NrPrefsKey.LATEST_SOLID, string.Empty)
+			SystemInfo.systemMemorySize
 		});
 		TsPlatform.Operator.OpenURL(uRL, this, true, true, false, true);
 	}
@@ -214,7 +222,6 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 					text = array3[1];
 				}
 			}
-			Debug.LogError("########## OnWebCall Result : " + text);
 			string text2 = text;
 			switch (text2)
 			{
@@ -289,6 +296,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 				{
 					FacadeHandler.MoveStage(Scene.Type.NPATCH_DOWNLOAD);
 				}
+				ErrorCollectorManager.Start(Application.dataPath, NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceAreaInfo().szOriginalDataCDNPath, new ECHandler(), long.Parse(text7.Trim()), NrTSingleton<NkClientLogic>.Instance.GetPlayerPlatformType(), (int)NrTSingleton<NkClientLogic>.Instance.AuthPlatformType, NrTSingleton<NrGlobalReference>.Instance.STR_MOBILE_VER);
 				TsLog.LogWarning("OnWecall Complete!!!", new object[0]);
 				flag = true;
 				break;
@@ -334,7 +342,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 
 	public void OnAlertViewConfirmed(string message)
 	{
-		if (message.Contains("â�� �ݾ��ֽñ�"))
+		if (message.Contains("창을 닫아주시기"))
 		{
 			TsPlatform.Operator.CloseWebView();
 		}
@@ -344,7 +352,7 @@ public class NrMobileAuthTemp : IWebViewListener, NrMobileAuth
 	{
 		if (TsPlatform.IsAndroid)
 		{
-			NrTSingleton<NrMainSystem>.Instance.QuitGame();
+			NrTSingleton<NrMainSystem>.Instance.QuitGame(false);
 		}
 		if (TsPlatform.IsIPhone)
 		{

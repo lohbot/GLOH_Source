@@ -7,7 +7,6 @@ using System.IO;
 using System.Net;
 using System.Text;
 using System.Threading;
-using UnityEngine;
 
 namespace NPatch
 {
@@ -200,6 +199,135 @@ namespace NPatch
 			}
 		}
 
+		internal class Task_CheckFinalClientVersion : Launcher.Task
+		{
+			private string url = string.Empty;
+
+			private DownloderAsync downloder;
+
+			private Launcher.ClientInfo ci = default(Launcher.ClientInfo);
+
+			private bool loadFinish;
+
+			public override Launcher.Task.TaskResult StartTask()
+			{
+				Launcher.Task.TaskResult result;
+				try
+				{
+					this.StatusString = string.Format("Check Final Client Version...", new object[0]);
+					this.url = string.Format("{0}/apk/final.client.version.txt", base.Owner.m_src_url_origin_root);
+					this.DownloadFinalVersion();
+					result = Launcher.Task.TaskResult.RUNNING;
+				}
+				catch (Exception ex)
+				{
+					base.OccurError(ERRORLEVEL.ERR_URLFILE, ex.ToString(), new object[0]);
+					result = base.Result;
+				}
+				return result;
+			}
+
+			private void DownloadFinalVersion()
+			{
+				this.downloder = DownloderAsync.Create(base.Owner.m_Systeminfo.timeoutLimitSec, base.Owner.m_Systeminfo.retryTerm);
+				this.downloder.DownloadString(this.url, new Action<ERRORLEVEL, string>(this.OnCompleted_FinalVersion));
+				base.Owner._status.taskReconnectCountMax = this.downloder.m_reconnectCountMax;
+			}
+
+			private void Retry_DownloadFinalVersion()
+			{
+				this.downloder.DownloadCancel();
+				this.downloder = null;
+				this.DownloadFinalVersion();
+			}
+
+			public override Launcher.Task.TaskResult UpdateTask()
+			{
+				if (this.downloder.isNeedRetry)
+				{
+					this.downloder.isNeedRetry = false;
+					string msg = string.Format("Disconnected to Server. Retry... [ {0} / {1} ]", base.Owner._status.taskReconnectCount, this.downloder.m_reconnectCountMax);
+					Launcher.__Output(msg);
+					base.Owner.PrintTaskProgress("final.client.version.txt", TASKTYPE.RETRY, 0);
+					this.Retry_DownloadFinalVersion();
+				}
+				if (!this.loadFinish)
+				{
+					return base.Result;
+				}
+				bool flag = base.Owner.LaunchHandler.OnCheckFinalClientVersion(this.ci);
+				if (flag)
+				{
+					return Launcher.Task.TaskResult.SUCCESS;
+				}
+				return Launcher.Task.TaskResult.DONE;
+			}
+
+			public override void EndTask()
+			{
+			}
+
+			protected void OnCompleted_FinalVersion(ERRORLEVEL eLevel, string context)
+			{
+				if (eLevel == ERRORLEVEL.SUCCESS)
+				{
+					this.__read_final_version(context);
+				}
+				else if (eLevel == ERRORLEVEL.ERR_NEEDRETRY)
+				{
+					if (base.Owner._status.taskReconnectCount < this.downloder.m_reconnectCountMax)
+					{
+						string arg_6F_0 = "Disconnected to Server. Retry... [ {0} / {1} ]";
+						Launcher expr_4A_cp_0 = base.Owner;
+						Logger.WriteLog(string.Format(arg_6F_0, expr_4A_cp_0._status.taskReconnectCount = expr_4A_cp_0._status.taskReconnectCount + 1, this.downloder.m_reconnectCountMax), eLevel);
+						this.downloder.isNeedRetry = true;
+					}
+					else
+					{
+						this.downloder.DownloadCancel();
+						base.OccurError(ERRORLEVEL.ERR_TIMEOUT, "Download File Timeout!!", new object[0]);
+					}
+				}
+				else if (eLevel == ERRORLEVEL.ERR_IOEXCEPTION)
+				{
+					this.downloder.DownloadCancel();
+					base.OccurError(ERRORLEVEL.ERR_IOEXCEPTION, string.Format("final.client.version.txt Download Failed! - {0}", context), new object[0]);
+				}
+				else
+				{
+					this.downloder.DownloadCancel();
+					base.OccurError(ERRORLEVEL.ERR_NETWORKEXCEPTION, string.Format("final.client.version.txt Download Failed! - {0}", context), new object[0]);
+				}
+			}
+
+			protected void __read_final_version(string context)
+			{
+				try
+				{
+					using (NDataReader nDataReader = new NDataReader())
+					{
+						if (context == null)
+						{
+							base.OccurError(ERRORLEVEL.ERR_URLFILE, "final.client.version.txt Not Exist !!!" + context, new object[0]);
+							return;
+						}
+						if (nDataReader.LoadFrom(context, Encoding.UTF8))
+						{
+							this.ci.bundleVersion = nDataReader["Header"]["bundleversion"];
+							this.loadFinish = true;
+							return;
+						}
+						Launcher.__Output("NDataReader.Load Failed!" + context);
+					}
+					base.OccurError(ERRORLEVEL.ERR_URLFILE, "final.client.version.txt Parse Error!!!" + context, new object[0]);
+				}
+				catch (Exception ex)
+				{
+					base.OccurError(ERRORLEVEL.ERR_URLFILE, ex.ToString(), new object[0]);
+				}
+			}
+		}
+
 		internal class Task_CheckFinalVersion : Launcher.Task
 		{
 			private float version;
@@ -214,16 +342,17 @@ namespace NPatch
 
 			public Task_CheckFinalVersion(PACKTYPE type)
 			{
-				if (type != PACKTYPE.RESOURCE)
+				switch (type)
 				{
-					if (type == PACKTYPE.LANG)
-					{
-						this.packName = string.Format("langpack", new object[0]);
-					}
-				}
-				else
-				{
+				case PACKTYPE.RESOURCE:
 					this.packName = string.Format("pack", new object[0]);
+					break;
+				case PACKTYPE.LANG:
+					this.packName = string.Format("langpack", new object[0]);
+					break;
+				case PACKTYPE.PREPATCH:
+					this.packName = string.Format("prepack", new object[0]);
+					break;
 				}
 				this.checktype = type;
 			}
@@ -235,13 +364,19 @@ namespace NPatch
 				{
 					this.StatusString = string.Format("Check Final Version...", new object[0]);
 					this.version = 0f;
-					if (base.Owner.m_isMaster)
+					if (!string.IsNullOrEmpty(base.Owner.APKVersion))
 					{
-						this.url = string.Format("{0}/{1}/infoqa/final.version.txt", base.Owner.m_src_url_origin_root, this.packName);
+						this.url = string.Format("{0}/{1}/{2}/{3}/final.version.txt", new object[]
+						{
+							base.Owner.m_src_url_origin_root,
+							this.packName,
+							base.Owner.infoFolderName,
+							base.Owner.APKVersion
+						});
 					}
 					else
 					{
-						this.url = string.Format("{0}/{1}/info/final.version.txt", base.Owner.m_src_url_origin_root, this.packName);
+						this.url = string.Format("{0}/{1}/{2}/final.version.txt", base.Owner.m_src_url_origin_root, this.packName, base.Owner.infoFolderName);
 					}
 					this.DownloadFinalVersion();
 					result = Launcher.Task.TaskResult.RUNNING;
@@ -256,7 +391,7 @@ namespace NPatch
 
 			private void DownloadFinalVersion()
 			{
-				this.downloder = DownloderAsync.Create(base.Owner.m_timeoutLimitSec, base.Owner.m_retryTerm);
+				this.downloder = DownloderAsync.Create(base.Owner.m_Systeminfo.timeoutLimitSec, base.Owner.m_Systeminfo.retryTerm);
 				this.downloder.DownloadString(this.url, new Action<ERRORLEVEL, string>(this.OnCompleted_FinalVersion));
 				base.Owner._status.taskReconnectCountMax = this.downloder.m_reconnectCountMax;
 			}
@@ -288,7 +423,12 @@ namespace NPatch
 					else if (this.checktype == PACKTYPE.LANG)
 					{
 						base.Owner.LangFinalVersion = this.version;
-						this.CheckVersion(base.Owner.DefaultLangVersion, base.Owner.ResourceFinalVersion);
+						this.CheckVersion(base.Owner.DefaultLangVersion, base.Owner.LangFinalVersion);
+					}
+					else if (this.checktype == PACKTYPE.PREPATCH)
+					{
+						base.Owner.PrepatchFinalVersion = this.version;
+						this.CheckVersion(base.Owner.LocalPrepatchVersion, base.Owner.PrepatchFinalVersion);
 					}
 				}
 				return base.Result;
@@ -479,7 +619,7 @@ namespace NPatch
 									{
 										Launcher.__Output(string.Format("{0} is already exist!", current2));
 										base.Owner.AddExistZipSize(num4);
-										base.Owner.PrintTotalProgress(TASKTYPE.DOWNLOADPACK);
+										base.Owner.PrintTotalProgress(TASKTYPE.DOWNLOAD);
 										num2++;
 									}
 									else
@@ -554,15 +694,28 @@ namespace NPatch
 			{
 				Launcher.__Output(string.Format("Check Begin LangPack Info...[Vers:{0}]", this.cur_begin));
 				string url = string.Empty;
-				if (base.Owner.m_isMaster)
+				if (!string.IsNullOrEmpty(base.Owner.APKVersion))
 				{
-					url = string.Format("{0}/langpack/infoqa/{1}({2}).txt", base.Owner.m_src_url_origin_root, this.cur_begin, this.langcode);
+					url = string.Format("{0}/langpack/{1}/{2}/{3}({4}).txt", new object[]
+					{
+						base.Owner.m_src_url_origin_root,
+						base.Owner.infoFolderName,
+						base.Owner.APKVersion,
+						this.cur_begin,
+						this.langcode
+					});
 				}
 				else
 				{
-					url = string.Format("{0}/langpack/info/{1}({2}).txt", base.Owner.m_src_url_origin_root, this.cur_begin, this.langcode);
+					url = string.Format("{0}/langpack/{1}/{2}({3}).txt", new object[]
+					{
+						base.Owner.m_src_url_origin_root,
+						base.Owner.infoFolderName,
+						this.cur_begin,
+						this.langcode
+					});
 				}
-				this.downloder = DownloderAsync.Create(base.Owner.m_timeoutLimitSec, base.Owner.m_retryTerm);
+				this.downloder = DownloderAsync.Create(base.Owner.m_Systeminfo.timeoutLimitSec, base.Owner.m_Systeminfo.retryTerm);
 				this.downloder.DownloadString(url, new Action<ERRORLEVEL, string>(this.OnCompleted_DownloadPackText));
 				return true;
 			}
@@ -585,15 +738,21 @@ namespace NPatch
 				try
 				{
 					float num = 0f;
-					this.ParseLangPackInfo(context, out num);
-					this.cur_end = num;
-					if (this.cur_end == this.dest_ver)
+					if (!this.ParseLangPackInfo(context, out num))
 					{
-						this.CheckOtherLangCode();
+						base.OccurError(ERRORLEVEL.ERR_URLFILE, "info파일 파싱 실패. endversion : " + num.ToString(), new object[0]);
 					}
 					else
 					{
-						this.NextPackText();
+						this.cur_end = num;
+						if (this.cur_end == this.dest_ver)
+						{
+							this.CheckOtherLangCode();
+						}
+						else
+						{
+							this.NextPackText();
+						}
 					}
 				}
 				catch (Exception ex)
@@ -742,6 +901,12 @@ namespace NPatch
 
 			private bool _isSuccessTask;
 
+			private int patchlist_txt_size;
+
+			private int patchlist_zip_size;
+
+			private string patchlist_MD5 = string.Empty;
+
 			private Queue<string> szMD5Queue = new Queue<string>();
 
 			private Queue<int> zipfileSizeQueue = new Queue<int>();
@@ -753,6 +918,8 @@ namespace NPatch
 			private Queue<int> unpackSizeQueue = new Queue<int>();
 
 			private DownloderAsync downloder;
+
+			private bool PrepackMode;
 
 			private bool IsSamePatchedVersion
 			{
@@ -772,6 +939,36 @@ namespace NPatch
 				this.packedList.Clear();
 				this.cur_begin = 0f;
 				Launcher.__Output(string.Format("Check Pack List... [Local:{0},Final:{1}] ", base.Owner.LocalResourceVersion, base.Owner.ResourceFinalVersion));
+				if (base.Owner.m_Systeminfo.usePrepack)
+				{
+					float num = base.Owner.ReadLocalPrepatchedVersion();
+					if (num == base.Owner.PrepatchFinalVersion)
+					{
+						this.CheckPatchLevel();
+					}
+					else
+					{
+						this.CheckPrepack();
+					}
+				}
+				else
+				{
+					this.CheckPatchLevel();
+				}
+				return Launcher.Task.TaskResult.RUNNING;
+			}
+
+			private void CheckPrepack()
+			{
+				this.PrepackMode = true;
+				this.cur_begin = base.Owner.LocalPrepatchVersion;
+				this.dest_ver = base.Owner.PrepatchFinalVersion;
+				this.RequestPackText(this.PrepackMode);
+			}
+
+			private void CheckPatchLevel()
+			{
+				this.PrepackMode = false;
 				this.local_pv0 = base.Owner.ReadLocalPatchedVersion(0);
 				this.local_pvF = base.Owner.ReadLocalPatchedVersion(base.Owner.LocalPatchLevel);
 				if (base.Owner.LocalPatchLevel > 1)
@@ -800,48 +997,7 @@ namespace NPatch
 				{
 					this.adjust_StartVersion = this.local_pv0;
 				}
-				this.RequestPackText();
-				return Launcher.Task.TaskResult.RUNNING;
-			}
-
-			private void StartCheckPackBehaviour()
-			{
-				if (this.DivisonQueue.Count == 0)
-				{
-					base.OccurError(ERRORLEVEL.ERR_PACKLIST, "Division정보가 존재하지 않습니다", new object[0]);
-					return;
-				}
-				base.Owner._status.totalPackCount = this.DivisonQueue.Count;
-				int division = this.DivisonQueue.Dequeue();
-				GameObject gameObject = GameObject.Find("@NPatchLauncherBehaviour");
-				if (gameObject == null)
-				{
-					gameObject = new GameObject();
-					gameObject.name = "@NPatchLauncherBehaviour";
-				}
-				CheckPackListBehaviour checkPackListBehaviour = gameObject.AddComponent<CheckPackListBehaviour>();
-				checkPackListBehaviour.CheckPackList(this.packedList, base.Owner, division, this.packSizeQueue, this.szMD5Queue, this.zipfileSizeQueue, new Action<bool>(this.ChangeIsNeededPactch), this.unzipfileSizeQueue, this.unpackSizeQueue, this.DivisonQueue, new Launcher.CheckPackListDelegate(this.AddTaskDownLoad), new Launcher.AddTaskInstall(this.AddTaskInstallPack), new Action(this.EndCheckPackBehaviour));
-				base.Result = Launcher.Task.TaskResult.RUNNING;
-			}
-
-			private void EndCheckPackBehaviour()
-			{
-				this._isSuccessTask = true;
-			}
-
-			public void ChangeIsNeededPactch(bool boolChange)
-			{
-				this._isNeededPatch = boolChange;
-			}
-
-			public void AddTaskDownLoad(Launcher _owner, string packName, int total, int index, string _szMD5, int _fileSize, int _packSize, PACKTYPE type)
-			{
-				base.Owner.list_Tasks.AddLast(new Launcher.Task_DownloadPack(_owner, packName, total, index, _szMD5, _fileSize, _packSize, type));
-			}
-
-			public void AddTaskInstallPack(Launcher _owner, string packName, int _division, int total, int index, int _fileSize, int _unzipSize, PACKTYPE _type)
-			{
-				base.Owner.list_Tasks.AddLast(new Launcher.Task_InstallPack(_owner, packName, _division, total, index, _fileSize, _unzipSize, _type));
+				this.RequestPackText(this.PrepackMode);
 			}
 
 			private void StartThread()
@@ -853,6 +1009,10 @@ namespace NPatch
 
 			public void ResourceCheckListMain()
 			{
+				if (!base.Owner.isCallPrepackEndFuncOnlyFirstPatch && !base.Owner.isNeedPrepatch)
+				{
+					base.Owner.LaunchHandler.OnEndPrepack();
+				}
 				if (this.DivisonQueue.Count != 0)
 				{
 					base.Owner._status.totalPackCount = this.DivisonQueue.Count;
@@ -872,7 +1032,15 @@ namespace NPatch
 							int num3 = this.packSizeQueue.Dequeue();
 							foreach (string current2 in list)
 							{
-								string text = base.Owner.m_local_root + "/pack/" + current2;
+								string text = string.Empty;
+								if (current2.Contains("pre"))
+								{
+									text = base.Owner.m_local_root + "/prepack/" + current2;
+								}
+								else
+								{
+									text = base.Owner.m_local_root + "/pack/" + current2;
+								}
 								FileInfo fileInfo = new FileInfo(text);
 								if (fileInfo.Exists)
 								{
@@ -887,7 +1055,7 @@ namespace NPatch
 									{
 										Launcher.__Output(string.Format("{0} is already exist!", current2));
 										base.Owner.AddExistZipSize(num4);
-										base.Owner.PrintTotalProgress(TASKTYPE.DOWNLOADPACK);
+										base.Owner.PrintTotalProgress(TASKTYPE.DOWNLOAD);
 										num2++;
 									}
 									else
@@ -935,6 +1103,13 @@ namespace NPatch
 							}
 						}
 					}
+					if (base.Owner.m_Systeminfo.downloadPatchlist)
+					{
+						base.Owner.list_Tasks.AddLast(new Launcher.Task_DownloadFinalPatchList(base.Owner, this.patchlist_zip_size, this.patchlist_MD5));
+						base.Owner.list_Tasks.AddLast(new Launcher.Task_InstallFinalPatchList(base.Owner, this.patchlist_txt_size));
+						Launcher expr_44B_cp_0 = base.Owner;
+						expr_44B_cp_0._status.totalPackCount = expr_44B_cp_0._status.totalPackCount + 1;
+					}
 					this._isSuccessTask = true;
 				}
 				else
@@ -947,7 +1122,7 @@ namespace NPatch
 			{
 				if (this._isSuccessTask && this._isNeededPatch)
 				{
-					if (base.Owner.m_use_langpack)
+					if (base.Owner.m_Systeminfo.useLangpack)
 					{
 						return Launcher.Task.TaskResult.SUCCESS;
 					}
@@ -981,28 +1156,43 @@ namespace NPatch
 				base.EndTask();
 			}
 
-			private bool RequestPackText()
+			private bool RequestPackText(bool usePrepack)
 			{
 				Launcher.__Output(string.Format("Check Begin Pack Info...[Vers:{0}]", this.cur_begin));
 				string url = string.Empty;
 				string arg = string.Empty;
-				if (base.Owner.m_isMaster)
+				if (usePrepack)
 				{
-					arg = string.Format("{0}/pack/infoqa", base.Owner.m_src_url_origin_root);
-				}
-				else
-				{
-					arg = string.Format("{0}/pack/info", base.Owner.m_src_url_origin_root);
-				}
-				if (this.patchLevel == -1)
-				{
+					if (!string.IsNullOrEmpty(base.Owner.APKVersion))
+					{
+						arg = string.Format("{0}/prepack/{1}/{2}", base.Owner.m_src_url_origin_root, base.Owner.infoFolderName, base.Owner.APKVersion);
+					}
+					else
+					{
+						arg = string.Format("{0}/prepack/{1}", base.Owner.m_src_url_origin_root, base.Owner.infoFolderName);
+					}
 					url = string.Format("{0}/{1}.txt", arg, this.cur_begin);
 				}
 				else
 				{
-					url = string.Format("{0}/{1}[{2}].txt", arg, this.cur_begin, this.patchLevel);
+					if (!string.IsNullOrEmpty(base.Owner.APKVersion))
+					{
+						arg = string.Format("{0}/pack/{1}/{2}", base.Owner.m_src_url_origin_root, base.Owner.infoFolderName, base.Owner.APKVersion);
+					}
+					else
+					{
+						arg = string.Format("{0}/pack/{1}", base.Owner.m_src_url_origin_root, base.Owner.infoFolderName);
+					}
+					if (this.patchLevel == -1)
+					{
+						url = string.Format("{0}/{1}.txt", arg, this.cur_begin);
+					}
+					else
+					{
+						url = string.Format("{0}/{1}[{2}].txt", arg, this.cur_begin, this.patchLevel);
+					}
 				}
-				this.downloder = DownloderAsync.Create(base.Owner.m_timeoutLimitSec, base.Owner.m_retryTerm);
+				this.downloder = DownloderAsync.Create(base.Owner.m_Systeminfo.timeoutLimitSec, base.Owner.m_Systeminfo.retryTerm);
 				this.downloder.DownloadString(url, new Action<ERRORLEVEL, string>(this.OnCompleted_DownloadPackText));
 				return true;
 			}
@@ -1011,13 +1201,13 @@ namespace NPatch
 			{
 				this.downloder.DownloadCancel();
 				this.downloder = null;
-				this.RequestPackText();
+				this.RequestPackText(this.PrepackMode);
 			}
 
 			private void NextPackText()
 			{
 				this.cur_begin = this.cur_end;
-				this.RequestPackText();
+				this.RequestPackText(this.PrepackMode);
 			}
 
 			protected void OnCompleted_DownloadPackText(ERRORLEVEL eLevel, string context)
@@ -1025,15 +1215,32 @@ namespace NPatch
 				try
 				{
 					float num = 0f;
-					this.ParsePackInfo(context, out num);
-					this.cur_end = num;
-					if (this.cur_end == this.dest_ver)
+					if (!this.ParsePackInfo(context, out num))
 					{
-						this.CheckAdjustVersion();
+						base.OccurError(ERRORLEVEL.ERR_URLFILE, "info파일 파싱 실패. endversion : " + num.ToString(), new object[0]);
 					}
 					else
 					{
-						this.NextPackText();
+						this.cur_end = num;
+						if (this.PrepackMode)
+						{
+							if (this.cur_end == this.dest_ver)
+							{
+								this.CheckPatchLevel();
+							}
+							else
+							{
+								this.NextPackText();
+							}
+						}
+						else if (this.cur_end == this.dest_ver)
+						{
+							this.CheckAdjustVersion();
+						}
+						else
+						{
+							this.NextPackText();
+						}
 					}
 				}
 				catch (Exception ex)
@@ -1048,7 +1255,7 @@ namespace NPatch
 				{
 					this.patchLevel--;
 					this.cur_begin = this.adjust_StartVersion;
-					this.RequestPackText();
+					this.RequestPackText(false);
 					return true;
 				}
 				base.Owner.LaunchHandler.SetEdgeURL(ref base.Owner.m_src_pack_url_root);
@@ -1082,6 +1289,10 @@ namespace NPatch
 								{
 									num5++;
 									string column = row.GetColumn(0);
+									if (column.ToLower().Contains("pre"))
+									{
+										base.Owner.isNeedPrepatch = true;
+									}
 									string column2 = row.GetColumn(1);
 									if (column2 == null || column2.Equals("(null)"))
 									{
@@ -1113,7 +1324,7 @@ namespace NPatch
 									this.AddPackSize(num6, num7);
 									num2++;
 								}
-								if (num == base.Owner.m_defaultResourceVersion)
+								if (num == base.Owner.DefaultResourceVersion)
 								{
 									base.Owner._status.fullPackCount = num5;
 								}
@@ -1123,6 +1334,21 @@ namespace NPatch
 								}
 								this.packSizeQueue.Enqueue(num3);
 								this.unpackSizeQueue.Enqueue(num4);
+								if (nDataReader.BeginSection("patchlist"))
+								{
+									NDataSection nDataSection2 = nDataReader["patchlist"];
+									foreach (NDataReader.Row row2 in nDataSection2)
+									{
+										this.patchlist_MD5 = row2.GetColumn(1);
+										this.patchlist_txt_size = Convert.ToInt32(row2.GetColumn(2));
+										this.patchlist_zip_size = Convert.ToInt32(row2.GetColumn(3));
+									}
+									base.Owner.AddUnzipSize(this.patchlist_txt_size);
+									base.Owner.AddZipSize(this.patchlist_zip_size);
+									Launcher expr_388_cp_0 = base.Owner;
+									expr_388_cp_0._status.totalTaskCount = expr_388_cp_0._status.totalTaskCount + 2;
+								}
+								base.Owner.PrintTotalProgress(TASKTYPE.CHECKFILE);
 								result = true;
 								return result;
 							}
@@ -1182,6 +1408,10 @@ namespace NPatch
 
 			protected int _retryCount = 1;
 
+			protected bool _md5CheckFinish;
+
+			protected int packSize;
+
 			public Task_DownloadFile()
 			{
 			}
@@ -1219,7 +1449,7 @@ namespace NPatch
 					base.OccurError(ERRORLEVEL.ERR_URLFILE, "Error! Not Exists File!", new object[0]);
 					return base.Result;
 				}
-				base.Owner.SetTaskSize(this._fileSize, TASKTYPE.DOWNLOADPACK);
+				base.Owner.SetTaskSize(this._fileSize, TASKTYPE.DOWNLOAD);
 				this.Request();
 				base.Result = Launcher.Task.TaskResult.RUNNING;
 				return base.Result;
@@ -1233,9 +1463,13 @@ namespace NPatch
 					if (this._preSize < this._nowSize && this._nowSize != this._fileSize)
 					{
 						string fileName = Path.GetFileName(this._destPath);
-						base.Owner.AddProgressSize(this._nowSize - this._preSize, TASKTYPE.DOWNLOADPACK);
+						base.Owner.AddProgressSize(this._nowSize - this._preSize, TASKTYPE.DOWNLOAD);
 						this._preSize = this._nowSize;
-						base.Owner.PrintTaskProgress(fileName, TASKTYPE.DOWNLOADPACK, 0);
+						base.Owner.PrintTaskProgress(fileName, TASKTYPE.DOWNLOAD, 0);
+					}
+					if (this._md5CheckFinish)
+					{
+						return Launcher.Task.TaskResult.SUCCESS;
 					}
 					if (this.downloder.isNeedRetry)
 					{
@@ -1270,7 +1504,7 @@ namespace NPatch
 				{
 					Directory.CreateDirectory(Path.GetDirectoryName(this._destPath));
 				}
-				this.downloder = DownloderAsync.Create(base.Owner.m_timeoutLimitSec, base.Owner.m_retryTerm);
+				this.downloder = DownloderAsync.Create(base.Owner.m_Systeminfo.timeoutLimitSec, base.Owner.m_Systeminfo.retryTerm);
 				this.downloder.DownloadFile(this._srcUrl, this._destPath, new Action<ERRORLEVEL>(this.OnCompleted));
 				return true;
 			}
@@ -1281,7 +1515,7 @@ namespace NPatch
 				{
 					if (eLevel == ERRORLEVEL.SUCCESS)
 					{
-						this.__check_file();
+						this.checkMD5Thread();
 					}
 					else if (eLevel == ERRORLEVEL.ERR_NEEDRETRY)
 					{
@@ -1311,15 +1545,22 @@ namespace NPatch
 				}
 			}
 
+			private void checkMD5Thread()
+			{
+				Thread thread = new Thread(new ThreadStart(this.__check_file));
+				thread.Start();
+			}
+
 			private void __check_file()
 			{
 				string fileName = Path.GetFileName(this._destPath);
 				if (this.CheckMD5())
 				{
 					this.StatusString = string.Format("[{0}/{1}] Download {2}...Success!", this._downloadOrder, this._downloadCount, this._fileName);
-					base.Owner.EndTaskProgress(fileName, TASKTYPE.DOWNLOADPACK);
+					base.Owner.EndTaskProgress(fileName, TASKTYPE.DOWNLOAD);
 					base.PatchErrorLevel = ERRORLEVEL.SUCCESS;
 					base.Result = Launcher.Task.TaskResult.SUCCESS;
+					this._md5CheckFinish = true;
 				}
 				else
 				{
@@ -1361,7 +1602,11 @@ namespace NPatch
 				bool result;
 				try
 				{
-					if (mD.Equals(this._chksum))
+					if (string.IsNullOrEmpty(this._chksum))
+					{
+						result = true;
+					}
+					else if (mD.Equals(this._chksum))
 					{
 						result = true;
 					}
@@ -1383,10 +1628,33 @@ namespace NPatch
 
 		internal class Task_DownloadFinalPatchList : Launcher.Task_DownloadFile
 		{
-			public Task_DownloadFinalPatchList(Launcher Owner)
+			public Task_DownloadFinalPatchList(Launcher Owner, int patchlist_zip_size, string _szMD5)
 			{
+				base.Owner = Owner;
+				this._fileName = "final.patchlist.zip";
+				this._downloadCount = 1;
+				this._downloadOrder = 1;
+				this._fileSize = patchlist_zip_size;
+				this.packSize = patchlist_zip_size;
 				this._srcUrl = Owner.FinalPatchListUrl;
 				this._destPath = Owner.FinalPatchListPath;
+				this._chksum = _szMD5;
+			}
+
+			public override Launcher.Task.TaskResult StartTask()
+			{
+				base.Owner._status.packDownloadSize = (long)this.packSize;
+				base.Owner._status.packDownloadProcessedSize = 0L;
+				Logger.WriteLog(string.Format("Download start : {0}", this._srcUrl));
+				base.Owner.LaunchHandler.OnStartDownloadPack(this._fileName, this._downloadOrder);
+				return base.StartTask();
+			}
+
+			public override void EndTask()
+			{
+				Logger.WriteLog(string.Format("Download End : {0}", this._srcUrl));
+				base.Owner.LaunchHandler.OnEndDownloadPack(this._fileName, this._downloadOrder);
+				base.EndTask();
 			}
 		}
 
@@ -1427,8 +1695,6 @@ namespace NPatch
 
 		internal class Task_DownloadPack : Launcher.Task_DownloadFile
 		{
-			private int packSize;
-
 			public Task_DownloadPack(Launcher _owner, string packName, int total, int index, string _szMD5, int _fileSize, int _packSize, PACKTYPE type)
 			{
 				base.Owner = _owner;
@@ -1438,7 +1704,11 @@ namespace NPatch
 				this._fileSize = _fileSize;
 				this.packSize = _packSize;
 				float packEndVersion = Util.GetPackEndVersion(packName);
-				if (type == PACKTYPE.RESOURCE)
+				if (this._fileName.Contains("pre"))
+				{
+					this._srcUrl = string.Format("{0}/prepack/{1}/{2}", base.Owner.PackURLRoot, packEndVersion, this._fileName);
+				}
+				else if (type == PACKTYPE.RESOURCE)
 				{
 					this._srcUrl = string.Format("{0}/pack/{1}/{2}", base.Owner.PackURLRoot, packEndVersion, this._fileName);
 				}
@@ -1477,6 +1747,256 @@ namespace NPatch
 					base.Owner.LaunchHandler.OnEndDownloadPack(this._fileName, this._downloadOrder);
 				}
 				base.EndTask();
+			}
+		}
+
+		internal class Task_InstallFinalPatchList : Launcher.Task
+		{
+			private string pack = string.Empty;
+
+			private string zipFile = string.Empty;
+
+			private int fileSize;
+
+			private int PackOrder;
+
+			private int PackCount;
+
+			private int preTime;
+
+			private int nowTime;
+
+			private double interval = 0.2;
+
+			private int unzipSize;
+
+			private bool isInstallEnd;
+
+			private static int bufferSize = 1048576;
+
+			private byte[] buffer = new byte[Launcher.Task_InstallFinalPatchList.bufferSize];
+
+			private int preProcessedSize;
+
+			private int nowProcessedSize;
+
+			public Task_InstallFinalPatchList(Launcher _owner, int _fileSize)
+			{
+				base.Owner = _owner;
+				this.pack = "final.patchlist.zip";
+				this.PackCount = 1;
+				this.PackOrder = 1;
+				this.fileSize = _fileSize;
+				this.zipFile = base.Owner.FinalPatchListPath;
+				this.unzipSize = _fileSize;
+			}
+
+			private void StartThread()
+			{
+				this.nowTime = Environment.TickCount;
+				this.preTime = this.nowTime;
+				base.Result = Launcher.Task.TaskResult.RUNNING;
+				Thread thread = new Thread(new ThreadStart(this.InstallMain));
+				thread.Start();
+			}
+
+			public override Launcher.Task.TaskResult StartTask()
+			{
+				base.Owner.SetTaskSize(this.fileSize, TASKTYPE.INSTALL);
+				base.Owner._status.packInstallSize = (long)this.unzipSize;
+				base.Owner._status.packInstallProcessedSize = 0L;
+				Logger.WriteLog(string.Format("Install Start : {0}", this.zipFile));
+				base.Owner.LaunchHandler.OnStartInstallPack(this.pack, this.PackOrder);
+				this.StartThread();
+				return base.Result;
+			}
+
+			public override Launcher.Task.TaskResult UpdateTask()
+			{
+				Launcher.Task.TaskResult result;
+				lock (this)
+				{
+					this.nowTime = Environment.TickCount;
+					if ((double)(this.nowTime - this.preTime) / 1000.0 >= this.interval)
+					{
+						string fileName = Path.GetFileName(this.zipFile);
+						if (base.Owner._status.taskProcessedSize != base.Owner._status.taskSize)
+						{
+							base.Owner.PrintTaskProgress(fileName, TASKTYPE.INSTALL, 0);
+							this.preTime = this.nowTime;
+						}
+						else
+						{
+							if (!this.isInstallEnd)
+							{
+								result = base.Result;
+								return result;
+							}
+							if (base.Owner._status.taskProcessedSize == base.Owner._status.taskSize && this.isInstallEnd)
+							{
+								base.Owner.EndTaskProgress(fileName, TASKTYPE.INSTALL);
+								base.PatchErrorLevel = ERRORLEVEL.SUCCESS;
+								base.Result = Launcher.Task.TaskResult.SUCCESS;
+							}
+							else
+							{
+								base.Result = Launcher.Task.TaskResult.FAILED;
+							}
+						}
+					}
+					if (base.Owner._status.taskProcessedSize > base.Owner._status.taskSize)
+					{
+						base.OccurError(ERRORLEVEL.ERR_ETCERROR, string.Format("TaskSize가 비정상적입니다. [TaskSize : {0} / TaskProcessedSize : {1}]", base.Owner._status.taskSize, base.Owner._status.taskProcessedSize), new object[0]);
+					}
+					result = base.Result;
+				}
+				return result;
+			}
+
+			public override void EndTask()
+			{
+				base.Owner.LaunchHandler.OnEndInstallPack(this.pack, this.PackOrder);
+				base.EndTask();
+			}
+
+			private void InstallMain()
+			{
+				this.StatusString = string.Format("[{0}/{1}] Install Pack...{2}", this.PackOrder, this.PackCount, this.pack);
+				if (this.Install(this.zipFile, base.Owner.LocalRoot))
+				{
+					Logger.WriteLog(string.Format("Install End : {0}", this.zipFile));
+					this.StatusString = string.Format("[{0}/{1}] Install Pack...Success!", this.PackOrder, this.PackCount, this.pack);
+					this.RemovePack();
+				}
+				else
+				{
+					base.OccurError(ERRORLEVEL.ERR_INSTALLFAILED, string.Format("[{0}/{1}] Install Pack... Failed!({2})", this.PackOrder, this.PackCount, this.pack), new object[0]);
+				}
+				this.isInstallEnd = true;
+			}
+
+			public void InstallEnd(float patchVersion)
+			{
+				Logger.WriteLog(string.Format("Install End : {0}", this.zipFile));
+				this.StatusString = string.Format("[{0}/{1}] Install Pack...Success!", this.PackOrder, this.PackCount, this.pack);
+				this.RemovePack();
+				this.isInstallEnd = true;
+			}
+
+			private bool CreateDirectory(string path)
+			{
+				if (!Directory.Exists(path))
+				{
+					Directory.CreateDirectory(path);
+				}
+				if (!Directory.Exists(path))
+				{
+					for (int i = 1; i <= 3; i++)
+					{
+						Thread.Sleep(200);
+						if (Directory.Exists(path))
+						{
+							break;
+						}
+						if (i == 3)
+						{
+							base.OccurError(ERRORLEVEL.ERR_INSTALLFAILED, "{0} is not created!", path);
+							return false;
+						}
+					}
+				}
+				return true;
+			}
+
+			public bool UnzipFile(ZipInputStream srcStream, string destPath)
+			{
+				try
+				{
+					using (FileStream fileStream = new FileStream(destPath, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
+					{
+						this.nowProcessedSize = 0;
+						int num = srcStream.Read(this.buffer, 0, Launcher.Task_InstallFinalPatchList.bufferSize);
+						while (0 < num)
+						{
+							this.nowProcessedSize += num;
+							if (this.preProcessedSize < this.nowProcessedSize)
+							{
+								base.Owner.AddProgressSize(num, TASKTYPE.INSTALL);
+								this.preProcessedSize = this.nowProcessedSize;
+							}
+							fileStream.Write(this.buffer, 0, num);
+							num = srcStream.Read(this.buffer, 0, Launcher.Task_InstallFinalPatchList.bufferSize);
+						}
+					}
+				}
+				catch (Exception ex)
+				{
+					base.OccurError(ERRORLEVEL.ERR_INSTALLFAILED, ex.ToString(), new object[0]);
+					return false;
+				}
+				this.preProcessedSize = 0;
+				return true;
+			}
+
+			private bool Install(string zipFile, string outDir)
+			{
+				bool result;
+				try
+				{
+					if (!Path.IsPathRooted(zipFile))
+					{
+						zipFile = Path.GetFullPath(zipFile);
+					}
+					using (ZipInputStream zipInputStream = new ZipInputStream(new FileStream(zipFile, FileMode.Open, FileAccess.Read, FileShare.Read)))
+					{
+						for (ZipEntry nextEntry = zipInputStream.GetNextEntry(); nextEntry != null; nextEntry = zipInputStream.GetNextEntry())
+						{
+							string path = nextEntry.Name.Replace('\\', '/');
+							string directoryName = Path.GetDirectoryName(path);
+							string fileName = Path.GetFileName(path);
+							string text = Path.Combine(outDir, directoryName);
+							if (!this.CreateDirectory(text))
+							{
+								result = false;
+								return result;
+							}
+							int num = 3;
+							bool flag = false;
+							string destPath = Path.Combine(text, fileName);
+							while (!flag)
+							{
+								if (num-- == 0)
+								{
+									result = false;
+									return result;
+								}
+								flag = this.UnzipFile(zipInputStream, destPath);
+							}
+						}
+						this.buffer = null;
+						result = true;
+					}
+				}
+				catch (Exception ex)
+				{
+					base.OccurError(ERRORLEVEL.ERR_INSTALLFAILED, ex.ToString(), new object[0]);
+					this.buffer = null;
+					result = false;
+				}
+				return result;
+			}
+
+			private void RemovePack()
+			{
+				if (!Path.IsPathRooted(this.zipFile))
+				{
+					this.zipFile = Path.GetFullPath(this.zipFile);
+				}
+				FileInfo fileInfo = new FileInfo(this.zipFile);
+				if (fileInfo.Exists)
+				{
+					fileInfo.Delete();
+				}
 			}
 		}
 
@@ -1618,7 +2138,23 @@ namespace NPatch
 					string fileName = Path.GetFileName(this.zipFile);
 					Logger.WriteLog(string.Format("Install End : {0}", this.zipFile));
 					this.StatusString = string.Format("[{0}/{1}] Install Pack...Success!", this.PackOrder, this.PackCount, this.pack);
-					if (this.division == 1)
+					if (fileName.Contains("pre") && this.division == 1)
+					{
+						base.Owner.SavePrepatchedVersion(packEndVersion);
+						this.RemovePack();
+						if (base.Owner.isCallPrepackEndFuncOnlyFirstPatch)
+						{
+							if (base.Owner._status.fullPackCount > 0 && Util.GetPackEndVersion(fileName) == base.Owner.PrepatchFinalVersion)
+							{
+								base.Owner.LaunchHandler.OnEndPrepack();
+							}
+						}
+						else if (Util.GetPackEndVersion(fileName) == base.Owner.PrepatchFinalVersion)
+						{
+							base.Owner.LaunchHandler.OnEndPrepack();
+						}
+					}
+					else if (this.division == 1)
 					{
 						if (this.type == PACKTYPE.RESOURCE)
 						{
@@ -1630,9 +2166,12 @@ namespace NPatch
 						}
 						this.RemovePack();
 					}
-					if (this.type == PACKTYPE.RESOURCE)
+					if (!fileName.Contains("pre"))
 					{
-						base.Owner.WriteDivision(this.zipFile, this.division);
+						if (this.type == PACKTYPE.RESOURCE)
+						{
+							base.Owner.WriteDivision(this.zipFile, this.division);
+						}
 					}
 					if (this.PackOrder == this.PackCount)
 					{
@@ -1646,27 +2185,28 @@ namespace NPatch
 				this.isInstallEnd = true;
 			}
 
-			private void InstallBehaviour()
-			{
-				this.StatusString = string.Format("[{0}/{1}] Install Pack...{2}", this.PackOrder, this.PackCount, this.pack);
-				float packEndVersion = Util.GetPackEndVersion(this.pack);
-				base.Result = Launcher.Task.TaskResult.RUNNING;
-				GameObject gameObject = GameObject.Find("@NPatchLauncherBehaviour");
-				if (gameObject == null)
-				{
-					gameObject = new GameObject();
-					gameObject.name = "@NPatchLauncherBehaviour";
-				}
-				InstallPackBehaviour installPackBehaviour = gameObject.AddComponent<InstallPackBehaviour>();
-				installPackBehaviour.Install(packEndVersion, this.zipFile, base.Owner.LocalRoot, new Action<float>(this.InstallEnd), new Action<ERRORLEVEL, string, string>(base.OccurError), new Func<ZipInputStream, string, bool>(this.UnzipFile));
-			}
-
 			public void InstallEnd(float patchVersion)
 			{
 				string fileName = Path.GetFileName(this.zipFile);
 				Logger.WriteLog(string.Format("Install End : {0}", this.zipFile));
 				this.StatusString = string.Format("[{0}/{1}] Install Pack...Success!", this.PackOrder, this.PackCount, this.pack);
-				if (this.division == 1)
+				if (fileName.Contains("pre") && this.division == 1)
+				{
+					base.Owner.SavePrepatchedVersion(patchVersion);
+					this.RemovePack();
+					if (base.Owner.isCallPrepackEndFuncOnlyFirstPatch)
+					{
+						if (base.Owner._status.fullPackCount > 0 && Util.GetPackEndVersion(fileName) == base.Owner.PrepatchFinalVersion)
+						{
+							base.Owner.LaunchHandler.OnEndPrepack();
+						}
+					}
+					else if (Util.GetPackEndVersion(fileName) == base.Owner.PrepatchFinalVersion)
+					{
+						base.Owner.LaunchHandler.OnEndPrepack();
+					}
+				}
+				else if (this.division == 1)
 				{
 					if (this.type == PACKTYPE.RESOURCE)
 					{
@@ -1678,9 +2218,12 @@ namespace NPatch
 					}
 					this.RemovePack();
 				}
-				if (this.type == PACKTYPE.RESOURCE)
+				if (!fileName.Contains("pre"))
 				{
-					base.Owner.WriteDivision(this.zipFile, this.division);
+					if (this.type == PACKTYPE.RESOURCE)
+					{
+						base.Owner.WriteDivision(this.zipFile, this.division);
+					}
 				}
 				if (this.PackOrder == this.PackCount)
 				{
@@ -1888,6 +2431,16 @@ namespace NPatch
 			public int timeoutLimitSec;
 
 			public int retryTerm;
+
+			public bool useLangpack;
+
+			public bool usePrepack;
+
+			public bool usecheckclientversion;
+
+			public bool useFileVerifier;
+
+			public bool downloadPatchlist;
 		}
 
 		public struct LangInfo
@@ -1906,6 +2459,11 @@ namespace NPatch
 			public Launcher.FILEVERIFIERMODE mode;
 		}
 
+		public struct ClientInfo
+		{
+			public int bundleVersion;
+		}
+
 		public enum FILEVERIFIERMODE
 		{
 			PACK,
@@ -1920,21 +2478,19 @@ namespace NPatch
 
 		private int m_patchLevel;
 
-		private int m_patchLevelMax;
-
 		private float m_resourceVersion;
 
-		private float m_defaultResourceVersion;
+		private float m_prepatchVersion;
 
 		private float m_finalVersion;
 
 		private int m_patchVersionMax;
 
-		private int m_langCodeMax;
+		private Launcher.SystemInfo m_Systeminfo = default(Launcher.SystemInfo);
 
-		private float m_defaultLangVersion;
+		private Launcher.LangInfo m_Langinfo = default(Launcher.LangInfo);
 
-		private bool m_use_langpack = true;
+		private Launcher.FileVerifierInfo m_FileVerifierinfo = default(Launcher.FileVerifierInfo);
 
 		private string m_src_url_origin_root = string.Empty;
 
@@ -1948,17 +2504,15 @@ namespace NPatch
 
 		private List<int> langCodeList = new List<int>();
 
-		private int m_timeoutLimitSec;
-
-		private int m_retryTerm;
-
 		private List<string> verifyFolderList = new List<string>();
 
 		private NDataReader VerifierConfigDR;
 
-		private Launcher.FILEVERIFIERMODE m_FileVerifierMode;
-
 		private NPATCHSTAGE m_stage;
+
+		public bool isCallPrepackEndFuncOnlyFirstPatch;
+
+		public bool isNeedPrepatch;
 
 		public Status _status = default(Status);
 
@@ -1968,7 +2522,21 @@ namespace NPatch
 
 		private bool m_isRunning;
 
-		private bool m_isMaster;
+		private string m_apkVersion = string.Empty;
+
+		private string m_infoFolderName = string.Empty;
+
+		public int PatchLevelMax
+		{
+			get
+			{
+				return this.m_Systeminfo.maxPatchLevel;
+			}
+			set
+			{
+				this.m_Systeminfo.maxPatchLevel = value;
+			}
+		}
 
 		public int LocalPatchLevel
 		{
@@ -1982,23 +2550,31 @@ namespace NPatch
 			}
 		}
 
-		public int PatchLevelMax
-		{
-			get
-			{
-				return this.m_patchLevelMax;
-			}
-			set
-			{
-				this.m_patchLevelMax = value;
-			}
-		}
-
 		public bool IsFullPatchLevel
 		{
 			get
 			{
-				return this.LocalPatchLevel == this.PatchLevelMax;
+				return this.LocalPatchLevel == this.m_Systeminfo.maxPatchLevel;
+			}
+		}
+
+		public float LocalPrepatchVersion
+		{
+			get
+			{
+				return this.m_prepatchVersion;
+			}
+			set
+			{
+				this.m_prepatchVersion = value;
+			}
+		}
+
+		public float DefaultResourceVersion
+		{
+			get
+			{
+				return this.m_Systeminfo.defaultVersion;
 			}
 		}
 
@@ -2018,11 +2594,11 @@ namespace NPatch
 		{
 			get
 			{
-				return this.m_langCodeMax;
+				return this.m_Langinfo.maxLangCode;
 			}
 			set
 			{
-				this.m_langCodeMax = value;
+				this.m_Langinfo.maxLangCode = value;
 			}
 		}
 
@@ -2030,23 +2606,7 @@ namespace NPatch
 		{
 			get
 			{
-				return this.m_defaultLangVersion;
-			}
-			set
-			{
-				this.m_defaultLangVersion = value;
-			}
-		}
-
-		public float DefaultResourceVersion
-		{
-			get
-			{
-				return this.m_defaultResourceVersion;
-			}
-			set
-			{
-				this.m_defaultResourceVersion = value;
+				return this.m_Langinfo.defaultVersion;
 			}
 		}
 
@@ -2144,6 +2704,12 @@ namespace NPatch
 			set;
 		}
 
+		public float PrepatchFinalVersion
+		{
+			get;
+			set;
+		}
+
 		public string FILENAME_PATCHLEVEL
 		{
 			get
@@ -2168,11 +2734,65 @@ namespace NPatch
 			}
 		}
 
+		public string FILENAME_PREPATCHED_VERSION
+		{
+			get
+			{
+				return "PrepatchedVersion.txt";
+			}
+		}
+
+		public string APKVersion
+		{
+			get
+			{
+				return this.m_apkVersion;
+			}
+			set
+			{
+				this.m_apkVersion = value;
+			}
+		}
+
+		public string infoFolderName
+		{
+			get
+			{
+				return this.m_infoFolderName;
+			}
+			set
+			{
+				this.m_infoFolderName = value;
+			}
+		}
+
 		public string FinalPatchListPath
 		{
 			get
 			{
-				return Path.Combine(this.LocalRoot, string.Format("final/final.patchlist.zip", new object[0]));
+				string result = string.Empty;
+				if (!string.IsNullOrEmpty(this.APKVersion))
+				{
+					result = string.Format("{0}/{1}/{2}_{3}/{4}", new object[]
+					{
+						this.LocalRoot,
+						"pack",
+						this.infoFolderName,
+						this.APKVersion,
+						"final.patchlist.zip"
+					});
+				}
+				else
+				{
+					result = string.Format("{0}/{1}/{2}/{3}", new object[]
+					{
+						this.LocalRoot,
+						"pack",
+						this.infoFolderName,
+						"final.patchlist.zip"
+					});
+				}
+				return result;
 			}
 		}
 
@@ -2180,7 +2800,29 @@ namespace NPatch
 		{
 			get
 			{
-				Uri uri = new Uri(new Uri(this.m_src_url_origin_root), "final/final.patchlist.zip");
+				string uriString = string.Empty;
+				if (!string.IsNullOrEmpty(this.APKVersion))
+				{
+					uriString = string.Format("{0}/{1}/{2}_{3}/{4}", new object[]
+					{
+						this.m_src_url_origin_root,
+						"pack",
+						this.infoFolderName,
+						this.APKVersion,
+						"final.patchlist.zip"
+					});
+				}
+				else
+				{
+					uriString = string.Format("{0}/{1}/{2}/{3}", new object[]
+					{
+						this.m_src_url_origin_root,
+						"pack",
+						this.infoFolderName,
+						"final.patchlist.zip"
+					});
+				}
+				Uri uri = new Uri(uriString);
 				return uri.ToString();
 			}
 		}
@@ -2200,15 +2842,15 @@ namespace NPatch
 			bool result;
 			try
 			{
-				string requestUriString = string.Empty;
 				Launcher.__Output("Check File Version ...");
-				if (this.m_isMaster)
+				string requestUriString = string.Empty;
+				if (!string.IsNullOrEmpty(this.m_apkVersion))
 				{
-					requestUriString = string.Format("{0}/pack/infoqa/final.patchlist.txt", this.m_src_url_origin_root);
+					requestUriString = string.Format("{0}/pack/{1}/{2}/final.patchlist.txt", this.m_src_url_origin_root, this.m_infoFolderName, this.m_apkVersion);
 				}
 				else
 				{
-					requestUriString = string.Format("{0}/pack/info/final.patchlist.txt", this.m_src_url_origin_root);
+					requestUriString = string.Format("{0}/pack/{1}/final.patchlist.txt", this.m_src_url_origin_root, this.m_infoFolderName);
 				}
 				HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(requestUriString);
 				HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
@@ -2344,7 +2986,7 @@ namespace NPatch
 										}));
 										Logger.WriteLog(this.PatchErrorString, this.PatchErrorLevel);
 										flag = false;
-										if (this.m_FileVerifierMode == Launcher.FILEVERIFIERMODE.PACK)
+										if (this.m_FileVerifierinfo.mode == Launcher.FILEVERIFIERMODE.PACK)
 										{
 											num = this.GetRollBackVersion(row, num);
 										}
@@ -2363,7 +3005,7 @@ namespace NPatch
 									}));
 									Logger.WriteLog(this.PatchErrorString, this.PatchErrorLevel);
 									flag = false;
-									if (this.m_FileVerifierMode == Launcher.FILEVERIFIERMODE.PACK)
+									if (this.m_FileVerifierinfo.mode == Launcher.FILEVERIFIERMODE.PACK)
 									{
 										num = this.GetRollBackVersion(row, num);
 									}
@@ -2378,11 +3020,11 @@ namespace NPatch
 						else
 						{
 							this.LaunchHandler.OnErrorFileVerifier(list);
-							if (this.m_FileVerifierMode == Launcher.FILEVERIFIERMODE.PACK)
+							if (this.m_FileVerifierinfo.mode == Launcher.FILEVERIFIERMODE.PACK)
 							{
 								this.RollBackPatchedVersion(num);
 							}
-							else if (this.m_FileVerifierMode == Launcher.FILEVERIFIERMODE.FILE)
+							else if (this.m_FileVerifierinfo.mode == Launcher.FILEVERIFIERMODE.FILE)
 							{
 								this.SaveBrokenFileList(list);
 							}
@@ -2412,13 +3054,19 @@ namespace NPatch
 		public float GetRollBackVersion(NDataReader.Row row, float rollbackVersion)
 		{
 			string arg = string.Empty;
-			if (this.m_isMaster)
+			if (!string.IsNullOrEmpty(this.m_apkVersion))
 			{
-				arg = string.Format("{0}/{1}/{2}", this.m_src_url_origin_root, "pack", "infoqa");
+				arg = string.Format("{0}/{1}/{2}/{3}", new object[]
+				{
+					this.m_src_url_origin_root,
+					"pack",
+					this.m_infoFolderName,
+					this.m_apkVersion
+				});
 			}
 			else
 			{
-				arg = string.Format("{0}/{1}/{2}", this.m_src_url_origin_root, "pack", "info");
+				arg = string.Format("{0}/{1}/{2}", this.m_src_url_origin_root, "pack", this.m_infoFolderName);
 			}
 			float num;
 			for (num = Convert.ToSingle(row.GetColumn(1)) - 1f; num >= this.DefaultResourceVersion; num -= 1f)
@@ -2509,7 +3157,7 @@ namespace NPatch
 			return true;
 		}
 
-		public bool PatchStart(string root_local, string root_url, LauncherHandler _handler, int maxver, bool _isMaster = false)
+		public bool PatchStart(string root_local, string root_url, LauncherHandler _handler, bool _isCallPrepackEndFuncOnlyFirstPatch, int maxver, bool isMaster = false, string _apkversion = "")
 		{
 			this.DataClear();
 			this.Stage = NPATCHSTAGE.READYTASK;
@@ -2521,9 +3169,18 @@ namespace NPatch
 			this.m_local_root = this.m_local_root.Replace('\\', '/');
 			this.m_src_url_origin_root = root_url;
 			this.m_src_pack_url_root = this.m_src_url_origin_root;
+			this.isCallPrepackEndFuncOnlyFirstPatch = _isCallPrepackEndFuncOnlyFirstPatch;
+			this.m_apkVersion = _apkversion;
 			Logger.logPath = this.m_local_root;
 			this.m_patchVersionMax = maxver;
-			this.m_isMaster = _isMaster;
+			if (isMaster)
+			{
+				this.m_infoFolderName = "infoqa";
+			}
+			else
+			{
+				this.m_infoFolderName = "info";
+			}
 			string arg = string.Empty;
 			if (!Path.IsPathRooted(this.m_local_root))
 			{
@@ -2544,21 +3201,14 @@ namespace NPatch
 				}
 			}
 			string requestUrlString = string.Empty;
-			string requestUrlString2 = string.Empty;
-			if (this.m_isMaster)
+			if (!string.IsNullOrEmpty(this.m_apkVersion))
 			{
-				requestUrlString = string.Format("{0}/{1}/{2}/{3}", new object[]
+				requestUrlString = string.Format("{0}/{1}/{2}/{3}/{4}", new object[]
 				{
 					this.m_src_url_origin_root,
 					"pack",
-					"infoqa",
-					"final.version.txt"
-				});
-				requestUrlString2 = string.Format("{0}/{1}/{2}/{3}", new object[]
-				{
-					this.m_src_url_origin_root,
-					"langpack",
-					"infoqa",
+					this.m_infoFolderName,
+					this.m_apkVersion,
 					"final.version.txt"
 				});
 			}
@@ -2568,14 +3218,7 @@ namespace NPatch
 				{
 					this.m_src_url_origin_root,
 					"pack",
-					"info",
-					"final.version.txt"
-				});
-				requestUrlString2 = string.Format("{0}/{1}/{2}/{3}", new object[]
-				{
-					this.m_src_url_origin_root,
-					"langpack",
-					"info",
+					this.m_infoFolderName,
 					"final.version.txt"
 				});
 			}
@@ -2585,12 +3228,6 @@ namespace NPatch
 				this.PatchErrorLevel = ERRORLEVEL.ERR_INPUTERROR;
 				Logger.WriteLog(this.PatchErrorString, this.PatchErrorLevel);
 				return false;
-			}
-			if (!Util.IsVaildURL(requestUrlString2))
-			{
-				Launcher.__Output("LangPack url is Missing! is not used?");
-				Logger.WriteLog("LangPack url is Missing! is not used?");
-				this.m_use_langpack = false;
 			}
 			if (!Directory.Exists(this.m_local_root))
 			{
@@ -2603,8 +3240,7 @@ namespace NPatch
 				Logger.WriteLog(this.PatchErrorString, this.PatchErrorLevel);
 				return false;
 			}
-			Launcher.SystemInfo systemInfo = default(Launcher.SystemInfo);
-			if (!this.LoadSystemInfo(ref systemInfo))
+			if (!this.LoadSystemInfo())
 			{
 				this.PatchErrorLevel = ERRORLEVEL.ERR_LOADSYSTEMINFO;
 				if (this.PatchErrorString.Equals(string.Empty))
@@ -2613,11 +3249,7 @@ namespace NPatch
 				}
 				return false;
 			}
-			this.PatchLevelMax = systemInfo.maxPatchLevel;
-			this.m_timeoutLimitSec = systemInfo.timeoutLimitSec;
-			this.m_retryTerm = systemInfo.retryTerm;
-			this.m_defaultResourceVersion = systemInfo.defaultVersion;
-			if (!this.CheckLocalInfoFile(systemInfo.defaultPatchLevel, systemInfo.defaultVersion))
+			if (!this.CheckLocalInfoFile(this.m_Systeminfo.defaultPatchLevel, this.m_Systeminfo.defaultVersion))
 			{
 				this.PatchErrorLevel = ERRORLEVEL.ERR_CHECKLOCALINFO;
 				if (this.PatchErrorString.Equals(string.Empty))
@@ -2626,10 +3258,9 @@ namespace NPatch
 				}
 				return false;
 			}
-			if (this.m_use_langpack)
+			if (this.m_Systeminfo.useLangpack)
 			{
-				Launcher.LangInfo langInfo = default(Launcher.LangInfo);
-				if (!this.LoadLangInfo(ref langInfo))
+				if (!this.LoadLangInfo())
 				{
 					this.PatchErrorLevel = ERRORLEVEL.ERR_LOADSYSTEMINFO;
 					if (this.PatchErrorString.Equals(string.Empty))
@@ -2638,9 +3269,7 @@ namespace NPatch
 					}
 					return false;
 				}
-				this.DefaultLangVersion = langInfo.defaultVersion;
-				this.LangCodeMax = langInfo.maxLangCode;
-				if (!this.CheckLocalLangInfoFile(langInfo.defaultLangCode, langInfo.defaultVersion))
+				if (!this.CheckLocalLangInfoFile(this.m_Langinfo.defaultLangCode, this.m_Langinfo.defaultVersion))
 				{
 					this.PatchErrorLevel = ERRORLEVEL.ERR_CHECKLOCALINFO;
 					if (this.PatchErrorString.Equals(string.Empty))
@@ -2650,7 +3279,16 @@ namespace NPatch
 					return false;
 				}
 			}
-			return this.AddTask(root_local, root_url, _handler);
+			if (this.m_Systeminfo.useFileVerifier && !this.CheckFileVerifierConfig())
+			{
+				if (this.PatchErrorString.Equals(string.Empty))
+				{
+					this.PatchErrorString = "FileVerifier Info File Check Error!";
+				}
+				return false;
+			}
+			this.AddTask(root_local, root_url, _handler);
+			return true;
 		}
 
 		public bool PatchUpdate()
@@ -2721,6 +3359,10 @@ namespace NPatch
 			bool result;
 			if (this.PatchErrorString == string.Empty)
 			{
+				if (this.m_FileVerifierinfo.useFileVerifier)
+				{
+					flag = (this.LoadFileVerifierConfig() && this.FileVerifier());
+				}
 				if (flag)
 				{
 					Launcher.__Output("Patch OK...!");
@@ -2753,12 +3395,14 @@ namespace NPatch
 			this.verifyFolderList.Clear();
 			this.m_isRunning = false;
 			this.PatchErrorLevel = ERRORLEVEL.SUCCESS;
-			this.Stage = NPATCHSTAGE.DEFAULT;
 			this.PatchErrorString = string.Empty;
+			this.Stage = NPATCHSTAGE.DEFAULT;
 			this.TaskNode = null;
 			this.VerifierConfigDR = null;
 			this._onProcessCount = 0L;
 			this._onProcessAtMainThread = 0L;
+			this.m_apkVersion = string.Empty;
+			this.m_infoFolderName = string.Empty;
 		}
 
 		public bool PatchOnce(string root_local, string root_url, LauncherHandler _handler = null)
@@ -2767,7 +3411,7 @@ namespace NPatch
 			{
 				this.LaunchHandler = _handler;
 			}
-			if (!this.PatchStart(root_local, root_url, _handler, 0, false))
+			if (!this.PatchStart(root_local, root_url, _handler, false, 0, false, string.Empty))
 			{
 				return this.PatchFinish();
 			}
@@ -2790,7 +3434,7 @@ namespace NPatch
 			}
 		}
 
-		private bool AddTask(string local_root, string url_root, LauncherHandler _handler = null)
+		private void AddTask(string local_root, string url_root, LauncherHandler _handler = null)
 		{
 			if (_handler == null)
 			{
@@ -2801,6 +3445,10 @@ namespace NPatch
 				this.LaunchHandler = _handler;
 			}
 			this.list_Tasks.Clear();
+			if (this.m_Systeminfo.usecheckclientversion)
+			{
+				this.list_Tasks.AddLast(new Launcher.Task_CheckFinalClientVersion());
+			}
 			string path = Path.Combine(this.m_local_root, "brokenFileList.txt");
 			if (!Path.IsPathRooted(path))
 			{
@@ -2810,9 +3458,13 @@ namespace NPatch
 			{
 				this.list_Tasks.AddLast(new Launcher.Task_NoPack());
 			}
+			if (this.m_Systeminfo.usePrepack)
+			{
+				this.list_Tasks.AddLast(new Launcher.Task_CheckFinalVersion(PACKTYPE.PREPATCH));
+			}
 			this.list_Tasks.AddLast(new Launcher.Task_CheckFinalVersion(PACKTYPE.RESOURCE));
 			this.list_Tasks.AddLast(new Launcher.Task_CheckPackList());
-			if (this.m_use_langpack)
+			if (this.m_Systeminfo.useLangpack)
 			{
 				this.list_Tasks.AddLast(new Launcher.Task_CheckFinalVersion(PACKTYPE.LANG));
 				this.list_Tasks.AddLast(new Launcher.Task_CheckLangPackList());
@@ -2820,19 +3472,19 @@ namespace NPatch
 			this.TaskNode = this.list_Tasks.First;
 			this.Stage = NPATCHSTAGE.RUNNINGTASK;
 			this.m_isRunning = true;
-			return true;
 		}
 
-		private bool LoadSystemInfo(ref Launcher.SystemInfo si)
+		private bool LoadSystemInfo()
 		{
 			string requestUriString = string.Empty;
-			if (this.m_isMaster)
+			if (!string.IsNullOrEmpty(this.m_apkVersion))
 			{
-				requestUriString = string.Format("{0}/{1}/{2}/{3}", new object[]
+				requestUriString = string.Format("{0}/{1}/{2}/{3}/{4}", new object[]
 				{
 					this.m_src_url_origin_root,
 					"pack",
-					"infoqa",
+					this.m_infoFolderName,
+					this.m_apkVersion,
 					"systeminfo.txt"
 				});
 			}
@@ -2842,7 +3494,7 @@ namespace NPatch
 				{
 					this.m_src_url_origin_root,
 					"pack",
-					"info",
+					this.m_infoFolderName,
 					"systeminfo.txt"
 				});
 			}
@@ -2855,19 +3507,48 @@ namespace NPatch
 				NDataReader nDataReader = new NDataReader();
 				if (nDataReader.LoadFrom(responseStream, Encoding.UTF8))
 				{
-					si.maxPatchLevel = nDataReader["SystemInfo"]["maxPatchLevel"];
-					si.defaultPatchLevel = nDataReader["SystemInfo"]["defaultPatchLevel"];
-					si.timeoutLimitSec = nDataReader["SystemInfo"]["timeoutLimitSec"];
-					si.retryTerm = nDataReader["SystemInfo"]["retryTerm"];
+					this.m_Systeminfo.maxPatchLevel = nDataReader["SystemInfo"]["maxPatchLevel"];
+					this.m_Systeminfo.defaultPatchLevel = nDataReader["SystemInfo"]["defaultPatchLevel"];
+					this.m_Systeminfo.timeoutLimitSec = nDataReader["SystemInfo"]["timeoutLimitSec"];
+					this.m_Systeminfo.retryTerm = nDataReader["SystemInfo"]["retryTerm"];
 					NDataSection nDataSection = nDataReader["systemInfo"];
 					if (nDataSection.SectionString.ToLower().Contains("fullversion"))
 					{
-						si.defaultVersion = nDataReader["SystemInfo"]["fullversion"];
-						si.defaultVersion -= 1f;
+						this.m_Systeminfo.defaultVersion = nDataReader["SystemInfo"]["fullversion"];
+						this.m_Systeminfo.defaultVersion = this.m_Systeminfo.defaultVersion - 1f;
 					}
 					else
 					{
-						si.defaultVersion = nDataReader["SystemInfo"]["defaultVersion"];
+						this.m_Systeminfo.defaultVersion = nDataReader["SystemInfo"]["defaultVersion"];
+					}
+					this.m_Systeminfo.useLangpack = false;
+					this.m_Systeminfo.usePrepack = false;
+					this.m_Systeminfo.usecheckclientversion = false;
+					this.m_Systeminfo.useFileVerifier = false;
+					this.m_Systeminfo.downloadPatchlist = false;
+					if (nDataReader.BeginSection("option"))
+					{
+						NDataSection nDataSection2 = nDataReader["option"];
+						if (nDataSection2.SectionString.ToLower().Contains("uselangpack"))
+						{
+							this.m_Systeminfo.useLangpack = nDataSection2["uselangpack"];
+						}
+						if (nDataSection2.SectionString.ToLower().Contains("useprepack"))
+						{
+							this.m_Systeminfo.usePrepack = nDataSection2["usePrepack"];
+						}
+						if (nDataSection2.SectionString.ToLower().Contains("usecheckclientversion"))
+						{
+							this.m_Systeminfo.usecheckclientversion = nDataSection2["usecheckclientversion"];
+						}
+						if (nDataSection2.SectionString.ToLower().Contains("usefileverifier"))
+						{
+							this.m_Systeminfo.useFileVerifier = nDataSection2["useFileVerifier"];
+						}
+						if (nDataSection2.SectionString.ToLower().Contains("downloadpatchlist"))
+						{
+							this.m_Systeminfo.downloadPatchlist = nDataSection2["downloadpatchlist"];
+						}
 					}
 					result = true;
 				}
@@ -2879,6 +3560,7 @@ namespace NPatch
 			catch (Exception ex)
 			{
 				Logger.WriteLog(string.Format("SystemInfo : SystemInfo 로드 실패!!", new object[0]));
+				Logger.WriteLog(ex.Message);
 				this.PatchErrorString = ex.Message;
 				this.PatchErrorLevel = ERRORLEVEL.ERR_LOADSYSTEMINFO;
 				result = false;
@@ -2886,16 +3568,17 @@ namespace NPatch
 			return result;
 		}
 
-		private bool LoadLangInfo(ref Launcher.LangInfo li)
+		private bool LoadLangInfo()
 		{
 			string requestUriString = string.Empty;
-			if (this.m_isMaster)
+			if (!string.IsNullOrEmpty(this.m_apkVersion))
 			{
-				requestUriString = string.Format("{0}/{1}/{2}/{3}", new object[]
+				requestUriString = string.Format("{0}/{1}/{2}/{3}/{4}", new object[]
 				{
 					this.m_src_url_origin_root,
 					"langpack",
-					"infoqa",
+					this.m_infoFolderName,
+					this.m_apkVersion,
 					"langinfo.txt"
 				});
 			}
@@ -2905,7 +3588,7 @@ namespace NPatch
 				{
 					this.m_src_url_origin_root,
 					"langpack",
-					"info",
+					this.m_infoFolderName,
 					"langinfo.txt"
 				});
 			}
@@ -2918,9 +3601,9 @@ namespace NPatch
 				NDataReader nDataReader = new NDataReader();
 				if (nDataReader.LoadFrom(responseStream, Encoding.UTF8))
 				{
-					li.maxLangCode = nDataReader["LangInfo"]["maxLangCode"];
-					li.defaultLangCode = nDataReader["LangInfo"]["defaultLangCode"];
-					li.defaultVersion = nDataReader["LangInfo"]["defaultVersion"];
+					this.m_Langinfo.maxLangCode = nDataReader["LangInfo"]["maxLangCode"];
+					this.m_Langinfo.defaultLangCode = nDataReader["LangInfo"]["defaultLangCode"];
+					this.m_Langinfo.defaultVersion = nDataReader["LangInfo"]["defaultVersion"];
 					result = true;
 				}
 				else
@@ -2928,24 +3611,26 @@ namespace NPatch
 					result = false;
 				}
 			}
-			catch (Exception var_5_12A)
+			catch (Exception ex)
 			{
 				Logger.WriteLog(string.Format("LangInfo : LangInfo 로드 실패!!", new object[0]));
+				Logger.WriteLog(ex.Message);
 				result = false;
 			}
 			return result;
 		}
 
-		private bool CheckFileVerifierConfig(ref Launcher.FileVerifierInfo fvi)
+		private bool CheckFileVerifierConfig()
 		{
 			string requestUriString = string.Empty;
-			if (this.m_isMaster)
+			if (!string.IsNullOrEmpty(this.m_apkVersion))
 			{
-				requestUriString = string.Format("{0}/{1}/{2}/{3}", new object[]
+				requestUriString = string.Format("{0}/{1}/{2}/{3}/{4}", new object[]
 				{
 					this.m_src_url_origin_root,
 					"pack",
-					"infoqa",
+					this.m_infoFolderName,
+					this.m_apkVersion,
 					"fileverifier.txt"
 				});
 			}
@@ -2955,7 +3640,7 @@ namespace NPatch
 				{
 					this.m_src_url_origin_root,
 					"pack",
-					"info",
+					this.m_infoFolderName,
 					"fileverifier.txt"
 				});
 			}
@@ -2971,20 +3656,20 @@ namespace NPatch
 					string text = this.VerifierConfigDR["FileVerifier"]["use"].ToLower();
 					if (text.Equals("true"))
 					{
-						fvi.useFileVerifier = true;
+						this.m_FileVerifierinfo.useFileVerifier = true;
 					}
 					else
 					{
-						fvi.useFileVerifier = false;
+						this.m_FileVerifierinfo.useFileVerifier = false;
 					}
 					string text2 = this.VerifierConfigDR["FileVerifier"]["mode"].ToLower();
 					if (text2.Equals("file"))
 					{
-						fvi.mode = Launcher.FILEVERIFIERMODE.FILE;
+						this.m_FileVerifierinfo.mode = Launcher.FILEVERIFIERMODE.FILE;
 					}
 					else if (text2.Equals("pack"))
 					{
-						fvi.mode = Launcher.FILEVERIFIERMODE.PACK;
+						this.m_FileVerifierinfo.mode = Launcher.FILEVERIFIERMODE.PACK;
 					}
 					result = true;
 				}
@@ -2993,8 +3678,10 @@ namespace NPatch
 					result = false;
 				}
 			}
-			catch (Exception var_6_172)
+			catch (Exception ex)
 			{
+				Logger.WriteLog("fileverifier.txt 파일 로드 실패!!");
+				Logger.WriteLog(ex.Message);
 				result = false;
 			}
 			return result;
@@ -3019,9 +3706,10 @@ namespace NPatch
 					result = false;
 				}
 			}
-			catch (Exception var_3_85)
+			catch (Exception ex)
 			{
 				Logger.WriteLog(string.Format("FileVerifierConfig : FileVerifierConfig 로드 실패!!", new object[0]));
+				Logger.WriteLog(ex.Message);
 				result = false;
 			}
 			return result;
@@ -3048,6 +3736,35 @@ namespace NPatch
 			{
 				this.ReadLocalPatchLevel();
 			}
+			if (this.m_Systeminfo.usePrepack)
+			{
+				string path2 = Path.Combine(this.m_local_root, this.FILENAME_PREPATCHED_VERSION);
+				if (!Path.IsPathRooted(path2))
+				{
+					path2 = Path.GetFullPath(path2);
+				}
+				if (!File.Exists(path2))
+				{
+					if (!this.SavePrepatchedVersion(defaultVersion))
+					{
+						Logger.WriteLog(string.Format("초기화 : 프리 패치버전 기록 실패!! [defaultVersion : {0}]", defaultVersion));
+						return false;
+					}
+				}
+				else
+				{
+					float num = this.ReadLocalPrepatchedVersion();
+					if (num < defaultVersion)
+					{
+						if (!this.SavePrepatchedVersion(defaultVersion))
+						{
+							Logger.WriteLog(string.Format("초기화 : 프리 패치버전 기록 실패!! [defaultVersion : {0}]", defaultVersion));
+							return false;
+						}
+						Logger.WriteLog(string.Format("초기화 : {0} 파일을 생성했습니다.", num));
+					}
+				}
+			}
 			StringBuilder stringBuilder = new StringBuilder(1024);
 			stringBuilder.AppendFormat("[Local]", new object[0]);
 			stringBuilder.AppendLine();
@@ -3055,27 +3772,28 @@ namespace NPatch
 			stringBuilder.AppendLine();
 			stringBuilder.AppendFormat("Modified = {0}", DateTime.Now);
 			stringBuilder.AppendLine();
-			for (int i = this.m_patchLevelMax; i >= 0; i--)
+			byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
+			for (int i = this.m_Systeminfo.maxPatchLevel; i >= 0; i--)
 			{
 				string text = Path.Combine(this.m_local_root, string.Format("PatchedVersion.{0}.txt", i));
 				if (!File.Exists(text))
 				{
 					flag = true;
-					using (StreamWriter streamWriter = new StreamWriter(text))
+					using (FileStream fileStream = new FileStream(text, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
 					{
-						streamWriter.WriteLine(stringBuilder.ToString());
+						fileStream.Write(bytes, 0, bytes.Length);
 					}
 					Logger.WriteLog(string.Format("초기화 : {0} 파일을 생성했습니다.", text));
 				}
 				else
 				{
-					float num = this.ReadLocalPatchedVersion();
-					if (num < defaultVersion)
+					float num2 = this.ReadLocalPatchedVersion();
+					if (num2 < defaultVersion)
 					{
 						flag = true;
-						using (StreamWriter streamWriter2 = new StreamWriter(text))
+						using (FileStream fileStream2 = new FileStream(text, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
 						{
-							streamWriter2.WriteLine(stringBuilder.ToString());
+							fileStream2.Write(bytes, 0, bytes.Length);
 						}
 						Logger.WriteLog(string.Format("초기화 : {0} 파일을 생성했습니다.", text));
 					}
@@ -3083,10 +3801,10 @@ namespace NPatch
 			}
 			if (flag)
 			{
-				float num2 = this.ReadLocalPatchedVersion();
-				if (num2 != defaultVersion)
+				float num3 = this.ReadLocalPatchedVersion();
+				if (num3 != defaultVersion)
 				{
-					Logger.WriteLog(string.Format("초기화 : 버전세팅 오류. [defaultVersion : {0}, verifyVersion : {1}", defaultVersion, num2));
+					Logger.WriteLog(string.Format("초기화 : 버전세팅 오류. [defaultVersion : {0}, verifyVersion : {1}", defaultVersion, num3));
 					return false;
 				}
 			}
@@ -3101,10 +3819,18 @@ namespace NPatch
 			{
 				path = Path.GetFullPath(path);
 			}
-			if (!File.Exists(path) && !this.SaveUseLangCode(defaultLangCode))
+			if (!File.Exists(path))
 			{
-				Logger.WriteLog(string.Format("초기화 : 언어코드 기록 실패!! [defaultPatchLevel : {0}]", defaultLangCode));
-				return false;
+				if (!this.SaveUseLangCode(defaultLangCode))
+				{
+					Logger.WriteLog(string.Format("초기화 : 사용중인 언어코드 리스트 기록 실패!! [defaultPatchLevel : {0}]", defaultLangCode));
+					return false;
+				}
+				if (!this.SaveLastUsedLangCode(defaultLangCode))
+				{
+					Logger.WriteLog(string.Format("초기화 : 마지막으로 사용한 언어코드 기록 실패!! [defaultPatchLevel : {0}]", defaultLangCode));
+					return false;
+				}
 			}
 			this.langCodeList = this.GetAllLangCode();
 			StringBuilder stringBuilder = new StringBuilder(1024);
@@ -3114,7 +3840,7 @@ namespace NPatch
 			stringBuilder.AppendLine();
 			stringBuilder.AppendFormat("Modified = {0}", DateTime.Now);
 			stringBuilder.AppendLine();
-			for (int i = this.LangCodeMax; i >= 0; i--)
+			for (int i = this.m_Langinfo.maxLangCode; i >= 0; i--)
 			{
 				string text = Path.Combine(this.m_local_root, string.Format("PatchedLangVersion.{0}.txt", i));
 				if (!File.Exists(text))
@@ -3150,6 +3876,37 @@ namespace NPatch
 				}
 			}
 			return true;
+		}
+
+		private float ReadLocalPrepatchedVersion()
+		{
+			string text = Path.Combine(this.m_local_root, this.FILENAME_PREPATCHED_VERSION);
+			if (!Path.IsPathRooted(text))
+			{
+				text = Path.GetFullPath(text);
+			}
+			float result;
+			try
+			{
+				NDataReader nDataReader = new NDataReader();
+				if (nDataReader.Load(text))
+				{
+					this.LocalPrepatchVersion = nDataReader["Local"]["PrepatchedVersion"];
+					result = this.LocalPrepatchVersion;
+				}
+				else
+				{
+					this.PatchErrorString = "PrepatchedVersion.txt is Missing!";
+					result = -1f;
+				}
+			}
+			catch (Exception ex)
+			{
+				this.PatchErrorString = ex.Message;
+				this.PatchErrorLevel = ERRORLEVEL.ERR_LOCALFILEINFO;
+				result = -1f;
+			}
+			return result;
 		}
 
 		private int ReadLocalPatchLevel()
@@ -3252,7 +4009,7 @@ namespace NPatch
 				int lastVersionFromCacheList = Util.GetLastVersionFromCacheList(this.m_local_root);
 				if (lastVersionFromCacheList != -1)
 				{
-					this.LocalPatchLevel = this.PatchLevelMax;
+					this.LocalPatchLevel = this.m_Systeminfo.maxPatchLevel;
 				}
 				StringBuilder stringBuilder = new StringBuilder(1024);
 				stringBuilder.AppendFormat("[Local]", new object[0]);
@@ -3261,14 +4018,15 @@ namespace NPatch
 				stringBuilder.AppendLine();
 				stringBuilder.AppendFormat("Modified = {0}", DateTime.Now);
 				stringBuilder.AppendLine();
+				byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
 				if (!Directory.Exists(this.m_local_root))
 				{
 					Directory.CreateDirectory(this.m_local_root);
 				}
 				string text = Path.Combine(this.m_local_root, this.FILENAME_PATCHLEVEL);
-				using (StreamWriter streamWriter = new StreamWriter(text))
+				using (FileStream fileStream = new FileStream(text, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
 				{
-					streamWriter.WriteLine(stringBuilder.ToString());
+					fileStream.Write(bytes, 0, bytes.Length);
 				}
 				Logger.WriteLog(string.Format("패치레벨 : {0} 파일에 기록 완료.", text));
 				result = true;
@@ -3296,26 +4054,22 @@ namespace NPatch
 				stringBuilder.AppendLine();
 				stringBuilder.AppendFormat("date = {0}", DateTime.Now);
 				stringBuilder.AppendLine();
+				byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
 				if (!Directory.Exists(this.m_local_root))
 				{
 					Directory.CreateDirectory(this.m_local_root);
 				}
 				string text = Path.Combine(this.m_local_root, "PatchedDate.txt");
-				using (StreamWriter streamWriter = new StreamWriter(text))
+				using (FileStream fileStream = new FileStream(text, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
 				{
-					streamWriter.WriteLine(stringBuilder.ToString());
+					fileStream.Write(bytes, 0, bytes.Length);
 				}
 				Logger.WriteLog(string.Format("패치성공 : {0} 파일에 패치시간 기록 완료.", text));
 				result = true;
 			}
-			catch (ArgumentException ex)
+			catch (Exception ex)
 			{
-				Launcher.__Output(ex.Message);
-				result = false;
-			}
-			catch (DirectoryNotFoundException ex2)
-			{
-				Launcher.__Output(ex2.Message);
+				Logger.WriteLog("SavePatchedDate() failed..!! -> " + ex.Message);
 				result = false;
 			}
 			return result;
@@ -3429,6 +4183,38 @@ namespace NPatch
 			return result;
 		}
 
+		public bool SavePrepatchedVersion(float newPatchedVersion)
+		{
+			bool result;
+			try
+			{
+				StringBuilder stringBuilder = new StringBuilder(1024);
+				stringBuilder.AppendFormat("[Local]", new object[0]);
+				stringBuilder.AppendLine();
+				stringBuilder.AppendFormat("PrepatchedVersion = {0}", newPatchedVersion);
+				stringBuilder.AppendLine();
+				stringBuilder.AppendFormat("Modified = {0}", DateTime.Now);
+				stringBuilder.AppendLine();
+				byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
+				if (!Directory.Exists(this.m_local_root))
+				{
+					Directory.CreateDirectory(this.m_local_root);
+				}
+				string path = Path.Combine(this.m_local_root, "PrepatchedVersion.txt");
+				using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
+				{
+					fileStream.Write(bytes, 0, bytes.Length);
+				}
+				result = true;
+			}
+			catch (Exception ex)
+			{
+				Launcher.__Output(ex.Message);
+				result = false;
+			}
+			return result;
+		}
+
 		public bool SavePatchedVersion(float newPatchedVersion, int level)
 		{
 			bool result;
@@ -3442,6 +4228,7 @@ namespace NPatch
 				stringBuilder.AppendLine();
 				stringBuilder.AppendFormat("Modified = {0}", DateTime.Now);
 				stringBuilder.AppendLine();
+				byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
 				if (!Directory.Exists(this.m_local_root))
 				{
 					Directory.CreateDirectory(this.m_local_root);
@@ -3451,18 +4238,18 @@ namespace NPatch
 					for (int i = this.LocalPatchLevel; i >= 0; i--)
 					{
 						string path = Path.Combine(this.m_local_root, string.Format("PatchedVersion.{0}.txt", i));
-						using (StreamWriter streamWriter = new StreamWriter(path))
+						using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
 						{
-							streamWriter.WriteLine(stringBuilder.ToString());
+							fileStream.Write(bytes, 0, bytes.Length);
 						}
 					}
 				}
 				else
 				{
 					string path2 = Path.Combine(this.m_local_root, string.Format("PatchedVersion.{0}.txt", level));
-					using (StreamWriter streamWriter2 = new StreamWriter(path2))
+					using (FileStream fileStream2 = new FileStream(path2, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
 					{
-						streamWriter2.WriteLine(stringBuilder.ToString());
+						fileStream2.Write(bytes, 0, bytes.Length);
 					}
 				}
 				result = true;
@@ -3516,6 +4303,65 @@ namespace NPatch
 			return result;
 		}
 
+		public bool SaveLastUsedLangCode(int langcode)
+		{
+			bool result;
+			try
+			{
+				StringBuilder stringBuilder = new StringBuilder(1024);
+				stringBuilder.AppendFormat("[Local]", new object[0]);
+				stringBuilder.AppendLine();
+				stringBuilder.AppendFormat("LangCode = {0}", langcode);
+				stringBuilder.AppendLine();
+				stringBuilder.AppendFormat("Modified = {0}", DateTime.Now);
+				stringBuilder.AppendLine();
+				if (!Directory.Exists(this.m_local_root))
+				{
+					Directory.CreateDirectory(this.m_local_root);
+				}
+				string path = Path.Combine(this.m_local_root, "LastUsedLangCode.txt");
+				using (StreamWriter streamWriter = new StreamWriter(path))
+				{
+					streamWriter.WriteLine(stringBuilder.ToString());
+				}
+				result = true;
+			}
+			catch (ArgumentException ex)
+			{
+				Launcher.__Output(ex.Message);
+				result = false;
+			}
+			catch (DirectoryNotFoundException ex2)
+			{
+				Launcher.__Output(ex2.Message);
+				result = false;
+			}
+			return result;
+		}
+
+		public int ReadLastUsedLangCode()
+		{
+			int num = -1;
+			string strFileName = Path.Combine(this.m_local_root, "LastUsedLangCode.txt");
+			int result;
+			try
+			{
+				NDataReader nDataReader = new NDataReader();
+				if (nDataReader.Load(strFileName))
+				{
+					num = nDataReader["Local"]["LangCode"];
+				}
+				result = num;
+			}
+			catch (Exception ex)
+			{
+				this.PatchErrorString = ex.Message;
+				this.PatchErrorLevel = ERRORLEVEL.ERR_LOCALFILEINFO;
+				result = -1;
+			}
+			return result;
+		}
+
 		private bool WriteDivision(string fileLocation, int division)
 		{
 			string text = Path.GetFileName(fileLocation);
@@ -3534,14 +4380,15 @@ namespace NPatch
 				stringBuilder.AppendLine();
 				stringBuilder.AppendFormat("Division = {0}", division);
 				stringBuilder.AppendLine();
+				byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
 				if (!Directory.Exists(this.m_local_root))
 				{
 					Directory.CreateDirectory(this.m_local_root);
 				}
 				string path = Path.Combine(this.m_local_root, string.Format("InstallDivision.txt", new object[0]));
-				using (StreamWriter streamWriter = new StreamWriter(path))
+				using (FileStream fileStream = new FileStream(path, FileMode.Create, FileAccess.ReadWrite, FileShare.Read))
 				{
-					streamWriter.WriteLine(stringBuilder.ToString());
+					fileStream.Write(bytes, 0, bytes.Length);
 				}
 				result = true;
 			}
@@ -3564,16 +4411,27 @@ namespace NPatch
 			bool result;
 			try
 			{
-				NDataReader nDataReader = new NDataReader();
-				if (nDataReader.Load(Path.Combine(this.m_local_root, string.Format("InstallDivision.txt", new object[0]))))
+				if (!File.Exists(Path.Combine(this.m_local_root, "InstallDivision.txt")))
 				{
-					value = nDataReader["Local"]["PackTitle"];
-					int num = nDataReader["Local"]["Division"];
-					if (Path.GetFileName(fileLocation).Contains(value))
+					result = false;
+				}
+				else
+				{
+					NDataReader nDataReader = new NDataReader();
+					if (nDataReader.Load(Path.Combine(this.m_local_root, "InstallDivision.txt")))
 					{
-						if (num <= fileDivision)
+						value = nDataReader["Local"]["PackTitle"];
+						int num = nDataReader["Local"]["Division"];
+						if (Path.GetFileName(fileLocation).Contains(value))
 						{
-							result = true;
+							if (num <= fileDivision)
+							{
+								result = true;
+							}
+							else
+							{
+								result = false;
+							}
 						}
 						else
 						{
@@ -3584,10 +4442,6 @@ namespace NPatch
 					{
 						result = false;
 					}
-				}
-				else
-				{
-					result = false;
 				}
 			}
 			catch (Exception ex)
@@ -3601,6 +4455,10 @@ namespace NPatch
 
 		public string GetPackFileName(string packName)
 		{
+			if (packName.Contains("pre"))
+			{
+				return Path.Combine(this.LocalRoot, string.Format("prepack/{0}", packName));
+			}
 			return Path.Combine(this.LocalRoot, string.Format("pack/{0}", packName));
 		}
 
@@ -3662,14 +4520,14 @@ namespace NPatch
 		{
 			switch (type)
 			{
-			case TASKTYPE.DOWNLOADPACK:
+			case TASKTYPE.DOWNLOAD:
 			case TASKTYPE.INSTALL:
 				this._status.totalStatus = string.Format("Patch {0}% Complete...", this._status.totalProcessedPercent);
 				break;
 			case TASKTYPE.RETRY:
 				this._status.totalStatus = string.Format("Disconnected to Server. Retry... [ {0} / {1} ]", this._status.taskReconnectCount, this._status.taskReconnectCountMax);
 				break;
-			case TASKTYPE.REDOWNLOADPACK:
+			case TASKTYPE.REDOWNLOAD:
 				this._status.totalStatus = string.Format("Redownload Start...", new object[0]);
 				break;
 			}
@@ -3685,7 +4543,7 @@ namespace NPatch
 					this._status.taskProcessedSize = this._status.taskProcessedSize + (long)addSize;
 					this._status.totalProcessedSize = this._status.totalProcessedSize + (long)addSize;
 				}
-				if (type == TASKTYPE.DOWNLOADPACK)
+				if (type == TASKTYPE.DOWNLOAD)
 				{
 					this._status.totalDownloadProcessedSize = this._status.totalDownloadProcessedSize + (long)addSize;
 					this._status.packDownloadProcessedSize = this._status.packDownloadProcessedSize + (long)addSize;
@@ -3719,7 +4577,7 @@ namespace NPatch
 				string arg2 = num.ToString("N1");
 				switch (type)
 				{
-				case TASKTYPE.DOWNLOADPACK:
+				case TASKTYPE.DOWNLOAD:
 					this._status.taskStatus = string.Format("{0} File Downloading...({1}%) ", fileName, arg);
 					break;
 				case TASKTYPE.INSTALL:
@@ -3728,21 +4586,21 @@ namespace NPatch
 				case TASKTYPE.RETRY:
 					this._status.taskStatus = string.Format("Disconnected to Server. Retry... [ {0} / {1} ]", this._status.taskReconnectCount, this._status.taskReconnectCountMax);
 					break;
-				case TASKTYPE.REDOWNLOADPACK:
+				case TASKTYPE.REDOWNLOAD:
 					this._status.taskStatus = string.Format("{0} File Redownload Start...({1}%)", fileName, arg2);
 					break;
 				default:
 					Launcher.__Output("DownloadHandler::PrintProgressSize(string, int, TASKTYPE) | TaskType Error!!");
 					break;
 				}
-				this._onProcessCount += 1L;
 			}
+			this._onProcessCount += 1L;
 		}
 
 		public void EndTaskProgress(string fileName, TASKTYPE type)
 		{
 			this._status.totalProcessedSize = this._status.totalProcessedSize + (this._status.taskSize - this._status.taskProcessedSize);
-			if (type == TASKTYPE.DOWNLOADPACK)
+			if (type == TASKTYPE.DOWNLOAD)
 			{
 				this._status.totalDownloadProcessedSize = this._status.totalDownloadProcessedSize + (this._status.taskSize - this._status.taskProcessedSize);
 				this._status.packDownloadProcessedSize = this._status.packDownloadProcessedSize + (this._status.taskSize - this._status.taskProcessedSize);
@@ -3766,6 +4624,11 @@ namespace NPatch
 				this.PrintTotalProgress(type);
 			}
 			this._status.totalTaskProcessedCount = this._status.totalTaskProcessedCount + 1;
+		}
+
+		public bool IsPatchLevelMax()
+		{
+			return this.LocalPatchLevel == this.PatchLevelMax;
 		}
 	}
 }

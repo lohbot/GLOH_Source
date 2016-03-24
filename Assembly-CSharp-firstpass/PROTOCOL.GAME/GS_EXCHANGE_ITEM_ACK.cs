@@ -6,9 +6,15 @@ namespace PROTOCOL.GAME
 	{
 		public int nResult;
 
+		public int nItemUnique;
+
+		public int nItemNum;
+
 		public GS_EXCHANGE_ITEM_ACK()
 		{
 			this.nResult = 0;
+			this.nItemUnique = 0;
+			this.nItemNum = 0;
 		}
 	}
 }

@@ -1,5 +1,6 @@
 using GAME;
 using System;
+using System.Collections.Generic;
 
 public class NrSoldierList
 {
@@ -276,5 +277,16 @@ public class NrSoldierList
 			return;
 		}
 		soldierInfoBySolID.SetSolSubData(SolSubData.nSubDataType, SolSubData.nSubDataValue);
+	}
+
+	public List<NkSoldierInfo> GetSoldierList()
+	{
+		if (this.m_kSolInfo == null)
+		{
+			return null;
+		}
+		List<NkSoldierInfo> list = new List<NkSoldierInfo>();
+		list.AddRange(this.m_kSolInfo);
+		return list;
 	}
 }

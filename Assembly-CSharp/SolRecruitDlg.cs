@@ -2,7 +2,6 @@ using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
-using SERVICE;
 using System;
 using System.Collections.Generic;
 using TsBundle;
@@ -21,11 +20,13 @@ public class SolRecruitDlg : Form
 		MAX_STT_NUM
 	}
 
-	private DrawTexture m_BackImage;
+	private Button m_HelpButton;
+
+	protected DrawTexture m_BackImage;
 
 	private Button m_btPrimiumMall;
 
-	private NewListBox m_TicketList;
+	protected NewListBox m_TicketList;
 
 	private List<TICKET_SELL_INFO> m_TicketSellInfoList = new List<TICKET_SELL_INFO>();
 
@@ -37,7 +38,17 @@ public class SolRecruitDlg : Form
 
 	private bool m_ReUseTicket;
 
-	private int m_nWinID;
+	private int m_OpenTicketCardType;
+
+	private bool bShowReUseTicket = true;
+
+	private float m_fRecruitPassCheckTime;
+
+	private bool bRecruitPassCheck = true;
+
+	private string m_backImgKey = string.Empty;
+
+	protected int m_nWinID;
 
 	private UIListItemContainer _GuideItem;
 
@@ -56,6 +67,7 @@ public class SolRecruitDlg : Form
 		{
 			base.ShowBlackBG(0.5f);
 		}
+		this.m_backImgKey = string.Empty;
 	}
 
 	public void ShowUIGuide(string param1, string param2, int winID)
@@ -70,7 +82,7 @@ public class SolRecruitDlg : Form
 		{
 			if (num == (int)this.m_TicketList.GetItem(i).Data)
 			{
-				this._GuideItem = (this.m_TicketList.GetItem(i) as UIListItemContainer);
+				this._GuideItem = this.m_TicketList.GetItem(i);
 				num2 = i + 1;
 				break;
 			}
@@ -80,7 +92,6 @@ public class SolRecruitDlg : Form
 			return;
 		}
 		this.m_nWinID = winID;
-		base.SetLocation(base.GetLocationX(), base.GetLocationY(), NrTSingleton<FormsManager>.Instance.GetTopMostZ() + 1f);
 		this._GuideItem.gameObject.transform.localPosition = new Vector3(this._GuideItem.gameObject.transform.localPosition.x, this._GuideItem.gameObject.transform.localPosition.y, -1f);
 		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
 		if (uI_UIGuide == null)
@@ -100,10 +111,22 @@ public class SolRecruitDlg : Form
 		this.m_TicketList.Reserve = false;
 		this.m_btPrimiumMall = (base.GetControl("Button_premium") as Button);
 		this.m_btPrimiumMall.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickPrimiumMall));
+		this.m_HelpButton = (base.GetControl("Help_Button") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
 		base.SetScreenCenter();
-		this.m_btPrimiumMall.Visible = false;
+		NrMyCharInfo myCharInfo = NrTSingleton<NkCharManager>.Instance.GetMyCharInfo();
+		ITEMMALL_POPUPSHOP atbToIDX = NrTSingleton<ItemMallPoPupShopManager>.Instance.GetAtbToIDX(ItemMallPoPupShopManager.ePoPupShop_Type.RecruitOpen);
+		if (atbToIDX != null)
+		{
+			GS_ITEMSHOP_ITEMPOPUP_INFO_REQ gS_ITEMSHOP_ITEMPOPUP_INFO_REQ = new GS_ITEMSHOP_ITEMPOPUP_INFO_REQ();
+			gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i64PersonID = myCharInfo.m_PersonID;
+			gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i64Idx = (long)atbToIDX.m_Idx;
+			gS_ITEMSHOP_ITEMPOPUP_INFO_REQ.i32ATB = 3;
+			SendPacket.GetInstance().SendObject(2536, gS_ITEMSHOP_ITEMPOPUP_INFO_REQ);
+		}
 		NrTSingleton<FiveRocksEventManager>.Instance.Placement("user_card");
 		NrTSingleton<FiveRocksEventManager>.Instance.Placement("solrecruitdlg_open");
+		NrTSingleton<NkClientLogic>.Instance.SetCanOpenTicket(true);
 	}
 
 	public override void InitData()
@@ -111,7 +134,16 @@ public class SolRecruitDlg : Form
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY-EMPLOYMENT", "OPEN", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 	}
 
-	public void SetTicketList()
+	public override void Update()
+	{
+		if (this.m_fRecruitPassCheckTime > 0f && Time.time - this.m_fRecruitPassCheckTime > 2f && this.bRecruitPassCheck)
+		{
+			this.m_fRecruitPassCheckTime = 0f;
+			this.SetRecruitButtonEnable(true);
+		}
+	}
+
+	public virtual void SetTicketList()
 	{
 		COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
 		if (instance == null)
@@ -121,11 +153,12 @@ public class SolRecruitDlg : Form
 		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2016");
 		string empty = string.Empty;
 		this.m_TicketList.Clear();
-		if (NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() != eSERVICE_AREA.SERVICE_ANDROID_CNREVIEW)
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsLegendHire())
 		{
-			NewListItem newListItem = new NewListItem(this.m_TicketList.ColumnNum, true);
-			int value = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_CASH_ITEMUNIQUE);
-			int needItemNum = SolRecruitDlg.GetNeedItemNum(0);
+			textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2862");
+			NewListItem newListItem = new NewListItem(this.m_TicketList.ColumnNum, true, string.Empty);
+			int value = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_ESSENCE_ITEMUNIQUE);
+			int needItemNum = SolRecruitDlg.GetNeedItemNum(13);
 			ITEM item = NkUserInventory.GetInstance().GetItem(value);
 			if (item != null)
 			{
@@ -152,89 +185,14 @@ public class SolRecruitDlg : Form
 				"count1",
 				needItemNum,
 				"count2",
-				SolRecruitDlg.GetSolCount(0)
-			});
-			newListItem.SetListItemData(2, empty, null, null, null);
-			newListItem.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), eSolRecruitType.SOLRECRUIT_CASH_ONE, new EZValueChangedDelegate(this.ClickTicketList), null);
-			newListItem.SetListItemData(4, false);
-			newListItem.Data = eSolRecruitType.SOLRECRUIT_CASH_ONE;
-			this.m_TicketList.Add(newListItem);
-			int value2 = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_CASH_ITEMUNIQUE);
-			ITEM item2 = NkUserInventory.GetInstance().GetItem(value2);
-			int needItemNum2 = SolRecruitDlg.GetNeedItemNum(1);
-			NewListItem newListItem2 = new NewListItem(this.m_TicketList.ColumnNum, true);
-			if (item2 != null)
-			{
-				newListItem2.SetListItemData(1, item2, null, null, null);
-				if (item2.m_nItemNum >= needItemNum2)
-				{
-					newListItem2.SetListItemEnable(3, true);
-				}
-				else
-				{
-					newListItem2.SetListItemEnable(3, false);
-				}
-			}
-			else
-			{
-				newListItem2.SetListItemData(1, NrTSingleton<ItemManager>.Instance.GetItemTexture(value2), null, null, null);
-				newListItem2.SetListItemEnable(3, false);
-			}
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				textFromInterface,
-				"targetname",
-				NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(value2),
-				"count1",
-				needItemNum2,
-				"count2",
-				SolRecruitDlg.GetSolCount(1)
-			});
-			newListItem2.SetListItemData(2, empty, null, null, null);
-			newListItem2.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), eSolRecruitType.SOLRECRUIT_CASH_TEN, new EZValueChangedDelegate(this.ClickTicketList), null);
-			newListItem2.SetListItemData(4, false);
-			newListItem2.Data = eSolRecruitType.SOLRECRUIT_CASH_TEN;
-			this.m_TicketList.Add(newListItem2);
-		}
-		if (!NrTSingleton<ContentsLimitManager>.Instance.IsLegendHire())
-		{
-			textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2862");
-			NewListItem newListItem3 = new NewListItem(this.m_TicketList.ColumnNum, true);
-			int value3 = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_ESSENCE_ITEMUNIQUE);
-			int needItemNum3 = SolRecruitDlg.GetNeedItemNum(13);
-			ITEM item3 = NkUserInventory.GetInstance().GetItem(value3);
-			if (item3 != null)
-			{
-				newListItem3.SetListItemData(1, item3, null, null, null);
-				if (item3.m_nItemNum >= needItemNum3)
-				{
-					newListItem3.SetListItemEnable(3, true);
-				}
-				else
-				{
-					newListItem3.SetListItemEnable(3, false);
-				}
-			}
-			else
-			{
-				newListItem3.SetListItemData(1, NrTSingleton<ItemManager>.Instance.GetItemTexture(value3), null, null, null);
-				newListItem3.SetListItemEnable(3, false);
-			}
-			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
-			{
-				textFromInterface,
-				"targetname",
-				NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(value3),
-				"count1",
-				needItemNum3,
-				"count2",
 				SolRecruitDlg.GetSolCount(13)
 			});
-			newListItem3.SetListItemData(2, empty, null, null, null);
-			newListItem3.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), eSolRecruitType.SOLRECRUIT_ESSENCE_ONE, new EZValueChangedDelegate(this.ClickTicketList), null);
-			newListItem3.SetListItemData(4, false);
-			newListItem3.Data = eSolRecruitType.SOLRECRUIT_ESSENCE_ONE;
-			this.m_TicketList.Add(newListItem3);
+			newListItem.SetListItemData(2, empty, null, null, null);
+			newListItem.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), eSolRecruitType.SOLRECRUIT_ESSENCE_ONE, new EZValueChangedDelegate(this.ClickTicketList), null);
+			newListItem.SetListItemData(4, false);
+			newListItem.SetListItemData(6, false);
+			newListItem.Data = eSolRecruitType.SOLRECRUIT_ESSENCE_ONE;
+			this.m_TicketList.Add(newListItem);
 		}
 		this.AddTicketSellInfo();
 		List<ITEM> functionItemsByInvenType = NkUserInventory.instance.GetFunctionItemsByInvenType(6, eITEM_SUPPLY_FUNCTION.SUPPLY_GETSOLDIER);
@@ -242,36 +200,38 @@ public class SolRecruitDlg : Form
 		{
 			if (NrTSingleton<ItemManager>.Instance.IsItemATB(current.m_nItemUnique, 2048L))
 			{
-				NewListItem newListItem4 = new NewListItem(this.m_TicketList.ColumnNum, true);
+				NewListItem newListItem2 = new NewListItem(this.m_TicketList.ColumnNum, true, string.Empty);
 				string name = NrTSingleton<ItemManager>.Instance.GetName(current);
-				newListItem4.SetListItemData(1, current, null, null, null);
-				newListItem4.SetListItemData(2, name, null, null, null);
-				newListItem4.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), current, new EZValueChangedDelegate(this.ClickTicketList), null);
-				newListItem4.SetListItemData(4, false);
-				newListItem4.SetListItemData(5, string.Empty, current.m_nItemID, new EZValueChangedDelegate(this.ClickTicketItemToolTip), null);
-				newListItem4.Data = current.m_nItemUnique;
-				this.m_TicketList.Add(newListItem4);
+				newListItem2.SetListItemData(1, current, null, null, null);
+				newListItem2.SetListItemData(2, name, null, null, null);
+				newListItem2.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), current, new EZValueChangedDelegate(this.ClickTicketList), null);
+				newListItem2.SetListItemData(4, false);
+				newListItem2.SetListItemData(5, string.Empty, current.m_nItemID, new EZValueChangedDelegate(this.ClickTicketItemToolTip), null);
+				newListItem2.SetListItemData(6, false);
+				newListItem2.Data = current.m_nItemUnique;
+				this.m_TicketList.Add(newListItem2);
 			}
 		}
 		foreach (ITEM current2 in functionItemsByInvenType)
 		{
 			if (!NrTSingleton<ItemManager>.Instance.IsItemATB(current2.m_nItemUnique, 2048L))
 			{
-				NewListItem newListItem5 = new NewListItem(this.m_TicketList.ColumnNum, true);
+				NewListItem newListItem3 = new NewListItem(this.m_TicketList.ColumnNum, true, string.Empty);
 				string name2 = NrTSingleton<ItemManager>.Instance.GetName(current2);
-				newListItem5.SetListItemData(1, current2, null, null, null);
-				newListItem5.SetListItemData(2, name2, null, null, null);
-				newListItem5.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), current2, new EZValueChangedDelegate(this.ClickTicketList), null);
-				newListItem5.SetListItemData(4, false);
-				newListItem5.SetListItemData(5, string.Empty, current2.m_nItemID, new EZValueChangedDelegate(this.ClickTicketItemToolTip), null);
-				this.m_TicketList.Add(newListItem5);
+				newListItem3.SetListItemData(1, current2, null, null, null);
+				newListItem3.SetListItemData(2, name2, null, null, null);
+				newListItem3.SetListItemData(3, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("573"), current2, new EZValueChangedDelegate(this.ClickTicketList), null);
+				newListItem3.SetListItemData(4, false);
+				newListItem3.SetListItemData(5, string.Empty, current2.m_nItemID, new EZValueChangedDelegate(this.ClickTicketItemToolTip), null);
+				newListItem3.SetListItemData(6, false);
+				this.m_TicketList.Add(newListItem3);
 			}
 		}
 		this.m_TicketList.RepositionItems();
 		this.SetLastSelectItemScrol();
 	}
 
-	private void ClickTicketList(IUIObject obj)
+	protected virtual void ClickTicketList(IUIObject obj)
 	{
 		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
 		if (uI_UIGuide != null)
@@ -286,7 +246,7 @@ public class SolRecruitDlg : Form
 		{
 			return;
 		}
-		if (this.m_fRequestTime > 0f && Time.time - this.m_fRequestTime < 1f)
+		if (!NrTSingleton<NkClientLogic>.Instance.GetCanOpenTicket())
 		{
 			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("508");
 			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
@@ -329,7 +289,7 @@ public class SolRecruitDlg : Form
 			ITEM iTEM = (ITEM)obj.Data;
 			if (iTEM != null)
 			{
-				this.m_OpenTicket = iTEM;
+				this.SetGetNowOpenTicket(iTEM);
 				this.SolTicketOpen();
 				if (this.m_OpenTicket.m_nItemNum > 1)
 				{
@@ -347,7 +307,35 @@ public class SolRecruitDlg : Form
 
 	public bool GetReUseTicket()
 	{
-		return this.m_ReUseTicket;
+		return this.bShowReUseTicket && this.m_ReUseTicket;
+	}
+
+	public void SetShowReUseTicket(bool ReUseTicket)
+	{
+		this.bShowReUseTicket = ReUseTicket;
+	}
+
+	private void SetGetNowOpenTicket(ITEM TicketItem)
+	{
+		if (TicketItem != null)
+		{
+			this.m_OpenTicket = TicketItem;
+			ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(TicketItem.m_nItemUnique);
+			if (itemInfo != null)
+			{
+				this.m_OpenTicketCardType = itemInfo.m_nCardType;
+			}
+		}
+	}
+
+	public int GetNowOpenTicketCardType()
+	{
+		return this.m_OpenTicketCardType;
+	}
+
+	public ITEM GetNowOpenTicket()
+	{
+		return this.m_OpenTicket;
 	}
 
 	public void SolTicketOpen()
@@ -357,34 +345,76 @@ public class SolRecruitDlg : Form
 			return;
 		}
 		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-		if (readySolList == null || readySolList.GetCount() >= 50)
+		if (readySolList == null || readySolList.GetCount() >= 100)
 		{
 			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507");
 			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			return;
 		}
-		ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(this.m_OpenTicket.m_nItemUnique);
-		if (itemInfo == null)
+		if (this.m_OpenTicket.m_nItemNum >= 2 && this.GetNowOpenTicketCardType() == 0)
 		{
+			ItemBoxContinue_Dlg itemBoxContinue_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.ITEM_BOX_CONTINUE_DLG) as ItemBoxContinue_Dlg;
+			if (itemBoxContinue_Dlg == null)
+			{
+				return;
+			}
+			itemBoxContinue_Dlg.SetItemData(this.m_OpenTicket, ItemBoxContinue_Dlg.SHOW_TYPE.ITEM_TICKET);
 			return;
-		}
-		if (itemInfo.IsItemATB(2048L) || itemInfo.IsItemATB(32768L))
-		{
-			Protocol_Item.Item_Use(this.m_OpenTicket);
 		}
 		else
 		{
-			SolRecruitDlg.ExcuteTicket(this.m_OpenTicket.m_nItemUnique, itemInfo.m_nParam[0], itemInfo.m_nParam[1], false);
+			ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(this.m_OpenTicket.m_nItemUnique);
+			if (itemInfo == null)
+			{
+				return;
+			}
+			NrTSingleton<NkClientLogic>.Instance.SetCanOpenTicket(false);
+			if (itemInfo.IsItemATB(2048L) || itemInfo.IsItemATB(32768L))
+			{
+				this.SetRecruitButtonEnable(false);
+				Protocol_Item.Item_Use(this.m_OpenTicket);
+			}
+			else
+			{
+				this.ExcuteTicket(this.m_OpenTicket.m_nItemUnique, itemInfo.m_nRecruitType, itemInfo.m_nParam[1], false);
+			}
+			return;
 		}
 	}
 
-	public static void ExcuteTicket(int itemunique, int recruittype, int season, bool bForceRecruit)
+	public void SolTicketReOpen()
+	{
+		if (this.m_OpenTicket == null)
+		{
+			return;
+		}
+		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+		if (readySolList == null || readySolList.GetCount() >= 100)
+		{
+			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507");
+			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
+			return;
+		}
+		if (NrTSingleton<ItemManager>.Instance.GetItemInfo(this.m_OpenTicket.m_nItemUnique) == null)
+		{
+			return;
+		}
+		this.SetRecruitButtonEnable(false);
+		GS_SOLDIER_RECRUIT_REQ gS_SOLDIER_RECRUIT_REQ = default(GS_SOLDIER_RECRUIT_REQ);
+		gS_SOLDIER_RECRUIT_REQ.ItemUnique = this.m_OpenTicket.m_nItemUnique;
+		gS_SOLDIER_RECRUIT_REQ.RecruitType = 20;
+		gS_SOLDIER_RECRUIT_REQ.SubData = 0;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_SOLDIER_RECRUIT_REQ, gS_SOLDIER_RECRUIT_REQ);
+		this.SetShowReUseTicket(false);
+	}
+
+	public void ExcuteTicket(int itemunique, int recruittype, int season, bool bForceRecruit)
 	{
 		int solCount = SolRecruitDlg.GetSolCount(recruittype);
 		if (!bForceRecruit)
 		{
 			NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-			if (readySolList == null || readySolList.GetCount() + solCount - 1 >= 50)
+			if (readySolList == null || readySolList.GetCount() + solCount - 1 >= 100)
 			{
 				string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507");
 				Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
@@ -397,21 +427,57 @@ public class SolRecruitDlg : Form
 			Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
 			return;
 		}
+		NrTSingleton<NkClientLogic>.Instance.SetCanOpenTicket(false);
+		this.SetRecruitButtonEnable(false);
 		GS_SOLDIER_RECRUIT_REQ gS_SOLDIER_RECRUIT_REQ = default(GS_SOLDIER_RECRUIT_REQ);
 		gS_SOLDIER_RECRUIT_REQ.ItemUnique = itemunique;
 		gS_SOLDIER_RECRUIT_REQ.RecruitType = recruittype;
-		gS_SOLDIER_RECRUIT_REQ.SolSeason = season;
+		gS_SOLDIER_RECRUIT_REQ.SubData = 0;
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_SOLDIER_RECRUIT_REQ, gS_SOLDIER_RECRUIT_REQ);
+	}
+
+	public void SetRecruitButtonEnable(bool bEnable)
+	{
+		if (bEnable)
+		{
+			if (this.m_fRecruitPassCheckTime > 0f)
+			{
+				this.bRecruitPassCheck = true;
+				return;
+			}
+		}
+		else
+		{
+			this.m_fRecruitPassCheckTime = Time.time;
+		}
+		for (int i = 0; i < this.m_TicketList.Count; i++)
+		{
+			UIListItemContainer item = this.m_TicketList.GetItem(i);
+			if (item != null)
+			{
+				UIButton uIButton = item.GetElement(3) as UIButton;
+				if (uIButton != null)
+				{
+					uIButton.SetEnabled(bEnable);
+				}
+			}
+		}
 	}
 
 	public override void OnClose()
 	{
+		if (NrTSingleton<FormsManager>.Instance.IsPopUPDlgNotExist(base.WindowID))
+		{
+			NrTSingleton<UIImageBundleManager>.Instance.DeleteTexture();
+		}
 		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.m_nWinID) as UI_UIGuide;
 		if (uI_UIGuide != null)
 		{
 			uI_UIGuide.CloseUI = true;
 		}
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "MERCENARY-EMPLOYMENT", "CLOSE", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.CHALLENGE_DLG);
+		NrTSingleton<ChallengeManager>.Instance.ShowNotice();
 	}
 
 	public static int GetNeedItemNum(int recruittype)
@@ -490,7 +556,7 @@ public class SolRecruitDlg : Form
 		{
 			bForceRecruit = true;
 		}
-		SolRecruitDlg.ExcuteTicket(itemunique, (int)eSolRecruitType, 0, bForceRecruit);
+		this.ExcuteTicket(itemunique, (int)eSolRecruitType, 0, bForceRecruit);
 	}
 
 	private void MsgBoxOKSolRecruitCashTen(object obj)
@@ -502,7 +568,7 @@ public class SolRecruitDlg : Form
 		}
 		eSolRecruitType recruittype = (eSolRecruitType)((int)obj);
 		int value = instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_CASH_ITEMUNIQUE);
-		SolRecruitDlg.ExcuteTicket(value, (int)recruittype, 0, true);
+		this.ExcuteTicket(value, (int)recruittype, 0, true);
 	}
 
 	public void SetTicketSellInfo(GS_TICKET_SELL_INFO_ACK ACK, NkDeserializePacket kDeserializePacket)
@@ -513,11 +579,9 @@ public class SolRecruitDlg : Form
 			this.m_TicketSellInfoList.Add(kDeserializePacket.GetPacket<TICKET_SELL_INFO>());
 		}
 		this.m_i16SolRecruitImageIndex = ACK.i16SolRecruitImageIndex;
-		string textureFromBundle = string.Empty;
-		textureFromBundle = string.Format("UI/SolRecruit/SolRecruit_AD{0}", this.m_i16SolRecruitImageIndex);
-		this.m_BackImage.SetTextureFromBundle(textureFromBundle);
+		this.m_backImgKey = string.Format("UI/SolRecruit/SolRecruit_AD{0}", this.m_i16SolRecruitImageIndex);
+		this.m_BackImage.SetTextureFromBundle(this.m_backImgKey);
 		this.SetTicketList();
-		NrTSingleton<EventConditionHandler>.Instance.OpenUI.OnTrigger();
 	}
 
 	public void AddTicketSellInfo()
@@ -525,7 +589,7 @@ public class SolRecruitDlg : Form
 		for (int i = 0; i < this.m_TicketSellInfoList.Count; i++)
 		{
 			TICKET_SELL_INFO tICKET_SELL_INFO = this.m_TicketSellInfoList[i];
-			NewListItem newListItem = new NewListItem(this.m_TicketList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_TicketList.ColumnNum, true, string.Empty);
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(tICKET_SELL_INFO.i32CharKind);
 			if (charKindInfo != null)
 			{
@@ -596,7 +660,7 @@ public class SolRecruitDlg : Form
 		}
 		int solCount = SolRecruitDlg.GetSolCount(7);
 		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
-		if (readySolList == null || readySolList.GetCount() + solCount - 1 >= 50)
+		if (readySolList == null || readySolList.GetCount() + solCount - 1 >= 100)
 		{
 			string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("507");
 			Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE);
@@ -702,8 +766,24 @@ public class SolRecruitDlg : Form
 		itemTooltipDlg.Set_Tooltip((G_ID)base.WindowID, itemFromItemID, null, false);
 	}
 
-	private void ClickPrimiumMall(IUIObject obj)
+	protected virtual void ClickPrimiumMall(IUIObject obj)
 	{
 		NrTSingleton<ItemMallItemManager>.Instance.Send_GS_ITEMMALL_INFO_REQ(ItemMallDlg.eMODE.eMODE_VOUCHER_HERO);
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.Soldier_New.ToString());
+		}
+	}
+
+	public void ClickRateOpenUrl(IUIObject obj)
+	{
+		ITEM_RATE_OPENURL_DATA itemRateOpenUrl = BASE_RATE_OPENURL_DATA.GetItemRateOpenUrl();
+		NrMobileNoticeWeb nrMobileNoticeWeb = new NrMobileNoticeWeb();
+		nrMobileNoticeWeb.OnRateOpenUrl(itemRateOpenUrl.strUrl);
 	}
 }

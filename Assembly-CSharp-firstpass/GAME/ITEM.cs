@@ -51,6 +51,11 @@ namespace GAME
 			return this.m_nLock != 0;
 		}
 
+		public bool IsBreak()
+		{
+			return this.m_nPosType >= 1 && this.m_nPosType <= 4 && this.m_nDurability <= 0;
+		}
+
 		public void Set(ITEM info)
 		{
 			this.m_nItemID = info.m_nItemID;

@@ -323,6 +323,30 @@ public class GameGuideManager : NrTSingleton<GameGuideManager>
 		{
 			gameGuideInfo2 = new GameGuideExpeditionNotify();
 		}
+		else if (gameGuideInfo.m_eType == GameGuideType.CHALLENGE_PREMIUM_ONE)
+		{
+			gameGuideInfo2 = new GameGuideChallenge();
+		}
+		else if (gameGuideInfo.m_eType == GameGuideType.CHALLENGE_SOL_EXTRACT)
+		{
+			gameGuideInfo2 = new GameGuideChallenge();
+		}
+		else if (gameGuideInfo.m_eType == GameGuideType.CHALLENGE_LEGEND_RECRUIT)
+		{
+			gameGuideInfo2 = new GameGuideChallenge();
+		}
+		else if (gameGuideInfo.m_eType == GameGuideType.CHALLENGE_SOL_TRANSCENDENCE)
+		{
+			gameGuideInfo2 = new GameGuideChallenge();
+		}
+		else if (gameGuideInfo.m_eType == GameGuideType.CHALLENGE_SOL_COMPOSE)
+		{
+			gameGuideInfo2 = new GameGuideChallenge();
+		}
+		else if (gameGuideInfo.m_eType == GameGuideType.CHALLENGE_LEGEND_EVOLUTION)
+		{
+			gameGuideInfo2 = new GameGuideChallenge();
+		}
 		if (gameGuideInfo2 == null)
 		{
 			return;

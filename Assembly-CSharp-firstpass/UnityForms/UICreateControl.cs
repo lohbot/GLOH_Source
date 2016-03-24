@@ -695,7 +695,7 @@ namespace UnityForms
 			horizontalSlider.emptySprite.transform.localPosition = new Vector3(0f, -num / 2f, -0.5f);
 			UIBaseInfoLoader uIBaseInfoLoader3 = UIBaseFileManager.FindUIImageDictionary(name, styleName3);
 			horizontalSlider.m_sprKnobTile.SetSpriteTile(uIBaseInfoLoader3.Tile, uIBaseInfoLoader3.UVs.width, uIBaseInfoLoader3.UVs.height);
-			horizontalSlider.knobSize = new Vector2(uIBaseInfoLoader3.UVs.width / (float)uIBaseInfoLoader3.ButtonCount, height);
+			horizontalSlider.knobSize = new Vector2(uIBaseInfoLoader3.UVs.width / (float)uIBaseInfoLoader3.ButtonCount, uIBaseInfoLoader3.UVs.height);
 			float pixelToUVsWidth = UIBaseFileManager.GetPixelToUVsWidth(material, uIBaseInfoLoader3.UVs.width / (float)uIBaseInfoLoader3.ButtonCount);
 			rect = new Rect(UIBaseFileManager.GetPixelToUVsWidth(material, uIBaseInfoLoader3.UVs.x) - pixelToUVsWidth, 1f - UIBaseFileManager.GetPixelToUVsHeight(material, uIBaseInfoLoader3.UVs.y + uIBaseInfoLoader3.UVs.height), pixelToUVsWidth, UIBaseFileManager.GetPixelToUVsHeight(material, uIBaseInfoLoader3.UVs.height));
 			Rect uvs = new Rect(rect);
@@ -721,6 +721,37 @@ namespace UnityForms
 			horizontalSlider.stopKnobFromEdge = uIBaseInfoLoader3.UVs.width / (float)uIBaseInfoLoader3.ButtonCount / 2f - 3f;
 			horizontalSlider.Start();
 			return horizontalSlider;
+		}
+
+		public static ScrollLabel ScrollLabel(string name, string str, bool multiLine, float maxWidth, float height, float fontSize, SpriteText.Font_Effect fontEffect, SpriteText.Anchor_Pos anchor, string fontColor)
+		{
+			GameObject gameObject = new GameObject(name);
+			ScrollLabel scrollLabel = gameObject.AddComponent<ScrollLabel>();
+			scrollLabel.gameObject.layer = GUICamera.UILayer;
+			scrollLabel.viewableArea = new Vector2(maxWidth, height);
+			scrollLabel.alignment = UIScrollList.ALIGNMENT.LEFT_TOP;
+			scrollLabel.orientation = UIScrollList.ORIENTATION.VERTICAL;
+			scrollLabel.AnchorPos = anchor;
+			scrollLabel.ScrollListTo(0f);
+			if (anchor == SpriteText.Anchor_Pos.Upper_Left || (anchor == SpriteText.Anchor_Pos.Middle_Left | anchor == SpriteText.Anchor_Pos.Lower_Left))
+			{
+				scrollLabel.AlignmentType = SpriteText.Alignment_Type.Left;
+			}
+			else if (anchor == SpriteText.Anchor_Pos.Upper_Center || (anchor == SpriteText.Anchor_Pos.Middle_Center | anchor == SpriteText.Anchor_Pos.Lower_Center))
+			{
+				scrollLabel.AlignmentType = SpriteText.Alignment_Type.Center;
+			}
+			if (anchor == SpriteText.Anchor_Pos.Upper_Right || anchor == SpriteText.Anchor_Pos.Middle_Right || anchor == SpriteText.Anchor_Pos.Lower_Right)
+			{
+				scrollLabel.AlignmentType = SpriteText.Alignment_Type.Right;
+			}
+			scrollLabel.FontSize = (int)fontSize;
+			scrollLabel.touchScroll = true;
+			scrollLabel.CreateBoxCollider();
+			scrollLabel.ColorText = fontColor;
+			scrollLabel.FontEffect = fontEffect;
+			scrollLabel.SetScrollLabel(str);
+			return scrollLabel;
 		}
 	}
 }

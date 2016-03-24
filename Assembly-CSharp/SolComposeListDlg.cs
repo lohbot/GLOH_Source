@@ -10,7 +10,8 @@ public class SolComposeListDlg : Form
 	{
 		WAIT,
 		ALL,
-		BATTLE
+		BATTLE,
+		WAREHOUSE
 	}
 
 	public enum SOL_LIST_SORT_TYPE
@@ -22,11 +23,12 @@ public class SolComposeListDlg : Form
 		RANK_LOW
 	}
 
-	private string[] ddlListKey1 = new string[]
+	protected string[] ddlListKey1 = new string[]
 	{
 		"123",
 		"120",
-		"121"
+		"121",
+		"2179"
 	};
 
 	private string[] ddlListKey2 = new string[]
@@ -38,13 +40,13 @@ public class SolComposeListDlg : Form
 		"1892"
 	};
 
-	private NewListBox ComposeNewListBox;
+	protected NewListBox ComposeNewListBox;
 
 	private int ListCnt;
 
-	private DropDownList ddList1;
+	protected DropDownList ddList1;
 
-	private DropDownList ddList2;
+	protected DropDownList ddList2;
 
 	private Label lbSubNum;
 
@@ -54,13 +56,21 @@ public class SolComposeListDlg : Form
 
 	private Button btnOk;
 
-	private bool m_bMainSelect;
+	protected bool m_bMainSelect;
 
-	private List<NkSoldierInfo> mSortList = new List<NkSoldierInfo>();
+	private Button m_btClose;
+
+	protected List<NkSoldierInfo> mSortList = new List<NkSoldierInfo>();
 
 	private List<long> mCheckList = new List<long>();
 
+	private int guideWinID = -1;
+
+	private UIButton _Touch;
+
 	private SOLCOMPOSE_TYPE m_eShowType;
+
+	private int m_kOldSolNum;
 
 	public SOLCOMPOSE_TYPE ShowType
 	{
@@ -87,15 +97,15 @@ public class SolComposeListDlg : Form
 		}
 	}
 
-	public SolComposeListDlg.SOL_LIST_SORT_TYPE SORT_TYPE
+	public UIHelper.eSolSortOrder SORT_TYPE
 	{
 		get
 		{
-			return (SolComposeListDlg.SOL_LIST_SORT_TYPE)PlayerPrefs.GetInt("compose_sol_ddl_index");
+			return (UIHelper.eSolSortOrder)PlayerPrefs.GetInt("compose_new_sol_ddl_index");
 		}
 		set
 		{
-			PlayerPrefs.SetInt("compose_sol_ddl_index", (int)value);
+			PlayerPrefs.SetInt("compose_new_sol_ddl_index", (int)value);
 		}
 	}
 
@@ -120,7 +130,8 @@ public class SolComposeListDlg : Form
 		expr_48.Click = (EZValueChangedDelegate)Delegate.Combine(expr_48.Click, new EZValueChangedDelegate(this.ClickOk));
 		this.ComposeNewListBox = (base.GetControl("ListBox_ComposeList") as NewListBox);
 		this.ComposeNewListBox.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtnClickListBox));
-		this.ComposeNewListBox.AddDoubleClickDelegate(new EZValueChangedDelegate(this.BtnDblClickListBox));
+		this.ComposeNewListBox.AddScrollDelegate(new EZScrollDelegate(this.ChangeSolInfo));
+		this.ComposeNewListBox.ReUse = true;
 		this.ddList1 = (base.GetControl("DDL_Sort01") as DropDownList);
 		this.ddList1.AddValueChangedDelegate(new EZValueChangedDelegate(this.ChangeInsertListDDL));
 		if (null != this.ddList1)
@@ -146,26 +157,50 @@ public class SolComposeListDlg : Form
 		{
 			this.ddList2.SetViewArea(this.ddlListKey2.Length);
 			this.ddList2.Clear();
-			int num2 = 0;
-			string[] array2 = this.ddlListKey2;
-			for (int j = 0; j < array2.Length; j++)
+			this.ddList2.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey2[0]), 4);
+			this.ddList2.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey2[1]), 2);
+			this.ddList2.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey2[2]), 3);
+			this.ddList2.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey2[3]), 5);
+			this.ddList2.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey2[4]), 6);
+			int index = 0;
+			if (this.SORT_TYPE == UIHelper.eSolSortOrder.SORTORDER_NAME)
 			{
-				string strTextKey2 = array2[j];
-				ListItem listItem2 = new ListItem();
-				listItem2.SetColumnStr(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(strTextKey2));
-				listItem2.Key = num2++;
-				this.ddList2.Add(listItem2);
+				index = 0;
 			}
-			this.ddList2.SetIndex((int)this.SORT_TYPE);
+			else if (this.SORT_TYPE == UIHelper.eSolSortOrder.SORTORDER_LEVELDESC)
+			{
+				index = 1;
+			}
+			else if (this.SORT_TYPE == UIHelper.eSolSortOrder.SORTORDER_LEVELASC)
+			{
+				index = 2;
+			}
+			else if (this.SORT_TYPE == UIHelper.eSolSortOrder.SORTORDER_GRADEDESC)
+			{
+				index = 3;
+			}
+			else if (this.SORT_TYPE == UIHelper.eSolSortOrder.SORTORDER_GRADEASC)
+			{
+				index = 4;
+			}
+			this.ddList2.SetIndex(index);
 			this.ddList2.RepositionItems();
 		}
 		this.lbCostName = (base.GetControl("Label_ComploseCost") as Label);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.InitData();
 		base.SetScreenCenter();
 	}
 
 	public override void InitData()
 	{
+	}
+
+	public override void OnClose()
+	{
+		this.HideTouch();
+		base.OnClose();
 	}
 
 	public static void LoadSelectList(bool bMainSelect, SOLCOMPOSE_TYPE ShowType = SOLCOMPOSE_TYPE.COMPOSE)
@@ -179,6 +214,140 @@ public class SolComposeListDlg : Form
 		}
 	}
 
+	public static void LoadSelectExtractList(SOLCOMPOSE_TYPE ShowType = SOLCOMPOSE_TYPE.EXTRACT)
+	{
+		SolComposeListDlg solComposeListDlg = (SolComposeListDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMPOSE_LIST_DLG);
+		if (solComposeListDlg != null)
+		{
+			solComposeListDlg.InitData();
+			solComposeListDlg.ShowType = ShowType;
+			solComposeListDlg.InitExtractList();
+		}
+	}
+
+	public static void LoadMythEvolution(SOLCOMPOSE_TYPE ShowType = SOLCOMPOSE_TYPE.MYTHEVOLUTION)
+	{
+		SolComposeListDlg solComposeListDlg = (SolComposeListDlg)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLCOMPOSE_LIST_DLG);
+		if (solComposeListDlg != null)
+		{
+			solComposeListDlg.InitData();
+			solComposeListDlg.ShowType = ShowType;
+			solComposeListDlg.InitMythEvolutionList();
+		}
+	}
+
+	public void InitExtractList()
+	{
+		SolComposeListDlg.SOL_LIST_INSERT_TYPE iNSERT_TYPE = this.INSERT_TYPE;
+		if (null != this.ddList1)
+		{
+			this.ddList1.SetViewArea(1);
+			this.ddList1.Clear();
+			int num = 0;
+			ListItem listItem = new ListItem();
+			listItem.SetColumnStr(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey1[0]));
+			listItem.Key = num++;
+			this.ddList1.Add(listItem);
+			this.ddList1.SetIndex((int)this.INSERT_TYPE);
+			this.ddList1.RepositionItems();
+		}
+		this.ddList1.controlIsEnabled = (this.m_bMainSelect = false);
+		NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+		foreach (NkSoldierInfo current in readySolList.GetList().Values)
+		{
+			if (current.GetSolID() != NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().GetFaceSolID())
+			{
+				if (current.GetSolPosType() == 0 && current.GetGrade() == 5)
+				{
+					if (!current.IsAtbCommonFlag(1L))
+					{
+						this.mSortList.Add(current);
+					}
+				}
+			}
+		}
+		if (!this.m_bMainSelect && SolComposeMainDlg.Instance != null)
+		{
+			this.mCheckList.AddRange(SolComposeMainDlg.Instance.SUB_EXTRACTARRAY);
+		}
+		this.ddList1.SetIndex((int)iNSERT_TYPE);
+		this.ddList1.RepositionItems();
+		this.ChangeSortDDL(null);
+	}
+
+	private void InsertMythList(SolComposeListDlg.SOL_LIST_INSERT_TYPE eIndex)
+	{
+		this.mSortList.Clear();
+		this.mCheckList.Clear();
+		bool flag = eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.ALL || eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.BATTLE;
+		bool flag2 = eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.ALL || eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.WAIT;
+		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo != null)
+		{
+			NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+			if (flag && charPersonInfo != null)
+			{
+				for (int i = 0; i < 6; i++)
+				{
+					NkSoldierInfo soldierInfo = charPersonInfo.GetSoldierInfo(i);
+					if (soldierInfo != null)
+					{
+						if (soldierInfo.GetSolID() > 0L)
+						{
+							if (soldierInfo.GetGrade() >= 6 && soldierInfo.GetGrade() < 10)
+							{
+								this.mSortList.Add(soldierInfo);
+							}
+						}
+					}
+				}
+			}
+			if (flag2)
+			{
+				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
+				foreach (NkSoldierInfo current in readySolList.GetList().Values)
+				{
+					if (current.GetSolID() != NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().GetFaceSolID())
+					{
+						if (current.GetSolPosType() == 0 && current.GetGrade() >= 6 && current.GetGrade() < 10)
+						{
+							this.mSortList.Add(current);
+						}
+					}
+				}
+			}
+		}
+		this.ddList1.SetIndex((int)eIndex);
+		this.ddList1.RepositionItems();
+		this.ChangeSortDDL(null);
+	}
+
+	public void InitMythEvolutionList()
+	{
+		this.INSERT_TYPE = SolComposeListDlg.SOL_LIST_INSERT_TYPE.BATTLE;
+		if (null != this.ddList1)
+		{
+			this.ddList1.SetViewArea(1);
+			this.ddList1.Clear();
+			int num = 0;
+			ListItem listItem = new ListItem();
+			listItem.SetColumnStr(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey1[0]));
+			listItem.Key = num++;
+			this.ddList1.Add(listItem);
+			listItem = new ListItem();
+			listItem.SetColumnStr(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey1[1]));
+			listItem.Key = num++;
+			this.ddList1.Add(listItem);
+			listItem = new ListItem();
+			listItem.SetColumnStr(0, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.ddlListKey1[2]));
+			listItem.Key = num++;
+			this.ddList1.Add(listItem);
+			this.ddList1.SetIndex((int)this.INSERT_TYPE);
+			this.ddList1.RepositionItems();
+		}
+		this.ddList1.controlIsEnabled = (this.m_bMainSelect = true);
+		this.InsertMythList(this.INSERT_TYPE);
+	}
+
 	private void InsertList(SolComposeListDlg.SOL_LIST_INSERT_TYPE eIndex)
 	{
 		if (SolComposeMainDlg.Instance == null)
@@ -190,10 +359,12 @@ public class SolComposeListDlg : Form
 		this.mCheckList.Clear();
 		bool flag = eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.ALL || eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.BATTLE;
 		bool flag2 = eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.ALL || eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.WAIT;
+		bool flag3 = eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.ALL || eIndex == SolComposeListDlg.SOL_LIST_INSERT_TYPE.WAREHOUSE;
 		if (!this.m_bMainSelect)
 		{
 			flag = false;
 			flag2 = true;
+			flag3 = false;
 		}
 		if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo != null)
 		{
@@ -209,25 +380,29 @@ public class SolComposeListDlg : Form
 						{
 							if (this.m_bMainSelect || !soldierInfo.IsLeader())
 							{
-								if (this.m_eShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE && this.m_bMainSelect)
+								if (this.m_eShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
 								{
-									if (soldierInfo.GetGrade() < 6)
+									if (this.m_bMainSelect)
 									{
-										goto IL_12C;
-									}
-									if (soldierInfo.GetGrade() >= 9)
-									{
-										goto IL_12C;
+										if (soldierInfo.GetGrade() < 6)
+										{
+											goto IL_152;
+										}
+										if (soldierInfo.GetGrade() == 9 || soldierInfo.GetGrade() >= 13)
+										{
+											goto IL_152;
+										}
 									}
 								}
-								if (this.m_eShowType != SOLCOMPOSE_TYPE.COMPOSE || this.IsAddComposeList(soldierInfo))
+								else if (this.m_eShowType == SOLCOMPOSE_TYPE.COMPOSE && !this.IsAddComposeList(soldierInfo))
 								{
-									this.mSortList.Add(soldierInfo);
+									goto IL_152;
 								}
+								this.mSortList.Add(soldierInfo);
 							}
 						}
 					}
-					IL_12C:;
+					IL_152:;
 				}
 			}
 			if (flag2)
@@ -235,7 +410,18 @@ public class SolComposeListDlg : Form
 				NkReadySolList readySolList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList();
 				foreach (NkSoldierInfo current in readySolList.GetList().Values)
 				{
-					if (current.GetSolPosType() == 0)
+					if (this.m_bMainSelect && this.m_eShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
+					{
+						if (current.GetSolPosType() != 0 && current.GetSolPosType() != 2)
+						{
+							continue;
+						}
+					}
+					else if (current.GetSolPosType() != 0)
+					{
+						continue;
+					}
+					if (this.m_bMainSelect || NrTSingleton<NkCharManager>.Instance.GetMyCharInfo().GetFaceSolID() != current.GetSolID())
 					{
 						switch (this.m_eShowType)
 						{
@@ -244,13 +430,16 @@ public class SolComposeListDlg : Form
 							{
 								continue;
 							}
-							if (!this.m_bMainSelect && current.GetGrade() >= 6)
+							if (!this.m_bMainSelect)
 							{
-								continue;
-							}
-							if (current.IsAtbCommonFlag(1L))
-							{
-								continue;
+								if (current.GetGrade() >= 6)
+								{
+									continue;
+								}
+								if (current.IsAtbCommonFlag(1L))
+								{
+									continue;
+								}
 							}
 							break;
 						case SOLCOMPOSE_TYPE.EXTRACT:
@@ -279,7 +468,7 @@ public class SolComposeListDlg : Form
 									continue;
 								}
 							}
-							else if (current.GetGrade() >= 9)
+							else if (current.GetGrade() == 9 || current.GetGrade() >= 13)
 							{
 								continue;
 							}
@@ -289,6 +478,44 @@ public class SolComposeListDlg : Form
 					}
 				}
 			}
+			if (flag3 && this.m_bMainSelect)
+			{
+				List<NkSoldierInfo> solWarehouseList = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetSolWarehouseList();
+				foreach (NkSoldierInfo current2 in solWarehouseList)
+				{
+					if (current2.GetSolPosType() == 5)
+					{
+						switch (this.m_eShowType)
+						{
+						case SOLCOMPOSE_TYPE.COMPOSE:
+							if (!this.IsAddComposeList(current2))
+							{
+								continue;
+							}
+							if (!this.m_bMainSelect && current2.IsAtbCommonFlag(1L))
+							{
+								continue;
+							}
+							break;
+						case SOLCOMPOSE_TYPE.TRANSCENDENCE:
+							if (current2.GetGrade() < 6)
+							{
+								continue;
+							}
+							if (current2.GetGrade() == 9 || current2.GetGrade() >= 13)
+							{
+								continue;
+							}
+							break;
+						}
+						this.mSortList.Add(current2);
+					}
+				}
+			}
+			if (!this.m_bMainSelect && SolComposeMainDlg.Instance.mBaseSol != null)
+			{
+				this.mSortList.Remove(SolComposeMainDlg.Instance.mBaseSol);
+			}
 			if (this.m_bMainSelect)
 			{
 				List<long> list = new List<long>();
@@ -296,13 +523,13 @@ public class SolComposeListDlg : Form
 				if (list.Count != 0)
 				{
 					List<NkSoldierInfo> list2 = new List<NkSoldierInfo>();
-					foreach (NkSoldierInfo current2 in this.mSortList)
+					foreach (NkSoldierInfo current3 in this.mSortList)
 					{
 						for (int j = 0; j < list.Count; j++)
 						{
-							if (current2.GetSolID() == list[j])
+							if (current3.GetSolID() == list[j])
 							{
-								list2.Add(current2);
+								list2.Add(current3);
 							}
 						}
 					}
@@ -327,7 +554,7 @@ public class SolComposeListDlg : Form
 	{
 		for (int i = 0; i < this.ListCnt; i++)
 		{
-			ListItem listItem = this.ComposeNewListBox.GetItem(i) as ListItem;
+			ListItem listItem = this.ComposeNewListBox.GetItem(i).Data as ListItem;
 			if (listItem != null && (long)listItem.Key == kSolInfo.GetSolID())
 			{
 				return listItem;
@@ -336,17 +563,27 @@ public class SolComposeListDlg : Form
 		return null;
 	}
 
-	private void UpdateList()
+	private void UpdateList(int sortType, bool clear)
 	{
-		this.ComposeNewListBox.Clear();
-		this.ListCnt = 0;
-		foreach (NkSoldierInfo current in this.mSortList)
+		if (!clear && this.ComposeNewListBox.Count > 0 && this.m_kOldSolNum == this.mSortList.Count && this.ComposeNewListBox.Reserve)
 		{
-			if (this.UpdateSolList(current))
+			UIHelper.SetSolSort(sortType, this.ComposeNewListBox.GetItems());
+		}
+		else
+		{
+			this.ComposeNewListBox.Clear();
+			this.ListCnt = 0;
+			foreach (NkSoldierInfo current in this.mSortList)
 			{
-				this.ListCnt++;
+				NewListItem newListItem = this.UpdateSolList(current);
+				if (newListItem != null)
+				{
+					this.ComposeNewListBox.Add(newListItem);
+					this.ListCnt++;
+				}
 			}
 		}
+		this.m_kOldSolNum = this.mSortList.Count;
 		this.ComposeNewListBox.RepositionItems();
 		if (SolComposeMainDlg.Instance != null)
 		{
@@ -355,21 +592,28 @@ public class SolComposeListDlg : Form
 		}
 	}
 
-	private bool UpdateSolList(NkSoldierInfo kSolInfo)
+	public NewListItem UpdateSolList(NkSoldierInfo kSolInfo)
 	{
-		if (!kSolInfo.IsValid() || SolComposeMainDlg.Instance == null)
+		if (!kSolInfo.IsValid())
 		{
-			return false;
+			return null;
 		}
-		if (SolComposeMainDlg.Instance.ContainBaseSoldier(kSolInfo.GetSolID()))
+		if (this.m_eShowType != SOLCOMPOSE_TYPE.MYTHEVOLUTION)
 		{
-			return false;
+			if (SolComposeMainDlg.Instance == null)
+			{
+				return null;
+			}
+			if (SolComposeMainDlg.Instance.ContainBaseSoldier(kSolInfo.GetSolID()))
+			{
+				return null;
+			}
 		}
 		string text = string.Empty;
-		NewListItem newListItem = new NewListItem(this.ComposeNewListBox.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.ComposeNewListBox.ColumnNum, true, string.Empty);
 		if (newListItem == null)
 		{
-			return false;
+			return null;
 		}
 		EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(kSolInfo.GetCharKind(), kSolInfo.GetGrade());
 		if (eventHeroCharCode != null)
@@ -383,6 +627,10 @@ public class SolComposeListDlg : Form
 			if (legendFrame != null)
 			{
 				newListItem.SetListItemData(3, legendFrame, null, null, null);
+			}
+			else
+			{
+				newListItem.SetListItemData(3, "Win_T_ItemEmpty", null, null, null);
 			}
 		}
 		newListItem.SetListItemData(4, kSolInfo.GetListSolInfo(false), null, null, null);
@@ -447,7 +695,14 @@ public class SolComposeListDlg : Form
 		{
 			newListItem.SetListItemData(8, false);
 		}
-		newListItem.SetListItemData(9, string.Empty, null, new EZValueChangedDelegate(this.ClickSolDetailInfo), null);
+		if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_CHALLENGEQUEST_DLG) == null)
+		{
+			newListItem.SetListItemData(9, string.Empty, null, new EZValueChangedDelegate(this.ClickSolDetailInfo), null);
+		}
+		else
+		{
+			newListItem.SetListItemData(9, false);
+		}
 		if (kSolInfo.IsAtbCommonFlag(1L))
 		{
 			newListItem.SetListItemData(10, true);
@@ -457,8 +712,7 @@ public class SolComposeListDlg : Form
 			newListItem.SetListItemData(10, false);
 		}
 		newListItem.Data = kSolInfo;
-		this.ComposeNewListBox.Add(newListItem);
-		return true;
+		return newListItem;
 	}
 
 	private void UpdateSellData()
@@ -471,6 +725,16 @@ public class SolComposeListDlg : Form
 		}
 		this.lbSubNum.SetText(string.Format("{0}/{1}", this.mCheckList.Count, 50));
 		this.lbCostMoney.SetText(Protocol_Item.Money_Format(num));
+	}
+
+	private void UpdateExtractData()
+	{
+		this.lbSubNum.SetText(string.Format("{0}/{1}", this.mCheckList.Count, 10));
+	}
+
+	private void UpdateMythEvolution()
+	{
+		this.lbSubNum.SetText(string.Empty);
 	}
 
 	private void UpdateComposeData()
@@ -570,7 +834,7 @@ public class SolComposeListDlg : Form
 		return b.GetGrade().CompareTo(a.GetGrade());
 	}
 
-	private void ChangeInsertListDDL(IUIObject obj)
+	protected virtual void ChangeInsertListDDL(IUIObject obj)
 	{
 		DropDownList dropDownList = this.ddList1;
 		if (obj != null)
@@ -578,47 +842,86 @@ public class SolComposeListDlg : Form
 			ListItem listItem = dropDownList.SelectedItem.Data as ListItem;
 			this.INSERT_TYPE = (SolComposeListDlg.SOL_LIST_INSERT_TYPE)((int)listItem.Key);
 		}
-		this.InsertList(this.INSERT_TYPE);
+		if (this.m_eShowType == SOLCOMPOSE_TYPE.MYTHEVOLUTION)
+		{
+			this.InsertMythList(this.INSERT_TYPE);
+		}
+		else
+		{
+			this.InsertList(this.INSERT_TYPE);
+		}
 	}
 
-	private void ChangeSortDDL(IUIObject obj)
+	protected void ChangeSortDDL(IUIObject obj)
 	{
 		DropDownList dropDownList = this.ddList2;
+		bool clear = true;
 		if (obj != null)
 		{
 			ListItem listItem = dropDownList.SelectedItem.Data as ListItem;
-			this.SORT_TYPE = (SolComposeListDlg.SOL_LIST_SORT_TYPE)((int)listItem.Key);
-			dropDownList.SetIndex((int)this.SORT_TYPE);
-			dropDownList.RepositionItems();
+			this.SORT_TYPE = (UIHelper.eSolSortOrder)((int)listItem.Key);
+			clear = false;
 		}
 		this.mSortList.Sort(new Comparison<NkSoldierInfo>(this.COMPARE_SELECT));
 		switch (this.SORT_TYPE)
 		{
-		case SolComposeListDlg.SOL_LIST_SORT_TYPE.NAME:
-			this.mSortList.Sort(new Comparison<NkSoldierInfo>(this.CompareName));
-			break;
-		case SolComposeListDlg.SOL_LIST_SORT_TYPE.LEVEL_HIGH:
+		case UIHelper.eSolSortOrder.SORTORDER_LEVELDESC:
 			this.mSortList.Sort(new Comparison<NkSoldierInfo>(this.CompareLevel_High));
 			break;
-		case SolComposeListDlg.SOL_LIST_SORT_TYPE.LEVEL_LOW:
+		case UIHelper.eSolSortOrder.SORTORDER_LEVELASC:
 			this.mSortList.Sort(new Comparison<NkSoldierInfo>(this.CompareLevel_Low));
 			break;
-		case SolComposeListDlg.SOL_LIST_SORT_TYPE.RANK_HIGH:
+		case UIHelper.eSolSortOrder.SORTORDER_NAME:
+			this.mSortList.Sort(new Comparison<NkSoldierInfo>(this.CompareName));
+			break;
+		case UIHelper.eSolSortOrder.SORTORDER_GRADEDESC:
 			this.mSortList.Sort(new Comparison<NkSoldierInfo>(SolComposeListDlg.CompareGrade_High));
 			break;
-		case SolComposeListDlg.SOL_LIST_SORT_TYPE.RANK_LOW:
+		case UIHelper.eSolSortOrder.SORTORDER_GRADEASC:
 			this.mSortList.Sort(new Comparison<NkSoldierInfo>(SolComposeListDlg.CompareGrade_Low));
 			break;
 		}
-		this.UpdateList();
+		this.UpdateList((int)this.SORT_TYPE, clear);
 	}
 
-	private bool IsContainSelect(long SolID)
+	protected bool IsContainSelect(long SolID)
 	{
 		return this.mCheckList.Contains(SolID);
 	}
 
-	private void BtnClickListBox(IUIObject obj)
+	private void ChangeSolInfo(IUIObject obj, int index)
+	{
+		if (index >= this.mSortList.Count)
+		{
+			return;
+		}
+		NkSoldierInfo nkSoldierInfo = this.mSortList[index];
+		if (nkSoldierInfo == null)
+		{
+			return;
+		}
+		NewListItem newListItem = this.UpdateSolList(nkSoldierInfo);
+		if (newListItem == null)
+		{
+			return;
+		}
+		this.ComposeNewListBox.UpdateContents(index, newListItem);
+		int index2 = index % this.ComposeNewListBox.Count;
+		UIListItemContainer item = this.ComposeNewListBox.GetItem(index2);
+		if (null != item)
+		{
+			if (this.IsContainSelect(nkSoldierInfo.GetSolID()))
+			{
+				item.SetSelected(true);
+			}
+			else
+			{
+				item.SetSelected(false);
+			}
+		}
+	}
+
+	protected virtual void BtnClickListBox(IUIObject obj)
 	{
 		UIListItemContainer selectedItem = this.ComposeNewListBox.SelectedItem;
 		if (null == selectedItem)
@@ -641,14 +944,39 @@ public class SolComposeListDlg : Form
 				Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("724"), SYSTEM_MESSAGE_TYPE.IMPORTANT_MESSAGE);
 				return;
 			}
-			if (this.m_eShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
+			if (this.m_eShowType == SOLCOMPOSE_TYPE.EXTRACT)
+			{
+				if (nkSoldierInfo.GetGrade() < 5 || nkSoldierInfo.GetGrade() >= 6)
+				{
+					return;
+				}
+				if (this.mCheckList.Count >= 10)
+				{
+					return;
+				}
+			}
+			else if (this.m_eShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
 			{
 				foreach (long current in this.mCheckList)
 				{
 					NkSoldierInfo soldierInfo = SolComposeMainDlg.GetSoldierInfo(current);
-					this.UpdateSolListCheck(soldierInfo, false);
+					if (soldierInfo != null)
+					{
+						this.UpdateSolListCheck(soldierInfo, false);
+					}
 				}
 				this.mCheckList.Clear();
+			}
+			else if (this.m_eShowType == SOLCOMPOSE_TYPE.MYTHEVOLUTION)
+			{
+				if (nkSoldierInfo.GetGrade() < 5 || nkSoldierInfo.GetGrade() >= 10)
+				{
+					return;
+				}
+			}
+			else if (this.mCheckList.Count >= 50)
+			{
+				return;
 			}
 			this.mCheckList.Add(nkSoldierInfo.GetSolID());
 		}
@@ -665,17 +993,20 @@ public class SolComposeListDlg : Form
 		{
 			this.UpdateSolListCheck(nkSoldierInfo, false);
 		}
-		SOLCOMPOSE_TYPE eShowType = this.m_eShowType;
-		if (eShowType != SOLCOMPOSE_TYPE.COMPOSE)
+		switch (this.m_eShowType)
 		{
-			if (eShowType == SOLCOMPOSE_TYPE.SELL)
-			{
-				this.UpdateSellData();
-			}
-		}
-		else
-		{
+		case SOLCOMPOSE_TYPE.COMPOSE:
 			this.UpdateComposeData();
+			break;
+		case SOLCOMPOSE_TYPE.SELL:
+			this.UpdateSellData();
+			break;
+		case SOLCOMPOSE_TYPE.EXTRACT:
+			this.UpdateExtractData();
+			break;
+		case SOLCOMPOSE_TYPE.MYTHEVOLUTION:
+			this.UpdateMythEvolution();
+			break;
 		}
 	}
 
@@ -736,17 +1067,21 @@ public class SolComposeListDlg : Form
 				this.ddList1.RepositionItems();
 			}
 		}
-		if (!bMainSelect || this.ShowType == SOLCOMPOSE_TYPE.EXTRACT || this.ShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
+		if (!bMainSelect || this.ShowType == SOLCOMPOSE_TYPE.EXTRACT)
 		{
 			eIndex = SolComposeListDlg.SOL_LIST_INSERT_TYPE.WAIT;
 		}
-		UIScrollList arg_229_0 = this.ddList1;
+		if (bMainSelect && this.ShowType == SOLCOMPOSE_TYPE.TRANSCENDENCE)
+		{
+			eIndex = SolComposeListDlg.SOL_LIST_INSERT_TYPE.ALL;
+		}
+		UIScrollList arg_231_0 = this.ddList1;
 		this.m_bMainSelect = bMainSelect;
-		arg_229_0.controlIsEnabled = bMainSelect;
+		arg_231_0.controlIsEnabled = bMainSelect;
 		this.InsertList(eIndex);
 	}
 
-	private void ClickOk(IUIObject obj)
+	protected virtual void ClickOk(IUIObject obj)
 	{
 		this.SelectFinish();
 	}
@@ -764,7 +1099,15 @@ public class SolComposeListDlg : Form
 				SolComposeMainDlg.Instance.SelectSub(this.mCheckList);
 			}
 		}
-		base.CloseNow();
+		if (this.m_eShowType == SOLCOMPOSE_TYPE.MYTHEVOLUTION)
+		{
+			Myth_Evolution_Main_DLG myth_Evolution_Main_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYTH_EVOLUTION_MAIN_DLG) as Myth_Evolution_Main_DLG;
+			if (myth_Evolution_Main_DLG != null && this.mCheckList.Count > 0)
+			{
+				myth_Evolution_Main_DLG.SetBaseSol(this.mCheckList[0]);
+			}
+		}
+		this.Close();
 	}
 
 	private void SetCostName()
@@ -805,7 +1148,7 @@ public class SolComposeListDlg : Form
 			}
 			else
 			{
-				NewListItem newListItem = new NewListItem(this.ComposeNewListBox.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.ComposeNewListBox.ColumnNum, true, string.Empty);
 				if (newListItem == null)
 				{
 					return;
@@ -883,7 +1226,14 @@ public class SolComposeListDlg : Form
 				{
 					newListItem.SetListItemData(8, false);
 				}
-				newListItem.SetListItemData(9, string.Empty, null, new EZValueChangedDelegate(this.ClickSolDetailInfo), null);
+				if (NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_CHALLENGEQUEST_DLG) == null)
+				{
+					newListItem.SetListItemData(9, string.Empty, null, new EZValueChangedDelegate(this.ClickSolDetailInfo), null);
+				}
+				else
+				{
+					newListItem.SetListItemData(9, false);
+				}
 				if (kSolInfo.IsAtbCommonFlag(1L))
 				{
 					newListItem.SetListItemData(10, true);
@@ -893,8 +1243,7 @@ public class SolComposeListDlg : Form
 					newListItem.SetListItemData(10, false);
 				}
 				newListItem.Data = kSolInfo;
-				this.ComposeNewListBox.RemoveAdd(i, newListItem);
-				this.ComposeNewListBox.RepositionItems();
+				this.ComposeNewListBox.UpdateContents(i, newListItem);
 				break;
 			}
 		}
@@ -902,7 +1251,12 @@ public class SolComposeListDlg : Form
 
 	public bool IsAddComposeList(NkSoldierInfo kSolInfo)
 	{
-		return !this.m_bMainSelect || !kSolInfo.IsMaxLevel() || !kSolInfo.IsMaxGrade();
+		if (this.m_bMainSelect && kSolInfo.IsMaxLevel() && kSolInfo.IsMaxGrade())
+		{
+			return false;
+		}
+		SolComposeMainDlg solComposeMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLCOMPOSE_MAIN_DLG) as SolComposeMainDlg;
+		return solComposeMainDlg == null || solComposeMainDlg.mBaseSol == null || solComposeMainDlg.mBaseSol.GetSolID() != kSolInfo.GetSolID();
 	}
 
 	public void ClickSolDetailInfo(IUIObject obj)
@@ -944,5 +1298,50 @@ public class SolComposeListDlg : Form
 		{
 			this.UpdateSolListCheck(pkSoldierInfo, false);
 		}
+	}
+
+	public void ShowUIGuide(string param1, string param2, int winID)
+	{
+		if (this.ComposeNewListBox == null || this.ComposeNewListBox.Count == 0)
+		{
+			return;
+		}
+		this.guideWinID = winID;
+		UIListItemContainer item = this.ComposeNewListBox.GetItem(0);
+		if (item == null)
+		{
+			return;
+		}
+		if (this._Touch == null)
+		{
+			this._Touch = UICreateControl.Button("touch", "Main_I_Touch01", 196f, 154f);
+			this._Touch.PlayAni(true);
+		}
+		if (this._Touch == null)
+		{
+			return;
+		}
+		this._Touch.gameObject.transform.parent = item.gameObject.transform;
+		this._Touch.transform.position = new Vector3(item.transform.position.x, item.transform.position.y, item.transform.position.z - 3f);
+		BoxCollider component = this._Touch.gameObject.GetComponent<BoxCollider>();
+		if (null != component)
+		{
+			UnityEngine.Object.Destroy(component);
+		}
+	}
+
+	private void HideTouch()
+	{
+		if (this._Touch != null && this._Touch.gameObject != null)
+		{
+			this._Touch.gameObject.SetActive(false);
+		}
+		this._Touch = null;
+		UI_UIGuide uI_UIGuide = NrTSingleton<FormsManager>.Instance.GetForm((G_ID)this.guideWinID) as UI_UIGuide;
+		if (uI_UIGuide == null)
+		{
+			return;
+		}
+		uI_UIGuide.CloseUI = true;
 	}
 }

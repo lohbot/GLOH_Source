@@ -15,6 +15,8 @@ public class Battle_SkillInfoDlg : Form
 
 	private Label SkillAngerlyPoint;
 
+	private Button m_btClose;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -35,6 +37,8 @@ public class Battle_SkillInfoDlg : Form
 		this.SkillCurrentLevel = (base.GetControl("Label_t_level01") as Label);
 		this.SkillCurrentExplain = (base.GetControl("ScrollLabel_Explanation01") as ScrollLabel);
 		this.SkillAngerlyPoint = (base.GetControl("Label_skill_angerlypoint") as Label);
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		if (TsPlatform.IsMobile)
 		{
 			base.SetScreenCenter();
@@ -101,7 +105,7 @@ public class Battle_SkillInfoDlg : Form
 			skillLevel.ToString()
 		});
 		this.SkillCurrentLevel.Text = empty;
-		NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, pkSolinfo);
+		NrTSingleton<CTextParser>.Instance.ReplaceBattleSkillParam(ref empty, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(battleSkillDetail.m_nSkillTooltip), battleSkillDetail, pkSolinfo, -1);
 		this.SkillCurrentExplain.SetScrollLabel(empty);
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 		{

@@ -1,3 +1,4 @@
+using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
 using PROTOCOL.GAME.ID;
@@ -38,29 +39,34 @@ public class BabelGuildBossDlg : Form
 
 	private Button m_btClose;
 
-	private Label m_laClose;
+	private Button m_btDlgClose;
 
-	private DrawTexture m_dtClose;
+	private DrawTexture m_dtNotice;
+
+	private Button m_bReward;
+
+	private Button m_bBabelTower;
 
 	private short m_SelectFloor;
 
 	private short m_Selectindex = -1;
 
+	private long dlgOpenTime;
+
 	public override void InitializeComponent()
 	{
-		NrTSingleton<FormsManager>.Instance.HideMainUI();
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		base.Scale = true;
 		form.AlwaysUpdate = true;
 		instance.LoadFileAll(ref form, "GuildBoss/dlg_GuildBoss_main", G_ID.BABEL_GUILDBOSS_MAIN_DLG, false, true);
-		base.ShowBlackBG(0.5f);
+		base.ShowUpperBG(-5f);
+		base.ShowDownBG(-5f);
 		base.ShowBlackBG(1f);
 	}
 
 	public override void SetComponent()
 	{
-		float height = GUICamera.height;
 		this.m_dtEffect = (base.GetControl("DrawTexture_Effect") as DrawTexture);
 		this.m_lbFloor = (base.GetControl("NewListBox_floor") as NewListBox);
 		this.m_lbFloor.AddRightMouseDelegate(new EZValueChangedDelegate(this.BtClickFloor));
@@ -68,7 +74,6 @@ public class BabelGuildBossDlg : Form
 		this.m_lbFloor.SelectStyle = "Com_B_Transparent";
 		this.m_lbFloor.AutoScroll = true;
 		this.upButton = (base.GetControl("Button_slideup") as Button);
-		this.upButton.SetLocation(this.upButton.GetLocation().x, this.upButton.GetLocationY(), this.upButton.GetLocation().z - 1.1f);
 		this.downButton = (base.GetControl("Button_slidedown") as Button);
 		BoxCollider boxCollider = (BoxCollider)this.upButton.gameObject.GetComponent(typeof(BoxCollider));
 		if (boxCollider != null)
@@ -81,24 +86,31 @@ public class BabelGuildBossDlg : Form
 			boxCollider.size = new Vector3(0f, 0f, 0f);
 		}
 		this.up = (base.GetControl("DrawTexture_SlideBG01") as DrawTexture);
-		this.up.SetLocation(this.up.GetLocation().x, this.up.GetLocationY(), this.up.GetLocation().z - 1f);
 		this.down = (base.GetControl("DrawTexture_SlideBG02") as DrawTexture);
-		this.down.SetLocation(this.down.GetLocation().x, height - this.down.GetSize().y, this.down.GetLocation().z - 1f);
-		this.downButton.SetLocation(this.downButton.GetLocation().x, this.down.GetLocationY() + 76f, this.downButton.GetLocation().z - 1.1f);
+		this.downButton.SetLocation(this.downButton.GetLocation().x, this.down.GetLocationY() + 36f, this.downButton.GetLocation().z - 1.1f);
 		this.upButton.Visible = false;
 		this.up.Visible = false;
-		this.m_dtClose = (base.GetControl("DrawTexture_Close") as DrawTexture);
-		this.m_laClose = (base.GetControl("Label_Close") as Label);
 		this.m_btClose = (base.GetControl("Button_close") as Button);
 		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtClickClose));
-		this.m_dtClose.SetLocation(this.m_dtClose.GetLocationX(), this.m_dtClose.GetLocationY(), this.m_dtClose.GetLocation().z - 0.7f);
-		this.m_laClose.SetLocation(this.m_laClose.GetLocationX(), this.m_laClose.GetLocationY(), this.m_laClose.GetLocation().z - 0.7f);
-		this.m_btClose.SetLocation(this.m_btClose.GetLocationX(), this.m_btClose.GetLocationY(), this.m_btClose.GetLocation().z - 0.7f);
+		this.m_btDlgClose = (base.GetControl("CloseButton") as Button);
+		this.m_btDlgClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtClickClose));
+		this.m_dtNotice = (base.GetControl("DT_Notice") as DrawTexture);
+		this.m_dtNotice.Visible = false;
+		this.m_bReward = (base.GetControl("Button_reward") as Button);
+		this.m_bReward.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtnClickReward));
+		this.m_bBabelTower = (base.GetControl("Button_BabelTower") as Button);
+		this.m_bBabelTower.AddValueChangedDelegate(new EZValueChangedDelegate(this.BtnClickBabelTower));
 		base.SetScreenCenter();
 		UIDataManager.MuteSound(true);
 		TsAudioManager.Instance.AudioContainer.RequestAudioClip("BGM", "CHAOSTOWER", "START", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
 		NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_BABEL_MAIN", this.m_dtEffect, this.m_dtEffect.GetSize());
 		NrTSingleton<NewGuildManager>.Instance.Send_GS_NEWGUILD_INFO_REQ(0);
+		base.SetLayerZ(1, -3f);
+		base.SetLayerZ(2, -4f);
+		base.SetLayerZ(3, -5f);
+		base.SetLayerZ(4, -6f);
+		this.m_btDlgClose.SetLocationZ(this.m_btDlgClose.GetLocation().z - 6.5f);
+		this.dlgOpenTime = PublicMethod.GetCurTime();
 	}
 
 	public override void Show()
@@ -130,6 +142,8 @@ public class BabelGuildBossDlg : Form
 			this.downButton.Visible = true;
 			this.down.Visible = true;
 		}
+		bool visible = this.GuildBossRewardCheck();
+		this.m_dtNotice.Visible = visible;
 	}
 
 	public override void InitData()
@@ -138,10 +152,10 @@ public class BabelGuildBossDlg : Form
 
 	public override void OnClose()
 	{
-		NrTSingleton<FormsManager>.Instance.Main_UI_Show(FormsManager.eMAIN_UI_VISIBLE_MODE.COMMON);
 		UIDataManager.MuteSound(false);
 		TsAudioManager.Instance.AudioContainer.RemoveUI("CHAOSTOWER_START");
 		base.OnClose();
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.CHALLENGE_DLG);
 	}
 
 	public void ShowList()
@@ -243,9 +257,6 @@ public class BabelGuildBossDlg : Form
 		}
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		short num = (short)obj.Data;
-		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1923");
-		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("173");
-		string message = string.Empty;
 		short guildBossLastFloor = NrTSingleton<ContentsLimitManager>.Instance.GetGuildBossLastFloor();
 		if (0 < guildBossLastFloor && guildBossLastFloor < num)
 		{
@@ -255,34 +266,16 @@ public class BabelGuildBossDlg : Form
 		NEWGUILD_MY_BOSS_ROOMINFO guildBossMyRoomInfo = kMyCharInfo.GetGuildBossMyRoomInfo(num);
 		if (guildBossMyRoomInfo == null)
 		{
-			if (NrTSingleton<NewGuildManager>.Instance.IsMaster(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID) || NrTSingleton<NewGuildManager>.Instance.IsSubMaster(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID) || NrTSingleton<NewGuildManager>.Instance.IsOfficer(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID))
+			BABEL_GUILDBOSS babelGuildBossinfo = NrTSingleton<BabelTowerManager>.Instance.GetBabelGuildBossinfo(num);
+			if (babelGuildBossinfo == null)
 			{
-				BABEL_GUILDBOSS babelGuildBossinfo = NrTSingleton<BabelTowerManager>.Instance.GetBabelGuildBossinfo(num);
-				if (babelGuildBossinfo == null)
-				{
-					return;
-				}
-				NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(babelGuildBossinfo.m_nBossKind);
-				if (charKindInfo == null)
-				{
-					return;
-				}
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref message, new object[]
-				{
-					textFromMessageBox,
-					"targetname",
-					charKindInfo.GetName()
-				});
-				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI.SetMsg(new YesDelegate(BabelGuildBossDlg.OnBabelGuildBossOpen), num, new NoDelegate(BabelGuildBossDlg.OnBabelGuildBossCancel), null, textFromInterface, message, eMsgType.MB_OK_CANCEL);
-				msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10"));
-				msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
+				return;
 			}
-			else
+			if (NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(babelGuildBossinfo.m_nBossKind) == null)
 			{
-				message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("546");
-				Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+				return;
 			}
+			BabelGuildBossDlg.OnBabelGuildBossOpen(num);
 		}
 		else if (guildBossMyRoomInfo.byRoomState == 1 || guildBossMyRoomInfo.byRoomState == 2 || guildBossMyRoomInfo.byRoomState == 3)
 		{
@@ -333,10 +326,9 @@ public class BabelGuildBossDlg : Form
 	{
 	}
 
-	public bool GuildBossCheck(short floor)
+	public bool GuildBossRewardCheck()
 	{
-		NEWGUILD_MY_BOSS_ROOMINFO guildBossMyRoomInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetGuildBossMyRoomInfo(floor);
-		return guildBossMyRoomInfo != null && guildBossMyRoomInfo.ui8PlayState > 0;
+		return NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetGuildBossRewardInfo();
 	}
 
 	public NewListItem CreateItem(short Column)
@@ -357,7 +349,7 @@ public class BabelGuildBossDlg : Form
 			columnData = string.Format("Mobile/DLG/GuildBoss/newlistbox_floor1_columndata{0}", NrTSingleton<UIDataManager>.Instance.AddFilePath);
 		}
 		this.m_lbFloor.SetColumnData(columnData);
-		NewListItem newListItem = new NewListItem(this.m_lbFloor.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_lbFloor.ColumnNum, true, string.Empty);
 		if (!flag)
 		{
 			newListItem.SetListItemData(0, "UI/BabelTower/boss_main1", true, null, null);
@@ -365,6 +357,11 @@ public class BabelGuildBossDlg : Form
 		else
 		{
 			newListItem.SetListItemData(0, "UI/BabelTower/boss_main2", true, null, null);
+		}
+		bool flag2 = this.GuildBossRewardCheck();
+		if (flag2)
+		{
+			this.m_dtNotice.Visible = true;
 		}
 		for (int i = 4; i >= 0; i--)
 		{
@@ -402,12 +399,8 @@ public class BabelGuildBossDlg : Form
 					newListItem.SetListItemData(i + 5 + 41, text2, null, null, null);
 				}
 				newListItem.SetListItemData(i + 1, string.Empty, num, new EZValueChangedDelegate(this.BtClickFloor), null);
-				bool flag2 = this.GuildBossCheck(num);
-				if (flag2)
-				{
-					newListItem.SetListItemData(51 + i, true);
-					newListItem.SetListItemData(51 + i, "Win_I_Notice04", null, null, null);
-				}
+				newListItem.SetListItemData(51 + i, false);
+				newListItem.SetListItemData(51 + i, "Win_I_Notice04", null, null, null);
 				NEWGUILD_MY_BOSS_ROOMINFO guildBossMyRoomInfo = kMyCharInfo.GetGuildBossMyRoomInfo(num);
 				if (guildBossMyRoomInfo != null)
 				{
@@ -458,17 +451,22 @@ public class BabelGuildBossDlg : Form
 		NewListItem newListItem = this.CreateItem(num);
 		if (newListItem != null)
 		{
+			bool flag = this.GuildBossRewardCheck();
+			if (flag)
+			{
+				this.m_dtNotice.Visible = true;
+			}
 			for (int i = 0; i < this.m_lbFloor.Count; i++)
 			{
 				IUIListObject item = this.m_lbFloor.GetItem(i);
 				if (item != null && (short)item.Data == num)
 				{
-					bool flag = this.GuildBossCheck(floor);
+					NEWGUILD_MY_BOSS_ROOMINFO guildBossMyRoomInfo = kMyCharInfo.GetGuildBossMyRoomInfo(floor);
+					bool guildBossRoomStateInfo = kMyCharInfo.GetGuildBossRoomStateInfo(floor);
 					DrawTexture drawTexture = ((UIListItemContainer)item).GetElement((int)(51 + num2)) as DrawTexture;
-					drawTexture.Visible = false;
-					if (flag)
+					if (guildBossMyRoomInfo != null && guildBossMyRoomInfo.byRoomState != 0)
 					{
-						drawTexture.Visible = true;
+						drawTexture.Visible = guildBossRoomStateInfo;
 						drawTexture.SetTexture("Win_I_Notice04");
 					}
 					UIButton uIButton = ((UIListItemContainer)item).GetElement((int)(num2 + 1)) as UIButton;
@@ -482,7 +480,6 @@ public class BabelGuildBossDlg : Form
 					{
 						itemTexture.Visible = false;
 					}
-					NEWGUILD_MY_BOSS_ROOMINFO guildBossMyRoomInfo = kMyCharInfo.GetGuildBossMyRoomInfo(floor);
 					if (guildBossMyRoomInfo != null)
 					{
 						if (guildBossMyRoomInfo.i64PlayPersonID > 0L)
@@ -536,5 +533,65 @@ public class BabelGuildBossDlg : Form
 				}
 			}
 		}
+	}
+
+	public void BtnClickBabelTower(IUIObject obj)
+	{
+		if (this.dlgOpenTime + 2L > PublicMethod.GetCurTime())
+		{
+			return;
+		}
+		this.Close();
+		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+		if (kMyCharInfo == null)
+		{
+			return;
+		}
+		int level = kMyCharInfo.GetLevel();
+		int value = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BABELTOWER_LIMITLEVEL);
+		if (level < value)
+		{
+			string empty = string.Empty;
+			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("129");
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				textFromNotify,
+				"level",
+				value.ToString()
+			});
+			Main_UI_SystemMessage.ADDMessage(empty, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			return;
+		}
+		if (kMyCharInfo.m_kFriendInfo.GetFriendCount() > 0 && kMyCharInfo.m_kFriendInfo.GetFriendsBaBelDataCount() == 0)
+		{
+			GS_FRIENDS_BABELTOWER_CLEARINFO_REQ obj2 = new GS_FRIENDS_BABELTOWER_CLEARINFO_REQ();
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_FRIENDS_BABELTOWER_CLEARINFO_REQ, obj2);
+		}
+		int value2 = COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_BABEL_HARD_LEVEL);
+		if (!NrTSingleton<FormsManager>.Instance.IsShow(G_ID.BABELTOWERMAIN_DLG))
+		{
+			if (level < value2)
+			{
+				DirectionDLG directionDLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_DIRECTION) as DirectionDLG;
+				if (directionDLG != null)
+				{
+					directionDLG.ShowDirection(DirectionDLG.eDIRECTIONTYPE.eDIRECTION_BABEL, 1);
+				}
+			}
+			else
+			{
+				NrTSingleton<FormsManager>.Instance.ShowForm(G_ID.BABELTOWER_MODESELECT_DLG);
+			}
+		}
+		else
+		{
+			NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.BABELTOWERMAIN_DLG);
+		}
+	}
+
+	public void BtnClickReward(IUIObject obj)
+	{
+		GS_NEWGUILD_BOSS_CLEAR_INFO_REQ obj2 = new GS_NEWGUILD_BOSS_CLEAR_INFO_REQ();
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_NEWGUILD_BOSS_CLEAR_INFO_REQ, obj2);
 	}
 }

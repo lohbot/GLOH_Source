@@ -15,4 +15,15 @@ public class FacebookUserData
 	public int nFaceCharKind;
 
 	public string m_Email = string.Empty;
+
+	public void init()
+	{
+		this.m_Name = string.Empty;
+		this.m_GameName = string.Empty;
+		this.m_ID = string.Empty;
+		this.m_Installed = false;
+		this.Level = 0;
+		this.nFaceCharKind = 0;
+		this.m_Email = string.Empty;
+	}
 }

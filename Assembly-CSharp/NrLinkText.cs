@@ -18,6 +18,11 @@ public class NrLinkText
 		return NrTSingleton<UIDataManager>.Instance.GetString("{@I", strName, "}");
 	}
 
+	public static string GuildName(string strName)
+	{
+		return NrTSingleton<UIDataManager>.Instance.GetString("^눌러{@G[", strName, "]}");
+	}
+
 	public static string PlunDerReplayName(long unique)
 	{
 		return NrTSingleton<UIDataManager>.Instance.GetString("[PB", unique.ToString(), "]");

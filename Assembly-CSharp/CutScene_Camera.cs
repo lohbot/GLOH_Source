@@ -5,6 +5,8 @@ public class CutScene_Camera
 {
 	public string CameraName = string.Empty;
 
+	public int _fov;
+
 	public float _fDuration;
 
 	public float _fFireTime;
@@ -43,6 +45,10 @@ public class CutScene_Camera
 		this.GetRotation(ref this._updateRotation, time);
 		Camera.main.transform.localPosition = this._updatePosition;
 		Camera.main.transform.localRotation = this._updateRotation;
+		if (Camera.main.fieldOfView != (float)this._fov)
+		{
+			Camera.main.fieldOfView = (float)this._fov;
+		}
 		return true;
 	}
 

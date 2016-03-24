@@ -32,6 +32,12 @@ namespace PROTOCOL
 
 		public long i64SN;
 
+		public byte bIsGuildWarReward;
+
 		public bool bConnected;
+
+		public int i32CostumeUnique;
+
+		public byte i8GuildPush;
 	}
 }

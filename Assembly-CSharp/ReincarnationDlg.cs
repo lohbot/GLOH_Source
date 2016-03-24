@@ -87,7 +87,7 @@ public class ReincarnationDlg : Form
 		{
 			this.m_dtCurRank.Visible = false;
 		}
-		this.m_dtCurPortrait.SetTexture(eCharImageType.LARGE, leaderSoldierInfo.GetCharKind(), (int)leaderSoldierInfo.GetGrade());
+		this.m_dtCurPortrait.SetTexture(eCharImageType.LARGE, leaderSoldierInfo.GetCharKind(), (int)leaderSoldierInfo.GetGrade(), string.Empty);
 		int num3 = leaderSoldierInfo.GetSeason() + 1;
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strText, new object[]
 		{
@@ -107,7 +107,7 @@ public class ReincarnationDlg : Form
 			this.m_dtAfterRank.Visible = false;
 		}
 		int reincarnationCharKind = reincarnation2.GetReincarnationCharKind(reincarnation, leaderSoldierInfo.GetCharKind());
-		this.m_dtAfterPortrait.SetTexture(eCharImageType.LARGE, reincarnationCharKind, 0);
+		this.m_dtAfterPortrait.SetTexture(eCharImageType.LARGE, reincarnationCharKind, 0, string.Empty);
 		num3 = 2;
 		NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(reincarnationCharKind);
 		if (charKindInfo != null)

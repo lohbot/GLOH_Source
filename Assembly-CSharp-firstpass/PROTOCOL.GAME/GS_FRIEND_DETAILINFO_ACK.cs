@@ -6,7 +6,7 @@ namespace PROTOCOL.GAME
 	{
 		public int FriendHelpCount;
 
-		public int PlunderRank;
+		public int i32InfiRank;
 
 		public short ColosseumGrade;
 

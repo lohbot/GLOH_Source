@@ -1,6 +1,7 @@
 using GAME;
 using PROTOCOL;
 using PROTOCOL.GAME;
+using SERVICE;
 using System;
 using System.Collections.Generic;
 using TsBundle;
@@ -123,6 +124,8 @@ public class NpcTalkUI_DLG : Form
 
 	private DrawTexture m_RightNpcImage;
 
+	private Button m_ButtonSkip;
+
 	private bool loadQuestImage;
 
 	private Texture2D questImage;
@@ -225,9 +228,8 @@ public class NpcTalkUI_DLG : Form
 		expr_4D2.Click = (EZValueChangedDelegate)Delegate.Combine(expr_4D2.Click, new EZValueChangedDelegate(this.Menu1));
 		Button expr_4F9 = this.m_NPCTalk_close;
 		expr_4F9.Click = (EZValueChangedDelegate)Delegate.Combine(expr_4F9.Click, new EZValueChangedDelegate(this.BtnClickNext));
-		this.m_NPCTalk_close.Data = true;
-		Button expr_531 = this.m_NPCTalk_transbutton;
-		expr_531.Click = (EZValueChangedDelegate)Delegate.Combine(expr_531.Click, new EZValueChangedDelegate(this.BtnClickNext));
+		Button expr_520 = this.m_NPCTalk_transbutton;
+		expr_520.Click = (EZValueChangedDelegate)Delegate.Combine(expr_520.Click, new EZValueChangedDelegate(this.BtnClickNext));
 		this.m_NPCTalk_transbutton.UseDefaultSound = false;
 		this.m_SelectTalkArrow = (base.GetControl("DrawTexture_SelectTalkArrow") as DrawTexture);
 		this.m_SelectTalkArrow.Visible = false;
@@ -264,6 +266,14 @@ public class NpcTalkUI_DLG : Form
 		this.m_LeftNpcImage.Visible = false;
 		this.m_RightNpcImage = (base.GetControl("DrawTexture_NPCFace01_right") as DrawTexture);
 		this.m_RightNpcImage.Visible = false;
+		this.m_ButtonSkip = (base.GetControl("Button_DialogSkip") as Button);
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsQuestTalkSkip())
+		{
+			this.m_ButtonSkip.Data = true;
+			Button expr_81E = this.m_ButtonSkip;
+			expr_81E.Click = (EZValueChangedDelegate)Delegate.Combine(expr_81E.Click, new EZValueChangedDelegate(this.BtnClickNext));
+		}
+		this.m_ButtonSkip.Visible = false;
 		this.ReLocation();
 	}
 
@@ -314,7 +324,7 @@ public class NpcTalkUI_DLG : Form
 				this.m_CenterNpcNameBack[1].Visible = false;
 				this.m_CenterNpcNameBack[2].Visible = false;
 				this.m_CenterNpcNameBack[3].Visible = false;
-				this.m_LeftNpcImage.SetTexture(eCharImageType.LARGE, charKind, -1);
+				this.m_LeftNpcImage.SetTexture(eCharImageType.LARGE, charKind, -1, string.Empty);
 				this.m_LeftNpcImage.Visible = true;
 				if (questInfo.bShowName)
 				{
@@ -339,7 +349,7 @@ public class NpcTalkUI_DLG : Form
 				this.m_CenterNpcNameBack[1].Visible = false;
 				this.m_CenterNpcNameBack[2].Visible = false;
 				this.m_CenterNpcNameBack[3].Visible = false;
-				this.m_RightNpcImage.SetTexture(eCharImageType.LARGE, charKind, -1);
+				this.m_RightNpcImage.SetTexture(eCharImageType.LARGE, charKind, -1, string.Empty);
 				this.m_RightNpcImage.Visible = true;
 				if (questInfo.bShowName)
 				{
@@ -363,7 +373,7 @@ public class NpcTalkUI_DLG : Form
 				this.m_RightNpcName.Visible = false;
 				this.m_RightNpcNameBack.Visible = false;
 				this.m_RightNpcNameBackLine.Visible = false;
-				this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, charKind, -1);
+				this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, charKind, -1, string.Empty);
 				this.m_CenterNpcImage.Visible = true;
 				this.m_CenterNpcNameBack[0].Visible = true;
 				this.m_CenterNpcNameBack[1].Visible = true;
@@ -396,7 +406,7 @@ public class NpcTalkUI_DLG : Form
 			}
 			if (questInfo.ePosition2 == QUEST_DLG_INFO.Alignment.LEFT)
 			{
-				this.m_LeftNpcImage.SetTexture(eCharImageType.LARGE, kind, -1);
+				this.m_LeftNpcImage.SetTexture(eCharImageType.LARGE, kind, -1, string.Empty);
 				this.m_LeftNpcImage.Visible = true;
 				if (questInfo.bShowName2)
 				{
@@ -412,7 +422,7 @@ public class NpcTalkUI_DLG : Form
 			}
 			else if (questInfo.ePosition2 == QUEST_DLG_INFO.Alignment.RIGHT)
 			{
-				this.m_RightNpcImage.SetTexture(eCharImageType.LARGE, kind, -1);
+				this.m_RightNpcImage.SetTexture(eCharImageType.LARGE, kind, -1, string.Empty);
 				this.m_RightNpcImage.Visible = true;
 				if (questInfo.bShowName2)
 				{
@@ -566,7 +576,7 @@ public class NpcTalkUI_DLG : Form
 		if (this.m_i32MenuCount == 0)
 		{
 			this.m_CenterNpcName.Text = this.m_CurNpc.GetName();
-			this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1);
+			this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1, string.Empty);
 			this.SetStep(E_NPC_TALK_STEP.E_NPC_TALK_STEP_END);
 			if (charByCharUnique != null)
 			{
@@ -582,19 +592,19 @@ public class NpcTalkUI_DLG : Form
 			if (1 < this.m_QuestMenu.Count)
 			{
 				this.m_CenterNpcName.Text = this.m_CurNpc.GetName();
-				this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1);
+				this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1, string.Empty);
 			}
 			else if (0 < this.m_QuestMenu.Count && 0 < this.m_NpcUIMenu.Count)
 			{
 				this.m_CenterNpcName.Text = this.m_CurNpc.GetName();
-				this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1);
+				this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1, string.Empty);
 			}
 			this.BtnClickNext(null);
 		}
 		else
 		{
 			this.m_CenterNpcName.Text = this.m_CurNpc.GetName();
-			this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1);
+			this.m_CenterNpcImage.SetTexture(eCharImageType.LARGE, i32NpcKind, -1, string.Empty);
 			if (this.m_CurNpc.GetCHARKIND_NPCINFO() != null)
 			{
 				this.SetTalkText(NrTSingleton<CNpcUIManager>.Instance.GetTextGreeting(this.m_CurNpc));
@@ -716,6 +726,17 @@ public class NpcTalkUI_DLG : Form
 						{
 							this.SetItemInfo(i, this.m_NpcUI.m_kMenu[i].byMenuType, null, QUEST_CONST.eQUESTSTATE.QUESTSTATE_NONE, this.m_NpcUI.m_kMenu[i].strMenu, this.m_NpcUI.m_kMenu[i].strIconPath);
 						}
+					}
+					else if (charKindInfo.IsATB(18014398509481984L))
+					{
+						NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+						long personID = charPersonInfo.GetPersonID();
+						NewGuildMember memberInfoFromPersonID = NrTSingleton<NewGuildManager>.Instance.GetMemberInfoFromPersonID(personID);
+						if (memberInfoFromPersonID == null || memberInfoFromPersonID.GetRank() <= NewGuildDefine.eNEWGUILD_MEMBER_RANK.eNEWGUILD_MEMBER_RANK_INITIATE)
+						{
+							break;
+						}
+						this.SetItemInfo(i, this.m_NpcUI.m_kMenu[i].byMenuType, null, QUEST_CONST.eQUESTSTATE.QUESTSTATE_NONE, this.m_NpcUI.m_kMenu[i].strMenu, this.m_NpcUI.m_kMenu[i].strIconPath);
 					}
 					else
 					{
@@ -1286,7 +1307,7 @@ public class NpcTalkUI_DLG : Form
 								"targetname",
 								NrTSingleton<NrCharKindInfoManager>.Instance.GetName((int)this.m_State.kQuest.GetQuestCommon().cQuestCondition[1].i64Param)
 							});
-							msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<NkQuestManager>.Instance.OpenQuestBattle), this.m_State.kQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1532"), empty, eMsgType.MB_OK_CANCEL);
+							msgBoxUI.SetMsg(new YesDelegate(NrTSingleton<NkQuestManager>.Instance.OpenQuestBattle), this.m_State.kQuest, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1532"), empty, eMsgType.MB_OK_CANCEL, 2);
 							msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
 							msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
 						}
@@ -1345,6 +1366,28 @@ public class NpcTalkUI_DLG : Form
 			this.Hide();
 			cQuestDlgInfo = NrTSingleton<NkQuestManager>.Instance.GetQuestDlgInfo(this.m_strDlgIndex, this.m_i32DlgCount);
 		}
+		else if (cQuestDlgInfo != null && "movie" == cQuestDlgInfo.QuestDlgCharCode)
+		{
+			this.m_i32DlgCount++;
+			NrQuestDlgCurrentInfo nrQuestDlgCurrentInfo3 = new NrQuestDlgCurrentInfo();
+			nrQuestDlgCurrentInfo3.bCheck = E_EVENT_TYPE.E_EVENT_TYPE_QUEST;
+			nrQuestDlgCurrentInfo3.strDlgIndex = this.m_strDlgIndex;
+			nrQuestDlgCurrentInfo3.iDlg32Count = this.m_i32DlgCount;
+			nrQuestDlgCurrentInfo3.state = this.m_State;
+			nrQuestDlgCurrentInfo3.step = this.m_Step;
+			nrQuestDlgCurrentInfo3.kCurNpc = this.m_CurNpc;
+			nrQuestDlgCurrentInfo3.kNpcUI = this.m_NpcUI;
+			nrQuestDlgCurrentInfo3.i16CharUnique = this.m_16CurCharUnique;
+			nrQuestDlgCurrentInfo3.i32MenuCount = this.m_i32MenuCount;
+			nrQuestDlgCurrentInfo3.strCharCode = this.m_CurNpc.GetCode();
+			NrTSingleton<NkQuestManager>.Instance.SetQuestDlgInfo(nrQuestDlgCurrentInfo3);
+			if (!TsPlatform.IsEditor)
+			{
+				NrTSingleton<NkQuestManager>.Instance.PlayMovie(cQuestDlgInfo.strLang_Idx);
+				this.Hide();
+			}
+			cQuestDlgInfo = NrTSingleton<NkQuestManager>.Instance.GetQuestDlgInfo(this.m_strDlgIndex, this.m_i32DlgCount);
+		}
 		if (cQuestDlgInfo != null)
 		{
 			TsAudioManager.Instance.AudioContainer.RequestAudioClip("UI_SFX", "QUEST", "NEXT", new PostProcPerItem(NrAudioClipDownloaded.OnEventAudioClipDownloadedImmedatePlay));
@@ -1386,6 +1429,11 @@ public class NpcTalkUI_DLG : Form
 				this.m_Start.Visible = true;
 			}
 			this.SetStep(E_NPC_TALK_STEP.E_NPC_TALK_STEP_REWARD);
+			this.m_ButtonSkip.Visible = false;
+		}
+		else if (NrTSingleton<ContentsLimitManager>.Instance.IsQuestTalkSkip() && this.m_State.eNpcUIType == NPC_UI.E_NPC_UI_TYPE.E_NPC_UI_TYPE_QUEST)
+		{
+			this.m_ButtonSkip.Visible = true;
 		}
 		this.m_i32DlgCount++;
 	}
@@ -1738,6 +1786,12 @@ public class NpcTalkUI_DLG : Form
 		this.OnlySound("NPC", "BYE");
 		NrTSingleton<NkQuestManager>.Instance.DequeueNpcTell();
 		NrTSingleton<NrMainSystem>.Instance.MemoryCleanUP();
+		if (NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea() == eSERVICE_AREA.SERVICE_ANDROID_KORQA)
+		{
+			string text = "m_bShowAll : " + this.m_bShowAll.ToString();
+			Debug.Log(text);
+			TsPlatform.FileLog(text);
+		}
 		if (this.m_bShowAll)
 		{
 			NrTSingleton<FormsManager>.Instance.Main_UI_Show(FormsManager.eMAIN_UI_VISIBLE_MODE.COMMON);

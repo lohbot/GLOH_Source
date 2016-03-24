@@ -120,12 +120,10 @@ public class ReforgeResultDlg : Form
 		}
 		if (bShow && !TsPlatform.IsBand && !NrTSingleton<ContentsLimitManager>.Instance.IsFacebookLimit())
 		{
-			this.m_btOK.SetButtonTextureKey("Win_B_FaceBook");
 			this.m_btOK.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("183"));
 		}
 		else
 		{
-			this.m_btOK.SetButtonTextureKey("Win_B_BasicBtn01");
 			this.m_btOK.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10"));
 		}
 	}
@@ -206,31 +204,6 @@ public class ReforgeResultDlg : Form
 				text
 			}));
 			text = string.Empty;
-			num = Protocol_Item.Get_Evasion_Plus(ItemUnique, 0);
-			if (num != 0)
-			{
-				optionValue = Tooltip_Dlg.GetOptionValue(ItemUnique, pPacket.i32ITEMOPTION[1], num, 7);
-				stringBuilder.AppendLine(textColor + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("255") + " " + optionValue.ToString());
-				num2 = Protocol_Item.Get_Evasion_Plus(ItemUnique, 0);
-				optionValue3 = Tooltip_Dlg.GetOptionValue(ItemUnique, pPacket.i32ITEMUPGRADE[1], num2, 7);
-				num3 = optionValue3 - optionValue;
-				if (num3 != 0)
-				{
-					text = ((num3 <= 0) ? textColor2 : textColor3) + NrTSingleton<UIDataManager>.Instance.GetString("(", (num3 <= 0) ? string.Empty : "+", num3.ToString(), ")");
-				}
-				if (num2 != 0)
-				{
-					stringBuilder2.AppendLine(string.Concat(new string[]
-					{
-						textColor,
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("255"),
-						" ",
-						optionValue3.ToString(),
-						" ",
-						text
-					}));
-				}
-			}
 			num = Protocol_Item.Get_ADDHP(ItemUnique, 0);
 			if (num != 0)
 			{
@@ -256,31 +229,6 @@ public class ReforgeResultDlg : Form
 					}));
 				}
 			}
-			num = Protocol_Item.Get_Hitrate_Plus(ItemUnique, 0);
-			if (num != 0)
-			{
-				optionValue = Tooltip_Dlg.GetOptionValue(ItemUnique, pPacket.i32ITEMOPTION[1], num, 6);
-				stringBuilder.AppendLine(textColor + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("254") + " " + optionValue.ToString());
-				num2 = Protocol_Item.Get_Hitrate_Plus(ItemUnique, 0);
-				optionValue3 = Tooltip_Dlg.GetOptionValue(ItemUnique, pPacket.i32ITEMUPGRADE[1], num2, 6);
-				num3 = optionValue3 - optionValue;
-				if (num3 != 0)
-				{
-					text = ((num3 <= 0) ? textColor2 : textColor3) + NrTSingleton<UIDataManager>.Instance.GetString("(", (num3 <= 0) ? string.Empty : "+", num3.ToString(), ")");
-				}
-				if (num2 != 0)
-				{
-					stringBuilder2.AppendLine(string.Concat(new string[]
-					{
-						textColor,
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("254"),
-						" ",
-						optionValue3.ToString(),
-						" ",
-						text
-					}));
-				}
-			}
 			num = Protocol_Item.Get_Critical_Plus(ItemUnique, 0);
 			if (num != 0)
 			{
@@ -299,31 +247,6 @@ public class ReforgeResultDlg : Form
 					{
 						textColor,
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("256"),
-						" ",
-						optionValue3.ToString(),
-						" ",
-						text
-					}));
-				}
-			}
-			num = Protocol_Item.Get_INT(ItemUnique, 0);
-			if (num != 0)
-			{
-				optionValue = Tooltip_Dlg.GetOptionValue(ItemUnique, pPacket.i32ITEMOPTION[1], num, 5);
-				stringBuilder.AppendLine(textColor + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1211") + " " + optionValue.ToString());
-				num2 = Protocol_Item.Get_INT(ItemUnique, 0);
-				optionValue3 = Tooltip_Dlg.GetOptionValue(ItemUnique, pPacket.i32ITEMUPGRADE[1], num2, 5);
-				num3 = optionValue3 - optionValue;
-				if (num3 != 0)
-				{
-					text = ((num3 <= 0) ? textColor2 : textColor3) + NrTSingleton<UIDataManager>.Instance.GetString("(", (num3 <= 0) ? string.Empty : "+", num3.ToString(), ")");
-				}
-				if (num2 != 0)
-				{
-					stringBuilder2.AppendLine(string.Concat(new string[]
-					{
-						textColor,
-						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1211"),
 						" ",
 						optionValue3.ToString(),
 						" ",

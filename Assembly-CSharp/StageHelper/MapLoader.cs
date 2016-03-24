@@ -4,6 +4,7 @@ using System;
 using System.Collections;
 using System.Diagnostics;
 using TsBundle;
+using TsLibs;
 
 namespace StageHelper
 {
@@ -27,7 +28,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		public IEnumerator StartLoadMap()
 		{
-			MapLoader.<StartLoadMap>c__Iterator21 <StartLoadMap>c__Iterator = new MapLoader.<StartLoadMap>c__Iterator21();
+			MapLoader.<StartLoadMap>c__Iterator23 <StartLoadMap>c__Iterator = new MapLoader.<StartLoadMap>c__Iterator23();
 			<StartLoadMap>c__Iterator.<>f__this = this;
 			return <StartLoadMap>c__Iterator;
 		}
@@ -77,7 +78,7 @@ namespace StageHelper
 		[DebuggerHidden]
 		private IEnumerator _DownloadPortal()
 		{
-			MapLoader.<_DownloadPortal>c__Iterator22 <_DownloadPortal>c__Iterator = new MapLoader.<_DownloadPortal>c__Iterator22();
+			MapLoader.<_DownloadPortal>c__Iterator24 <_DownloadPortal>c__Iterator = new MapLoader.<_DownloadPortal>c__Iterator24();
 			<_DownloadPortal>c__Iterator.<>f__this = this;
 			return <_DownloadPortal>c__Iterator;
 		}
@@ -85,8 +86,26 @@ namespace StageHelper
 		private BaseCoTask _GetRoadPoint()
 		{
 			string strURL = string.Format("{0}/RP_{1}", CDefinePath.ROADPOINT_BASE_URL, this._mapinfo.TILE_INFO);
-			TableInspector tableInspector = new TableInspector(this._stgYldr, true);
-			tableInspector.Regist(new NkTableRoadPoint(strURL));
+			TableInspector tableInspector = null;
+			if (NrTSingleton<NrGlobalReference>.Instance.isLoadWWW)
+			{
+				tableInspector = new TableInspector(this._stgYldr, true);
+				tableInspector.Regist(new NkTableRoadPoint(strURL));
+			}
+			else
+			{
+				NkTableRoadPoint nkTableRoadPoint = new NkTableRoadPoint(strURL);
+				string text = Option.GetProtocolRootPath(Protocol.FILE);
+				text = text.Substring("file:///".Length, text.Length - "file:///".Length);
+				nkTableRoadPoint.m_strFilePath = string.Format("{0}{1}", text, nkTableRoadPoint.m_strFilePath);
+				TsDataReader tsDataReader = new TsDataReader();
+				tsDataReader.UseMD5 = true;
+				tsDataReader.Load(nkTableRoadPoint.m_strFilePath);
+				if (tsDataReader.BeginSection("[Table]"))
+				{
+					nkTableRoadPoint.ParseDataFromNDT(tsDataReader);
+				}
+			}
 			return tableInspector;
 		}
 	}

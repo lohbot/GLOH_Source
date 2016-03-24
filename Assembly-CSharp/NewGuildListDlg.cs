@@ -21,8 +21,6 @@ public class NewGuildListDlg : Form
 
 	private Button m_btBack;
 
-	private Button m_btReset;
-
 	private DropDownList m_dlSearch;
 
 	private Label m_lbDefaultText;
@@ -30,6 +28,8 @@ public class NewGuildListDlg : Form
 	private TextField m_tfSearchKeyword;
 
 	private Button m_btSearch;
+
+	private Toolbar m_tbTab;
 
 	private NewListBox m_nlbGuildList;
 
@@ -39,11 +39,15 @@ public class NewGuildListDlg : Form
 
 	private Button m_btNext;
 
+	private Label m_lbPoint;
+
+	private Label m_lbRanking;
+
 	private Button m_btSortRank;
 
 	private Button m_btSortLevel;
 
-	private Button m_btWarList;
+	private Label m_lbHelp;
 
 	private int m_iCurPageNum;
 
@@ -72,14 +76,14 @@ public class NewGuildListDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		instance.LoadFileAll(ref form, "NewGuild/DLG_NewGuild_GuildList", G_ID.NEWGUILD_LIST_DLG, true);
+		base.ShowBlackBG(1f);
+		base.SetScreenCenter();
 	}
 
 	public override void SetComponent()
 	{
 		this.m_btBack = (base.GetControl("Button_Back") as Button);
 		this.m_btBack.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickBack));
-		this.m_btReset = (base.GetControl("Button_Reset") as Button);
-		this.m_btReset.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickReset));
 		this.m_dlSearch = (base.GetControl("DropDownList_Search") as DropDownList);
 		this.m_dlSearch.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1790"), NewGuildListDlg.eSEARCHTYPE.eSEARCHTYPE_GUILDNAME);
 		this.m_dlSearch.AddItem(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1684"), NewGuildListDlg.eSEARCHTYPE.eSEARCHTYPE_MASTERNAME);
@@ -95,7 +99,15 @@ public class NewGuildListDlg : Form
 		this.m_tfSearchKeyword.SetText(string.Empty);
 		this.m_btSearch = (base.GetControl("Button_Search") as Button);
 		this.m_btSearch.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSearch));
-		this.m_nlbGuildList = (base.GetControl("NLB_GuildList") as NewListBox);
+		this.m_tbTab = (base.GetControl("ToolBar_ToolBar") as Toolbar);
+		this.m_tbTab.Control_Tab[0].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2974");
+		this.m_tbTab.Control_Tab[1].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2985");
+		UIPanelTab expr_1C3 = this.m_tbTab.Control_Tab[0];
+		expr_1C3.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_1C3.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		UIPanelTab expr_1F1 = this.m_tbTab.Control_Tab[1];
+		expr_1F1.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_1F1.ButtonClick, new EZValueChangedDelegate(this.OnClickTab));
+		this.m_tbTab.SetSelectTabIndex(0);
+		this.m_nlbGuildList = (base.GetControl("NLB_Guildrank") as NewListBox);
 		this.m_nlbGuildList.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickGuildInfo));
 		this.m_nlbGuildList.touchScroll = false;
 		this.m_btPrev = (base.GetControl("Button_Pre") as Button);
@@ -103,21 +115,17 @@ public class NewGuildListDlg : Form
 		this.m_bxPage = (base.GetControl("Box_Box19") as Box);
 		this.m_btNext = (base.GetControl("Button_Next") as Button);
 		this.m_btNext.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickNext));
-		if (0L < NrTSingleton<NewGuildManager>.Instance.GetGuildID())
-		{
-		}
+		this.m_lbPoint = (base.GetControl("Label_Point") as Label);
+		this.m_lbRanking = (base.GetControl("Label_Ranking") as Label);
 		this.m_btSortRank = (base.GetControl("Button_RankSorting") as Button);
 		this.m_btSortRank.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSortRank));
 		this.m_btSortLevel = (base.GetControl("Button_NameSorting") as Button);
 		this.m_btSortLevel.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickSortLevel));
-		this.m_btWarList = (base.GetControl("Button_WarList") as Button);
-		this.m_btWarList.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickWarList));
-		this.m_btWarList.Hide(true);
+		this.m_lbHelp = (base.GetControl("Label_Help") as Label);
 		this.m_strMemberCnt = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1808");
 		this.m_bSortRank = !this.m_bSortRank;
-		this.Send_GuildList(this.m_iCurPageNum, this.m_eNewGuildSort);
-		base.SetScreenCenter();
-		base.ShowBlackBG(0.5f);
+		this.Send_GS_NEWGUILD_LIST_REQ(this.m_iCurPageNum, this.m_eNewGuildSort, -1);
+		this.m_lbHelp.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3069"));
 	}
 
 	public override void InitData()
@@ -138,17 +146,17 @@ public class NewGuildListDlg : Form
 		{
 			num--;
 		}
-		this.Send_GuildList(num, this.m_eNewGuildSort);
+		this.Send_GS_NEWGUILD_LIST_REQ(num, this.m_eNewGuildSort, -1);
 	}
 
 	public void ClickNext(IUIObject obj)
 	{
 		int num = this.m_iCurPageNum;
 		num++;
-		this.Send_GuildList(num, this.m_eNewGuildSort);
+		this.Send_GS_NEWGUILD_LIST_REQ(num, this.m_eNewGuildSort, -1);
 	}
 
-	public void Send_GuildList(int iCurPageNum, NewGuildDefine.eNEWGUILD_SORT eSort)
+	public void Send_GS_NEWGUILD_LIST_REQ(int iCurPageNum, NewGuildDefine.eNEWGUILD_SORT eSort, int tabIndex = -1)
 	{
 		this.m_eSearchType = this.GetSearchType();
 		this.m_eNewGuildSort = eSort;
@@ -168,6 +176,14 @@ public class NewGuildListDlg : Form
 			break;
 		}
 		gS_NEWGUILD_LIST_REQ.i8SortType = (byte)eSort;
+		if (tabIndex < 0)
+		{
+			gS_NEWGUILD_LIST_REQ.bIsGuildWarRank = (this.m_tbTab.CurrentPanel.index == 0);
+		}
+		else
+		{
+			gS_NEWGUILD_LIST_REQ.bIsGuildWarRank = (tabIndex == 0);
+		}
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_NEWGUILD_LIST_REQ, gS_NEWGUILD_LIST_REQ);
 		this.SetEnableControl(false);
 	}
@@ -183,11 +199,11 @@ public class NewGuildListDlg : Form
 		this.m_bSortRank = !this.m_bSortRank;
 		if (!this.m_bSortRank)
 		{
-			this.Send_GuildList(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_RANK_MIN);
+			this.Send_GS_NEWGUILD_LIST_REQ(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_RANK_MIN, -1);
 		}
 		else
 		{
-			this.Send_GuildList(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_RANK_MAX);
+			this.Send_GS_NEWGUILD_LIST_REQ(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_RANK_MAX, -1);
 		}
 	}
 
@@ -196,17 +212,12 @@ public class NewGuildListDlg : Form
 		this.m_bSortLevel = !this.m_bSortLevel;
 		if (!this.m_bSortLevel)
 		{
-			this.Send_GuildList(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_LEVEL_MIN);
+			this.Send_GS_NEWGUILD_LIST_REQ(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_LEVEL_MIN, -1);
 		}
 		else
 		{
-			this.Send_GuildList(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_LEVEL_MAX);
+			this.Send_GS_NEWGUILD_LIST_REQ(0, NewGuildDefine.eNEWGUILD_SORT.eNEWGUILD_SORT_LEVEL_MAX, -1);
 		}
-	}
-
-	public void ClickWarList(IUIObject obj)
-	{
-		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DECLAREWAR_GUILDLIST_DLG);
 	}
 
 	public void ClickGuildInfo(IUIObject obj)
@@ -224,22 +235,37 @@ public class NewGuildListDlg : Form
 
 	public void SetGuildList(GS_NEWGUILD_LIST_ACK ACK, NkDeserializePacket kDeserializePacket)
 	{
+		if (ACK.bIsGuildWarRank)
+		{
+			this.m_lbRanking.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2974"));
+			this.m_lbPoint.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2975"));
+		}
+		else
+		{
+			this.m_lbRanking.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2985"));
+			this.m_lbPoint.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1226"));
+		}
 		this.m_nlbGuildList.Clear();
 		string text = string.Empty;
 		for (int i = 0; i < (int)ACK.i16GuildListNum; i++)
 		{
 			NEWGUILD_LIST_INFO packet = kDeserializePacket.GetPacket<NEWGUILD_LIST_INFO>();
-			NewListItem newListItem = new NewListItem(this.m_nlbGuildList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_nlbGuildList.ColumnNum, true, string.Empty);
 			this.m_strName = TKString.NEWString(packet.strGuildName);
 			this.m_strMasterName = TKString.NEWString(packet.strMasterName);
+			string str = string.Empty;
+			if (packet.bGuildWar)
+			{
+				str = NrTSingleton<CTextParser>.Instance.GetTextColor("1401");
+			}
 			text = packet.i16Rank.ToString();
 			if (0 >= packet.i16Rank)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2225");
 			}
-			newListItem.SetListItemData(0, text, null, null, null);
-			newListItem.SetListItemData(1, this.m_strName, null, null, null);
-			newListItem.SetListItemData(2, ANNUALIZED.Convert(packet.i32Point), null, null, null);
+			newListItem.SetListItemData(1, text, null, null, null);
+			newListItem.SetListItemData(2, str + this.m_strName, null, null, null);
+			newListItem.SetListItemData(3, ANNUALIZED.Convert(packet.i32Point), null, null, null);
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strText, new object[]
 			{
 				this.m_strMemberCnt,
@@ -248,24 +274,24 @@ public class NewGuildListDlg : Form
 				"count2",
 				packet.i16MaxGuildNum
 			});
-			newListItem.SetListItemData(3, this.m_strText, null, null, null);
-			newListItem.SetListItemData(4, this.m_strMasterName, null, null, null);
+			newListItem.SetListItemData(4, this.m_strText, null, null, null);
+			newListItem.SetListItemData(5, this.m_strMasterName, null, null, null);
 			switch (packet.i16Rank)
 			{
 			case 1:
-				newListItem.SetListItemData(5, "Win_I_Rank03", null, null, null);
+				newListItem.SetListItemData(6, "Win_I_Rank03", null, null, null);
 				break;
 			case 2:
-				newListItem.SetListItemData(5, "Win_I_Rank02", null, null, null);
+				newListItem.SetListItemData(6, "Win_I_Rank02", null, null, null);
 				break;
 			case 3:
-				newListItem.SetListItemData(5, "Win_I_Rank01", null, null, null);
+				newListItem.SetListItemData(6, "Win_I_Rank01", null, null, null);
 				break;
 			default:
-				newListItem.SetListItemData(5, false);
+				newListItem.SetListItemData(6, false);
 				break;
 			}
-			newListItem.SetListItemData(6, packet.i16Level.ToString(), null, null, null);
+			newListItem.SetListItemData(7, packet.i16Level.ToString(), null, null, null);
 			string text2 = string.Empty;
 			if (packet.i16AgitLevel == 0)
 			{
@@ -281,7 +307,7 @@ public class NewGuildListDlg : Form
 					packet.i16AgitLevel
 				});
 			}
-			newListItem.SetListItemData(7, this.m_strText, null, null, null);
+			newListItem.SetListItemData(8, this.m_strText, null, null, null);
 			newListItem.Data = packet.i64GuildID;
 			this.m_nlbGuildList.Add(newListItem);
 		}
@@ -306,28 +332,36 @@ public class NewGuildListDlg : Form
 		else
 		{
 			NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.NEWGUILD_MEMBER_DLG);
-			NrTSingleton<NewGuildManager>.Instance.Send_GS_NEWGUILD_INFO_REQ(0);
 		}
 		base.CloseNow();
 	}
 
-	public void ClickReset(IUIObject obj)
-	{
-		this.m_tfSearchKeyword.Clear();
-		this.m_tfSearchKeyword.SetText(string.Empty);
-		this.m_eSearchType = NewGuildListDlg.eSEARCHTYPE.eSEARCHTYPE_DEFAULT;
-		this.m_lbDefaultText.Hide(false);
-		this.Send_GuildList(0, this.m_eNewGuildSort);
-	}
-
 	public void ClickSearch(IUIObject obj)
 	{
-		this.Send_GuildList(0, this.m_eNewGuildSort);
+		this.Send_GS_NEWGUILD_LIST_REQ(0, this.m_eNewGuildSort, -1);
 	}
 
 	public void ClickSearchKeyword(IUIObject obj)
 	{
 		this.m_lbDefaultText.Hide(true);
+	}
+
+	public void OnClickTab(IUIObject obj)
+	{
+		UIPanelTab uIPanelTab = obj as UIPanelTab;
+		if (uIPanelTab.panel.index == uIPanelTab.panelManager.CurrentPanel.index)
+		{
+			return;
+		}
+		if (uIPanelTab.panel.index == 0)
+		{
+			this.m_lbHelp.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3069"));
+		}
+		else
+		{
+			this.m_lbHelp.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1814"));
+		}
+		this.Send_GS_NEWGUILD_LIST_REQ(0, this.m_eNewGuildSort, uIPanelTab.panel.index);
 	}
 
 	public void OnChangeSearchType(IUIObject obj)
@@ -383,7 +417,6 @@ public class NewGuildListDlg : Form
 	{
 		if (this.m_eSearchType != NewGuildListDlg.eSEARCHTYPE.eSEARCHTYPE_DEFAULT)
 		{
-			this.m_btReset.SetEnabled(bEnable);
 			this.m_btSearch.SetEnabled(bEnable);
 		}
 		this.m_btBack.SetEnabled(bEnable);

@@ -7,5 +7,7 @@ namespace PROTOCOL.GAME
 		public bool bElementMark;
 
 		public short i16Count;
+
+		public int i32CharKind;
 	}
 }

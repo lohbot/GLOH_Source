@@ -6,12 +6,16 @@ namespace PROTOCOL.GAME
 	{
 		public int i32Result;
 
-		public long i64ExtractSolID;
+		public long[] i64ExtractSolID = new long[10];
 
-		public bool bGreat;
+		public int[] ExtractItemNum = new int[10];
+
+		public bool[] bGreat = new bool[10];
 
 		public int ExtractItemUnique;
 
-		public int ExtractItemNum;
+		public int ExtractCurrentTotalNum;
+
+		public int ExtractAddTotalNum;
 	}
 }

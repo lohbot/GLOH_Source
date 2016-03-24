@@ -58,15 +58,15 @@ public class Event_Detail_Dlg : Form
 				num -= 24;
 			}
 			string text2 = this.EventWeek((int)eventInfoFromType.m_nEventInfoWeek);
-			if (nEventType == 14)
+			if (nEventType == 15)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2550");
 			}
-			else if (nEventType == 15)
+			else if (nEventType == 16)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2560");
 			}
-			else if (nEventType == 16)
+			else if (nEventType == 17)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2561");
 			}
@@ -89,7 +89,7 @@ public class Event_Detail_Dlg : Form
 					num.ToString()
 				});
 			}
-			else if (eventInfoFromType.m_nEventType == 3)
+			else if (eventInfoFromType.m_nEventType == 4)
 			{
 				text2 = this.EventWeek(-1);
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
@@ -103,7 +103,7 @@ public class Event_Detail_Dlg : Form
 					num.ToString()
 				});
 			}
-			else if (eventInfoFromType.m_nEventType == 18 || eventInfoFromType.m_nEventType == 19 || eventInfoFromType.m_nEventType == 20 || eventInfoFromType.m_nEventType == 21 || eventInfoFromType.m_nEventType == 22 || eventInfoFromType.m_nEventType == 23)
+			else if (eventInfoFromType.m_nEventType == 19 || eventInfoFromType.m_nEventType == 20 || eventInfoFromType.m_nEventType == 21 || eventInfoFromType.m_nEventType == 22 || eventInfoFromType.m_nEventType == 23 || eventInfoFromType.m_nEventType == 24)
 			{
 				string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2543");
 				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
@@ -151,15 +151,15 @@ public class Event_Detail_Dlg : Form
 				num2 -= 24;
 			}
 			string text3 = this.EventWeek((int)value.m_nWeek);
-			if (nEventType == 14)
+			if (nEventType == 15)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2550");
 			}
-			else if (nEventType == 15)
+			else if (nEventType == 16)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2560");
 			}
-			else if (nEventType == 16)
+			else if (nEventType == 17)
 			{
 				text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2561");
 			}

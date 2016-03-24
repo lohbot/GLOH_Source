@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTable_BountyInfo : NrTableBase
 {
-	public NrTable_BountyInfo() : base(CDefinePath.BOUNTYINFO_URL, true)
+	public NrTable_BountyInfo() : base(CDefinePath.BOUNTYINFO_URL)
 	{
 	}
 

@@ -32,6 +32,12 @@ public class Battle_BossAggro_DLG : Form
 
 	private Label m_lbGuildBossHp;
 
+	private Label m_lbTitle;
+
+	private DrawTexture m_dtSubTitle1;
+
+	private DrawTexture m_dtSubTitle2;
+
 	private NkBattleChar m_pkBossBattleChar;
 
 	private float fHpLength;
@@ -85,6 +91,28 @@ public class Battle_BossAggro_DLG : Form
 		this.fGuildBossHpLength = this.m_dtGuildBossHp.GetSize().x;
 		this.m_lbGuildBossHp = (base.GetControl("Label_gaugetext") as Label);
 		this.Hide();
+		this.m_lbTitle = (base.GetControl("Label_PageTitleLabel01") as Label);
+		this.m_dtSubTitle1 = (base.GetControl("DT_SubTitle01") as DrawTexture);
+		this.m_dtSubTitle2 = (base.GetControl("DT_SubTitle02") as DrawTexture);
+		this.m_lbTitle.Visible = false;
+		this.m_dtSubTitle1.Visible = false;
+		this.m_dtSubTitle2.Visible = false;
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
+		{
+			this.m_lbTitle.Visible = true;
+			this.m_dtSubTitle1.Visible = true;
+			this.m_dtSubTitle2.Visible = true;
+			string empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3477"),
+				"count1",
+				NrTSingleton<NewExplorationManager>.Instance.GetFloor(),
+				"count2",
+				NrTSingleton<NewExplorationManager>.Instance.GetSubFloor()
+			});
+			this.m_lbTitle.SetText(empty);
+		}
 	}
 
 	public void _SetDialogPos()
@@ -115,7 +143,17 @@ public class Battle_BossAggro_DLG : Form
 			return;
 		}
 		string empty = string.Empty;
-		if (this.m_pkBossBattleChar.IsBattleCharATB(1024) && this.m_nBossImmuneCount > 0)
+		if (this.m_pkBossBattleChar.GetCharKindInfo().IsATB(144115188075855872L))
+		{
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3272"),
+				"targetname",
+				this.m_pkBossBattleChar.GetCharName()
+			});
+			this.m_lbBossMonName.SetText(empty);
+		}
+		else if (this.m_pkBossBattleChar.IsBattleCharATB(1024) && this.m_nBossImmuneCount > 0)
 		{
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{
@@ -160,9 +198,13 @@ public class Battle_BossAggro_DLG : Form
 
 	public void UpdateBossHP()
 	{
-		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS)
+		if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_GUILD_BOSS || Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_NEWEXPLORATION)
 		{
 			this.UpdateGuildBossHP();
+		}
+		else if (Battle.BATTLE.BattleRoomtype == eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_MYTHRAID && this.m_pkBossBattleChar != null && NrTSingleton<MythRaidManager>.Instance.IsMythRaidBossCharKind(this.m_pkBossBattleChar.GetCharKindInfo().GetCharKind()))
+		{
+			this.UpdateMythRaidBossHP();
 		}
 		else
 		{
@@ -184,6 +226,19 @@ public class Battle_BossAggro_DLG : Form
 		}
 		float num2 = num / this.MAXHP;
 		this.m_itBossMonHP.SetSize(this.fHpLength * num2, this.m_itBossMonHP.GetSize().y);
+	}
+
+	public void UpdateMythRaidBossHP()
+	{
+		base.SetShowLayer(2, false);
+		float num = (float)Battle.BATTLE.BossCurrentHP;
+		float num2 = (float)Battle.BATTLE.BossMaxHP;
+		if (num > num2)
+		{
+			num = num2;
+		}
+		float num3 = num / num2;
+		this.m_itBossMonHP.SetSize(this.fHpLength * num3, this.m_itBossMonHP.GetSize().y);
 	}
 
 	public void UpdateAggroSolInfo(GS_BATTLE_BOSS_AGGRO_NFY AggroSolData)

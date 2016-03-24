@@ -57,6 +57,18 @@ namespace UnityForms
 			}
 		}
 
+		public bool DownText_Visible
+		{
+			get
+			{
+				return this.downText.Visible;
+			}
+			set
+			{
+				this.downText.Visible = value;
+			}
+		}
+
 		public override EZTransitionList[] Transitions
 		{
 			get
@@ -203,7 +215,7 @@ namespace UnityForms
 			}));
 		}
 
-		public void SetItemTexture(ITEM item, bool showItemNum)
+		public void SetItemTexture(ITEM item, bool showItemNum, bool showItemLevel = true, float ResizeRate = 1f)
 		{
 			if (item != null)
 			{
@@ -215,7 +227,27 @@ namespace UnityForms
 				int num = item.m_nOption[2];
 				this.downText.Text = string.Empty;
 				this.upText.Text = string.Empty;
-				if ("true" == MsgHandler.HandleReturn<string>("IsRank", new object[]
+				UIBaseInfoLoader uIBaseInfoLoader = MsgHandler.HandleReturn<UIBaseInfoLoader>("GetLegendItemGrade", new object[]
+				{
+					item.m_nItemUnique
+				});
+				if (uIBaseInfoLoader != null)
+				{
+					this.upText.SetSize(uIBaseInfoLoader.UVs.width * ResizeRate, uIBaseInfoLoader.UVs.height * ResizeRate);
+					this.upText.SetAnchor(SpriteRoot.ANCHOR_METHOD.UPPER_LEFT);
+					this.upText.SetTexture(uIBaseInfoLoader);
+					this.upText.DeleteSpriteText();
+					this.downText.Visible = true;
+					this.downText.SetCharacterSize(20f);
+					if (showItemLevel)
+					{
+						this.downText.Text = NrTSingleton<UIDataManager>.Instance.GetString("Lv.", MsgHandler.HandleReturn<string>("GetUseMinLevel", new object[]
+						{
+							item
+						}));
+					}
+				}
+				else if ("true" == MsgHandler.HandleReturn<string>("IsRank", new object[]
 				{
 					item.m_nItemUnique
 				}) && num >= 1)
@@ -225,11 +257,11 @@ namespace UnityForms
 					{
 						num
 					}));
-					UIBaseInfoLoader uIBaseInfoLoader = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(@string);
-					if (uIBaseInfoLoader != null)
+					UIBaseInfoLoader uIBaseInfoLoader2 = NrTSingleton<UIImageInfoManager>.Instance.FindUIImageDictionary(@string);
+					if (uIBaseInfoLoader2 != null)
 					{
 						this.upText.SetSize(20f, 20f);
-						this.upText.SetTexture(uIBaseInfoLoader);
+						this.upText.SetTexture(uIBaseInfoLoader2);
 						this.upText.DeleteSpriteText();
 					}
 					this.downText.Visible = true;
@@ -250,6 +282,34 @@ namespace UnityForms
 					}
 				}
 				this.downText.gameObject.transform.localPosition = new Vector3(0f, -(this.height - this.fontSize - 2f), -0.02f);
+			}
+		}
+
+		public void SetItemTexture(int ItemUnique, int MInLevel, bool isMinLevelShow = true, float ResizeRate = 1f)
+		{
+			base.SetTexture(MsgHandler.HandleReturn<UIBaseInfoLoader>("GetItemTexture", new object[]
+			{
+				ItemUnique
+			}));
+			this.downText.Text = string.Empty;
+			this.upText.Text = string.Empty;
+			UIBaseInfoLoader uIBaseInfoLoader = MsgHandler.HandleReturn<UIBaseInfoLoader>("GetLegendItemGrade", new object[]
+			{
+				ItemUnique
+			});
+			if (uIBaseInfoLoader != null)
+			{
+				this.upText.SetSize(uIBaseInfoLoader.UVs.width * ResizeRate, uIBaseInfoLoader.UVs.height * ResizeRate);
+				this.upText.SetAnchor(SpriteRoot.ANCHOR_METHOD.UPPER_LEFT);
+				this.upText.SetTexture(uIBaseInfoLoader);
+				this.upText.DeleteSpriteText();
+				if (isMinLevelShow)
+				{
+					this.downText.Visible = true;
+					this.downText.SetCharacterSize(20f);
+					this.downText.Text = NrTSingleton<UIDataManager>.Instance.GetString("Lv.", MInLevel.ToString());
+					this.downText.gameObject.transform.localPosition = new Vector3(0f, -(this.height - this.fontSize - 2f), -0.02f);
+				}
 			}
 		}
 
@@ -295,7 +355,7 @@ namespace UnityForms
 
 		public void SetItemTexture(ITEM item)
 		{
-			this.SetItemTexture(item, true);
+			this.SetItemTexture(item, true, true, 1f);
 		}
 
 		public void SetItemTexture(string imageKey1, float width, float height)
@@ -399,7 +459,6 @@ namespace UnityForms
 				this.downText.spriteText.gameObject.transform.localPosition = new Vector3(2f, -2f, -0.02f);
 				this.downText.Text = NrTSingleton<UIDataManager>.Instance.GetString("Lv ", solInfo.SolLevel.ToString());
 			}
-			this.upText.Visible = solInfo.ShowGrade;
 		}
 
 		private void ShowLegendMark(short type)
@@ -432,7 +491,7 @@ namespace UnityForms
 			{
 				return;
 			}
-			this.SetSolImageTexure(type, solInfo.SolCharKind, solInfo.SolGrade, solInfo.SolInjuryStatus);
+			this.SetSolImageTexure(type, solInfo.SolCharKind, solInfo.SolGrade, solInfo.SolInjuryStatus, solInfo);
 			this.SolOtherInfo(solInfo);
 			this.SolEventMark(bShowEventMark);
 		}
@@ -442,13 +501,13 @@ namespace UnityForms
 			if (eventMark)
 			{
 				this.EventMark.Visible = true;
-				this.EventMark.SetSize(this.width * 0.35f, this.height * 0.35f);
+				this.EventMark.SetSize(this.width * 0.45f, this.height * 0.45f);
 				this.EventMark.SetTexture("Win_I_Notice05");
-				this.EventMark.gameObject.transform.localPosition = new Vector3(this.width * 0.7f, this.height * 0.05f);
+				this.EventMark.gameObject.transform.localPosition = new Vector3(this.width * 0.8f, this.height * 0.1f);
 			}
 		}
 
-		public void SetSolImageTexure(eCharImageType type, int charkind, int solgrade, bool injury)
+		public void SetSolImageTexure(eCharImageType type, int charkind, int solgrade, bool injury, NkListSolInfo solInfo)
 		{
 			this.reserve = false;
 			this.imageKey = string.Empty;
@@ -470,6 +529,19 @@ namespace UnityForms
 				}));
 				this.ClearData();
 				return;
+			}
+			if (solInfo != null && !string.IsNullOrEmpty(solInfo.SolCostumePortraitPath))
+			{
+				string text2 = MsgHandler.HandleReturn<string>("PortraitCostumeFileName", new object[]
+				{
+					charkind,
+					solgrade,
+					solInfo.SolCostumePortraitPath
+				});
+				if (!string.IsNullOrEmpty(text2))
+				{
+					text = text2;
+				}
 			}
 			this.SolInjuryStatus(injury);
 			this.m_etype = type;
@@ -578,7 +650,7 @@ namespace UnityForms
 
 		public void SetSolImageTexure(eCharImageType type, int charkind, int solgrade)
 		{
-			this.SetSolImageTexure(type, charkind, solgrade, false);
+			this.SetSolImageTexure(type, charkind, solgrade, false, null);
 		}
 
 		public void SetSolImageTexure(eCharImageType type, int charkind, int solgrade, int level)
@@ -640,6 +712,9 @@ namespace UnityForms
 
 		public void ClearData()
 		{
+			this.reserve = false;
+			this.imageKey = string.Empty;
+			this.bInjury = false;
 			base.SetTexture("Com_I_Transparent");
 			if (this.downText.spriteText)
 			{
@@ -653,6 +728,12 @@ namespace UnityForms
 			this.upText.SetTexture("Com_I_Transparent");
 			this.EventMark.SetTexture("Com_I_Transparent");
 			this.data = null;
+			Transform transform = base.transform.FindChild(NrTSingleton<UIDataManager>.Instance.AttachEffectKeyName);
+			if (null != transform)
+			{
+				UnityEngine.Object.Destroy(transform.gameObject);
+				this.bHaveEffect = false;
+			}
 		}
 
 		public override void OnInput(ref POINTER_INFO ptr)

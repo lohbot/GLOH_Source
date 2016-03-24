@@ -403,10 +403,35 @@ public abstract class EventTriggerItem : MonoBehaviour
 		{
 			result = ushort.Parse(Value);
 		}
+		else if (ValueType == typeof(Vector3))
+		{
+			result = this.ParseStringToVector3(Value);
+		}
 		else
 		{
 			result = Value;
 		}
 		return result;
+	}
+
+	private Vector3 ParseStringToVector3(string data)
+	{
+		if (string.IsNullOrEmpty(data))
+		{
+			Debug.LogError("ERROR, EventTriggerItem.cs, ParseStringToVector(), data Is Null ");
+			return Vector3.zero;
+		}
+		data = data.Replace("(", string.Empty);
+		data = data.Replace(")", string.Empty);
+		string[] array = data.Split(new char[]
+		{
+			','
+		});
+		if (array == null || array.Length != 3)
+		{
+			Debug.LogError("ERROR, EventTriggerItem.cs, ParseStringToVector(), vector Is Null ");
+			return Vector3.zero;
+		}
+		return new Vector3(float.Parse(array[0].Trim()), float.Parse(array[1].Trim()), float.Parse(array[2].Trim()));
 	}
 }

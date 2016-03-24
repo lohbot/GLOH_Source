@@ -23,6 +23,8 @@ public class ItemManager : NrTSingleton<ItemManager>
 
 	private SortedDictionary<int, ITEM_BOX_GROUP> m_cdItemBoxGroup;
 
+	private Dictionary<long, List<GROUPTICKET_INFO>> m_dicGroupSolTicket;
+
 	private ItemManager()
 	{
 		this.m_gCollection = new Dictionary<int, UIBaseInfoLoader>();
@@ -32,6 +34,7 @@ public class ItemManager : NrTSingleton<ItemManager>
 		this.m_kItemTypeCodeInfo = new NkValueParse<int>();
 		this.m_kItemOptionCodeInfo = new NkValueParse<int>();
 		this.m_cdItemBoxGroup = new SortedDictionary<int, ITEM_BOX_GROUP>();
+		this.m_dicGroupSolTicket = new Dictionary<long, List<GROUPTICKET_INFO>>();
 		this.SetItemDataCode();
 	}
 
@@ -204,7 +207,7 @@ public class ItemManager : NrTSingleton<ItemManager>
 
 	public eITEM_POSTYPE GetItemPosTypeByItemUnique(int itemunique)
 	{
-		return (eITEM_POSTYPE)this.GetItemType(itemunique);
+		return this.GetPosTypeByItemType(itemunique);
 	}
 
 	public ITEMTYPE_INFO GetItemTypeInfo(int itemunique)
@@ -458,6 +461,7 @@ public class ItemManager : NrTSingleton<ItemManager>
 		iTEMINFO.m_nItemType = NrTSingleton<ItemManager>.Instance.GetItemType(pkItem.TYPECODE);
 		iTEMINFO.m_strTextKey = pkItem.TEXTKEY;
 		iTEMINFO.m_strEnglishName = pkItem.ENG_NAME;
+		iTEMINFO.m_strModelPath = "1";
 		iTEMINFO.m_nATB = NrTSingleton<NkATB_Manager>.Instance.ParseItemATB(pkItem.ATB);
 		iTEMINFO.m_nUseDate = pkItem.USEDATE;
 		iTEMINFO.m_nSortOrder = pkItem.SORT_ORDER;
@@ -465,7 +469,6 @@ public class ItemManager : NrTSingleton<ItemManager>
 		iTEMINFO.m_strToolTipTextKey = pkItem.TEXTKEY_TOOLTIP;
 		iTEMINFO.m_strIconFile = pkItem.m_strIconFile;
 		iTEMINFO.m_nIconIndex = pkItem.m_shIconIndex;
-		iTEMINFO.m_strModelPath = pkItem.MOD;
 		iTEMINFO.m_nUseMinLevel = pkItem.USE_MINLV;
 		iTEMINFO.m_nUseMaxLevel = pkItem.USE_MAXLV;
 		iTEMINFO.m_nMinDamage = pkItem.MIN_DAMAGE;
@@ -484,6 +487,8 @@ public class ItemManager : NrTSingleton<ItemManager>
 		iTEMINFO.m_nPruductIndex = pkItem.PRUDUCT_IDX;
 		iTEMINFO.m_nQualityLevel = pkItem.QUALITY_LEVEL;
 		iTEMINFO.m_strMaterialCode = pkItem.MATERIALCODE;
+		iTEMINFO.m_nSetUnique = pkItem.nSetUnique;
+		iTEMINFO.m_nStarGrade = pkItem.nStarGrade;
 		if (this.m_cdItemTotal.ContainsKey(iTEMINFO.m_nItemUnique))
 		{
 			this.m_cdItemTotal[iTEMINFO.m_nItemUnique] = iTEMINFO;
@@ -491,6 +496,11 @@ public class ItemManager : NrTSingleton<ItemManager>
 		else
 		{
 			this.m_cdItemTotal.Add(iTEMINFO.m_nItemUnique, iTEMINFO);
+		}
+		iTEMINFO.m_strOnlyUse = pkItem.ONLYUSE;
+		for (int i = 0; i < 10; i++)
+		{
+			iTEMINFO.m_strOnlyUseCharCode[i] = pkItem.m_strOnlyUseCharCode[i];
 		}
 	}
 
@@ -502,13 +512,13 @@ public class ItemManager : NrTSingleton<ItemManager>
 		iTEMINFO.m_strTextKey = pkItem.TEXTKEY;
 		iTEMINFO.m_strEnglishName = pkItem.ENG_NAME;
 		iTEMINFO.m_nATB = NrTSingleton<NkATB_Manager>.Instance.ParseItemATB(pkItem.ATB);
+		iTEMINFO.m_strModelPath = "1";
 		iTEMINFO.m_nUseDate = pkItem.USEDATE;
 		iTEMINFO.m_nSortOrder = pkItem.SORT_ORDER;
 		iTEMINFO.m_nPrice = pkItem.PRICE;
 		iTEMINFO.m_strToolTipTextKey = pkItem.TEXTKEY_TOOLTIP;
 		iTEMINFO.m_strIconFile = pkItem.m_strIconFile;
 		iTEMINFO.m_nIconIndex = pkItem.m_shIconIndex;
-		iTEMINFO.m_strModelPath = pkItem.MOD;
 		iTEMINFO.m_nAttachPartChar = NrTSingleton<NrCharKindInfoManager>.Instance.ParseCharTribeCode(pkItem.ATTACHPART);
 		iTEMINFO.m_nUseMinLevel = pkItem.USE_MINLV;
 		iTEMINFO.m_nUseMaxLevel = pkItem.USE_MAXLV;
@@ -528,6 +538,8 @@ public class ItemManager : NrTSingleton<ItemManager>
 		iTEMINFO.m_nPruductIndex = pkItem.PRUDUCT_ID;
 		iTEMINFO.m_nQualityLevel = pkItem.QUALITY_LEVEL;
 		iTEMINFO.m_strMaterialCode = pkItem.MATERIALCODE;
+		iTEMINFO.m_nSetUnique = pkItem.nSetUnique;
+		iTEMINFO.m_nStarGrade = pkItem.nStarGrade;
 		if (this.m_cdItemTotal.ContainsKey(iTEMINFO.m_nItemUnique))
 		{
 			this.m_cdItemTotal[iTEMINFO.m_nItemUnique] = iTEMINFO;
@@ -535,6 +547,11 @@ public class ItemManager : NrTSingleton<ItemManager>
 		else
 		{
 			this.m_cdItemTotal.Add(iTEMINFO.m_nItemUnique, iTEMINFO);
+		}
+		iTEMINFO.m_strOnlyUse = pkItem.ONLYUSE;
+		for (int i = 0; i < 10; i++)
+		{
+			iTEMINFO.m_strOnlyUseCharCode[i] = pkItem.m_strOnlyUseCharCode[i];
 		}
 	}
 
@@ -650,6 +667,7 @@ public class ItemManager : NrTSingleton<ItemManager>
 		iTEMINFO.m_nGroupIndex = pkItem.GROUP_IDX;
 		iTEMINFO.m_strMaterialCode = pkItem.MATERIALCODE;
 		iTEMINFO.m_strTextColorCode = pkItem.TEXT_COLOR_CODE;
+		iTEMINFO.m_nStarGrade = pkItem.STAR_GRADE;
 		if (this.m_cdItemTotal.ContainsKey(iTEMINFO.m_nItemUnique))
 		{
 			this.m_cdItemTotal[iTEMINFO.m_nItemUnique] = iTEMINFO;
@@ -710,6 +728,8 @@ public class ItemManager : NrTSingleton<ItemManager>
 		iTEMINFO.m_nParam[0] = pkItem.PARAM1;
 		iTEMINFO.m_nParam[1] = pkItem.PARAM2;
 		iTEMINFO.m_strMaterialCode = pkItem.MATERIALCODE;
+		iTEMINFO.m_nCardType = pkItem.CARD_TYPE;
+		iTEMINFO.m_nRecruitType = pkItem.Recruit_Type;
 		if (this.m_cdItemTotal.ContainsKey(iTEMINFO.m_nItemUnique))
 		{
 			this.m_cdItemTotal[iTEMINFO.m_nItemUnique] = iTEMINFO;
@@ -1372,11 +1392,12 @@ public class ItemManager : NrTSingleton<ItemManager>
 			return string.Empty;
 		}
 		int num = pkItem.m_nOption[4];
+		int num2 = pkItem.m_nOption[6];
 		if (0 < pkItem.m_nRank)
 		{
 			return NrTSingleton<UIDataManager>.Instance.GetString("+", pkItem.m_nRank.ToString(), this.GetItemNameByItemUnique(pkItem.m_nItemUnique));
 		}
-		if (num != 0)
+		if (num != 0 && num2 == 0)
 		{
 			ITEMSKILL_INFO iTEMSKILL_INFO = NrTSingleton<NrItemSkillInfoManager>.Instance.Get_Value(num);
 			if (iTEMSKILL_INFO != null)
@@ -1394,12 +1415,13 @@ public class ItemManager : NrTSingleton<ItemManager>
 			return string.Empty;
 		}
 		int num = pkItem.m_nOption[4];
+		int num2 = pkItem.m_nOption[6];
 		int rank = pkItem.m_nOption[2];
 		if (0 < pkItem.m_nRank)
 		{
 			return NrTSingleton<UIDataManager>.Instance.GetString("+", pkItem.m_nRank.ToString(), this.GetItemNameByItemUnique(pkItem.m_nItemUnique));
 		}
-		if (num != 0)
+		if (num != 0 && num2 == 0)
 		{
 			ITEMSKILL_INFO iTEMSKILL_INFO = NrTSingleton<NrItemSkillInfoManager>.Instance.Get_Value(num);
 			if (iTEMSKILL_INFO != null)
@@ -1430,5 +1452,141 @@ public class ItemManager : NrTSingleton<ItemManager>
 		string str = ItemManager.RankTextColor(Rank);
 		string str2 = ItemManager.RankText(Rank);
 		return str + str2;
+	}
+
+	public bool isItemGoldBar(int ItemUnique)
+	{
+		eITEM_PART itemPartByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(ItemUnique);
+		if (itemPartByItemUnique == eITEM_PART.ITEMPART_SUPPLY)
+		{
+			ITEMINFO itemInfo = NrTSingleton<ItemManager>.Instance.GetItemInfo(ItemUnique);
+			if (itemInfo == null)
+			{
+				return false;
+			}
+			if (itemInfo.m_nFunctions == 11)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public bool isExchangeItem(int ItemUnique)
+	{
+		eITEM_PART itemPartByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(ItemUnique);
+		if (itemPartByItemUnique == eITEM_PART.ITEMPART_SUPPLY)
+		{
+			eITEM_SUPPLY_FUNCTION eITEM_SUPPLY_FUNCTION = Protocol_Item.Get_Item_Supplies_Function_Index(ItemUnique);
+			if (eITEM_SUPPLY_FUNCTION == eITEM_SUPPLY_FUNCTION.SUPPLY_EXCHANGEITEM)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public bool isBattleSpeedItem(int ItemUnique)
+	{
+		eITEM_PART itemPartByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemPartByItemUnique(ItemUnique);
+		if (itemPartByItemUnique == eITEM_PART.ITEMPART_SUPPLY)
+		{
+			eITEM_SUPPLY_FUNCTION eITEM_SUPPLY_FUNCTION = Protocol_Item.Get_Item_Supplies_Function_Index(ItemUnique);
+			if (eITEM_SUPPLY_FUNCTION == eITEM_SUPPLY_FUNCTION.SUPPLY_BATTLESPEED)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	public void Add_GroupSolTicket(long _i64Unique, GROUP_SOL_TICKET _cInfo)
+	{
+		GROUPTICKET_INFO gROUPTICKET_INFO = new GROUPTICKET_INFO();
+		gROUPTICKET_INFO.m_strSolKind = _cInfo.strCHARCODE;
+		gROUPTICKET_INFO.m_i8Grade = _cInfo.i8Grade;
+		if (this.m_dicGroupSolTicket.ContainsKey(_i64Unique))
+		{
+			this.m_dicGroupSolTicket[_i64Unique].Add(gROUPTICKET_INFO);
+		}
+		else
+		{
+			this.m_dicGroupSolTicket.Add(_i64Unique, new List<GROUPTICKET_INFO>());
+			this.m_dicGroupSolTicket[_i64Unique].Add(gROUPTICKET_INFO);
+		}
+	}
+
+	public byte GetTopGrade_GroupSolTicket(long _i64Unique, string _strSolKind)
+	{
+		if (_i64Unique < 0L)
+		{
+			return 0;
+		}
+		if (string.IsNullOrEmpty(_strSolKind))
+		{
+			return 0;
+		}
+		if (!this.m_dicGroupSolTicket.ContainsKey(_i64Unique))
+		{
+			return 0;
+		}
+		byte b = 0;
+		List<GROUPTICKET_INFO> list = this.m_dicGroupSolTicket[_i64Unique];
+		if (list != null)
+		{
+			for (int i = 0; i < list.Count; i++)
+			{
+				if (list[i].m_strSolKind.Equals(_strSolKind) && b < list[i].m_i8Grade)
+				{
+					b = list[i].m_i8Grade;
+				}
+			}
+		}
+		return b;
+	}
+
+	public bool isEquipItem(int ItemUnique)
+	{
+		eITEM_POSTYPE posTypeByItemType = this.GetPosTypeByItemType(ItemUnique);
+		return eITEM_POSTYPE.INVEN_EQUIP_DEFENCE <= posTypeByItemType && eITEM_POSTYPE.INVEN_EQUIP_WEAPON_MAGIC >= posTypeByItemType;
+	}
+
+	public bool IsPrivateEquip(int i32ItemUnique)
+	{
+		if (i32ItemUnique < 0)
+		{
+			return false;
+		}
+		ITEMINFO itemInfo = this.GetItemInfo(i32ItemUnique);
+		return itemInfo != null && !(itemInfo.m_strOnlyUse == "0") && !string.IsNullOrEmpty(itemInfo.m_strOnlyUse);
+	}
+
+	public bool IsWearEquipItem(int i32ItemUnique, string strCharCode)
+	{
+		if (string.IsNullOrEmpty(strCharCode))
+		{
+			return false;
+		}
+		if (i32ItemUnique < 0)
+		{
+			return false;
+		}
+		ITEMINFO itemInfo = this.GetItemInfo(i32ItemUnique);
+		if (itemInfo == null)
+		{
+			return false;
+		}
+		if (itemInfo.m_strOnlyUse == "0" || string.IsNullOrEmpty(itemInfo.m_strOnlyUse))
+		{
+			return true;
+		}
+		for (int i = 0; i < 10; i++)
+		{
+			if (itemInfo.m_strOnlyUseCharCode[i].Equals(strCharCode))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }

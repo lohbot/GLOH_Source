@@ -11,5 +11,7 @@ namespace PROTOCOL.GAME
 		public char[] strGuildName = new char[11];
 
 		public byte i8SortType;
+
+		public bool bIsGuildWarRank;
 	}
 }

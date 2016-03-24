@@ -39,6 +39,7 @@ public class Main_UI_LevelUpAlarmMonarch : Form
 		Form form = this;
 		base.TopMost = true;
 		instance.LoadFileAll(ref form, "Main/dlg_generallevelup", G_ID.MAIN_UI_LEVELUP_ALARM_MONARCH, false);
+		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
 	}
 
 	public override void SetComponent()
@@ -162,7 +163,7 @@ public class Main_UI_LevelUpAlarmMonarch : Form
 
 	private void SetImage()
 	{
-		this.m_DrawTexture_DrawTexture0.SetTexture(eCharImageType.LARGE, this.m_nCharKind, -1);
+		this.m_DrawTexture_DrawTexture0.SetTexture(eCharImageType.LARGE, this.m_nCharKind, -1, string.Empty);
 	}
 
 	private void SetMessage()

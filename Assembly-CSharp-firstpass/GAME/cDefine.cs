@@ -11,5 +11,7 @@ namespace GAME
 		public const int CONTENTSLIMIT_PARAM_MAX = 10;
 
 		public const int MAX_BUFFICON_UNIQUE = 2;
+
+		public const int MAX_SKILLDESC_COUNT = 6;
 	}
 }

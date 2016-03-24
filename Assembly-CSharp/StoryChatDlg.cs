@@ -8,9 +8,13 @@ using UnityForms;
 
 public class StoryChatDlg : Form
 {
+	private const int MAX_STORYCHAT_CONTEXT_LENGTH = 89;
+
 	private static int MAX_STORYCHAT_LIST_NUM = 4;
 
-	private Toolbar m_Toolbar;
+	private Toggle[] m_Toggle = new Toggle[89];
+
+	private Box[] m_Notice = new Box[StoryChatDlg.MAX_STORYCHAT_LIST_NUM];
 
 	private NewListBox m_StoryChatList;
 
@@ -24,9 +28,17 @@ public class StoryChatDlg : Form
 
 	private Button m_Refresh;
 
-	private int m_nCurrentPage = 1;
+	public int m_nCurrentPage = 1;
 
-	private int m_nCurrentTabInex;
+	public int m_nCurrentTabInex;
+
+	private long FriendCommentID;
+
+	private long GuildCommentID;
+
+	private long RelpayCommentID;
+
+	private bool m_bCheck;
 
 	private List<StoryChatPortrait> m_UserPortraitList = new List<StoryChatPortrait>();
 
@@ -50,23 +62,26 @@ public class StoryChatDlg : Form
 
 	public override void SetComponent()
 	{
-		this.m_Toolbar = (base.GetControl("ToolBar") as Toolbar);
-		this.m_Toolbar.Control_Tab[0].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("296");
-		UIPanelTab expr_44 = this.m_Toolbar.Control_Tab[0];
-		expr_44.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_44.ButtonClick, new EZValueChangedDelegate(this.ClickToolbar));
-		this.m_Toolbar.Control_Tab[1].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1335");
-		UIPanelTab expr_93 = this.m_Toolbar.Control_Tab[1];
-		expr_93.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_93.ButtonClick, new EZValueChangedDelegate(this.ClickToolbar));
+		this.m_Toggle[0] = (base.GetControl("Toggle_tab1") as Toggle);
+		this.m_Toggle[0].SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickToolbar));
+		this.m_Notice[0] = (base.GetControl("Box_Notice1") as Box);
+		this.m_Notice[0].Visible = false;
+		this.m_Toggle[1] = (base.GetControl("Toggle_tab2") as Toggle);
+		this.m_Toggle[1].SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickToolbar));
+		this.m_Notice[1] = (base.GetControl("Box_Notice2") as Box);
+		this.m_Notice[1].Visible = false;
 		if (0L >= NrTSingleton<NewGuildManager>.Instance.GetGuildID())
 		{
-			this.m_Toolbar.Control_Tab[1].controlIsEnabled = false;
+			this.m_Toggle[1].enabled = false;
 		}
-		this.m_Toolbar.Control_Tab[2].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("297");
-		UIPanelTab expr_106 = this.m_Toolbar.Control_Tab[2];
-		expr_106.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_106.ButtonClick, new EZValueChangedDelegate(this.ClickToolbar));
-		this.m_Toolbar.Control_Tab[3].Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1955");
-		UIPanelTab expr_155 = this.m_Toolbar.Control_Tab[3];
-		expr_155.ButtonClick = (EZValueChangedDelegate)Delegate.Combine(expr_155.ButtonClick, new EZValueChangedDelegate(this.ClickToolbar));
+		this.m_Toggle[2] = (base.GetControl("Toggle_tab3") as Toggle);
+		this.m_Toggle[2].SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickToolbar));
+		this.m_Notice[2] = (base.GetControl("Box_Notice3") as Box);
+		this.m_Notice[2].Visible = false;
+		this.m_Toggle[3] = (base.GetControl("Toggle_tab4") as Toggle);
+		this.m_Toggle[3].SetValueChangedDelegate(new EZValueChangedDelegate(this.ClickToolbar));
+		this.m_Notice[3] = (base.GetControl("Box_Notice4") as Box);
+		this.m_Notice[3].Visible = false;
 		this.m_Write = (base.GetControl("BT_writing") as Button);
 		this.m_Write.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickWrite));
 		this.m_Prev = (base.GetControl("BT_Back") as Button);
@@ -85,33 +100,26 @@ public class StoryChatDlg : Form
 		{
 			this.m_CurrentStoryChatInfo[i] = new StoryChat_Info();
 		}
-		GS_STORYCHAT_GET_REQ gS_STORYCHAT_GET_REQ = new GS_STORYCHAT_GET_REQ();
-		gS_STORYCHAT_GET_REQ.nPersonID = 0L;
-		gS_STORYCHAT_GET_REQ.nType = 0;
-		gS_STORYCHAT_GET_REQ.nPage = 1;
-		gS_STORYCHAT_GET_REQ.nPageSize = StoryChatDlg.MAX_STORYCHAT_LIST_NUM;
-		gS_STORYCHAT_GET_REQ.nFirstStoryChatID = 0L;
-		gS_STORYCHAT_GET_REQ.nLastStoryChatID = 0L;
-		gS_STORYCHAT_GET_REQ.bNextRequest = 0;
-		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_STORYCHAT_GET_REQ, gS_STORYCHAT_GET_REQ);
+		this.NewStoryGet();
 		base.SetScreenCenter();
 	}
 
 	public void SelectToolbar(int index)
 	{
-		this.m_Toolbar.SetSelectTabIndex(index);
 	}
 
 	private void ClickToolbar(IUIObject obj)
 	{
-		UIPanelTab uIPanelTab = (UIPanelTab)obj;
-		if (uIPanelTab.panel.index == uIPanelTab.panelManager.CurrentPanel.index)
+		this.m_bCheck = true;
+		this.NewStoryGet();
+		for (int i = 0; i < StoryChatDlg.MAX_STORYCHAT_LIST_NUM; i++)
 		{
-			return;
+			if (this.m_Toggle[i].GetToggleState())
+			{
+				this.m_nCurrentTabInex = i;
+			}
 		}
-		this.m_nOldTabIndex = this.m_nCurrentTabInex;
 		this.m_nCurrentPage = 1;
-		this.m_nCurrentTabInex = uIPanelTab.panel.index;
 		if (this.m_nCurrentTabInex == 0 || this.m_nCurrentTabInex == 1)
 		{
 			this.m_Write.Visible = true;
@@ -130,7 +138,7 @@ public class StoryChatDlg : Form
 		}
 		GS_STORYCHAT_GET_REQ gS_STORYCHAT_GET_REQ = new GS_STORYCHAT_GET_REQ();
 		gS_STORYCHAT_GET_REQ.nPersonID = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetPersonID();
-		gS_STORYCHAT_GET_REQ.nType = (byte)uIPanelTab.panel.index;
+		gS_STORYCHAT_GET_REQ.nType = (byte)this.m_nCurrentTabInex;
 		gS_STORYCHAT_GET_REQ.nPage = 1;
 		gS_STORYCHAT_GET_REQ.nPageSize = StoryChatDlg.MAX_STORYCHAT_LIST_NUM;
 		gS_STORYCHAT_GET_REQ.nFirstStoryChatID = 0L;
@@ -202,7 +210,8 @@ public class StoryChatDlg : Form
 			gS_STORYCHAT_GET_REQ.bNextRequest = 0;
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_STORYCHAT_GET_REQ, gS_STORYCHAT_GET_REQ);
 			this.m_nCurrentPage--;
-			this.m_Next.controlIsEnabled = true;
+			this.m_Next.controlIsEnabled = false;
+			this.m_Prev.controlIsEnabled = false;
 		}
 	}
 
@@ -222,12 +231,15 @@ public class StoryChatDlg : Form
 			gS_STORYCHAT_GET_REQ.nLastStoryChatID = nStoryChatID2;
 			gS_STORYCHAT_GET_REQ.bNextRequest = 1;
 			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_STORYCHAT_GET_REQ, gS_STORYCHAT_GET_REQ);
-			this.m_Prev.controlIsEnabled = true;
+			this.m_Next.controlIsEnabled = false;
+			this.m_Prev.controlIsEnabled = false;
 		}
 	}
 
 	private void ClickRefresh(IUIObject obj)
 	{
+		this.m_bCheck = true;
+		this.RefreshNoticeCount(this.m_nCurrentTabInex);
 		GS_STORYCHAT_GET_REQ gS_STORYCHAT_GET_REQ = new GS_STORYCHAT_GET_REQ();
 		gS_STORYCHAT_GET_REQ.nPersonID = NrTSingleton<NkCharManager>.Instance.GetChar(1).GetPersonID();
 		gS_STORYCHAT_GET_REQ.nType = (byte)this.m_nCurrentTabInex;
@@ -300,6 +312,18 @@ public class StoryChatDlg : Form
 
 	public void SetBattleStoryChatList(StoryChat_Info[] array)
 	{
+		string key = "LastReplayStoryChatID";
+		string s = string.Empty;
+		long num = 0L;
+		if (PlayerPrefs.HasKey(key))
+		{
+			s = PlayerPrefs.GetString(key);
+			num = long.Parse(s);
+		}
+		if (num < array[0].nLastCommentID)
+		{
+			PlayerPrefs.SetString(key, array[0].nLastCommentID.ToString());
+		}
 		this.m_nOldTabIndex = this.m_nCurrentTabInex;
 		this.m_StoryChatList.SetColumnData("Mobile/DLG/StoryChat/NLB_Scene01_ColumnData" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
 		for (int i = 0; i < StoryChatDlg.MAX_STORYCHAT_LIST_NUM; i++)
@@ -322,20 +346,24 @@ public class StoryChatDlg : Form
 		{
 			this.m_Prev.controlIsEnabled = false;
 		}
-		this.m_StoryChatList.Clear();
-		string key = "ReplayStoryChatID";
-		string s = string.Empty;
-		long num = 0L;
-		if (PlayerPrefs.HasKey(key))
+		else
 		{
-			s = PlayerPrefs.GetString(key);
-			num = long.Parse(s);
+			this.m_Prev.controlIsEnabled = true;
+		}
+		this.m_StoryChatList.Clear();
+		string key2 = "ReplayStoryChatID";
+		string s2 = string.Empty;
+		long num2 = 0L;
+		if (PlayerPrefs.HasKey(key2))
+		{
+			s2 = PlayerPrefs.GetString(key2);
+			num2 = long.Parse(s2);
 		}
 		for (int k = 0; k < array.Length; k++)
 		{
 			if (array[k].nCharKind == 8 || array[k].nCharKind == 6 || array[k].nCharKind == 5)
 			{
-				NewListItem newListItem = new NewListItem(this.m_StoryChatList.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_StoryChatList.ColumnNum, true, string.Empty);
 				char[] separator = new char[]
 				{
 					'/'
@@ -407,7 +435,7 @@ public class StoryChatDlg : Form
 				newListItem.SetListItemData(2, empty4, null, null, null);
 				newListItem.SetListItemData(6, array[k].nCommentCount.ToString(), null, null, null);
 				newListItem.SetListItemData(7, array[k].nLikeCount.ToString(), null, null, null);
-				if (array[k].nStoryChatID > num)
+				if (array[k].nStoryChatID > num2)
 				{
 					newListItem.SetListItemData(10, true);
 				}
@@ -455,6 +483,7 @@ public class StoryChatDlg : Form
 	public void SetStoryChatList(int type, StoryChat_Info[] array)
 	{
 		this.m_nOldTabIndex = this.m_nCurrentTabInex;
+		long guildID = NrTSingleton<NewGuildManager>.Instance.GetGuildID();
 		this.m_StoryChatList.SetColumnData("Mobile/DLG/StoryChat/NLB_Talk_ColumnData" + NrTSingleton<UIDataManager>.Instance.AddFilePath);
 		for (int i = 0; i < StoryChatDlg.MAX_STORYCHAT_LIST_NUM; i++)
 		{
@@ -477,36 +506,71 @@ public class StoryChatDlg : Form
 		{
 			this.m_Prev.controlIsEnabled = false;
 		}
+		else
+		{
+			this.m_Prev.controlIsEnabled = true;
+		}
 		this.m_StoryChatList.Clear();
 		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
 		if (charPersonInfo == null)
 		{
 			return;
 		}
+		string key = charPersonInfo.GetCharName() + "LastFriendStoryChatID";
+		string key2 = charPersonInfo.GetCharName() + "LastGuildStoryChatID";
 		string charName = charPersonInfo.GetCharName();
 		string s = string.Empty;
 		long num = 0L;
 		if (type == 0)
 		{
-			string key = charName + "NewStoryChatID";
+			string key3 = charName + "NewStoryChatID";
+			if (PlayerPrefs.HasKey(key3))
+			{
+				s = PlayerPrefs.GetString(key3);
+				num = long.Parse(s);
+			}
+			string s2 = string.Empty;
+			long num2 = 0L;
 			if (PlayerPrefs.HasKey(key))
 			{
-				s = PlayerPrefs.GetString(key);
-				num = long.Parse(s);
+				s2 = PlayerPrefs.GetString(key);
+				num2 = long.Parse(s2);
+			}
+			if (num2 < array[0].nLastCommentID)
+			{
+				PlayerPrefs.SetString(key, array[0].nLastCommentID.ToString());
 			}
 		}
 		else if (type == 1)
 		{
-			string key2 = charName + NrTSingleton<NewGuildManager>.Instance.GetGuildName();
+			string key4 = charName + NrTSingleton<NewGuildManager>.Instance.GetGuildName();
+			if (PlayerPrefs.HasKey(key4))
+			{
+				s = PlayerPrefs.GetString(key4);
+				num = long.Parse(s);
+			}
+			string s3 = string.Empty;
+			long num3 = 0L;
 			if (PlayerPrefs.HasKey(key2))
 			{
-				s = PlayerPrefs.GetString(key2);
-				num = long.Parse(s);
+				s3 = PlayerPrefs.GetString(key2);
+				num3 = long.Parse(s3);
+			}
+			if (num3 < array[0].nLastCommentID)
+			{
+				if (guildID != 0L)
+				{
+					PlayerPrefs.SetString(key2, array[0].nLastCommentID.ToString());
+				}
+				else
+				{
+					PlayerPrefs.SetString(key2, "0");
+				}
 			}
 		}
 		for (int k = 0; k < array.Length; k++)
 		{
-			NewListItem newListItem = new NewListItem(this.m_StoryChatList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_StoryChatList.ColumnNum, true, string.Empty);
 			StoryChatPortrait community_User = this.GetCommunity_User(array[k].nPersonID);
 			if (community_User != null)
 			{
@@ -523,14 +587,27 @@ public class StoryChatDlg : Form
 						newListItem.SetListItemData(0, "Win_I_EventSol", null, null, null);
 						newListItem.EventMark = true;
 					}
-					newListItem.SetListItemData(1, array[k].nCharKind, null, null, null);
+					newListItem.SetListItemData(1, new CostumeDrawTextureInfo
+					{
+						imageType = eCharImageType.SMALL,
+						charKind = array[k].nCharKind,
+						costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(array[k].nFaceCharCostumeUnique)
+					}, null, null, null);
 				}
 			}
 			else
 			{
-				StoryChatPortrait storyChatPortrait = new StoryChatPortrait();
-				storyChatPortrait.Set(array[k].nPersonID, true);
-				this.m_UserPortraitList.Add(storyChatPortrait);
+				CostumeDrawTextureInfo costumeDrawTextureInfo = new CostumeDrawTextureInfo();
+				costumeDrawTextureInfo.imageType = eCharImageType.SMALL;
+				costumeDrawTextureInfo.charKind = array[k].nCharKind;
+				costumeDrawTextureInfo.costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(array[k].nFaceCharCostumeUnique);
+				newListItem.SetListItemData(1, costumeDrawTextureInfo, null, null, null);
+				if (costumeDrawTextureInfo.costumePortraitPath == string.Empty)
+				{
+					StoryChatPortrait storyChatPortrait = new StoryChatPortrait();
+					storyChatPortrait.Set(array[k].nPersonID, true);
+					this.m_UserPortraitList.Add(storyChatPortrait);
+				}
 			}
 			string text = TKString.NEWString(array[k].szName);
 			if (0L < array[k].nGuildID)
@@ -560,9 +637,9 @@ public class StoryChatDlg : Form
 			newListItem.SetListItemData(4, empty, null, null, null);
 			string text2 = TKString.NEWString(array[k].szMessage);
 			text2 = text2.Replace("\n", " ");
-			if (100 < text2.Length)
+			if (89 < text2.Length)
 			{
-				text2 = text2.Substring(0, 100);
+				text2 = text2.Substring(0, 89);
 				text2 += "...";
 			}
 			newListItem.SetListItemData(6, text2, null, null, null);
@@ -599,6 +676,10 @@ public class StoryChatDlg : Form
 		}
 		this.m_StoryChatList.RepositionItems();
 		this.m_Page.Text = this.m_nCurrentPage.ToString();
+		if (type == 1 && guildID <= 0L)
+		{
+			this.InitStoryChatList(type);
+		}
 	}
 
 	public void DeleteStoryChat(IUIObject obj)
@@ -613,7 +694,7 @@ public class StoryChatDlg : Form
 		{
 			return;
 		}
-		msgBoxUI.SetMsg(new YesDelegate(this.RequestDeleteStoryChat), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("3"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("75"), eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.RequestDeleteStoryChat), num, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("3184"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("75"), eMsgType.MB_OK_CANCEL, 2);
 		msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10"));
 		msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 	}
@@ -626,6 +707,7 @@ public class StoryChatDlg : Form
 		}
 		long nStoryChatID = (long)obj;
 		GS_STORYCHAT_SET_REQ gS_STORYCHAT_SET_REQ = new GS_STORYCHAT_SET_REQ();
+		gS_STORYCHAT_SET_REQ.m_nType = this.m_nCurrentTabInex;
 		gS_STORYCHAT_SET_REQ.m_nStoryChatID = nStoryChatID;
 		TKString.StringChar(string.Empty, ref gS_STORYCHAT_SET_REQ.szMessage);
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_STORYCHAT_SET_REQ, gS_STORYCHAT_SET_REQ);
@@ -713,15 +795,15 @@ public class StoryChatDlg : Form
 	{
 		for (int i = 0; i < this.m_StoryChatList.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = this.m_StoryChatList.GetItem(i) as UIListItemContainer;
-			if (!(uIListItemContainer == null))
+			UIListItemContainer item = this.m_StoryChatList.GetItem(i);
+			if (!(item == null))
 			{
-				StoryChat_Info storyChat_Info = (StoryChat_Info)uIListItemContainer.data;
+				StoryChat_Info storyChat_Info = (StoryChat_Info)item.data;
 				if (storyChat_Info != null)
 				{
 					if (storyChat_Info.nPersonID == i64PersonID)
 					{
-						NewListItem newListItem = new NewListItem(this.m_StoryChatList.ColumnNum, true);
+						NewListItem newListItem = new NewListItem(this.m_StoryChatList.ColumnNum, true, string.Empty);
 						Texture2D friendPortraitPersonID = this.GetFriendPortraitPersonID(storyChat_Info.nPersonID);
 						if (friendPortraitPersonID != null)
 						{
@@ -765,9 +847,9 @@ public class StoryChatDlg : Form
 						newListItem.SetListItemData(4, empty, null, null, null);
 						string text2 = TKString.NEWString(storyChat_Info.szMessage);
 						text2 = text2.Replace("\n", " ");
-						if (100 < text2.Length)
+						if (89 < text2.Length)
 						{
-							text2 = text2.Substring(0, 100);
+							text2 = text2.Substring(0, 89);
 							text2 += "...";
 						}
 						newListItem.SetListItemData(6, text2, null, null, null);
@@ -816,5 +898,153 @@ public class StoryChatDlg : Form
 	public List<StoryChatPortrait> GetStoryChatPortraitList()
 	{
 		return this.m_UserPortraitList;
+	}
+
+	public void SetTabNoticeCount(byte nFriendCount, long nFriendCommentID, byte nGuildCount, long nGuildCommentID, byte nReplayCount, long nReplayCommentID)
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		if (charPersonInfo == null)
+		{
+			return;
+		}
+		long guildID = NrTSingleton<NewGuildManager>.Instance.GetGuildID();
+		byte b = 0;
+		if (nFriendCount > 0)
+		{
+			string key = charPersonInfo.GetCharName() + "LastFriendStoryChatID";
+			string s = string.Empty;
+			long num = 0L;
+			if (PlayerPrefs.HasKey(key))
+			{
+				s = PlayerPrefs.GetString(key);
+				num = long.Parse(s);
+			}
+			if (num < nFriendCommentID)
+			{
+				PlayerPrefs.SetString(key, nFriendCommentID.ToString());
+			}
+			this.m_Notice[0].Visible = true;
+			this.m_Notice[0].Text = nFriendCount.ToString();
+		}
+		else
+		{
+			this.m_Notice[0].Visible = false;
+		}
+		if (nGuildCount > 0 && guildID > 0L)
+		{
+			string key2 = charPersonInfo.GetCharName() + "LastGuildStoryChatID";
+			string s2 = string.Empty;
+			long num2 = 0L;
+			if (PlayerPrefs.HasKey(key2))
+			{
+				s2 = PlayerPrefs.GetString(key2);
+				num2 = long.Parse(s2);
+			}
+			if (num2 < nGuildCommentID)
+			{
+				PlayerPrefs.SetString(key2, nGuildCommentID.ToString());
+			}
+			this.m_Notice[1].Visible = true;
+			this.m_Notice[1].Text = nGuildCount.ToString();
+		}
+		else
+		{
+			this.m_Notice[1].Visible = false;
+		}
+		if (nReplayCount <= 0)
+		{
+			this.m_Notice[3].Visible = false;
+		}
+		if (this.m_Notice[0].Visible)
+		{
+			b = 0;
+		}
+		else if (this.m_Notice[1].Visible)
+		{
+			b = 1;
+		}
+		else if (this.m_Notice[3].Visible)
+		{
+		}
+		if (this.m_Notice[0].Visible || this.m_Notice[1].Visible || this.m_Notice[3].Visible)
+		{
+			NrTSingleton<UIDataManager>.Instance.NoticeStoryChat = true;
+		}
+		else
+		{
+			NrTSingleton<UIDataManager>.Instance.NoticeStoryChat = false;
+		}
+		if (!this.m_bCheck)
+		{
+			for (int i = 0; i < StoryChatDlg.MAX_STORYCHAT_LIST_NUM; i++)
+			{
+				if (this.m_Toggle[i].GetToggleState())
+				{
+					this.m_Toggle[i].SetToggleState(false);
+				}
+			}
+			this.m_Toggle[(int)b].SetToggleState(true);
+			this.m_nCurrentTabInex = (int)b;
+			if (this.m_nCurrentTabInex == 0 || this.m_nCurrentTabInex == 1)
+			{
+				this.m_Write.Visible = true;
+			}
+			else
+			{
+				this.m_Write.Visible = false;
+			}
+			if (this.m_nCurrentTabInex == 0 || this.m_nCurrentTabInex == 1 || this.m_nCurrentTabInex == 2)
+			{
+				this.m_bBattleReplay = false;
+			}
+			else if (this.m_nCurrentTabInex == 3)
+			{
+				this.m_bBattleReplay = true;
+			}
+			GS_STORYCHAT_GET_REQ gS_STORYCHAT_GET_REQ = new GS_STORYCHAT_GET_REQ();
+			gS_STORYCHAT_GET_REQ.nPersonID = 0L;
+			gS_STORYCHAT_GET_REQ.nType = b;
+			gS_STORYCHAT_GET_REQ.nPage = 1;
+			gS_STORYCHAT_GET_REQ.nPageSize = StoryChatDlg.MAX_STORYCHAT_LIST_NUM;
+			gS_STORYCHAT_GET_REQ.nFirstStoryChatID = 0L;
+			gS_STORYCHAT_GET_REQ.nLastStoryChatID = 0L;
+			gS_STORYCHAT_GET_REQ.bNextRequest = 0;
+			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_STORYCHAT_GET_REQ, gS_STORYCHAT_GET_REQ);
+		}
+	}
+
+	public void NewStoryGet()
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		if (charPersonInfo == null)
+		{
+			return;
+		}
+		string key = charPersonInfo.GetCharName() + "LastFriendStoryChatID";
+		string key2 = charPersonInfo.GetCharName() + "LastGuildStoryChatID";
+		string key3 = "LastReplayStoryChatID";
+		if (PlayerPrefs.HasKey(key))
+		{
+			this.FriendCommentID = long.Parse(PlayerPrefs.GetString(key));
+		}
+		if (PlayerPrefs.HasKey(key2))
+		{
+			this.GuildCommentID = long.Parse(PlayerPrefs.GetString(key2));
+		}
+		if (PlayerPrefs.HasKey(key3))
+		{
+			this.RelpayCommentID = long.Parse(PlayerPrefs.GetString(key3));
+		}
+		GS_STORYCOMMENT_NEWCOUNT_REQ gS_STORYCOMMENT_NEWCOUNT_REQ = new GS_STORYCOMMENT_NEWCOUNT_REQ();
+		gS_STORYCOMMENT_NEWCOUNT_REQ.nPersonID = charPersonInfo.GetPersonID();
+		gS_STORYCOMMENT_NEWCOUNT_REQ.m_nLastFriendCommentID = this.FriendCommentID;
+		gS_STORYCOMMENT_NEWCOUNT_REQ.m_nLastGuildCommentID = this.GuildCommentID;
+		gS_STORYCOMMENT_NEWCOUNT_REQ.m_nLastReplayCommentID = this.RelpayCommentID;
+		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_STORYCOMMENT_NEWCOUNT_REQ, gS_STORYCOMMENT_NEWCOUNT_REQ);
+	}
+
+	public void RefreshNoticeCount(int nTabIndex)
+	{
+		this.m_Notice[nTabIndex].Visible = false;
 	}
 }

@@ -8,6 +8,8 @@ public class PostFriendDlg : Form
 
 	private Button m_Confirm;
 
+	private Button m_btClose;
+
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -22,8 +24,11 @@ public class PostFriendDlg : Form
 		this.m_FriendList.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickFriendList));
 		this.m_Confirm = (base.GetControl("Button_confirm") as Button);
 		this.m_Confirm.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickConfirm));
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 		this.SetFriendList();
 		base.SetScreenCenter();
+		base.ShowBlackBG(0.5f);
 	}
 
 	private void SetFriendList()
@@ -33,7 +38,7 @@ public class PostFriendDlg : Form
 		{
 			if (1L > uSER_FRIEND_INFO.FriendHelpSolInfo.i64HelpSolID || uSER_FRIEND_INFO.FriendHelpSolInfo.i64HelpSolID >= 11L)
 			{
-				NewListItem newListItem = new NewListItem(this.m_FriendList.ColumnNum, true);
+				NewListItem newListItem = new NewListItem(this.m_FriendList.ColumnNum, true, string.Empty);
 				string text = TKString.NEWString(uSER_FRIEND_INFO.szName);
 				newListItem.SetListItemData(0, text, null, null, null);
 				newListItem.SetListItemData(1, uSER_FRIEND_INFO.i16Level.ToString(), null, null, null);

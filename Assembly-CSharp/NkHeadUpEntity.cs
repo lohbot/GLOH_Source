@@ -485,7 +485,7 @@ public class NkHeadUpEntity : IDisposable
 		return true;
 	}
 
-	public void MakeCharGuild(eCharKindType chartype, long i64GuildID, string strGuildName, Color TextColor, bool ridestate)
+	public void MakeCharGuild(eCharKindType chartype, long i64GuildID, string strGuildName, bool bGuildWar, bool ridestate)
 	{
 		if (this.m_pkHeadUpRoot == null)
 		{
@@ -506,8 +506,16 @@ public class NkHeadUpEntity : IDisposable
 				component.Init();
 				if (strGuildName.Length != 0)
 				{
-					string textColor = NrTSingleton<CTextParser>.Instance.GetTextColor("2005");
-					component.SetText(textColor + strGuildName);
+					string str = string.Empty;
+					if (bGuildWar)
+					{
+						str = NrTSingleton<CTextParser>.Instance.GetTextColor("1401");
+					}
+					else
+					{
+						str = NrTSingleton<CTextParser>.Instance.GetTextColor("2005");
+					}
+					component.SetText(str + strGuildName);
 					component.SetTextSize(12f);
 					this.MakeCharGuildRank(component);
 					if (i64GuildID != 0L)

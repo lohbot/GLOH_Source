@@ -332,7 +332,7 @@ public class QuestListInfo_DLG : Form
 			if (charKindInfo != null)
 			{
 				kLabel1.Text = charKindInfo.GetName();
-				texture.SetTexture(eCharImageType.SMALL, charKindInfo.GetCharKind(), -1);
+				texture.SetTexture(eCharImageType.SMALL, charKindInfo.GetCharKind(), -1, string.Empty);
 			}
 			kLabel2.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("488");
 			texture.nItemUniqueTooltip = 0;
@@ -344,7 +344,7 @@ public class QuestListInfo_DLG : Form
 			if (charKindInfo2 != null)
 			{
 				kLabel1.Text = charKindInfo2.GetName();
-				texture.SetTexture(eCharImageType.SMALL, charKindInfo2.GetCharKind(), -1);
+				texture.SetTexture(eCharImageType.SMALL, charKindInfo2.GetCharKind(), -1, string.Empty);
 			}
 			kLabel2.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("487");
 			texture.nItemUniqueTooltip = 0;
@@ -388,7 +388,7 @@ public class QuestListInfo_DLG : Form
 			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 			if (msgBoxUI != null)
 			{
-				msgBoxUI.SetMsg(new YesDelegate(this.CancelQuest), this.m_Quest, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("799"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("126"), eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.CancelQuest), this.m_Quest, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("799"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("126"), eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("320"));
 				msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("321"));
 			}

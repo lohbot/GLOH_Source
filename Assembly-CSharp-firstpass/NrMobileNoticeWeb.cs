@@ -8,7 +8,7 @@ public class NrMobileNoticeWeb : IWebViewListener
 
 	public void OnFrontNotice()
 	{
-		this.OpenURL = string.Format("https://{0}/mobilenotice/top_view.aspx", NrGlobalReference.strWebPageDomain);
+		this.OpenURL = string.Format("http://{0}/mobilenotice/top_view.aspx", NrGlobalReference.strWebPageDomain);
 		TsPlatform.Operator.OpenURL(this.OpenURL, this, true, false, true, true);
 	}
 
@@ -45,9 +45,18 @@ public class NrMobileNoticeWeb : IWebViewListener
 		TsPlatform.Operator.OpenURL(this.OpenURL, this, true, true, false, true);
 	}
 
-	public void OnGameQuestion(string strOTP)
+	public void OnGameQuestion(string strOTP, string strCharName)
 	{
-		this.OpenURL = string.Format("{0}://{1}/hc/en-us/requests/new", (!NrTSingleton<NrGlobalReference>.Instance.IsLocalServiceArea()) ? "https" : "http", NrGlobalReference.strUSAWepPageDomain, strOTP);
+		string text = string.Empty;
+		if (TsPlatform.IsAndroid)
+		{
+			text = TsPlatform.APP_VERSION_AND;
+		}
+		else if (TsPlatform.IsIPhone)
+		{
+			text = TsPlatform.APP_VERSION_IOS;
+		}
+		this.OpenURL = string.Format("{0}://{1}/legion-of-heroes-support", (!NrTSingleton<NrGlobalReference>.Instance.IsLocalServiceArea()) ? "https" : "http", NrGlobalReference.strUSAWepPageDomain, strOTP);
 		TsPlatform.Operator.OpenURL(this.OpenURL, this, true, true, false, true);
 	}
 
@@ -88,7 +97,7 @@ public class NrMobileNoticeWeb : IWebViewListener
 
 	public void OnPolicyView()
 	{
-		TsPlatform.Operator.OpenURL(string.Format("http://{0}/member/policy_view.aspx?t=terms", NrGlobalReference.strWebPageDomain), this, true, true, false, true);
+		TsPlatform.Operator.OpenURL("http://m-page.nexon.com/term/16", this, true, true, false, true);
 	}
 
 	public bool OnWebCall(string WebCall)
@@ -199,5 +208,10 @@ public class NrMobileNoticeWeb : IWebViewListener
 		{
 			TsPlatform.Operator.OpenURL(mineguidewebcall, this, true, false, false, true);
 		}
+	}
+
+	public void OnRateOpenUrl(string strUrl)
+	{
+		TsPlatform.Operator.OpenURL(strUrl, this, true, true, false, true);
 	}
 }

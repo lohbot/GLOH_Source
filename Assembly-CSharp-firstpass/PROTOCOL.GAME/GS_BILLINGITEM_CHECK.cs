@@ -10,6 +10,6 @@ namespace PROTOCOL.GAME
 
 		public char[] ProductID = new char[12];
 
-		public long UniqueCode;
+		public char[] UniqueCode = new char[128];
 	}
 }

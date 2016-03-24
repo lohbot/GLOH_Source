@@ -9,5 +9,9 @@ namespace PROTOCOL.GAME
 		public byte i8Cnt;
 
 		public long[] i64SolID = new long[50];
+
+		public long i64AffterMoney;
+
+		public long i64SellMoney;
 	}
 }

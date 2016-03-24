@@ -48,7 +48,7 @@ public class BabelTower_FriendList : Form
 				USER_FRIEND_INFO friend = kMyCharInfo.m_kFriendInfo.GetFriend(babelFloor_FriendList[i].i64FriendPersonID);
 				if (friend != null)
 				{
-					NewListItem newListItem = new NewListItem(5, true);
+					NewListItem newListItem = new NewListItem(5, true, string.Empty);
 					Texture2D friendTexture = kMyCharInfo.GetFriendTexture(babelFloor_FriendList[i].i64FriendPersonID);
 					if (friendTexture == null)
 					{
@@ -56,7 +56,8 @@ public class BabelTower_FriendList : Form
 						{
 							SolCharKind = friend.i32FaceCharKind,
 							SolGrade = -1,
-							SolLevel = friend.i16Level
+							SolLevel = friend.i16Level,
+							SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(friend.i32FaceCharCostumeUnique)
 						}, null, null, null);
 					}
 					else

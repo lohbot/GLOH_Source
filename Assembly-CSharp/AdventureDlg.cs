@@ -176,7 +176,7 @@ public class AdventureDlg : Form
 		this.m_NextButton = (base.GetControl("Button_NextPageBtn01") as Button);
 		this.m_NextButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickNext));
 		this.m_NpcFace = (base.GetControl("NPC_Face") as DrawTexture);
-		this.m_NpcFace.SetTexture(eCharImageType.LARGE, 242, -1);
+		this.m_NpcFace.SetTexture(eCharImageType.LARGE, 242, -1, string.Empty);
 		this.m_BaloonText = (base.GetControl("BaloonText") as Label);
 		this.m_SubStory = (base.GetControl("Button_SubStory") as Button);
 		if (null != this.m_SubStory)
@@ -209,7 +209,6 @@ public class AdventureDlg : Form
 			return;
 		}
 		NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.QUEST_SUBSTORY_DLG);
-		this.Close();
 	}
 
 	public void DrawAdventure()
@@ -227,7 +226,7 @@ public class AdventureDlg : Form
 				{
 					return;
 				}
-				msgBoxUI.SetMsg(new YesDelegate(this.OnOKDownStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2458"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("213"), eMsgType.MB_OK_CANCEL);
+				msgBoxUI.SetMsg(new YesDelegate(this.OnOKDownStart), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2458"), NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("213"), eMsgType.MB_OK_CANCEL, 2);
 				msgBoxUI.SetButtonOKText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("10"));
 				msgBoxUI.SetButtonCancelText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("11"));
 			}
@@ -398,7 +397,7 @@ public class AdventureDlg : Form
 			NrCharKindInfo charKindInfoFromCode = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfoFromCode(adventure.GetMonsterKind(i));
 			if (charKindInfoFromCode != null)
 			{
-				this.m_AdventureControl[i].m_MonsterImage.SetTexture(eCharImageType.SMALL, charKindInfoFromCode.GetCharKind(), -1);
+				this.m_AdventureControl[i].m_MonsterImage.SetTexture(eCharImageType.SMALL, charKindInfoFromCode.GetCharKind(), -1, string.Empty);
 				this.m_AdventureControl[i].m_ClearImage.Visible = false;
 				if (NrTSingleton<NkQuestManager>.Instance.QuestGroupClearCheck(adventure.GetQuestGroupUnique(i)) == QUEST_CONST.E_QUEST_GROUP_STATE.E_QUEST_GROUP_STATE_NONE)
 				{
@@ -422,7 +421,7 @@ public class AdventureDlg : Form
 								this.m_AdventureControl[i].m_NpcButton.Visible = true;
 								this.m_AdventureControl[i].m_NpcImage.Visible = true;
 								this.m_AdventureControl[i].m_QuestMark.Visible = true;
-								this.m_AdventureControl[i].m_NpcImage.SetTexture(eCharImageType.SMALL, cQuest.GetQuestCommon().i32QuestCharKind, -1);
+								this.m_AdventureControl[i].m_NpcImage.SetTexture(eCharImageType.SMALL, cQuest.GetQuestCommon().i32QuestCharKind, -1, string.Empty);
 								this.m_AdventureControl[i].m_MonsterLevel.Text = NrTSingleton<UIDataManager>.Instance.GetString(NrTSingleton<CTextParser>.Instance.GetTextColor("1002"), NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("152"), charKindInfoFromCode.GetCHARKIND_MONSTERINFO().MINLEVEL.ToString());
 							}
 							else if (questState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_ONGOING || questState == QUEST_CONST.eQUESTSTATE.QUESTSTATE_COMPLETE)

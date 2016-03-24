@@ -1,3 +1,4 @@
+using NLibCs;
 using System;
 using System.IO;
 using System.Net;
@@ -8,6 +9,13 @@ namespace NPatch
 {
 	public class Util
 	{
+		public enum eCheckResourcePatch
+		{
+			NEED,
+			NOT_NEED,
+			NOT_CONNECT
+		}
+
 		public static string GetMD5(string strFilePath)
 		{
 			if (strFilePath == string.Empty)
@@ -126,7 +134,16 @@ namespace NPatch
 		public static float GetPackStartVersion(string packName)
 		{
 			string fileName = Path.GetFileName(packName);
-			string s = fileName.Substring(0, fileName.LastIndexOf('_'));
+			string text = fileName.Substring(0, fileName.LastIndexOf('_'));
+			string s = string.Empty;
+			if (text.Contains("pre"))
+			{
+				s = text.Substring(3, text.Length - 3);
+			}
+			else
+			{
+				s = text;
+			}
 			float result = 0f;
 			if (float.TryParse(s, out result))
 			{
@@ -142,6 +159,7 @@ namespace NPatch
 			string text3 = string.Empty;
 			string text4 = string.Empty;
 			string s = string.Empty;
+			string empty = string.Empty;
 			if (text2.Contains(","))
 			{
 				text3 = text2.Substring(0, text2.IndexOf(','));
@@ -188,11 +206,18 @@ namespace NPatch
 			{
 				text3 = text2;
 			}
-			if (!text3.Contains("["))
+			if (text3.Contains("["))
 			{
-				return -1;
+				s = text3.Substring(text3.IndexOf('[') + 1, text3.Length - text3.IndexOf(']'));
 			}
-			s = text3.Substring(text3.IndexOf('[') + 1, text3.Length - text3.IndexOf(']'));
+			else
+			{
+				if (!text3.Contains("("))
+				{
+					return -1;
+				}
+				s = text3.Substring(text3.IndexOf('(') + 1, text3.Length - text3.IndexOf(')'));
+			}
 			int result = 0;
 			if (int.TryParse(s, out result))
 			{
@@ -285,11 +310,114 @@ namespace NPatch
 			return !File.Exists(path);
 		}
 
+		public static bool IsNeedBundlePatch(string urlPath, string versionStr)
+		{
+			string arg = "final.client.version.txt";
+			int num = 0;
+			if (versionStr.Contains("."))
+			{
+				versionStr.Replace(".", string.Empty);
+			}
+			int num2 = Convert.ToInt32(versionStr);
+			string requestUriString = string.Format("{0}/apk/{1}", urlPath, arg);
+			bool result;
+			try
+			{
+				HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(requestUriString);
+				httpWebRequest.Timeout = 10000;
+				HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+				Stream responseStream = httpWebResponse.GetResponseStream();
+				NDataReader nDataReader = new NDataReader();
+				if (nDataReader.LoadFrom(responseStream, Encoding.UTF8))
+				{
+					num = nDataReader["Header"]["bundleversion"];
+				}
+				httpWebResponse.Close();
+				if (num2 >= num)
+				{
+					result = false;
+				}
+				else
+				{
+					result = true;
+				}
+			}
+			catch (Exception ex)
+			{
+				Util._OutputDebug(ex.ToString());
+				result = false;
+			}
+			return result;
+		}
+
+		public static Util.eCheckResourcePatch CheckRsourcePatchForLOH(string patchSerialPath, string localRoot)
+		{
+			Util.eCheckResourcePatch result;
+			try
+			{
+				HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(patchSerialPath);
+				httpWebRequest.Timeout = 5000;
+				HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
+				Stream responseStream = httpWebResponse.GetResponseStream();
+				NDataReader nDataReader = new NDataReader();
+				if (nDataReader.LoadFrom(responseStream))
+				{
+					float num = 0f;
+					nDataReader.ReadKeyData("patch_serial", out num);
+					float localResourceVersion = Util.GetLocalResourceVersion(localRoot);
+					if (num > localResourceVersion)
+					{
+						result = Util.eCheckResourcePatch.NEED;
+					}
+					else
+					{
+						result = Util.eCheckResourcePatch.NOT_NEED;
+					}
+				}
+				else
+				{
+					result = Util.eCheckResourcePatch.NOT_CONNECT;
+				}
+			}
+			catch (Exception ex)
+			{
+				Util._OutputDebug(ex.ToString());
+				result = Util.eCheckResourcePatch.NOT_CONNECT;
+			}
+			return result;
+		}
+
+		public static float GetLocalResourceVersion(string localPath)
+		{
+			int num = 0;
+			string text = Path.Combine(localPath, "PatchLevel.ini");
+			if (File.Exists(text))
+			{
+				NDataReader nDataReader = new NDataReader();
+				if (nDataReader.Load(text))
+				{
+					num = nDataReader["Local"]["PatchLevel"];
+				}
+			}
+			string text2 = Path.Combine(localPath, string.Format("PatchedVersion.{0}.txt", num));
+			if (!File.Exists(text2))
+			{
+				return -1f;
+			}
+			NDataReader nDataReader2 = new NDataReader();
+			if (nDataReader2.Load(text2))
+			{
+				return nDataReader2["Local"]["PatchedVersion"];
+			}
+			return -1f;
+		}
+
 		public static bool IsVaildURL(string requestUrlString)
 		{
 			try
 			{
 				HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(requestUrlString);
+				httpWebRequest.Timeout = 10000;
 				HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse();
 				httpWebResponse.Close();
 				return true;

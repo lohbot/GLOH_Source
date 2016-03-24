@@ -65,55 +65,55 @@ public class StageSystemCheck : AStage
 	[DebuggerHidden]
 	private IEnumerator _WaitMobileTextInit()
 	{
-		return new StageSystemCheck.<_WaitMobileTextInit>c__Iterator4E();
+		return new StageSystemCheck.<_WaitMobileTextInit>c__Iterator51();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _WaitMobileReview()
 	{
-		return new StageSystemCheck.<_WaitMobileReview>c__Iterator4F();
+		return new StageSystemCheck.<_WaitMobileReview>c__Iterator52();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _WaitWebCallParameter()
 	{
-		return new StageSystemCheck.<_WaitWebCallParameter>c__Iterator50();
+		return new StageSystemCheck.<_WaitWebCallParameter>c__Iterator53();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _WaitDownloadFinalPatchList()
 	{
-		return new StageSystemCheck.<_WaitDownloadFinalPatchList>c__Iterator51();
+		return new StageSystemCheck.<_WaitDownloadFinalPatchList>c__Iterator54();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _WaitDownloadAssetBundleURLInfo()
 	{
-		return new StageSystemCheck.<_WaitDownloadAssetBundleURLInfo>c__Iterator52();
+		return new StageSystemCheck.<_WaitDownloadAssetBundleURLInfo>c__Iterator55();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _WaitDownloadPack()
 	{
-		return new StageSystemCheck.<_WaitDownloadPack>c__Iterator53();
+		return new StageSystemCheck.<_WaitDownloadPack>c__Iterator56();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _InitializeUI()
 	{
-		return new StageSystemCheck.<_InitializeUI>c__Iterator54();
+		return new StageSystemCheck.<_InitializeUI>c__Iterator57();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _InitializePlatform()
 	{
-		return new StageSystemCheck.<_InitializePlatform>c__Iterator55();
+		return new StageSystemCheck.<_InitializePlatform>c__Iterator58();
 	}
 
 	[DebuggerHidden]
 	private IEnumerator _SDKSetting()
 	{
-		return new StageSystemCheck.<_SDKSetting>c__Iterator56();
+		return new StageSystemCheck.<_SDKSetting>c__Iterator59();
 	}
 
 	public static void OnAdjustResult(ResponseData responseDelegate)
@@ -162,6 +162,6 @@ public class StageSystemCheck : AStage
 	[DebuggerHidden]
 	private IEnumerator _ClearFileLog()
 	{
-		return new StageSystemCheck.<_ClearFileLog>c__Iterator57();
+		return new StageSystemCheck.<_ClearFileLog>c__Iterator5A();
 	}
 }

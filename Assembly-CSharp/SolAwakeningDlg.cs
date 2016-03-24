@@ -66,7 +66,9 @@ public class SolAwakeningDlg : Form
 
 	private Button m_btAwakeningReset;
 
-	private NkSoldierInfo m_SelectSol;
+	private Button m_HelpButton;
+
+	private long m_SolID;
 
 	private string m_strStat = string.Empty;
 
@@ -183,6 +185,8 @@ public class SolAwakeningDlg : Form
 		this.m_strBaseText[1] = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1272");
 		this.m_strBaseText[2] = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1273");
 		this.m_strBaseText[3] = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1274");
+		this.m_HelpButton = (base.GetControl("Help_Button") as Button);
+		this.m_HelpButton.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickHelp));
 		base.SetScreenCenter();
 		base.ShowBlackBG(0.5f);
 		this.InitInfo();
@@ -220,6 +224,7 @@ public class SolAwakeningDlg : Form
 		SolMilitarySelectDlg solMilitarySelectDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.SOLMILITARYSELECT_DLG) as SolMilitarySelectDlg;
 		if (solMilitarySelectDlg != null)
 		{
+			solMilitarySelectDlg.SetLoadType(SolMilitarySelectDlg.LoadType.SOLAWAKENING);
 			solMilitarySelectDlg.SetLocationByForm(this);
 			solMilitarySelectDlg.SetFocus();
 			solMilitarySelectDlg.SolSortType = 2;
@@ -229,7 +234,8 @@ public class SolAwakeningDlg : Form
 
 	public void ClickStatSelect(IUIObject obj)
 	{
-		if (this.m_SelectSol == null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null || this.m_SolID == 0L)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("698"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
@@ -239,7 +245,7 @@ public class SolAwakeningDlg : Form
 			return;
 		}
 		GS_SOLAWAKENING_REQ gS_SOLAWAKENING_REQ = new GS_SOLAWAKENING_REQ();
-		gS_SOLAWAKENING_REQ.i64SolID = this.m_SelectSol.GetSolID();
+		gS_SOLAWAKENING_REQ.i64SolID = soldierInfo.GetSolID();
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_SOLAWAKENING_REQ, gS_SOLAWAKENING_REQ);
 		this.SetCoolTime();
 		if (null != this.m_gbWakeup_Start)
@@ -268,28 +274,29 @@ public class SolAwakeningDlg : Form
 
 	public void ClickStatCalc(IUIObject obj)
 	{
-		if (this.m_SelectSol == null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null || this.m_SolID == 0L)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("698"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		int num = NkUserInventory.GetInstance().Get_First_ItemCnt(this.m_iAwakeningItemUnique);
 		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
+		sUBDATA_UNION.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
 		short n16SubData_ = sUBDATA_UNION.n16SubData_0;
 		if (!this.IsAwakeningStat((int)(n16SubData_ + 1)))
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("662"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
-		int needAwakeningItemNum = this.GetNeedAwakeningItemNum((int)(n16SubData_ + 1), this.m_SelectSol.GetSeason());
+		int needAwakeningItemNum = this.GetNeedAwakeningItemNum((int)(n16SubData_ + 1), soldierInfo.GetSeason());
 		if (num < needAwakeningItemNum)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("683"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		GS_SOLAWAKENING_STAT_REQ gS_SOLAWAKENING_STAT_REQ = new GS_SOLAWAKENING_STAT_REQ();
-		gS_SOLAWAKENING_STAT_REQ.i64SolID = this.m_SelectSol.GetSolID();
+		gS_SOLAWAKENING_STAT_REQ.i64SolID = soldierInfo.GetSolID();
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_SOLAWAKENING_STAT_REQ, gS_SOLAWAKENING_STAT_REQ);
 		this.SetCoolTime();
 		if (null != this.m_gbWakeup_Start)
@@ -323,12 +330,13 @@ public class SolAwakeningDlg : Form
 		{
 			this.m_lbSolStat_1[i].Hide(false);
 		}
-		this.m_SelectSol = pkSolinfo;
+		NkSoldierInfo nkSoldierInfo = pkSolinfo;
+		this.m_SolID = pkSolinfo.GetSolID();
 		this.m_lbGuideText_1.Hide(true);
 		this.m_lbGuideText_2.Hide(true);
 		this.m_dtInvenSlotBG.Visible = true;
 		this.m_lbCurRingSlot.Visible = true;
-		if (this.m_SelectSol.IsAtbCommonFlag(2L))
+		if (nkSoldierInfo.IsAtbCommonFlag(2L))
 		{
 			this.m_dtRingSlot.Visible = false;
 			this.m_lbCurRingSlot.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2547"));
@@ -363,11 +371,12 @@ public class SolAwakeningDlg : Form
 
 	public void ShowSolInfo(bool bStatCalc)
 	{
-		if (this.m_SelectSol == null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null)
 		{
 			return;
 		}
-		if (this.m_SelectSol.GetCharKindInfo() == null)
+		if (soldierInfo.GetCharKindInfo() == null)
 		{
 			return;
 		}
@@ -375,20 +384,21 @@ public class SolAwakeningDlg : Form
 		{
 			NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("290"),
 			"targetname",
-			this.m_SelectSol.GetName(),
+			soldierInfo.GetName(),
 			"count1",
-			this.m_SelectSol.GetLevel(),
+			soldierInfo.GetLevel(),
 			"count2",
-			this.m_SelectSol.GetSolMaxLevel()
+			soldierInfo.GetSolMaxLevel()
 		});
 		this.m_lbSolName.SetText(this.m_strText);
 		this.m_dtSolImage.SetUVMask(new Rect(4f / this.TEX_SIZE, 0f, 504f / this.TEX_SIZE, 448f / this.TEX_SIZE));
-		this.m_dtSolImage.SetTexture(eCharImageType.LARGE, this.m_SelectSol.GetCharKind(), (int)this.m_SelectSol.GetGrade());
-		UIBaseInfoLoader solLargeGradeImg = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolLargeGradeImg(this.m_SelectSol.GetCharKind(), (int)this.m_SelectSol.GetGrade());
+		string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(soldierInfo);
+		this.m_dtSolImage.SetTexture(eCharImageType.LARGE, soldierInfo.GetCharKind(), (int)soldierInfo.GetGrade(), costumePortraitPath);
+		UIBaseInfoLoader solLargeGradeImg = NrTSingleton<NrCharKindInfoManager>.Instance.GetSolLargeGradeImg(soldierInfo.GetCharKind(), (int)soldierInfo.GetGrade());
 		if (solLargeGradeImg != null)
 		{
 			this.m_dtSolGrade.Hide(false);
-			if (0 < NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(this.m_SelectSol.GetCharKind(), (int)this.m_SelectSol.GetGrade()))
+			if (0 < NrTSingleton<NrCharKindInfoManager>.Instance.GetLegendType(soldierInfo.GetCharKind(), (int)soldierInfo.GetGrade()))
 			{
 				this.m_dtSolGrade.SetSize(solLargeGradeImg.UVs.width, solLargeGradeImg.UVs.height);
 			}
@@ -399,16 +409,16 @@ public class SolAwakeningDlg : Form
 			this.m_dtSolGrade.Hide(true);
 		}
 		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_STRDEX);
+		sUBDATA_UNION.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_STRDEX);
 		SUBDATA_UNION sUBDATA_UNION2 = default(SUBDATA_UNION);
-		sUBDATA_UNION2.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_VITINT);
+		sUBDATA_UNION2.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_VITINT);
 		SUBDATA_UNION sUBDATA_UNION3 = default(SUBDATA_UNION);
-		sUBDATA_UNION3.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
+		sUBDATA_UNION3.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
 		short n16SubData_ = sUBDATA_UNION3.n16SubData_0;
-		int statSTR = this.m_SelectSol.GetStatSTR();
-		int statDEX = this.m_SelectSol.GetStatDEX();
-		int statVIT = this.m_SelectSol.GetStatVIT();
-		int statINT = this.m_SelectSol.GetStatINT();
+		int statSTR = soldierInfo.GetStatSTR();
+		int statDEX = soldierInfo.GetStatDEX();
+		int statVIT = soldierInfo.GetStatVIT();
+		int statINT = soldierInfo.GetStatINT();
 		this.ShowBaseSolStatAwakening(this.m_lbBaseStat[0], statSTR, sUBDATA_UNION.n32SubData_0);
 		this.ShowBaseSolStatAwakening(this.m_lbBaseStat[1], statDEX, sUBDATA_UNION.n32SubData_1);
 		this.ShowBaseSolStatAwakening(this.m_lbBaseStat[2], statVIT, sUBDATA_UNION2.n32SubData_0);
@@ -440,7 +450,7 @@ public class SolAwakeningDlg : Form
 				this.m_lbCurStat[i].Hide(true);
 			}
 		}
-		int needAwakeningItemNum = this.GetNeedAwakeningItemNum((int)(n16SubData_ + 1), this.m_SelectSol.GetSeason());
+		int needAwakeningItemNum = this.GetNeedAwakeningItemNum((int)(n16SubData_ + 1), soldierInfo.GetSeason());
 		this.m_lbNeedAwakeningItemNum.SetText(needAwakeningItemNum.ToString());
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strStat, new object[]
 		{
@@ -514,7 +524,7 @@ public class SolAwakeningDlg : Form
 
 	public int GetNeedAwakeningItemNum(int iTryCount, int iSolSeason)
 	{
-		if (0 > iSolSeason || 6 <= iSolSeason)
+		if (0 > iSolSeason || 10 <= iSolSeason)
 		{
 			return 0;
 		}
@@ -530,7 +540,7 @@ public class SolAwakeningDlg : Form
 
 	public AWAKENING_TRY_INFO GetAwakeningTryInfo(int iTryCount, int iSolSeason)
 	{
-		if (0 > iSolSeason || 6 <= iSolSeason)
+		if (0 > iSolSeason || 10 <= iSolSeason)
 		{
 			return null;
 		}
@@ -546,12 +556,13 @@ public class SolAwakeningDlg : Form
 
 	public void SetAwakeningStat(GS_SOLAWAKENING_STAT_ACK ACK)
 	{
-		if (this.m_SelectSol != null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo != null)
 		{
-			int statSTR = this.m_SelectSol.GetStatSTR();
-			int statDEX = this.m_SelectSol.GetStatDEX();
-			int statVIT = this.m_SelectSol.GetStatVIT();
-			int statINT = this.m_SelectSol.GetStatINT();
+			int statSTR = soldierInfo.GetStatSTR();
+			int statDEX = soldierInfo.GetStatDEX();
+			int statVIT = soldierInfo.GetStatVIT();
+			int statINT = soldierInfo.GetStatINT();
 			this.ShowBaseSolStat(this.m_lbCurStat[0], statSTR, this.m_iAwakeningStat[0], this.m_strBaseTextColor);
 			this.ShowBaseSolStat(this.m_lbCurStat[1], statDEX, this.m_iAwakeningStat[1], this.m_strBaseTextColor);
 			this.ShowBaseSolStat(this.m_lbCurStat[2], statVIT, this.m_iAwakeningStat[2], this.m_strBaseTextColor);
@@ -571,21 +582,22 @@ public class SolAwakeningDlg : Form
 
 	public void SetAwakening()
 	{
-		if (this.m_SelectSol != null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo != null)
 		{
 			SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-			sUBDATA_UNION.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_STRDEX);
+			sUBDATA_UNION.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_STRDEX);
 			SUBDATA_UNION sUBDATA_UNION2 = default(SUBDATA_UNION);
-			sUBDATA_UNION2.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_VITINT);
-			int statSTR = this.m_SelectSol.GetStatSTR();
-			int statDEX = this.m_SelectSol.GetStatDEX();
-			int statVIT = this.m_SelectSol.GetStatVIT();
-			int statINT = this.m_SelectSol.GetStatINT();
+			sUBDATA_UNION2.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_VITINT);
+			int statSTR = soldierInfo.GetStatSTR();
+			int statDEX = soldierInfo.GetStatDEX();
+			int statVIT = soldierInfo.GetStatVIT();
+			int statINT = soldierInfo.GetStatINT();
 			this.ShowBaseSolStat(this.m_lbCurStat[0], statSTR, sUBDATA_UNION.n32SubData_0, this.m_strBaseTextColor);
 			this.ShowBaseSolStat(this.m_lbCurStat[1], statDEX, sUBDATA_UNION.n32SubData_1, this.m_strBaseTextColor);
 			this.ShowBaseSolStat(this.m_lbCurStat[2], statVIT, sUBDATA_UNION2.n32SubData_0, this.m_strBaseTextColor);
 			this.ShowBaseSolStat(this.m_lbCurStat[3], statINT, sUBDATA_UNION2.n32SubData_1, this.m_strBaseTextColor);
-			if (this.m_SelectSol.IsAtbCommonFlag(2L))
+			if (soldierInfo.IsAtbCommonFlag(2L))
 			{
 				this.m_dtRingSlot.Visible = false;
 				this.m_lbCurRingSlot.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2547"));
@@ -745,7 +757,8 @@ public class SolAwakeningDlg : Form
 
 	public int GetBaseStat(int iStat)
 	{
-		if (this.m_SelectSol == null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null)
 		{
 			return 0;
 		}
@@ -753,16 +766,16 @@ public class SolAwakeningDlg : Form
 		switch (iStat)
 		{
 		case 0:
-			result = this.m_SelectSol.GetStatSTR();
+			result = soldierInfo.GetStatSTR();
 			break;
 		case 1:
-			result = this.m_SelectSol.GetStatDEX();
+			result = soldierInfo.GetStatDEX();
 			break;
 		case 2:
-			result = this.m_SelectSol.GetStatVIT();
+			result = soldierInfo.GetStatVIT();
 			break;
 		case 3:
-			result = this.m_SelectSol.GetStatINT();
+			result = soldierInfo.GetStatINT();
 			break;
 		}
 		return result;
@@ -770,14 +783,15 @@ public class SolAwakeningDlg : Form
 
 	public int GetAwakeningStat(int iStat)
 	{
-		if (this.m_SelectSol == null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null)
 		{
 			return 0;
 		}
 		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_STRDEX);
+		sUBDATA_UNION.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_STRDEX);
 		SUBDATA_UNION sUBDATA_UNION2 = default(SUBDATA_UNION);
-		sUBDATA_UNION2.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_VITINT);
+		sUBDATA_UNION2.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_VITINT);
 		int result = 0;
 		switch (iStat)
 		{
@@ -1043,13 +1057,14 @@ public class SolAwakeningDlg : Form
 
 	public void ClickAwakeningReset(IUIObject obj)
 	{
-		if (this.m_SelectSol == null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("698"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
+		sUBDATA_UNION.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
 		short n16SubData_ = sUBDATA_UNION.n16SubData_0;
 		if (n16SubData_ <= 0)
 		{
@@ -1059,7 +1074,7 @@ public class SolAwakeningDlg : Form
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadGroupForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
 		if (msgBoxUI != null)
 		{
-			AWAKENING_TRY_INFO awakeningTryInfo = this.GetAwakeningTryInfo((int)n16SubData_, this.m_SelectSol.GetSeason());
+			AWAKENING_TRY_INFO awakeningTryInfo = this.GetAwakeningTryInfo((int)n16SubData_, soldierInfo.GetSeason());
 			if (awakeningTryInfo == null)
 			{
 				return;
@@ -1078,7 +1093,8 @@ public class SolAwakeningDlg : Form
 
 	private void MsgBoxReset(object obj)
 	{
-		if (this.m_SelectSol == null)
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null)
 		{
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("698"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
@@ -1088,7 +1104,7 @@ public class SolAwakeningDlg : Form
 			return;
 		}
 		GS_SOLAWAKENING_RESET_REQ gS_SOLAWAKENING_RESET_REQ = new GS_SOLAWAKENING_RESET_REQ();
-		gS_SOLAWAKENING_RESET_REQ.i64SolID = this.m_SelectSol.GetSolID();
+		gS_SOLAWAKENING_RESET_REQ.i64SolID = soldierInfo.GetSolID();
 		SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_SOLAWAKENING_RESET_REQ, gS_SOLAWAKENING_RESET_REQ);
 		this.SetCoolTime();
 		if (null != this.m_gbWakeup_Start)
@@ -1117,10 +1133,16 @@ public class SolAwakeningDlg : Form
 
 	public bool IsAwakeningReset()
 	{
+		NkSoldierInfo soldierInfo = this.GetSoldierInfo();
+		if (soldierInfo == null)
+		{
+			Debug.LogError("m_SelectSol is null");
+			return false;
+		}
 		SUBDATA_UNION sUBDATA_UNION = default(SUBDATA_UNION);
-		sUBDATA_UNION.nSubData = this.m_SelectSol.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
+		sUBDATA_UNION.nSubData = soldierInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_AWAKENING_INFO);
 		short n16SubData_ = sUBDATA_UNION.n16SubData_0;
-		AWAKENING_TRY_INFO awakeningTryInfo = this.GetAwakeningTryInfo((int)n16SubData_, this.m_SelectSol.GetSeason());
+		AWAKENING_TRY_INFO awakeningTryInfo = this.GetAwakeningTryInfo((int)n16SubData_, soldierInfo.GetSeason());
 		if (awakeningTryInfo == null)
 		{
 			return false;
@@ -1142,5 +1164,26 @@ public class SolAwakeningDlg : Form
 			this.m_lbIncStat[i].SetText(string.Empty);
 		}
 		this.ShowSolInfo(true);
+	}
+
+	private NkSoldierInfo GetSoldierInfo()
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		NrSoldierList soldierList = charPersonInfo.GetSoldierList();
+		NkSoldierInfo nkSoldierInfo = soldierList.GetSoldierInfoBySolID(this.m_SolID);
+		if (nkSoldierInfo == null)
+		{
+			nkSoldierInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySoldierInfoBySolID(this.m_SolID);
+		}
+		return nkSoldierInfo;
+	}
+
+	private void ClickHelp(IUIObject obj)
+	{
+		GameHelpList_Dlg gameHelpList_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.GAME_HELP_LIST) as GameHelpList_Dlg;
+		if (gameHelpList_Dlg != null)
+		{
+			gameHelpList_Dlg.SetViewType(eHELP_LIST.Soldier_Awakening.ToString());
+		}
 	}
 }

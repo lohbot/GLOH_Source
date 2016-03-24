@@ -33,6 +33,13 @@ public class ItemTooltip_Btn_Dlg : Form
 		{
 			base.GetLocation()
 		});
+		ItemEvolution_Dlg itemEvolution_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMEVOLUTION_DLG) as ItemEvolution_Dlg;
+		if (itemEvolution_Dlg != null)
+		{
+			this.m_bEquip.SetEnabled(false);
+			this.m_bEquip.Visible = false;
+			this.m_bEquip.RemoveValueChangedDelegate(new EZValueChangedDelegate(this.OnClickEquipItem));
+		}
 		base.InteractivePanel.twinFormID = G_ID.ITEMTOOLTIP_SECOND_DLG;
 	}
 

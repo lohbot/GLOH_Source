@@ -37,8 +37,6 @@ public class Agit_MerchantDlg : Form
 
 	private string m_strTime = string.Empty;
 
-	private short m_LastBuy_SellTypeNul;
-
 	public override void InitializeComponent()
 	{
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
@@ -113,7 +111,7 @@ public class Agit_MerchantDlg : Form
 
 	public void MakeMerchantItem(AGIT_MERCHANT_SUB_INFO Data)
 	{
-		NewListItem newListItem = new NewListItem(this.m_nlbSellList.ColumnNum, true);
+		NewListItem newListItem = new NewListItem(this.m_nlbSellList.ColumnNum, true, string.Empty);
 		newListItem.SetListItemData(1, NrTSingleton<ItemManager>.Instance.GetItemTexture(Data.i32ItemUnique), null, null, null);
 		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref this.m_strText, new object[]
 		{
@@ -142,16 +140,16 @@ public class Agit_MerchantDlg : Form
 			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("227"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
-		UIListItemContainer uIListItemContainer = this.m_nlbSellList.GetSelectItem() as UIListItemContainer;
-		if (uIListItemContainer == null)
+		UIListItemContainer selectItem = this.m_nlbSellList.GetSelectItem();
+		if (selectItem == null)
 		{
 			return;
 		}
-		if (uIListItemContainer.Data == null)
+		if (selectItem.Data == null)
 		{
 			return;
 		}
-		AGIT_MERCHANT_SUB_INFO aGIT_MERCHANT_SUB_INFO = (AGIT_MERCHANT_SUB_INFO)uIListItemContainer.Data;
+		AGIT_MERCHANT_SUB_INFO aGIT_MERCHANT_SUB_INFO = (AGIT_MERCHANT_SUB_INFO)selectItem.Data;
 		if (aGIT_MERCHANT_SUB_INFO == null)
 		{
 			return;
@@ -216,7 +214,7 @@ public class Agit_MerchantDlg : Form
 			"count2",
 			this.m_SelectInfo.i32ItemNum
 		});
-		msgBoxUI.SetMsg(new YesDelegate(this.MsgOKBuyItem), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), this.m_strText, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.MsgOKBuyItem), null, NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("845"), this.m_strText, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void MsgOKBuyItem(object a_oObject)
@@ -237,7 +235,6 @@ public class Agit_MerchantDlg : Form
 			return;
 		}
 		NrTSingleton<NewGuildManager>.Instance.Send_GS_NEWGUILD_AGIT_NPC_USE_REQ(1, this.m_SelectInfo.i16SellType);
-		this.m_LastBuy_SellTypeNul = this.m_SelectInfo.i16SellType;
 		this.SetControlEnable(false);
 	}
 

@@ -33,7 +33,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		LEFT
 	}
 
-	protected delegate float ItemAlignmentDel(IUIListObject item);
+	protected delegate float ItemAlignmentDel(UIListItemContainer item);
 
 	protected delegate bool SnapCoordProc(float val);
 
@@ -127,19 +127,19 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	protected float contentExtents;
 
-	protected IUIListObject selectedItem;
+	protected UIListItemContainer selectedItem;
 
-	protected IUIListObject mouseItem;
+	protected UIListItemContainer mouseItem;
 
 	public float scrollPos;
 
 	protected GameObject mover;
 
-	protected List<IUIListObject> items = new List<IUIListObject>();
+	protected List<UIListItemContainer> items = new List<UIListItemContainer>();
 
-	protected List<IUIListObject> visibleItems = new List<IUIListObject>();
+	protected List<UIListItemContainer> visibleItems = new List<UIListItemContainer>();
 
-	protected List<IUIListObject> tempVisItems = new List<IUIListObject>();
+	protected List<UIListItemContainer> tempVisItems = new List<UIListItemContainer>();
 
 	private int maxMultiSelectNum = 10;
 
@@ -147,7 +147,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	private bool autoScroll;
 
-	protected Dictionary<int, IUIListObject> selectedItems = new Dictionary<int, IUIListObject>();
+	protected Dictionary<int, UIListItemContainer> selectedItems = new Dictionary<int, UIListItemContainer>();
 
 	protected bool m_controlIsEnabled = true;
 
@@ -165,9 +165,11 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	protected EZValueChangedDelegate doubleClickDelegate;
 
-	protected EZValueChangedDelegate slidePosChangeDelegate;
+	protected EZScrollDelegate slidePosChangeDelegate;
 
 	protected EZValueChangedDelegate longTapDelegate;
+
+	protected EZValueChangedDelegate makeCompleteDelegate;
 
 	protected Vector3 cachedPos;
 
@@ -185,7 +187,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	public bool positionItemsImmediately = true;
 
-	protected List<IUIListObject> newItems = new List<IUIListObject>();
+	protected List<UIListItemContainer> newItems = new List<UIListItemContainer>();
 
 	protected bool itemsInserted;
 
@@ -199,7 +201,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	protected float scrollMax;
 
-	private float scrollDelta;
+	protected float scrollDelta;
 
 	private float scrollStopThresholdLog = Mathf.Log10(0.0001f);
 
@@ -231,6 +233,8 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	protected bool bShow;
 
+	protected bool callSlidePosChangeDelegate;
+
 	public bool line;
 
 	public int columnCount = 1;
@@ -244,6 +248,8 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 	public static string selectImageName = "select";
 
 	public static string lockImageName = "lock";
+
+	public static string BreakItemImageName = "break";
 
 	private bool hideSlider;
 
@@ -265,7 +271,15 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	protected bool m_bReserve = true;
 
+	protected bool m_bReUse;
+
 	private bool useScrollLine = true;
+
+	protected int limitListNum;
+
+	private List<int> listIndex = new List<int>();
+
+	protected List<float> listPosY = new List<float>();
 
 	private int count;
 
@@ -273,11 +287,13 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	public bool chatLabelScroll;
 
+	private int oldChangeIndex;
+
+	private int findIndex;
+
 	private bool rightMouseSelect;
 
 	public bool overList;
-
-	public bool bCalcClipping;
 
 	public object data;
 
@@ -341,7 +357,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
-	public Dictionary<int, IUIListObject> SelectedItems
+	public Dictionary<int, UIListItemContainer> SelectedItems
 	{
 		get
 		{
@@ -413,18 +429,6 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
-	public EZValueChangedDelegate SlidePosChange
-	{
-		get
-		{
-			return this.slidePosChangeDelegate;
-		}
-		set
-		{
-			this.slidePosChangeDelegate = value;
-		}
-	}
-
 	public bool DRAGLIST
 	{
 		get
@@ -451,9 +455,29 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	public bool Reserve
 	{
+		get
+		{
+			return this.m_bReserve;
+		}
 		set
 		{
 			this.m_bReserve = value;
+		}
+	}
+
+	public bool ReUse
+	{
+		get
+		{
+			return this.m_bReUse;
+		}
+		set
+		{
+			if (value)
+			{
+				this.m_bReserve = false;
+			}
+			this.m_bReUse = value;
 		}
 	}
 
@@ -477,6 +501,14 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
+	public int LimitListNum
+	{
+		get
+		{
+			return this.limitListNum;
+		}
+	}
+
 	public bool RightMouseSelect
 	{
 		set
@@ -497,13 +529,13 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 	{
 		get
 		{
-			return (UIListItemContainer)this.selectedItem;
+			return this.selectedItem;
 		}
 		set
 		{
 			if (this.selectedItem != null)
 			{
-				((UIListItemContainer)this.selectedItem).SetSelected(false);
+				this.selectedItem.SetSelected(false);
 			}
 			if (value == null)
 			{
@@ -511,11 +543,11 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 				return;
 			}
 			this.selectedItem = value;
-			((UIListItemContainer)this.selectedItem).SetSelected(true);
+			this.selectedItem.SetSelected(true);
 		}
 	}
 
-	public IUIListObject MouseItem
+	public UIListItemContainer MouseItem
 	{
 		get
 		{
@@ -672,6 +704,16 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
+	public List<UIListItemContainer> GetItems()
+	{
+		return this.items;
+	}
+
+	public List<UIListItemContainer> GetVisibleItems()
+	{
+		return this.visibleItems;
+	}
+
 	public bool GetMultiSelectMode()
 	{
 		return this.multiSelectMode;
@@ -684,9 +726,9 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		{
 			this.ClearSelectedItems();
 		}
-		else if (this.selectedItem != null)
+		else if (null != this.selectedItem)
 		{
-			((UIListItemContainer)this.selectedItem).SetSelected(false);
+			this.selectedItem.SetSelected(false);
 			this.selectedItem = null;
 		}
 	}
@@ -702,20 +744,31 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	public void ClearSelectedItems()
 	{
-		if (this.selectedItem != null)
+		if (null != this.selectedItem)
 		{
-			((UIListItemContainer)this.selectedItem).SetSelected(false);
+			this.selectedItem.SetSelected(false);
 			this.selectedItem = null;
 		}
-		using (Dictionary<int, IUIListObject>.ValueCollection.Enumerator enumerator = this.selectedItems.Values.GetEnumerator())
+		foreach (UIListItemContainer current in this.selectedItems.Values)
 		{
-			while (enumerator.MoveNext())
-			{
-				UIListItemContainer uIListItemContainer = (UIListItemContainer)enumerator.Current;
-				uIListItemContainer.SetSelected(false);
-			}
+			current.SetSelected(false);
 		}
 		this.selectedItems.Clear();
+	}
+
+	public void SetScrollDelegate(EZScrollDelegate del)
+	{
+		this.slidePosChangeDelegate = del;
+	}
+
+	public void AddScrollDelegate(EZScrollDelegate del)
+	{
+		this.slidePosChangeDelegate = (EZScrollDelegate)Delegate.Combine(this.slidePosChangeDelegate, del);
+	}
+
+	public void RemoveScrollDelegate(EZScrollDelegate del)
+	{
+		this.slidePosChangeDelegate = (EZScrollDelegate)Delegate.Remove(this.slidePosChangeDelegate, del);
 	}
 
 	public float MoverPosY()
@@ -846,7 +899,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 	{
 	}
 
-	protected void ScrollListTo_Internal(float pos)
+	public void ScrollListTo_Internal(float pos)
 	{
 		if (float.IsNaN(pos))
 		{
@@ -867,10 +920,6 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		if (this.slider != null)
 		{
 			this.slider.Value = this.scrollPos;
-		}
-		if (this.slidePosChangeDelegate != null)
-		{
-			this.slidePosChangeDelegate(this);
 		}
 	}
 
@@ -906,7 +955,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.ScrollListTo_Internal(pos);
 	}
 
-	public void ScrollToItem(IUIListObject item, float scrollTime, EZAnimation.EASING_TYPE easing)
+	public void ScrollToItem(UIListItemContainer item, float scrollTime, EZAnimation.EASING_TYPE easing)
 	{
 		if (this.newItems.Count != 0)
 		{
@@ -948,7 +997,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.autoScrolling = true;
 		this.scrollDelta = 0f;
 		this.isScrolling = false;
-		if (0f < this.autoScrollPos)
+		if (0f < this.autoScrollDelta)
 		{
 			this.ReserveMakeItem();
 		}
@@ -963,7 +1012,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.ScrollToItem(this.items[index], scrollTime, easing);
 	}
 
-	public void ScrollToItem(IUIListObject item, float scrollTime)
+	public void ScrollToItem(UIListItemContainer item, float scrollTime)
 	{
 		this.ScrollToItem(item, scrollTime, this.snapEasing);
 	}
@@ -998,17 +1047,17 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.RepositionItems();
 	}
 
-	public void InsertItem(IUIListObject item, int position)
+	public void InsertItem(UIListItemContainer item, int position)
 	{
 		this.InsertItem(item, position, null, false);
 	}
 
-	public void InsertItem(IUIListObject item, int position, bool doEasing)
+	public void InsertItem(UIListItemContainer item, int position, bool doEasing)
 	{
 		this.InsertItem(item, position, null, doEasing);
 	}
 
-	public void InsertItem(IUIListObject item, int position, string text, bool doEasing)
+	public void InsertItem(UIListItemContainer item, int position, string text, bool doEasing)
 	{
 		if (position >= this.items.Count)
 		{
@@ -1027,13 +1076,13 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		{
 			this.Start();
 		}
-		if (this.activateWhenAdding && !((Component)item).gameObject.activeInHierarchy)
+		if (this.activateWhenAdding && !item.gameObject.activeInHierarchy)
 		{
-			((Component)item).gameObject.SetActive(true);
+			item.gameObject.SetActive(true);
 		}
 		if (!base.gameObject.activeInHierarchy)
 		{
-			((Component)item).gameObject.SetActive(false);
+			item.gameObject.SetActive(false);
 		}
 		item.gameObject.layer = base.gameObject.layer;
 		if (this.container != null)
@@ -1074,114 +1123,18 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.CalcSliderCount();
 	}
 
-	public void PositionInsertItem(IUIListObject item, int position, string text, bool doEasing)
-	{
-		if (position >= this.items.Count)
-		{
-			this.doItemEasing = false;
-		}
-		else
-		{
-			this.doItemEasing = doEasing;
-		}
-		this.doPosEasing = doEasing;
-		if (!this.m_awake)
-		{
-			this.Awake();
-		}
-		if (!this.m_started)
-		{
-			this.Start();
-		}
-		if (this.activateWhenAdding && !((Component)item).gameObject.activeInHierarchy)
-		{
-			((Component)item).gameObject.SetActive(true);
-		}
-		if (!base.gameObject.activeInHierarchy)
-		{
-			((Component)item).gameObject.SetActive(false);
-		}
-		item.gameObject.layer = base.gameObject.layer;
-		if (this.container != null)
-		{
-			this.container.AddChild(item.gameObject);
-		}
-		item.transform.parent = this.mover.transform;
-		item.transform.localRotation = Quaternion.identity;
-		item.transform.localScale = Vector3.one;
-		item.transform.localPosition = Vector3.zero;
-		item.SetList(this);
-		position = Mathf.Clamp(position, 0, this.items.Count);
-		if (this.clipContents)
-		{
-			item.Hide(true);
-			if (!item.Managed)
-			{
-				item.gameObject.SetActive(false);
-			}
-		}
-		item.SetIndex(position);
-		this.newItems.Add(item);
-		if (position != this.items.Count)
-		{
-			this.itemsInserted = true;
-			this.items.Insert(position, item);
-			if (this.visibleItems.Count == 0)
-			{
-				this.visibleItems.Add(item);
-			}
-			else if (item.GetIndex() > 0)
-			{
-				int num = this.visibleItems.IndexOf(this.items[item.GetIndex() - 1]);
-				if (num == -1)
-				{
-					if (this.visibleItems[0].GetIndex() >= item.GetIndex())
-					{
-						this.visibleItems.Insert(0, item);
-					}
-					else
-					{
-						this.visibleItems.Add(item);
-					}
-				}
-				else
-				{
-					this.visibleItems.Insert(num + 1, item);
-				}
-			}
-		}
-		else
-		{
-			this.items.Add(item);
-			this.visibleItems.Add(item);
-		}
-		if (this.positionItemsImmediately)
-		{
-			if (this.itemsInserted || this.doItemEasing)
-			{
-				this.RepositionItems();
-				this.itemsInserted = false;
-				this.newItems.Clear();
-			}
-			else
-			{
-				this.PositionNewItems();
-			}
-		}
-	}
-
 	protected void PositionNewItems()
 	{
-		IUIListObject iUIListObject = null;
+		UIListItemContainer uIListItemContainer = null;
 		float num = 0f;
 		for (int i = 0; i < this.newItems.Count; i++)
 		{
-			if (this.newItems[i] != null)
+			if (!(null == this.newItems[i]))
 			{
 				int index = this.newItems[i].GetIndex();
-				IUIListObject iUIListObject2 = this.items[index];
-				iUIListObject2.FindOuterEdges();
-				iUIListObject2.UpdateCollider();
+				UIListItemContainer uIListItemContainer2 = this.items[index];
+				uIListItemContainer2.FindOuterEdges();
+				uIListItemContainer2.UpdateCollider();
 				float x = 0f;
 				float y = 0f;
 				bool flag = false;
@@ -1190,14 +1143,14 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 					if (index > 0)
 					{
 						flag = true;
-						iUIListObject = this.items[index - 1];
+						uIListItemContainer = this.items[index - 1];
 						if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
 						{
-							x = iUIListObject.transform.localPosition.x + iUIListObject.BottomRightEdge().x + this.itemSpacing - iUIListObject2.TopLeftEdge().x;
+							x = uIListItemContainer.transform.localPosition.x + uIListItemContainer.BottomRightEdge().x + this.itemSpacing - uIListItemContainer2.TopLeftEdge().x;
 						}
 						else
 						{
-							x = iUIListObject.transform.localPosition.x - iUIListObject.BottomRightEdge().x - this.itemSpacing + iUIListObject2.TopLeftEdge().x;
+							x = uIListItemContainer.transform.localPosition.x - uIListItemContainer.BottomRightEdge().x - this.itemSpacing + uIListItemContainer2.TopLeftEdge().x;
 						}
 					}
 					else
@@ -1208,40 +1161,40 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 						}
 						if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
 						{
-							x = this.viewableArea.x * -0.5f - iUIListObject2.TopLeftEdge().x + ((!this.spacingAtEnds) ? 0f : this.itemSpacing) + this.extraEndSpacing;
+							x = this.viewableArea.x * -0.5f - uIListItemContainer2.TopLeftEdge().x + ((!this.spacingAtEnds) ? 0f : this.itemSpacing) + this.extraEndSpacing;
 						}
 						else
 						{
-							x = this.viewableArea.x * 0.5f - iUIListObject2.BottomRightEdge().x - ((!this.spacingAtEnds) ? 0f : this.itemSpacing) - this.extraEndSpacing;
+							x = this.viewableArea.x * 0.5f - uIListItemContainer2.BottomRightEdge().x - ((!this.spacingAtEnds) ? 0f : this.itemSpacing) - this.extraEndSpacing;
 						}
 					}
 					switch (this.alignment)
 					{
 					case UIScrollList.ALIGNMENT.LEFT_TOP:
-						y = this.viewableArea.y * 0.5f - iUIListObject2.TopLeftEdge().y;
+						y = this.viewableArea.y * 0.5f - uIListItemContainer2.TopLeftEdge().y;
 						break;
 					case UIScrollList.ALIGNMENT.CENTER:
 						y = 0f;
 						break;
 					case UIScrollList.ALIGNMENT.RIGHT_BOTTOM:
-						y = this.viewableArea.y * -0.5f - iUIListObject2.BottomRightEdge().y;
+						y = this.viewableArea.y * -0.5f - uIListItemContainer2.BottomRightEdge().y;
 						break;
 					}
-					num += iUIListObject2.BottomRightEdge().x - iUIListObject2.TopLeftEdge().x + ((!flag || iUIListObject == null) ? 0f : this.itemSpacing);
+					num += uIListItemContainer2.BottomRightEdge().x - uIListItemContainer2.TopLeftEdge().x + ((!flag || !(uIListItemContainer != null)) ? 0f : this.itemSpacing);
 				}
 				else
 				{
 					if (index > 0)
 					{
 						flag = true;
-						iUIListObject = this.items[index - 1];
+						uIListItemContainer = this.items[index - 1];
 						if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
 						{
-							y = iUIListObject.transform.localPosition.y + iUIListObject.BottomRightEdge().y - this.itemSpacing - iUIListObject2.TopLeftEdge().y;
+							y = uIListItemContainer.transform.localPosition.y + uIListItemContainer.BottomRightEdge().y - this.itemSpacing - uIListItemContainer2.TopLeftEdge().y;
 						}
 						else
 						{
-							y = iUIListObject.transform.localPosition.y - iUIListObject.BottomRightEdge().y + this.itemSpacing + iUIListObject2.TopLeftEdge().y;
+							y = uIListItemContainer.transform.localPosition.y - uIListItemContainer.BottomRightEdge().y + this.itemSpacing + uIListItemContainer2.TopLeftEdge().y;
 						}
 					}
 					else
@@ -1252,28 +1205,28 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 						}
 						if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
 						{
-							y = this.viewableArea.y * 0.5f - iUIListObject2.TopLeftEdge().y - ((!this.spacingAtEnds) ? 0f : this.itemSpacing) - this.extraEndSpacing;
+							y = this.viewableArea.y * 0.5f - uIListItemContainer2.TopLeftEdge().y - ((!this.spacingAtEnds) ? 0f : this.itemSpacing) - this.extraEndSpacing;
 						}
 						else
 						{
-							y = this.viewableArea.y * -0.5f - iUIListObject2.BottomRightEdge().y + ((!this.spacingAtEnds) ? 0f : this.itemSpacing) + this.extraEndSpacing;
+							y = this.viewableArea.y * -0.5f - uIListItemContainer2.BottomRightEdge().y + ((!this.spacingAtEnds) ? 0f : this.itemSpacing) + this.extraEndSpacing;
 						}
 					}
 					switch (this.alignment)
 					{
 					case UIScrollList.ALIGNMENT.LEFT_TOP:
-						x = this.viewableArea.x * -0.5f - iUIListObject2.TopLeftEdge().x;
+						x = this.viewableArea.x * -0.5f - uIListItemContainer2.TopLeftEdge().x;
 						break;
 					case UIScrollList.ALIGNMENT.CENTER:
 						x = 0f;
 						break;
 					case UIScrollList.ALIGNMENT.RIGHT_BOTTOM:
-						x = this.viewableArea.x * 0.5f - iUIListObject2.BottomRightEdge().x;
+						x = this.viewableArea.x * 0.5f - uIListItemContainer2.BottomRightEdge().x;
 						break;
 					}
-					num += iUIListObject2.TopLeftEdge().y - iUIListObject2.BottomRightEdge().y + ((!flag || iUIListObject == null) ? 0f : this.itemSpacing);
+					num += uIListItemContainer2.TopLeftEdge().y - uIListItemContainer2.BottomRightEdge().y + ((!flag || !(uIListItemContainer != null)) ? 0f : this.itemSpacing);
 				}
-				iUIListObject2.transform.localPosition = new Vector3(x, y, 0f);
+				uIListItemContainer2.transform.localPosition = new Vector3(x, y, 0f);
 			}
 		}
 		this.UpdateContentExtents(num);
@@ -1281,7 +1234,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.newItems.Clear();
 	}
 
-	public void InsertItemDonotPosionUpdate(IUIListObject item, int position, string text, bool indexPosition = true)
+	public void InsertItemDonotPosionUpdate(UIListItemContainer item, int position, string text, bool indexPosition = true)
 	{
 		if (!this.m_awake)
 		{
@@ -1291,13 +1244,13 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		{
 			this.Start();
 		}
-		if (this.activateWhenAdding && !((Component)item).gameObject.activeInHierarchy)
+		if (this.activateWhenAdding && !item.gameObject.activeInHierarchy)
 		{
-			((Component)item).gameObject.SetActive(true);
+			item.gameObject.SetActive(true);
 		}
 		if (!base.gameObject.activeInHierarchy)
 		{
-			((Component)item).gameObject.SetActive(false);
+			item.gameObject.SetActive(false);
 		}
 		item.gameObject.layer = base.gameObject.layer;
 		if (this.container != null)
@@ -1363,7 +1316,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
-	public void SetItem(IUIListObject item, int position)
+	public void SetItem(UIListItemContainer item, int position)
 	{
 		if (!this.m_awake)
 		{
@@ -1373,13 +1326,13 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		{
 			this.Start();
 		}
-		if (this.activateWhenAdding && !((Component)item).gameObject.activeInHierarchy)
+		if (this.activateWhenAdding && !item.gameObject.activeInHierarchy)
 		{
-			((Component)item).gameObject.SetActive(true);
+			item.gameObject.SetActive(true);
 		}
 		if (!base.gameObject.activeInHierarchy)
 		{
-			((Component)item).gameObject.SetActive(false);
+			item.gameObject.SetActive(false);
 		}
 		item.gameObject.layer = base.gameObject.layer;
 		item.transform.parent = this.mover.transform;
@@ -1397,7 +1350,8 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 				item.gameObject.SetActive(false);
 			}
 		}
-		if (this.GetItem(position) == null)
+		UIListItemContainer item2 = this.GetItem(position);
+		if (null == item2)
 		{
 			if (this.container != null)
 			{
@@ -1414,8 +1368,8 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	public void AddItem(GameObject itemGO)
 	{
-		IUIListObject iUIListObject = (IUIListObject)itemGO.GetComponent(typeof(IUIListObject));
-		if (iUIListObject == null)
+		UIListItemContainer uIListItemContainer = (UIListItemContainer)itemGO.GetComponent(typeof(UIListItemContainer));
+		if (uIListItemContainer == null)
 		{
 			TsLog.LogWarning(string.Concat(new string[]
 			{
@@ -1427,15 +1381,15 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 			}), new object[0]);
 			return;
 		}
-		this.AddItem(iUIListObject, null);
+		this.AddItem(uIListItemContainer, null);
 	}
 
-	public void AddItem(IUIListObject item)
+	public void AddItem(UIListItemContainer item)
 	{
 		this.AddItem(item, null);
 	}
 
-	public void AddItem(IUIListObject item, string text)
+	public void AddItem(UIListItemContainer item, string text)
 	{
 		if (!this.m_awake)
 		{
@@ -1448,7 +1402,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.InsertItem(item, this.items.Count, text, false);
 	}
 
-	public IUIListObject CreateItem(GameObject prefab)
+	public UIListItemContainer CreateItem(GameObject prefab)
 	{
 		if (!this.m_awake)
 		{
@@ -1461,7 +1415,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		return this.CreateItem(prefab, this.items.Count, null);
 	}
 
-	public IUIListObject CreateItem(GameObject prefab, string text)
+	public UIListItemContainer CreateItem(GameObject prefab, string text)
 	{
 		if (!this.m_awake)
 		{
@@ -1474,22 +1428,22 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		return this.CreateItem(prefab, this.items.Count, text);
 	}
 
-	public IUIListObject CreateItem(GameObject prefab, int position)
+	public UIListItemContainer CreateItem(GameObject prefab, int position)
 	{
 		return this.CreateItem(prefab, position, null);
 	}
 
-	public IUIListObject CreateItem(GameObject prefab, int position, string text)
+	public UIListItemContainer CreateItem(GameObject prefab, int position, string text)
 	{
-		IUIListObject iUIListObject = (IUIListObject)prefab.GetComponent(typeof(IUIListObject));
-		if (iUIListObject == null)
+		UIListItemContainer uIListItemContainer = (UIListItemContainer)prefab.GetComponent(typeof(UIListItemContainer));
+		if (null == uIListItemContainer)
 		{
 			return null;
 		}
 		GameObject gameObject;
 		if (this.manager != null)
 		{
-			if (iUIListObject.IsContainer())
+			if (uIListItemContainer.IsContainer())
 			{
 				gameObject = (GameObject)UnityEngine.Object.Instantiate(prefab);
 				Component[] componentsInChildren = gameObject.GetComponentsInChildren(typeof(SpriteRoot));
@@ -1512,13 +1466,13 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		{
 			gameObject = (GameObject)UnityEngine.Object.Instantiate(prefab);
 		}
-		iUIListObject = (IUIListObject)gameObject.GetComponent(typeof(IUIListObject));
-		if (iUIListObject == null)
+		uIListItemContainer = (UIListItemContainer)gameObject.GetComponent(typeof(UIListItemContainer));
+		if (uIListItemContainer == null)
 		{
 			return null;
 		}
-		this.InsertItem(iUIListObject, position, text, false);
-		return iUIListObject;
+		this.InsertItem(uIListItemContainer, position, text, false);
+		return uIListItemContainer;
 	}
 
 	protected void UpdateContentExtents(float change)
@@ -1570,32 +1524,32 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.itemEasers.Remove(anim);
 	}
 
-	protected float GetYCentered(IUIListObject item)
+	protected float GetYCentered(UIListItemContainer item)
 	{
 		return 0f;
 	}
 
-	protected float GetYAlignTop(IUIListObject item)
+	protected float GetYAlignTop(UIListItemContainer item)
 	{
 		return this.viewableArea.y * 0.5f - item.TopLeftEdge().y;
 	}
 
-	protected float GetYAlignBottom(IUIListObject item)
+	protected float GetYAlignBottom(UIListItemContainer item)
 	{
 		return this.viewableArea.y * -0.5f - item.BottomRightEdge().y;
 	}
 
-	protected float GetXCentered(IUIListObject item)
+	protected float GetXCentered(UIListItemContainer item)
 	{
 		return 0f;
 	}
 
-	protected float GetXAlignLeft(IUIListObject item)
+	protected float GetXAlignLeft(UIListItemContainer item)
 	{
 		return this.viewableArea.x * -0.5f - item.TopLeftEdge().x;
 	}
 
-	protected float GetXAlignRight(IUIListObject item)
+	protected float GetXAlignRight(UIListItemContainer item)
 	{
 		return this.viewableArea.x * 0.5f - item.BottomRightEdge().x;
 	}
@@ -1623,7 +1577,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.ClipItems();
 	}
 
-	public void RepositionItems()
+	public virtual void RepositionItems()
 	{
 		if (0 >= this.items.Count)
 		{
@@ -1948,6 +1902,8 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 			else
 			{
 				float num = this.viewableArea.y * 0.5f;
+				this.listIndex.Clear();
+				this.listPosY.Clear();
 				for (int j = 0; j < this.items.Count; j++)
 				{
 					if (updateExtents)
@@ -1974,6 +1930,8 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 					this.contentExtents += num3;
 					num -= num3;
 					this.items[j].SetIndex(j);
+					this.listIndex.Add(j);
+					this.listPosY.Add(vector.y);
 				}
 			}
 			if (!this.spacingAtEnds)
@@ -2018,243 +1976,320 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
+	private static int CompareIndex(UIListItemContainer l, UIListItemContainer r)
+	{
+		return l.GetIndex().CompareTo(r.GetIndex());
+	}
+
 	public void ClipItems()
 	{
 		if (this.mover == null || this.items.Count < 1 || !base.gameObject.activeInHierarchy || !this.clipContents)
 		{
 			return;
 		}
-		IUIListObject iUIListObject = null;
-		if (this.orientation == UIScrollList.ORIENTATION.HORIZONTAL)
+		UIListItemContainer uIListItemContainer = null;
+		if (this.m_bReUse)
 		{
-			float x = this.mover.transform.localPosition.x;
-			float num = this.viewableArea.x * -0.5f - x;
-			float num2 = this.viewableArea.x * 0.5f - x;
-			int i = (int)((float)(this.items.Count - 1) * Mathf.Clamp01(this.scrollPos));
+			float y = this.mover.transform.localPosition.y;
+			float num = this.viewableArea.y * 0.5f - y;
+			float num2 = this.viewableArea.y * -0.5f - y;
 			if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
 			{
-				float x2 = this.items[i].transform.localPosition.x;
-				if (this.items[i].BottomRightEdge().x + x2 >= num)
+				if (null == uIListItemContainer)
 				{
-					for (i--; i > -1; i--)
+					for (int i = 0; i < this.listPosY.Count; i++)
 					{
-						x2 = this.items[i].transform.localPosition.x;
-						if (this.items[i].BottomRightEdge().x + x2 < num)
+						if (this.items[0].BottomRightEdge().y + this.listPosY[i] <= num)
 						{
+							this.findIndex = i;
 							break;
 						}
 					}
-					iUIListObject = this.items[i + 1];
-				}
-				else
-				{
-					while (i < this.items.Count)
+					if (this.findIndex != -1)
 					{
-						x2 = this.items[i].transform.localPosition.x;
-						if (this.items[i].BottomRightEdge().x + x2 >= num)
+						this.listIndex.Clear();
+						for (int j = 0; j < this.items.Count; j++)
 						{
-							iUIListObject = this.items[i];
-							break;
-						}
-						i++;
-					}
-				}
-				if (iUIListObject != null)
-				{
-					this.tempVisItems.Add(iUIListObject);
-					if (!iUIListObject.gameObject.activeInHierarchy)
-					{
-						iUIListObject.gameObject.SetActive(true);
-					}
-					iUIListObject.Hide(false);
-					iUIListObject.SetClippingRect(this.clientClippingRect);
-					x2 = iUIListObject.transform.localPosition.x;
-					if (iUIListObject.BottomRightEdge().x + x2 < num2)
-					{
-						for (i = iUIListObject.GetIndex() + 1; i < this.items.Count; i++)
-						{
-							x2 = this.items[i].transform.localPosition.x;
-							if (this.items[i].BottomRightEdge().x + x2 >= num2)
+							int num3 = this.findIndex + j;
+							if (num3 < this.listPosY.Count)
 							{
-								if (!this.items[i].gameObject.activeInHierarchy)
+								int num4 = num3 % this.items.Count;
+								this.listIndex.Add(num4);
+								this.items[num4].SetIndex(num3);
+								this.items[num4].transform.localPosition = new Vector3(this.items[num4].transform.localPosition.x, this.listPosY[num3], -0.1f);
+							}
+						}
+						if (this.callSlidePosChangeDelegate)
+						{
+							for (int k = 0; k < this.items.Count; k++)
+							{
+								if (this.findIndex + k < this.listPosY.Count)
 								{
-									this.items[i].gameObject.SetActive(true);
+									if (this.slidePosChangeDelegate != null)
+									{
+										this.slidePosChangeDelegate(this, this.findIndex + k);
+									}
 								}
-								this.items[i].Hide(false);
-								this.items[i].SetClippingRect(this.clientClippingRect);
-								this.tempVisItems.Add(this.items[i]);
-								break;
 							}
-							if (!this.items[i].gameObject.activeInHierarchy)
+							this.callSlidePosChangeDelegate = false;
+						}
+						if (0 < this.listIndex.Count)
+						{
+							uIListItemContainer = this.items[this.listIndex[0]];
+						}
+					}
+				}
+				if (uIListItemContainer == null)
+				{
+					return;
+				}
+				if (uIListItemContainer != null)
+				{
+					this.tempVisItems.Add(uIListItemContainer);
+					if (!uIListItemContainer.gameObject.activeInHierarchy)
+					{
+						uIListItemContainer.gameObject.SetActive(true);
+					}
+					uIListItemContainer.Hide(false);
+					uIListItemContainer.SetClippingRect(this.clientClippingRect);
+					float y2 = uIListItemContainer.transform.localPosition.y;
+					if (uIListItemContainer.BottomRightEdge().y + y2 > num2)
+					{
+						for (int l = 0; l < this.listIndex.Count; l++)
+						{
+							int index = this.listIndex[l];
+							if (uIListItemContainer.GetIndex() != this.items[index].GetIndex())
 							{
-								this.items[i].gameObject.SetActive(true);
+								y2 = this.items[index].transform.localPosition.y;
+								float num5 = this.items[index].BottomRightEdge().y + y2;
+								if (num5 <= num2)
+								{
+									if (!this.items[index].gameObject.activeInHierarchy)
+									{
+										this.items[index].gameObject.SetActive(true);
+									}
+									this.items[index].Hide(false);
+									this.items[index].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[index]);
+									this.changeScrollPos = true;
+								}
+								else
+								{
+									if (!this.items[index].gameObject.activeInHierarchy)
+									{
+										this.items[index].gameObject.SetActive(true);
+									}
+									this.items[index].Hide(false);
+									this.items[index].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[index]);
+								}
 							}
-							this.items[i].Hide(false);
-							this.items[i].SetClipped(false);
-							this.tempVisItems.Add(this.items[i]);
 						}
 					}
 				}
 			}
-			else
+			if (this.visibleItems.Count > 0)
 			{
-				float x2 = this.items[i].transform.localPosition.x;
-				if (this.items[i].TopLeftEdge().x + x2 <= num2)
+				if (this.oldChangeIndex != uIListItemContainer.GetIndex())
 				{
-					for (i--; i > -1; i--)
+					if (0f <= this.scrollDelta)
 					{
-						x2 = this.items[i].transform.localPosition.x;
-						if (this.items[i].TopLeftEdge().x + x2 > num2)
+						int num6 = uIListItemContainer.GetIndex() + (this.items.Count - 1);
+						if (num6 < this.limitListNum)
 						{
-							break;
-						}
-					}
-					iUIListObject = this.items[i + 1];
-				}
-				else
-				{
-					while (i < this.items.Count)
-					{
-						x2 = this.items[i].transform.localPosition.x;
-						if (this.items[i].TopLeftEdge().x + x2 <= num2)
-						{
-							iUIListObject = this.items[i];
-							break;
-						}
-						i++;
-					}
-				}
-				if (iUIListObject != null)
-				{
-					this.tempVisItems.Add(iUIListObject);
-					if (!iUIListObject.gameObject.activeInHierarchy)
-					{
-						iUIListObject.gameObject.SetActive(true);
-					}
-					iUIListObject.Hide(false);
-					iUIListObject.SetClippingRect(this.clientClippingRect);
-					x2 = iUIListObject.transform.localPosition.x;
-					if (iUIListObject.TopLeftEdge().x + x2 > num)
-					{
-						for (i = iUIListObject.GetIndex() + 1; i < this.items.Count; i++)
-						{
-							x2 = this.items[i].transform.localPosition.x;
-							if (this.items[i].TopLeftEdge().x + x2 <= num)
+							int num7 = this.findIndex - this.oldChangeIndex;
+							if (num7 == 1)
 							{
-								if (!this.items[i].gameObject.activeInHierarchy)
+								if (this.slidePosChangeDelegate != null)
 								{
-									this.items[i].gameObject.SetActive(true);
+									this.slidePosChangeDelegate(this, num6);
 								}
-								this.items[i].Hide(false);
-								this.items[i].SetClippingRect(this.clientClippingRect);
-								this.tempVisItems.Add(this.items[i]);
-								break;
 							}
-							if (!this.items[i].gameObject.activeInHierarchy)
+							else
 							{
-								this.items[i].gameObject.SetActive(true);
+								for (int m = 0; m < this.items.Count; m++)
+								{
+									if (this.slidePosChangeDelegate != null)
+									{
+										this.slidePosChangeDelegate(this, uIListItemContainer.GetIndex() + m);
+									}
+								}
 							}
-							this.items[i].Hide(false);
-							this.items[i].SetClipped(false);
-							this.tempVisItems.Add(this.items[i]);
+							this.oldChangeIndex = uIListItemContainer.GetIndex();
+						}
+					}
+					else if (0f > this.scrollDelta)
+					{
+						int index2 = uIListItemContainer.GetIndex();
+						int num8 = this.oldChangeIndex - this.findIndex;
+						if (num8 == 1)
+						{
+							if (this.slidePosChangeDelegate != null)
+							{
+								this.slidePosChangeDelegate(this, index2);
+							}
+						}
+						else
+						{
+							for (int n = 0; n < this.items.Count; n++)
+							{
+								if (this.slidePosChangeDelegate != null)
+								{
+									this.slidePosChangeDelegate(this, index2 + n);
+								}
+							}
+						}
+						this.oldChangeIndex = uIListItemContainer.GetIndex();
+					}
+				}
+				for (int num9 = 0; num9 < this.visibleItems.Count; num9++)
+				{
+					if (this.visibleItems[num9].GetIndex() < uIListItemContainer.GetIndex())
+					{
+						this.visibleItems[num9].Hide(true);
+						if (!this.visibleItems[num9].Managed)
+						{
+							this.visibleItems[num9].gameObject.SetActive(false);
 						}
 					}
 				}
+				this.changeScrollPos = true;
 			}
 		}
 		else
 		{
-			float y = this.mover.transform.localPosition.y;
-			float num3 = this.viewableArea.y * 0.5f - y;
-			float num4 = this.viewableArea.y * -0.5f - y;
-			int j = (int)((float)(this.items.Count - 1) * Mathf.Clamp01(this.scrollPos));
-			if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
+			if (this.orientation == UIScrollList.ORIENTATION.HORIZONTAL)
 			{
-				float y2 = this.items[j].transform.localPosition.y;
-				if (this.items[j].BottomRightEdge().y + y2 <= num3)
+				float x = this.mover.transform.localPosition.x;
+				float num10 = this.viewableArea.x * -0.5f - x;
+				float num11 = this.viewableArea.x * 0.5f - x;
+				int num12 = (int)((float)(this.items.Count - 1) * Mathf.Clamp01(this.scrollPos));
+				if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
 				{
-					for (j--; j > -1; j--)
+					float x2 = this.items[num12].transform.localPosition.x;
+					if (this.items[num12].BottomRightEdge().x + x2 >= num10)
 					{
-						y2 = this.items[j].transform.localPosition.y;
-						if (this.items[j].BottomRightEdge().y + y2 > num3)
+						for (num12--; num12 > -1; num12--)
 						{
-							break;
+							x2 = this.items[num12].transform.localPosition.x;
+							if (this.items[num12].BottomRightEdge().x + x2 < num10)
+							{
+								break;
+							}
+						}
+						uIListItemContainer = this.items[num12 + 1];
+					}
+					else
+					{
+						while (num12 < this.items.Count)
+						{
+							x2 = this.items[num12].transform.localPosition.x;
+							if (this.items[num12].BottomRightEdge().x + x2 >= num10)
+							{
+								uIListItemContainer = this.items[num12];
+								break;
+							}
+							num12++;
 						}
 					}
-					iUIListObject = this.items[j + 1];
+					if (uIListItemContainer != null)
+					{
+						this.tempVisItems.Add(uIListItemContainer);
+						if (!uIListItemContainer.gameObject.activeInHierarchy)
+						{
+							uIListItemContainer.gameObject.SetActive(true);
+						}
+						uIListItemContainer.Hide(false);
+						uIListItemContainer.SetClippingRect(this.clientClippingRect);
+						x2 = uIListItemContainer.transform.localPosition.x;
+						if (uIListItemContainer.BottomRightEdge().x + x2 < num11)
+						{
+							for (num12 = uIListItemContainer.GetIndex() + 1; num12 < this.items.Count; num12++)
+							{
+								x2 = this.items[num12].transform.localPosition.x;
+								if (this.items[num12].BottomRightEdge().x + x2 >= num11)
+								{
+									if (!this.items[num12].gameObject.activeInHierarchy)
+									{
+										this.items[num12].gameObject.SetActive(true);
+									}
+									this.items[num12].Hide(false);
+									this.items[num12].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[num12]);
+									break;
+								}
+								if (!this.items[num12].gameObject.activeInHierarchy)
+								{
+									this.items[num12].gameObject.SetActive(true);
+								}
+								this.items[num12].Hide(false);
+								this.items[num12].SetClipped(false);
+								this.tempVisItems.Add(this.items[num12]);
+							}
+						}
+					}
 				}
 				else
 				{
-					while (j < this.items.Count)
+					float x2 = this.items[num12].transform.localPosition.x;
+					if (this.items[num12].TopLeftEdge().x + x2 <= num11)
 					{
-						y2 = this.items[j].transform.localPosition.y;
-						if (this.items[j].BottomRightEdge().y + y2 <= num3)
+						for (num12--; num12 > -1; num12--)
 						{
-							iUIListObject = this.items[j];
-							break;
-						}
-						j++;
-					}
-				}
-				if (iUIListObject != null)
-				{
-					this.tempVisItems.Add(iUIListObject);
-					if (!iUIListObject.gameObject.activeInHierarchy)
-					{
-						iUIListObject.gameObject.SetActive(true);
-					}
-					iUIListObject.Hide(false);
-					iUIListObject.SetClippingRect(this.clientClippingRect);
-					y2 = iUIListObject.transform.localPosition.y;
-					if (iUIListObject.BottomRightEdge().y + y2 > num4)
-					{
-						for (j = iUIListObject.GetIndex() + 1; j < this.items.Count; j++)
-						{
-							y2 = this.items[j].transform.localPosition.y;
-							float num5 = this.items[j].BottomRightEdge().y + y2;
-							int num6 = j % this.columnCount;
-							bool flag = !this.line || this.columnCount - 1 == num6;
-							if (num5 <= num4 && flag)
+							x2 = this.items[num12].transform.localPosition.x;
+							if (this.items[num12].TopLeftEdge().x + x2 > num11)
 							{
-								if (!this.items[j].gameObject.activeInHierarchy)
-								{
-									this.items[j].gameObject.SetActive(true);
-								}
-								this.items[j].Hide(false);
-								this.items[j].SetClippingRect(this.clientClippingRect);
-								this.tempVisItems.Add(this.items[j]);
-								this.changeScrollPos = true;
 								break;
 							}
-							if (num5 <= num4 && this.columnCount - 1 != num6)
+						}
+						uIListItemContainer = this.items[num12 + 1];
+					}
+					else
+					{
+						while (num12 < this.items.Count)
+						{
+							x2 = this.items[num12].transform.localPosition.x;
+							if (this.items[num12].TopLeftEdge().x + x2 <= num11)
 							{
-								if (!this.items[j].gameObject.activeInHierarchy)
-								{
-									this.items[j].gameObject.SetActive(true);
-								}
-								this.items[j].Hide(false);
-								this.items[j].SetClippingRect(this.clientClippingRect);
-								this.tempVisItems.Add(this.items[j]);
+								uIListItemContainer = this.items[num12];
+								break;
 							}
-							else if (num5 > num4)
+							num12++;
+						}
+					}
+					if (uIListItemContainer != null)
+					{
+						this.tempVisItems.Add(uIListItemContainer);
+						if (!uIListItemContainer.gameObject.activeInHierarchy)
+						{
+							uIListItemContainer.gameObject.SetActive(true);
+						}
+						uIListItemContainer.Hide(false);
+						uIListItemContainer.SetClippingRect(this.clientClippingRect);
+						x2 = uIListItemContainer.transform.localPosition.x;
+						if (uIListItemContainer.TopLeftEdge().x + x2 > num10)
+						{
+							for (num12 = uIListItemContainer.GetIndex() + 1; num12 < this.items.Count; num12++)
 							{
-								if (!this.items[j].gameObject.activeInHierarchy)
+								x2 = this.items[num12].transform.localPosition.x;
+								if (this.items[num12].TopLeftEdge().x + x2 <= num10)
 								{
-									this.items[j].gameObject.SetActive(true);
+									if (!this.items[num12].gameObject.activeInHierarchy)
+									{
+										this.items[num12].gameObject.SetActive(true);
+									}
+									this.items[num12].Hide(false);
+									this.items[num12].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[num12]);
+									break;
 								}
-								this.items[j].Hide(false);
-								this.items[j].SetClippingRect(this.clientClippingRect);
-								this.tempVisItems.Add(this.items[j]);
-							}
-							else
-							{
-								if (!this.items[j].gameObject.activeInHierarchy)
+								if (!this.items[num12].gameObject.activeInHierarchy)
 								{
-									this.items[j].gameObject.SetActive(true);
+									this.items[num12].gameObject.SetActive(true);
 								}
-								this.items[j].Hide(false);
-								this.items[j].SetClipped(false);
-								this.tempVisItems.Add(this.items[j]);
+								this.items[num12].Hide(false);
+								this.items[num12].SetClipped(false);
+								this.tempVisItems.Add(this.items[num12]);
 							}
 						}
 					}
@@ -2262,150 +2297,249 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 			}
 			else
 			{
-				float y2 = this.items[j].transform.localPosition.y;
-				if (this.items[j].TopLeftEdge().y + y2 >= num4)
+				float y3 = this.mover.transform.localPosition.y;
+				float num13 = this.viewableArea.y * 0.5f - y3;
+				float num14 = this.viewableArea.y * -0.5f - y3;
+				int num15 = (int)((float)(this.items.Count - 1) * Mathf.Clamp01(this.scrollPos));
+				if (this.direction == UIScrollList.DIRECTION.TtoB_LtoR)
 				{
-					for (j--; j > -1; j--)
+					float y4 = this.items[num15].transform.localPosition.y;
+					if (this.items[num15].BottomRightEdge().y + y4 <= num13)
 					{
-						y2 = this.items[j].transform.localPosition.y;
-						if (this.items[j].TopLeftEdge().y + y2 < num4)
+						for (num15--; num15 > -1; num15--)
 						{
-							break;
+							y4 = this.items[num15].transform.localPosition.y;
+							if (this.items[num15].BottomRightEdge().y + y4 > num13)
+							{
+								break;
+							}
+						}
+						uIListItemContainer = this.items[num15 + 1];
+					}
+					else
+					{
+						while (num15 < this.items.Count)
+						{
+							y4 = this.items[num15].transform.localPosition.y;
+							if (this.items[num15].BottomRightEdge().y + y4 <= num13)
+							{
+								uIListItemContainer = this.items[num15];
+								break;
+							}
+							num15++;
 						}
 					}
-					iUIListObject = this.items[j + 1];
+					if (uIListItemContainer != null)
+					{
+						this.tempVisItems.Add(uIListItemContainer);
+						if (!uIListItemContainer.gameObject.activeInHierarchy)
+						{
+							uIListItemContainer.gameObject.SetActive(true);
+						}
+						uIListItemContainer.Hide(false);
+						uIListItemContainer.SetClippingRect(this.clientClippingRect);
+						y4 = uIListItemContainer.transform.localPosition.y;
+						if (uIListItemContainer.BottomRightEdge().y + y4 > num14)
+						{
+							for (num15 = uIListItemContainer.GetIndex() + 1; num15 < this.items.Count; num15++)
+							{
+								y4 = this.items[num15].transform.localPosition.y;
+								float num16 = this.items[num15].BottomRightEdge().y + y4;
+								int num17 = num15 % this.columnCount;
+								bool flag = !this.line || this.columnCount - 1 == num17;
+								if (num16 <= num14 && flag)
+								{
+									if (!this.items[num15].gameObject.activeInHierarchy)
+									{
+										this.items[num15].gameObject.SetActive(true);
+									}
+									this.items[num15].Hide(false);
+									this.items[num15].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[num15]);
+									this.changeScrollPos = true;
+									break;
+								}
+								if (num16 <= num14 && this.columnCount - 1 != num17)
+								{
+									if (!this.items[num15].gameObject.activeInHierarchy)
+									{
+										this.items[num15].gameObject.SetActive(true);
+									}
+									this.items[num15].Hide(false);
+									this.items[num15].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[num15]);
+								}
+								else if (num16 > num14)
+								{
+									if (!this.items[num15].gameObject.activeInHierarchy)
+									{
+										this.items[num15].gameObject.SetActive(true);
+									}
+									this.items[num15].Hide(false);
+									this.items[num15].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[num15]);
+								}
+								else
+								{
+									if (!this.items[num15].gameObject.activeInHierarchy)
+									{
+										this.items[num15].gameObject.SetActive(true);
+									}
+									this.items[num15].Hide(false);
+									this.items[num15].SetClipped(false);
+									this.tempVisItems.Add(this.items[num15]);
+								}
+							}
+						}
+					}
 				}
 				else
 				{
-					while (j < this.items.Count)
+					float y4 = this.items[num15].transform.localPosition.y;
+					if (this.items[num15].TopLeftEdge().y + y4 >= num14)
 					{
-						y2 = this.items[j].transform.localPosition.y;
-						if (this.items[j].TopLeftEdge().y + y2 >= num4)
+						for (num15--; num15 > -1; num15--)
 						{
-							iUIListObject = this.items[j];
-							break;
-						}
-						j++;
-					}
-				}
-				if (iUIListObject != null)
-				{
-					this.tempVisItems.Add(iUIListObject);
-					if (!iUIListObject.gameObject.activeInHierarchy)
-					{
-						iUIListObject.gameObject.SetActive(true);
-					}
-					iUIListObject.Hide(false);
-					iUIListObject.SetClippingRect(this.clientClippingRect);
-					y2 = iUIListObject.transform.localPosition.y;
-					if (iUIListObject.TopLeftEdge().y + y2 < num3)
-					{
-						for (j = iUIListObject.GetIndex() + 1; j < this.items.Count; j++)
-						{
-							y2 = this.items[j].transform.localPosition.y;
-							if (this.items[j].TopLeftEdge().y + y2 >= num3)
+							y4 = this.items[num15].transform.localPosition.y;
+							if (this.items[num15].TopLeftEdge().y + y4 < num14)
 							{
-								if (!this.items[j].gameObject.activeInHierarchy)
-								{
-									this.items[j].gameObject.SetActive(true);
-								}
-								this.items[j].Hide(false);
-								this.items[j].SetClippingRect(this.clientClippingRect);
-								this.tempVisItems.Add(this.items[j]);
 								break;
 							}
-							if (!this.items[j].gameObject.activeInHierarchy)
+						}
+						uIListItemContainer = this.items[num15 + 1];
+					}
+					else
+					{
+						while (num15 < this.items.Count)
+						{
+							y4 = this.items[num15].transform.localPosition.y;
+							if (this.items[num15].TopLeftEdge().y + y4 >= num14)
 							{
-								this.items[j].gameObject.SetActive(true);
+								uIListItemContainer = this.items[num15];
+								break;
 							}
-							this.items[j].Hide(false);
-							this.items[j].SetClipped(false);
-							this.tempVisItems.Add(this.items[j]);
+							num15++;
+						}
+					}
+					if (uIListItemContainer != null)
+					{
+						this.tempVisItems.Add(uIListItemContainer);
+						if (!uIListItemContainer.gameObject.activeInHierarchy)
+						{
+							uIListItemContainer.gameObject.SetActive(true);
+						}
+						uIListItemContainer.Hide(false);
+						uIListItemContainer.SetClippingRect(this.clientClippingRect);
+						y4 = uIListItemContainer.transform.localPosition.y;
+						if (uIListItemContainer.TopLeftEdge().y + y4 < num13)
+						{
+							for (num15 = uIListItemContainer.GetIndex() + 1; num15 < this.items.Count; num15++)
+							{
+								y4 = this.items[num15].transform.localPosition.y;
+								if (this.items[num15].TopLeftEdge().y + y4 >= num13)
+								{
+									if (!this.items[num15].gameObject.activeInHierarchy)
+									{
+										this.items[num15].gameObject.SetActive(true);
+									}
+									this.items[num15].Hide(false);
+									this.items[num15].SetClippingRect(this.clientClippingRect);
+									this.tempVisItems.Add(this.items[num15]);
+									break;
+								}
+								if (!this.items[num15].gameObject.activeInHierarchy)
+								{
+									this.items[num15].gameObject.SetActive(true);
+								}
+								this.items[num15].Hide(false);
+								this.items[num15].SetClipped(false);
+								this.tempVisItems.Add(this.items[num15]);
+							}
 						}
 					}
 				}
 			}
-		}
-		if (iUIListObject == null)
-		{
-			return;
-		}
-		IUIListObject iUIListObject2 = this.tempVisItems[this.tempVisItems.Count - 1];
-		if (this.visibleItems.Count > 0)
-		{
-			if (this.visibleItems[0].GetIndex() > iUIListObject2.GetIndex() || this.visibleItems[this.visibleItems.Count - 1].GetIndex() < iUIListObject.GetIndex())
+			if (uIListItemContainer == null)
 			{
-				for (int k = 0; k < this.visibleItems.Count; k++)
+				return;
+			}
+			UIListItemContainer uIListItemContainer2 = this.tempVisItems[this.tempVisItems.Count - 1];
+			if (this.visibleItems.Count > 0)
+			{
+				if (this.visibleItems[0].GetIndex() > uIListItemContainer2.GetIndex() || this.visibleItems[this.visibleItems.Count - 1].GetIndex() < uIListItemContainer.GetIndex())
 				{
-					this.visibleItems[k].Hide(true);
-					if (!this.visibleItems[k].Managed)
+					for (int num18 = 0; num18 < this.visibleItems.Count; num18++)
 					{
-						this.visibleItems[k].gameObject.SetActive(false);
+						this.visibleItems[num18].Hide(true);
+						if (!this.visibleItems[num18].Managed)
+						{
+							this.visibleItems[num18].gameObject.SetActive(false);
+						}
+						this.changeScrollPos = true;
+					}
+				}
+				else
+				{
+					for (int num19 = 0; num19 < this.visibleItems.Count; num19++)
+					{
+						if (this.visibleItems[num19].GetIndex() >= uIListItemContainer.GetIndex())
+						{
+							break;
+						}
+						this.visibleItems[num19].Hide(true);
+						if (!this.visibleItems[num19].Managed)
+						{
+							this.visibleItems[num19].gameObject.SetActive(false);
+						}
+						this.changeScrollPos = true;
+					}
+					for (int num20 = this.visibleItems.Count - 1; num20 > -1; num20--)
+					{
+						if (this.visibleItems[num20].GetIndex() <= uIListItemContainer2.GetIndex())
+						{
+							break;
+						}
+						this.visibleItems[num20].Hide(true);
+						if (!this.visibleItems[num20].Managed)
+						{
+							this.visibleItems[num20].gameObject.SetActive(false);
+						}
+						this.changeScrollPos = true;
+					}
+				}
+			}
+			if (!this.hideSlider)
+			{
+				if (this.chatLabelScroll)
+				{
+					if (0 < uIListItemContainer.GetIndex())
+					{
+						this.changeScrollPos = true;
+					}
+					if (this.changeScrollPos && null != this.slider && !this.slider.Visible)
+					{
+						this.slider.Visible = true;
+					}
+				}
+				else if (this.items.Count > this.tempVisItems.Count)
+				{
+					if (null != this.slider && !this.slider.Visible)
+					{
+						this.slider.Visible = true;
+						this.count = this.tempVisItems.Count;
 					}
 					this.changeScrollPos = true;
 				}
-			}
-			else
-			{
-				for (int l = 0; l < this.visibleItems.Count; l++)
+				else if (null != this.slider && this.slider.Visible)
 				{
-					if (this.visibleItems[l].GetIndex() >= iUIListObject.GetIndex())
+					if (this.items.Count <= this.count)
 					{
-						break;
+						this.slider.Visible = false;
 					}
-					this.visibleItems[l].Hide(true);
-					if (!this.visibleItems[l].Managed)
-					{
-						this.visibleItems[l].gameObject.SetActive(false);
-					}
-					this.changeScrollPos = true;
-				}
-				for (int m = this.visibleItems.Count - 1; m > -1; m--)
-				{
-					if (this.visibleItems[m].GetIndex() <= iUIListObject2.GetIndex())
-					{
-						break;
-					}
-					this.visibleItems[m].Hide(true);
-					if (!this.visibleItems[m].Managed)
-					{
-						this.visibleItems[m].gameObject.SetActive(false);
-					}
-					this.changeScrollPos = true;
 				}
 			}
 		}
-		if (!this.hideSlider)
-		{
-			if (this.chatLabelScroll)
-			{
-				if (0 < iUIListObject.GetIndex())
-				{
-					this.changeScrollPos = true;
-				}
-				if (this.changeScrollPos && null != this.slider && !this.slider.Visible)
-				{
-					this.slider.Visible = true;
-				}
-			}
-			else if (this.items.Count > this.tempVisItems.Count)
-			{
-				if (null != this.slider && !this.slider.Visible)
-				{
-					this.slider.Visible = true;
-					this.count = this.tempVisItems.Count;
-				}
-				this.changeScrollPos = true;
-			}
-			else if (null != this.slider && this.slider.Visible)
-			{
-				if (this.items.Count <= this.count)
-				{
-					this.slider.Visible = false;
-				}
-			}
-		}
-		List<IUIListObject> list = this.visibleItems;
+		List<UIListItemContainer> list = this.visibleItems;
 		this.visibleItems = this.tempVisItems;
 		this.tempVisItems = list;
 		this.tempVisItems.Clear();
@@ -2437,28 +2571,52 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		{
 			if (this.selectedItem != null && this.selectedItem != item)
 			{
-				((UIListItemContainer)this.selectedItem).SetSelected(false);
+				this.selectedItem.SetSelected(false);
 			}
 			this.selectedItem = item;
 			item.SetSelected(true);
 		}
 	}
 
-	public void DidLongClick(IUIListObject item)
+	public void DidMultSelect(UIListItemContainer item, bool bSelect)
+	{
+		if (this.multiSelectMode && !bSelect)
+		{
+			if (this.selectedItems.ContainsKey(item.GetIndex()))
+			{
+				item.SetSelected(bSelect);
+				this.selectedItems.Remove(item.GetIndex());
+			}
+		}
+		else if (this.multiSelectMode && bSelect)
+		{
+			if (this.maxMultiSelectNum <= this.selectedItems.Count)
+			{
+				return;
+			}
+			if (!this.selectedItems.ContainsKey(item.GetIndex()))
+			{
+				item.SetSelected(bSelect);
+				this.selectedItems.Add(item.GetIndex(), item);
+			}
+		}
+	}
+
+	public void DidLongClick(UIListItemContainer item)
 	{
 		if (this.selectedItem != null && this.selectedItem != item)
 		{
-			((UIListItemContainer)this.selectedItem).SetSelected(false);
+			this.selectedItem.SetSelected(false);
 		}
 		this.selectedItem = item;
-		((UIListItemContainer)item).SetSelected(true);
+		item.SetSelected(true);
 		if (this.longTapDelegate != null)
 		{
 			this.longTapDelegate(this);
 		}
 	}
 
-	public void DidClick(IUIListObject item)
+	public void DidClick(UIListItemContainer item)
 	{
 		if (this.scriptWithMethodToInvoke != null)
 		{
@@ -2471,7 +2629,19 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		MsgHandler.Handle("ListSound", new object[0]);
 	}
 
-	public void DidDoubleClick(IUIListObject item)
+	public void DidClick2(UIListItemContainer item)
+	{
+		if (this.scriptWithMethodToInvoke != null)
+		{
+			this.scriptWithMethodToInvoke.Invoke(this.methodToInvokeOnSelect, 0f);
+		}
+		if (this.changeDelegate != null)
+		{
+			this.changeDelegate(this);
+		}
+	}
+
+	public void DidDoubleClick(UIListItemContainer item)
 	{
 		if (this.doubleClickDelegate != null)
 		{
@@ -2479,7 +2649,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
-	public void DidMouseOver(IUIListObject item)
+	public void DidMouseOver(UIListItemContainer item)
 	{
 		this.mouseItem = item;
 		if (this.mouseOverDelegate != null)
@@ -2488,7 +2658,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
-	public void DidMouseOut(IUIListObject item)
+	public void DidMouseOut(UIListItemContainer item)
 	{
 		this.mouseItem = item;
 		if (this.mouseOutDelegate != null)
@@ -2497,15 +2667,15 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
-	public void DirOverView(IUIListObject item)
+	public void DirOverView(UIListItemContainer item)
 	{
 	}
 
-	public void DirOverViewClear(IUIListObject obj)
+	public void DirOverViewClear(UIListItemContainer obj)
 	{
 	}
 
-	public void DidRightMouse(IUIListObject item)
+	public void DidRightMouse(UIListItemContainer item)
 	{
 		if (this.rightMouseSelect)
 		{
@@ -2513,15 +2683,15 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 			{
 				if (this.selectedItem != item)
 				{
-					((UIListItemContainer)this.selectedItem).SetSelected(false);
+					this.selectedItem.SetSelected(false);
 				}
 				this.selectedItem = item;
-				((UIListItemContainer)item).SetSelected(true);
+				item.SetSelected(true);
 			}
 			else
 			{
 				this.selectedItem = item;
-				((UIListItemContainer)item).SetSelected(true);
+				item.SetSelected(true);
 			}
 		}
 		this.mouseItem = item;
@@ -2629,42 +2799,60 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 
 	public void SetSelectedItem(int index)
 	{
-		if (index < 0 || index >= this.items.Count)
+		int num;
+		if (this.m_bReUse)
+		{
+			num = index % this.items.Count;
+		}
+		else
+		{
+			num = index;
+		}
+		if (num < 0 || num >= this.items.Count)
 		{
 			if (this.selectedItem != null)
 			{
-				((UIListItemContainer)this.selectedItem).SetSelected(false);
+				this.selectedItem.SetSelected(false);
 			}
 			this.selectedItem = null;
 			return;
 		}
-		IUIListObject iUIListObject = this.items[index];
+		UIListItemContainer uIListItemContainer = this.items[num];
 		if (this.selectedItem != null)
 		{
-			((UIListItemContainer)this.selectedItem).SetSelected(false);
+			this.selectedItem.SetSelected(false);
 		}
-		this.selectedItem = iUIListObject;
-		((UIListItemContainer)iUIListObject).SetSelected(true);
+		this.selectedItem = uIListItemContainer;
+		uIListItemContainer.SetSelected(true);
 		if (this.autoScroll)
 		{
 			this.ScrollToItem(this.selectedItem, 0.1f);
 		}
 	}
 
-	public IUIListObject GetItem(int index)
+	public UIListItemContainer GetItem(int index)
 	{
 		if (this.items.Count == 0)
 		{
 			return null;
 		}
-		if (index < 0 || index >= this.items.Count)
+		int num;
+		if (this.m_bReUse)
+		{
+			num = index % this.items.Count;
+		}
+		else
+		{
+			num = index;
+		}
+		if (num < 0 || num >= this.items.Count)
 		{
 			return null;
 		}
-		return this.items[index];
+		return this.items[num];
 	}
 
-	public IUIListObject GetSelectItem()
+	public UIListItemContainer GetSelectItem()
 	{
 		if (this.items.Count == 0)
 		{
@@ -2674,19 +2862,27 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		{
 			return null;
 		}
-		int index = this.SelectedItem.GetIndex();
-		if (index < 0 || index >= this.items.Count)
+		int num;
+		if (this.m_bReUse)
+		{
+			num = this.SelectedItem.GetIndex() % this.items.Count;
+		}
+		else
+		{
+			num = this.SelectedItem.GetIndex();
+		}
+		if (num < 0 || num >= this.items.Count)
 		{
 			return null;
 		}
-		return this.items[index];
+		return this.items[num];
 	}
 
 	public void FadeList(float dur)
 	{
 		for (int i = 0; i < this.items.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.items[i];
+			UIListItemContainer uIListItemContainer = this.items[i];
 			if (null != uIListItemContainer)
 			{
 				uIListItemContainer.FadeListItemContainer(dur);
@@ -2698,7 +2894,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 	{
 		for (int i = 0; i < this.items.Count; i++)
 		{
-			UIListItemContainer uIListItemContainer = (UIListItemContainer)this.items[i];
+			UIListItemContainer uIListItemContainer = this.items[i];
 			if (null != uIListItemContainer)
 			{
 				uIListItemContainer.SetAlphaList(a);
@@ -2706,7 +2902,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		}
 	}
 
-	private void DestroyIUI(IUIListObject items)
+	private void DestroyIUI(UIListItemContainer items)
 	{
 		UnityEngine.Object.Destroy(items.gameObject);
 	}
@@ -2725,7 +2921,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		if (this.selectedItem == this.items[index])
 		{
 			this.selectedItem = null;
-			((UIListItemContainer)this.items[index]).SetSelected(false);
+			this.items[index].SetSelected(false);
 		}
 		if (this.multiSelectMode && this.selectedItems.ContainsKey(index))
 		{
@@ -2770,7 +2966,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		if (this.selectedItem == this.items[index])
 		{
 			this.selectedItem = null;
-			((UIListItemContainer)this.items[index]).SetSelected(false);
+			this.items[index].SetSelected(false);
 		}
 		this.visibleItems.Remove(this.items[index]);
 		if (destroy)
@@ -2801,7 +2997,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		if (this.selectedItem == this.items[index])
 		{
 			this.selectedItem = null;
-			((UIListItemContainer)this.items[index]).SetSelected(false);
+			this.items[index].SetSelected(false);
 		}
 		if (this.multiSelectMode && this.selectedItems.ContainsKey(index))
 		{
@@ -2822,7 +3018,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.items.RemoveAt(index);
 	}
 
-	public void RemoveItem(IUIListObject item, bool destroy)
+	public void RemoveItem(UIListItemContainer item, bool destroy)
 	{
 		for (int i = 0; i < this.items.Count; i++)
 		{
@@ -2832,6 +3028,11 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 				return;
 			}
 		}
+	}
+
+	public void ClearVisibleList()
+	{
+		this.visibleItems.Clear();
 	}
 
 	public void ClearList(bool destroy)
@@ -2951,7 +3152,7 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		this.timeDelta = Time.realtimeSinceStartup - this.lastTime;
 		this.lastTime = Time.realtimeSinceStartup;
 		this.inertiaLerpTime += this.timeDelta;
-		if (this.cachedPos != base.transform.position || this.cachedRot != base.transform.rotation || this.cachedScale != base.transform.lossyScale || this.cachedviewableArea != this.viewableArea || this.bCalcClipping)
+		if (this.cachedPos != base.transform.position || this.cachedRot != base.transform.rotation || this.cachedScale != base.transform.lossyScale || this.cachedviewableArea != this.viewableArea || this.clipWhenMoving)
 		{
 			this.cachedPos = base.transform.position;
 			this.cachedRot = base.transform.rotation;
@@ -3081,16 +3282,16 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 		if (this.orientation == UIScrollList.ORIENTATION.HORIZONTAL)
 		{
 			float num6 = (this.direction != UIScrollList.DIRECTION.TtoB_LtoR) ? 1f : -1f;
-			IUIListObject iUIListObject = this.items[num5];
-			float num7 = Mathf.Abs(num3 + num6 * iUIListObject.transform.localPosition.x / this.amtOfPlay);
+			UIListItemContainer uIListItemContainer = this.items[num5];
+			float num7 = Mathf.Abs(num3 + num6 * uIListItemContainer.transform.localPosition.x / this.amtOfPlay);
 			if (num5 + num < this.items.Count)
 			{
-				IUIListObject iUIListObject2 = this.items[num5 + num];
-				float num8 = Mathf.Abs(num3 + num6 * iUIListObject2.transform.localPosition.x / this.amtOfPlay);
+				UIListItemContainer uIListItemContainer2 = this.items[num5 + num];
+				float num8 = Mathf.Abs(num3 + num6 * uIListItemContainer2.transform.localPosition.x / this.amtOfPlay);
 				if (num8 < num7)
 				{
 					num7 = num8;
-					iUIListObject = iUIListObject2;
+					uIListItemContainer = uIListItemContainer2;
 					num5 += num;
 				}
 				else
@@ -3111,24 +3312,24 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 					break;
 				}
 				num7 = num8;
-				iUIListObject = this.items[num9];
+				uIListItemContainer = this.items[num9];
 				num9 += num;
 			}
-			this.ScrollToItem(iUIListObject, num2);
+			this.ScrollToItem(uIListItemContainer, num2);
 		}
 		else
 		{
 			float num10 = (this.direction != UIScrollList.DIRECTION.TtoB_LtoR) ? -1f : 1f;
-			IUIListObject iUIListObject = this.items[num5];
-			float num7 = Mathf.Abs(num3 + num10 * iUIListObject.transform.localPosition.y / this.amtOfPlay);
+			UIListItemContainer uIListItemContainer = this.items[num5];
+			float num7 = Mathf.Abs(num3 + num10 * uIListItemContainer.transform.localPosition.y / this.amtOfPlay);
 			if (num5 + num < this.items.Count)
 			{
-				IUIListObject iUIListObject2 = this.items[num5 + num];
-				float num8 = Mathf.Abs(num3 + num10 * iUIListObject2.transform.localPosition.y / this.amtOfPlay);
+				UIListItemContainer uIListItemContainer2 = this.items[num5 + num];
+				float num8 = Mathf.Abs(num3 + num10 * uIListItemContainer2.transform.localPosition.y / this.amtOfPlay);
 				if (num8 < num7)
 				{
 					num7 = num8;
-					iUIListObject = iUIListObject2;
+					uIListItemContainer = uIListItemContainer2;
 					num5 += num;
 				}
 				else
@@ -3149,10 +3350,10 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 					break;
 				}
 				num7 = num8;
-				iUIListObject = this.items[num11];
+				uIListItemContainer = this.items[num11];
 				num11 += num;
 			}
-			this.ScrollToItem(iUIListObject, num2);
+			this.ScrollToItem(uIListItemContainer, num2);
 		}
 	}
 
@@ -3303,6 +3504,16 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 	public void RemoveLongTapDelegate(EZValueChangedDelegate del)
 	{
 		this.longTapDelegate = (EZValueChangedDelegate)Delegate.Remove(this.longTapDelegate, del);
+	}
+
+	public void AddMakeCompleteDelegate(EZValueChangedDelegate del)
+	{
+		this.makeCompleteDelegate = (EZValueChangedDelegate)Delegate.Combine(this.makeCompleteDelegate, del);
+	}
+
+	public void RemoveMakeCompleteDelegate(EZValueChangedDelegate del)
+	{
+		this.makeCompleteDelegate = (EZValueChangedDelegate)Delegate.Remove(this.makeCompleteDelegate, del);
 	}
 
 	public bool IsDragging()
@@ -3634,6 +3845,17 @@ public class UIScrollList : MonoBehaviour, IEZDragDrop, IUIObject
 				component.SetAlpha(_alpha);
 			}
 		}
+	}
+
+	public void AutoMultiClickItem(UIListItemContainer item, bool bSelect)
+	{
+		item.SetControlState(UIListItemContainer.CONTROL_STATE.ACTIVE);
+		this.DidMultSelect(item, bSelect);
+		this.DidClick2(item);
+	}
+
+	public void ItemDisable(UIListItemContainer item)
+	{
 	}
 
 	virtual GameObject get_gameObject()

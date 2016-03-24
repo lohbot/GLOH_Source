@@ -146,7 +146,6 @@ public class MineSearchDetailInfoDlg : Form
 		base.Scale = true;
 		instance.LoadFileAll(ref form, "Mine/DLG_MineSearchDetailInfo", G_ID.MINE_SEARCH_DETAILINFO_DLG, false, true);
 		base.ShowBlackBG(1f);
-		base.ShowSceneType = FormsManager.FORM_TYPE_MAIN;
 	}
 
 	public override void SetComponent()
@@ -401,7 +400,6 @@ public class MineSearchDetailInfoDlg : Form
 		{
 			return;
 		}
-		string text = string.Empty;
 		this.m_eMode = eMode;
 		switch (eMode)
 		{
@@ -420,15 +418,16 @@ public class MineSearchDetailInfoDlg : Form
 				base.ShowLayer(1, 5);
 				if (this.IsHaveMyMilitary(occupy_info))
 				{
-					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1615");
+					this.m_btStart.Text = NrTSingleton<CTextParser>.Instance.GetTextColor("1002") + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1615");
+					this.m_btStart.SetButtonTextureKey("Win_B_NewBtnRed");
 					this.m_bHaveMilitary = true;
 				}
 				else
 				{
-					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1323");
+					this.m_btStart.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1323");
+					this.m_btStart.SetButtonTextureKey("Win_B_NewBtnBlue");
 					this.m_bHaveMilitary = false;
 				}
-				this.m_btStart.Text = text;
 				this.m_btClose01.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1044");
 			}
 			break;
@@ -448,15 +447,16 @@ public class MineSearchDetailInfoDlg : Form
 				base.ShowLayer(2, 5);
 				if (this.IsHaveMyMilitary(occupy_info))
 				{
-					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1615");
+					this.m_btStart.Text = NrTSingleton<CTextParser>.Instance.GetTextColor("1002") + NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1615");
+					this.m_btStart.SetButtonTextureKey("Win_B_NewBtnRed");
 					this.m_bHaveMilitary = true;
 				}
 				else
 				{
-					text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1323");
+					this.m_btStart.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1323");
+					this.m_btStart.SetButtonTextureKey("Win_B_NewBtnBlue");
 					this.m_bHaveMilitary = false;
 				}
-				this.m_btStart.Text = text;
 				this.m_btClose01.Text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1044");
 			}
 			break;
@@ -474,11 +474,23 @@ public class MineSearchDetailInfoDlg : Form
 		MINE_CREATE_DATA mineCreateDataFromID = BASE_MINE_CREATE_DATA.GetMineCreateDataFromID(info.i16MineDataID);
 		if (mineCreateDataFromID != null)
 		{
-			MINE_DATA mineDataFromGrade = BASE_MINE_DATA.GetMineDataFromGrade(BASE_MINE_DATA.ParseGradeFromString(mineCreateDataFromID.MINE_GRADE));
-			if (mineDataFromGrade != null)
+			this.m_dtMineIcon.SetTexture(mineCreateDataFromID.Mine_MiniIcon);
+			string itemNameByItemUnique = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(mineCreateDataFromID.MINE_ITEM_UNIQUE);
+			string empty = string.Empty;
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{
-				this.m_dtMineIcon.SetTexture(mineDataFromGrade.Mine_MiniIcon);
-			}
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1944"),
+				"targetname",
+				itemNameByItemUnique
+			});
+			this.m_lOriKeepingHelpText.SetText(empty);
+			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+			{
+				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1945"),
+				"targetname",
+				itemNameByItemUnique
+			});
+			this.m_lOriPlunderHelpText.SetText(empty);
 		}
 	}
 
@@ -586,7 +598,7 @@ public class MineSearchDetailInfoDlg : Form
 		this.m_dtMineIcon2.SetTexture(mineDataFromGrade.Mine_UI_Icon);
 		this.m_dtBG.SetTextureFromBundle("UI/Mine/" + str);
 		this.m_laMineCurNum.SetText(this.m_mine_info.i32LeftItemNum.ToString());
-		this.m_laOccGuildMineNum.SetText(this.GetOccupyUserItemNum().ToString());
+		this.m_laOccGuildMineNum.SetText(this.m_mine_info.i32PlunderItemNum.ToString());
 		if (this.m_GuildID <= 0L)
 		{
 			this.m_laOccSelectMemberName.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1332"));
@@ -718,22 +730,22 @@ public class MineSearchDetailInfoDlg : Form
 		}
 	}
 
-	public int GetHighLevelSolArrayIndex(MINE_MILITARY_USER_SOLINFO user_solinfo)
+	public int GetHighFightPowerSolArrayIndex(MINE_MILITARY_USER_SOLINFO user_solinfo)
 	{
 		int result = 0;
-		short num = 0;
+		long num = 0L;
 		for (int i = 0; i < 5; i++)
 		{
 			if (user_solinfo.mine_solinfo[i].i32Kind > 0)
 			{
-				if (num <= 0)
+				if (num <= 0L)
 				{
-					num = user_solinfo.mine_solinfo[i].i16Level;
+					num = user_solinfo.mine_solinfo[i].nFightPower;
 					result = i;
 				}
-				else if (user_solinfo.mine_solinfo[i].i16Level > num)
+				else if (user_solinfo.mine_solinfo[i].nFightPower > num)
 				{
-					num = user_solinfo.mine_solinfo[i].i16Level;
+					num = user_solinfo.mine_solinfo[i].nFightPower;
 					result = i;
 				}
 			}
@@ -753,40 +765,34 @@ public class MineSearchDetailInfoDlg : Form
 		{
 			MINE_MILITARY_USER_SOLINFO value = current.Value;
 			int ui8BatchIndex = (int)value.ui8BatchIndex;
-			int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(value);
+			NkListSolInfo listSolInfo = this.GetListSolInfo(value);
 			if (eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK || eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_OTHERATTACK)
 			{
 				this.LeadEffect(false);
 				this.m_iAttackMilitary[ui8BatchIndex].Visible = true;
 				this.m_btAttackMilitary[ui8BatchIndex].Visible = true;
-				if (eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
+				if (eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
 				{
-					this.m_iAttackMilitary[ui8BatchIndex].SetSolImageTexure(eCharImageType.SMALL, value.mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)value.mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+					listSolInfo.ShowGrade = false;
 				}
-				else
-				{
-					this.m_iAttackMilitary[ui8BatchIndex].SetSolImageTexure(eCharImageType.SMALL, value.mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-				}
+				this.m_iAttackMilitary[ui8BatchIndex].SetSolImageTexure(eCharImageType.SMALL, listSolInfo);
 				this.m_btAttackMilitary[ui8BatchIndex].Data = ui8BatchIndex;
-				Button expr_F8 = this.m_btAttackMilitary[ui8BatchIndex];
-				expr_F8.Click = (EZValueChangedDelegate)Delegate.Combine(expr_F8.Click, new EZValueChangedDelegate(this.ClickOccupyDetailInfo));
+				Button expr_C0 = this.m_btAttackMilitary[ui8BatchIndex];
+				expr_C0.Click = (EZValueChangedDelegate)Delegate.Combine(expr_C0.Click, new EZValueChangedDelegate(this.ClickOccupyDetailInfo));
 			}
 			else
 			{
 				this.LeadEffect(false);
 				this.m_itOccMilitary[ui8BatchIndex].Visible = true;
 				this.m_btOccMilitary[ui8BatchIndex].Visible = true;
-				if (eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
+				if (eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
 				{
-					this.m_itOccMilitary[ui8BatchIndex].SetSolImageTexure(eCharImageType.SMALL, value.mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)value.mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+					listSolInfo.ShowGrade = false;
 				}
-				else
-				{
-					this.m_itOccMilitary[ui8BatchIndex].SetSolImageTexure(eCharImageType.SMALL, value.mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-				}
+				this.m_itOccMilitary[ui8BatchIndex].SetSolImageTexure(eCharImageType.SMALL, listSolInfo);
 				this.m_btOccMilitary[ui8BatchIndex].Data = ui8BatchIndex;
-				Button expr_1B9 = this.m_btOccMilitary[ui8BatchIndex];
-				expr_1B9.Click = (EZValueChangedDelegate)Delegate.Combine(expr_1B9.Click, new EZValueChangedDelegate(this.ClickOccupyDetailInfo));
+				Button expr_149 = this.m_btOccMilitary[ui8BatchIndex];
+				expr_149.Click = (EZValueChangedDelegate)Delegate.Combine(expr_149.Click, new EZValueChangedDelegate(this.ClickOccupyDetailInfo));
 			}
 		}
 		if (this.m_bLeadCheck)
@@ -858,15 +864,12 @@ public class MineSearchDetailInfoDlg : Form
 					}
 					this.m_btAttackMilitarySelect[this.m_select_index].Visible = true;
 					this.m_itAttackMilitarySelect[this.m_select_index].Visible = true;
-					int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_select_index]);
-					if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
+					NkListSolInfo listSolInfo = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_select_index]);
+					if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
 					{
-						this.m_itAttackMilitarySelect[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+						listSolInfo.ShowGrade = false;
 					}
-					else
-					{
-						this.m_itAttackMilitarySelect[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-					}
+					this.m_itAttackMilitarySelect[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo);
 				}
 				else
 				{
@@ -878,15 +881,12 @@ public class MineSearchDetailInfoDlg : Form
 					}
 					this.m_btAttackMilitarySelect[this.m_select_index].Visible = false;
 					this.m_itAttackMilitarySelect[this.m_select_index].Visible = false;
-					int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_select_index]);
-					if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
+					NkListSolInfo listSolInfo2 = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_select_index]);
+					if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
 					{
-						this.m_iAttackMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+						listSolInfo2.ShowGrade = false;
 					}
-					else
-					{
-						this.m_iAttackMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-					}
+					this.m_iAttackMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo2);
 				}
 				if (this.m_old_select_index >= 0)
 				{
@@ -894,15 +894,12 @@ public class MineSearchDetailInfoDlg : Form
 					{
 						this.m_btAttackMilitary[this.m_old_select_index].Visible = true;
 						this.m_iAttackMilitary[this.m_old_select_index].Visible = true;
-						int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_old_select_index]);
-						if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
+						NkListSolInfo listSolInfo3 = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_old_select_index]);
+						if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
 						{
-							this.m_iAttackMilitary[this.m_old_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_old_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_old_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+							listSolInfo3.ShowGrade = false;
 						}
-						else
-						{
-							this.m_iAttackMilitary[this.m_old_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_old_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-						}
+						this.m_iAttackMilitary[this.m_old_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo3);
 					}
 					if (personID == this.m_dicOccupy_User_SolList[this.m_old_select_index].i64PersonID)
 					{
@@ -918,15 +915,12 @@ public class MineSearchDetailInfoDlg : Form
 					{
 						this.m_btAttackMilitary[this.m_select_index].Visible = true;
 						this.m_iAttackMilitary[this.m_select_index].Visible = true;
-						int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_select_index]);
-						if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
+						NkListSolInfo listSolInfo4 = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_select_index]);
+						if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
 						{
-							this.m_iAttackMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+							listSolInfo4.ShowGrade = false;
 						}
-						else
-						{
-							this.m_iAttackMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-						}
+						this.m_iAttackMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo4);
 					}
 					if (personID == this.m_dicOccupy_User_SolList[this.m_select_index].i64PersonID)
 					{
@@ -950,15 +944,12 @@ public class MineSearchDetailInfoDlg : Form
 					}
 					this.m_btOccMilitarySelect[this.m_select_index].Visible = true;
 					this.m_itOccMilitarySelect[this.m_select_index].Visible = true;
-					int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_select_index]);
-					if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
+					NkListSolInfo listSolInfo5 = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_select_index]);
+					if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
 					{
-						this.m_itOccMilitarySelect[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+						listSolInfo5.ShowGrade = false;
 					}
-					else
-					{
-						this.m_itOccMilitarySelect[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-					}
+					this.m_itOccMilitarySelect[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo5);
 				}
 				else
 				{
@@ -970,15 +961,12 @@ public class MineSearchDetailInfoDlg : Form
 					}
 					this.m_btOccMilitarySelect[this.m_select_index].Visible = false;
 					this.m_itOccMilitarySelect[this.m_select_index].Visible = false;
-					int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_select_index]);
-					if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
+					NkListSolInfo listSolInfo6 = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_select_index]);
+					if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYATTACK)
 					{
-						this.m_itOccMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+						listSolInfo6.ShowGrade = false;
 					}
-					else
-					{
-						this.m_itOccMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-					}
+					this.m_itOccMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo6);
 				}
 				if (this.m_old_select_index >= 0)
 				{
@@ -986,15 +974,12 @@ public class MineSearchDetailInfoDlg : Form
 					{
 						this.m_btOccMilitary[this.m_old_select_index].Visible = true;
 						this.m_itOccMilitary[this.m_old_select_index].Visible = true;
-						int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_old_select_index]);
-						if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
+						NkListSolInfo listSolInfo7 = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_old_select_index]);
+						if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
 						{
-							this.m_itOccMilitary[this.m_old_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_old_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_old_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+							listSolInfo7.ShowGrade = false;
 						}
-						else
-						{
-							this.m_itOccMilitary[this.m_old_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_old_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-						}
+						this.m_itOccMilitary[this.m_old_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo7);
 					}
 					if (personID == this.m_dicOccupy_User_SolList[this.m_old_select_index].i64PersonID)
 					{
@@ -1010,15 +995,12 @@ public class MineSearchDetailInfoDlg : Form
 					{
 						this.m_btOccMilitary[this.m_select_index].Visible = true;
 						this.m_itOccMilitary[this.m_select_index].Visible = true;
-						int highLevelSolArrayIndex = this.GetHighLevelSolArrayIndex(this.m_dicOccupy_User_SolList[this.m_select_index]);
-						if (this.m_eMode == eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
+						NkListSolInfo listSolInfo8 = this.GetListSolInfo(this.m_dicOccupy_User_SolList[this.m_select_index]);
+						if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
 						{
-							this.m_itOccMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, (int)this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].ui8Grade);
+							listSolInfo8.ShowGrade = true;
 						}
-						else
-						{
-							this.m_itOccMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, this.m_dicOccupy_User_SolList[this.m_select_index].mine_solinfo[highLevelSolArrayIndex].i32Kind, -1);
-						}
+						this.m_itOccMilitary[this.m_select_index].SetSolImageTexure(eCharImageType.SMALL, listSolInfo8);
 					}
 					if (personID == this.m_dicOccupy_User_SolList[this.m_select_index].i64PersonID)
 					{
@@ -1039,6 +1021,24 @@ public class MineSearchDetailInfoDlg : Form
 		{
 			this.InitInterface(Index);
 		}
+	}
+
+	public NkListSolInfo GetListSolInfo(MINE_MILITARY_USER_SOLINFO solInfo)
+	{
+		int highFightPowerSolArrayIndex = this.GetHighFightPowerSolArrayIndex(solInfo);
+		NkListSolInfo nkListSolInfo = new NkListSolInfo();
+		nkListSolInfo.SolCharKind = solInfo.mine_solinfo[highFightPowerSolArrayIndex].i32Kind;
+		nkListSolInfo.SolGrade = (int)solInfo.mine_solinfo[highFightPowerSolArrayIndex].ui8Grade;
+		nkListSolInfo.SolLevel = -1;
+		nkListSolInfo.FightPower = -1L;
+		nkListSolInfo.ShowGrade = true;
+		string costumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(solInfo.mine_solinfo[highFightPowerSolArrayIndex].nCostumeUnique);
+		nkListSolInfo.SolCostumePortraitPath = costumePortraitPath;
+		if (this.m_eMode != eMineSearchDetailInfo_Mode.eMINE_DETAILDLG_MYDEFENCE)
+		{
+			nkListSolInfo.ShowGrade = true;
+		}
+		return nkListSolInfo;
 	}
 
 	public void SetOccupyDetailinfo(MINE_MILITARY_USER_SOLINFO info)
@@ -1093,6 +1093,7 @@ public class MineSearchDetailInfoDlg : Form
 						nkListSolInfo.SolCharKind = info.mine_solinfo[j].i32Kind;
 						nkListSolInfo.SolGrade = (int)info.mine_solinfo[j].ui8Grade;
 						nkListSolInfo.ShowLevel = false;
+						nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(info.mine_solinfo[j].nCostumeUnique);
 						EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(nkListSolInfo.SolCharKind, (byte)nkListSolInfo.SolGrade);
 						if (eventHeroCharCode != null)
 						{
@@ -1111,23 +1112,6 @@ public class MineSearchDetailInfoDlg : Form
 				}
 			}
 		}
-	}
-
-	public int GetOccupyUserItemNum()
-	{
-		if (this.m_GuildID <= 0L)
-		{
-			return 0;
-		}
-		int num = 0;
-		foreach (KeyValuePair<int, MINE_MILITARY_USER_SOLINFO> current in this.m_dicOccupy_User_SolList)
-		{
-			if (current.Value != null)
-			{
-				num += current.Value.i32GetItemNum;
-			}
-		}
-		return num;
 	}
 
 	public void ClickEcoMonDetailInfo(IUIObject obj)
@@ -1286,32 +1270,22 @@ public class MineSearchDetailInfoDlg : Form
 				num.ToString()
 			});
 			MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-			msgBoxUI.SetMsg(new YesDelegate(this.OnStartBackMove), null, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL);
+			msgBoxUI.SetMsg(new YesDelegate(this.OnStartBackMove), null, textFromMessageBox, empty, eMsgType.MB_OK_CANCEL, 2);
 			return;
 		}
 		if (kMyCharInfo.GetMilitaryList().FindEmptyMineMilitaryIndex() == -1)
 		{
-			string textFromNotify = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("691");
-			Main_UI_SystemMessage.ADDMessage(textFromNotify, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("691"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
-		long num2 = 0L;
-		MINE_CONSTANT_Manager instance2 = MINE_CONSTANT_Manager.GetInstance();
-		if (instance2 != null)
+		if (!NrTSingleton<MineManager>.Instance.IsEnoughMineJoinCount())
 		{
-			num2 = (long)instance2.GetValue(eMINE_CONSTANT.eMINE_DAY_COUNT);
-		}
-		if (num2 > 0L && kMyCharInfo.GetCharDetail(8) >= num2)
-		{
-			string textFromNotify2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405");
-			Main_UI_SystemMessage.ADDMessage(textFromNotify2, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		if (!this.IsStartBattle())
 		{
-			string message = string.Empty;
-			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("528");
-			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("528"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		if (!this.IsAddMilitary())
@@ -1347,20 +1321,12 @@ public class MineSearchDetailInfoDlg : Form
 		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
 		if (kMyCharInfo.GetMilitaryList().FindEmptyMineMilitaryIndex() == -1)
 		{
-			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("691");
-			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("691"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
-		long num = 0L;
-		MINE_CONSTANT_Manager instance = MINE_CONSTANT_Manager.GetInstance();
-		if (instance != null)
+		if (!NrTSingleton<MineManager>.Instance.IsEnoughMineJoinCount())
 		{
-			num = (long)instance.GetValue(eMINE_CONSTANT.eMINE_DAY_COUNT);
-		}
-		if (num > 0L && kMyCharInfo.GetCharDetail(8) >= num)
-		{
-			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405");
-			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		if (!this.IsStartBattle())
@@ -1420,16 +1386,9 @@ public class MineSearchDetailInfoDlg : Form
 			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
-		long num = 0L;
-		MINE_CONSTANT_Manager instance = MINE_CONSTANT_Manager.GetInstance();
-		if (instance != null)
+		if (!NrTSingleton<MineManager>.Instance.IsEnoughMineJoinCount())
 		{
-			num = (long)instance.GetValue(eMINE_CONSTANT.eMINE_DAY_COUNT);
-		}
-		if (num > 0L && kMyCharInfo.GetCharDetail(8) >= num)
-		{
-			message = NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405");
-			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
+			Main_UI_SystemMessage.ADDMessage(NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("405"), SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
 		if (!this.IsStartBattle())
@@ -1438,8 +1397,9 @@ public class MineSearchDetailInfoDlg : Form
 			Main_UI_SystemMessage.ADDMessage(message, SYSTEM_MESSAGE_TYPE.NAGATIVE_MESSAGE);
 			return;
 		}
+		NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.MINE_WAITMILTARYINFO_DLG);
 		GS_MINE_SEARCH_REQ gS_MINE_SEARCH_REQ = new GS_MINE_SEARCH_REQ();
-		gS_MINE_SEARCH_REQ.bySearchMineGrade = mineCreateDataFromID.GetGrade();
+		gS_MINE_SEARCH_REQ.bSearchMineGrade = mineCreateDataFromID.GetGrade();
 		gS_MINE_SEARCH_REQ.m_nMineID = 0L;
 		gS_MINE_SEARCH_REQ.m_nGuildID = 0L;
 		gS_MINE_SEARCH_REQ.m_nMode = 1;
@@ -1459,7 +1419,7 @@ public class MineSearchDetailInfoDlg : Form
 		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2513");
 		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("165");
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.ChangeMilitaryUpdate), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.ChangeMilitaryUpdate), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	public void ChangeMilitaryUpdate(object a_oObject)
@@ -1518,7 +1478,7 @@ public class MineSearchDetailInfoDlg : Form
 		string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2513");
 		string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("166");
 		MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-		msgBoxUI.SetMsg(new YesDelegate(this.OnClickCancel), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL);
+		msgBoxUI.SetMsg(new YesDelegate(this.OnClickCancel), null, textFromInterface, textFromMessageBox, eMsgType.MB_OK_CANCEL, 2);
 	}
 
 	private void OnClickCancel(object a_oObject)
@@ -1576,7 +1536,7 @@ public class MineSearchDetailInfoDlg : Form
 			return;
 		}
 		GS_MINE_SEARCH_REQ gS_MINE_SEARCH_REQ = new GS_MINE_SEARCH_REQ();
-		gS_MINE_SEARCH_REQ.bySearchMineGrade = mineCreateDataFromID.GetGrade();
+		gS_MINE_SEARCH_REQ.bSearchMineGrade = mineCreateDataFromID.GetGrade();
 		gS_MINE_SEARCH_REQ.m_nMineID = this.m_mine_info.i64MineID;
 		gS_MINE_SEARCH_REQ.m_nGuildID = this.m_GuildID;
 		gS_MINE_SEARCH_REQ.m_nMode = (byte)this.m_eMode;

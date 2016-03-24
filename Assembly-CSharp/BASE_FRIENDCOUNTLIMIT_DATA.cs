@@ -6,7 +6,7 @@ public class BASE_FRIENDCOUNTLIMIT_DATA : NrTableBase
 {
 	public static List<FRIENDCOUNTLIMIT_DATA> m_listFriendCountLimitData = new List<FRIENDCOUNTLIMIT_DATA>();
 
-	public BASE_FRIENDCOUNTLIMIT_DATA() : base(CDefinePath.FriendCountLimitDataURL, true)
+	public BASE_FRIENDCOUNTLIMIT_DATA() : base(CDefinePath.FriendCountLimitDataURL)
 	{
 	}
 

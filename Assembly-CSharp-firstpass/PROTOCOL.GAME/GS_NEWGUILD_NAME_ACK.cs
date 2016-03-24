@@ -11,5 +11,7 @@ namespace PROTOCOL.GAME
 		public byte ui8SetImage;
 
 		public char[] strGuildName = new char[11];
+
+		public bool bGuildWar;
 	}
 }

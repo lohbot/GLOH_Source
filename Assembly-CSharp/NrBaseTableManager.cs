@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using UnityEngine;
 
 public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 {
@@ -9,7 +10,7 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 	private NrBaseTableManager()
 	{
 		int num = 1;
-		int num2 = 53;
+		int num2 = 63;
 		this.m_dicResourceInfo = new Dictionary<string, NrTableData>[num2];
 		for (int i = num; i < num2; i++)
 		{
@@ -20,7 +21,7 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 	public bool SetData(NrTableData kData)
 	{
 		NrTableData.eResourceType typeIndex = kData.GetTypeIndex();
-		int iResourceType = (int)typeIndex;
+		int num = (int)typeIndex;
 		string kDataKey = string.Empty;
 		switch (typeIndex)
 		{
@@ -48,9 +49,9 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 		case NrTableData.eResourceType.eRT_CHARKIND_CLASSINFO:
 		{
 			CHARKIND_CLASSINFO cHARKIND_CLASSINFO = kData as CHARKIND_CLASSINFO;
-			long num = 1L;
+			long num2 = 1L;
 			int cLASSINDEX = cHARKIND_CLASSINFO.CLASSINDEX;
-			cHARKIND_CLASSINFO.CLASSTYPE = num << cLASSINDEX - 1;
+			cHARKIND_CLASSINFO.CLASSTYPE = num2 << cLASSINDEX - 1;
 			kDataKey = cHARKIND_CLASSINFO.CLASSTYPE.ToString();
 			NrTSingleton<NrCharKindInfoManager>.Instance.SetClassTypeCodeInfo(cHARKIND_CLASSINFO.CLASSCODE, cHARKIND_CLASSINFO.CLASSTYPE);
 			break;
@@ -99,28 +100,42 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 		{
 			CHARKIND_ANIINFO cHARKIND_ANIINFO = kData as CHARKIND_ANIINFO;
 			kDataKey = cHARKIND_ANIINFO.BUNDLENAME.ToString();
+			NrTSingleton<NrCharAniInfoManager>.Instance.SetAniInfo(ref cHARKIND_ANIINFO);
 			NrTSingleton<NrCharKindInfoManager>.Instance.SetAniInfo(ref cHARKIND_ANIINFO);
+			break;
+		}
+		case NrTableData.eResourceType.eRT_CHARKIND_LEGENDINFO:
+		{
+			CHARKIND_LEGENDINFO cHARKIND_LEGENDINFO = kData as CHARKIND_LEGENDINFO;
+			int charKindByCode4 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(cHARKIND_LEGENDINFO.CharCode);
+			cHARKIND_LEGENDINFO.i32Element_LegendCharkind = charKindByCode4;
+			for (int i = 0; i < 5; i++)
+			{
+				int charKindByCode5 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(cHARKIND_LEGENDINFO.i32Base_LegendCharCode[i]);
+				cHARKIND_LEGENDINFO.i32Base_CharKind[i] = charKindByCode4;
+			}
+			kDataKey = charKindByCode4.ToString();
 			break;
 		}
 		case NrTableData.eResourceType.eRT_CHARKIND_SOLDIERINFO:
 		{
 			CHARKIND_SOLDIERINFO cHARKIND_SOLDIERINFO = kData as CHARKIND_SOLDIERINFO;
-			for (int i = 0; i < 5; i++)
+			for (int j = 0; j < 5; j++)
 			{
-				int charKindByCode4 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(cHARKIND_SOLDIERINFO.kElement_CharData[i].Element_CharCode);
-				cHARKIND_SOLDIERINFO.kElement_CharData[i].SetChar(charKindByCode4);
+				int charKindByCode6 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(cHARKIND_SOLDIERINFO.kElement_CharData[j].Element_CharCode);
+				cHARKIND_SOLDIERINFO.kElement_CharData[j].SetChar(charKindByCode6);
 			}
-			int charKindByCode5 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(cHARKIND_SOLDIERINFO.CharCode);
-			kDataKey = charKindByCode5.ToString();
-			NrTSingleton<NrCharKindInfoManager>.Instance.SetSoldierInfo(charKindByCode5, ref cHARKIND_SOLDIERINFO);
+			int charKindByCode7 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(cHARKIND_SOLDIERINFO.CharCode);
+			cHARKIND_SOLDIERINFO.i32BaseCharKind = charKindByCode7;
+			kDataKey = charKindByCode7.ToString();
 			break;
 		}
 		case NrTableData.eResourceType.eRT_CHARKIND_SOLGRADEINFO:
 		{
 			BASE_SOLGRADEINFO bASE_SOLGRADEINFO = kData as BASE_SOLGRADEINFO;
-			int charKindByCode6 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(bASE_SOLGRADEINFO.CharCode);
-			kDataKey = charKindByCode6.ToString();
-			NrTSingleton<NrCharKindInfoManager>.Instance.SetSolGradeInfo(charKindByCode6, ref bASE_SOLGRADEINFO);
+			int charKindByCode8 = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(bASE_SOLGRADEINFO.CharCode);
+			kDataKey = charKindByCode8.ToString();
+			NrTSingleton<NrCharKindInfoManager>.Instance.SetSolGradeInfo(charKindByCode8, ref bASE_SOLGRADEINFO);
 			break;
 		}
 		case NrTableData.eResourceType.eRT_ITEMTYPE_INFO:
@@ -343,9 +358,9 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 		case NrTableData.eResourceType.eRT_REINCARNATIONINFO:
 		{
 			ReincarnationInfo reincarnationInfo = kData as ReincarnationInfo;
-			for (int j = 0; j < 6; j++)
+			for (int k = 0; k < 6; k++)
 			{
-				reincarnationInfo.iCharKind[j] = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(reincarnationInfo.strText[j]);
+				reincarnationInfo.iCharKind[k] = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindByCode(reincarnationInfo.strText[k]);
 			}
 			kDataKey = reincarnationInfo.iType.ToString();
 			break;
@@ -380,13 +395,77 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 			kDataKey = agitMerchantData.i16SellType.ToString();
 			break;
 		}
+		case NrTableData.eResourceType.eRT_LEVELUPGUIDE:
+		{
+			LEVELUPGUIDE_INFO lEVELUPGUIDE_INFO = kData as LEVELUPGUIDE_INFO;
+			for (int l = 0; l < lEVELUPGUIDE_INFO.explainList.Count; l++)
+			{
+				if (lEVELUPGUIDE_INFO.explainList[l] == "0")
+				{
+					break;
+				}
+				AlarmManager.GetInstance().SetLevelupInfo(lEVELUPGUIDE_INFO.LEVEL, "1", lEVELUPGUIDE_INFO.explainList[l]);
+			}
+			break;
 		}
-		return this.AddResourceInfo(iResourceType, kDataKey, kData);
+		case NrTableData.eResourceType.eRT_MYTHRAIDINFO:
+		{
+			MYTHRAIDINFO_DATA mYTHRAIDINFO_DATA = kData as MYTHRAIDINFO_DATA;
+			CHARKIND_INFO baseCharKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetBaseCharKindInfo(mYTHRAIDINFO_DATA.GetBossCode());
+			if (baseCharKindInfo == null)
+			{
+				Debug.LogError("BossCode Wrong : " + mYTHRAIDINFO_DATA.GetBossCode());
+			}
+			else
+			{
+				mYTHRAIDINFO_DATA.nMainBossCharKind = baseCharKindInfo.CHARKIND;
+				kDataKey = mYTHRAIDINFO_DATA.nRaidSeason.ToString() + mYTHRAIDINFO_DATA.nRaidType.ToString();
+			}
+			break;
+		}
+		case NrTableData.eResourceType.eRT_MYTHRAIDCLEARREWARD:
+		{
+			MYTHRAID_CLEAR_REWARD_INFO mYTHRAID_CLEAR_REWARD_INFO = kData as MYTHRAID_CLEAR_REWARD_INFO;
+			kDataKey = MYTHRAID_CLEAR_REWARD_INFO.setDataKey(mYTHRAID_CLEAR_REWARD_INFO.CLEARMODE, mYTHRAID_CLEAR_REWARD_INFO.ROUND).ToString();
+			break;
+		}
+		case NrTableData.eResourceType.eRT_MYTHRAIDRANKREWARD:
+			kDataKey = this.m_dicResourceInfo[num].Count.ToString();
+			break;
+		case NrTableData.eResourceType.eRT_MYTHRAIDGUARDIANANGEL:
+		{
+			MYTHRAID_GUARDIANANGEL_INFO mYTHRAID_GUARDIANANGEL_INFO = kData as MYTHRAID_GUARDIANANGEL_INFO;
+			kDataKey = mYTHRAID_GUARDIANANGEL_INFO.UNIQUE.ToString();
+			break;
+		}
+		case NrTableData.eResourceType.eRT_AUTOSELL:
+		{
+			AutoSell_info autoSell_info = kData as AutoSell_info;
+			kDataKey = autoSell_info.i32SellNumber.ToString();
+			break;
+		}
+		case NrTableData.eResourceType.eRT_ITEM_GROUP_SOL_TICKET:
+		{
+			GROUP_SOL_TICKET gROUP_SOL_TICKET = kData as GROUP_SOL_TICKET;
+			if (kData != null)
+			{
+				NrTSingleton<ItemManager>.Instance.Add_GroupSolTicket(gROUP_SOL_TICKET.i64GroupUnique, gROUP_SOL_TICKET);
+			}
+			break;
+		}
+		case NrTableData.eResourceType.eRT_MYTH_EVOLUTION_SPEND:
+		{
+			MYTH_EVOLUTION mYTH_EVOLUTION = kData as MYTH_EVOLUTION;
+			kDataKey = mYTH_EVOLUTION.m_bSeason.ToString();
+			break;
+		}
+		}
+		return this.AddResourceInfo(num, kDataKey, kData);
 	}
 
 	private bool AddResourceInfo(int iResourceType, string kDataKey, NrTableData kDataInfo)
 	{
-		if (0 >= iResourceType || 53 <= iResourceType)
+		if (0 >= iResourceType || 63 <= iResourceType)
 		{
 			return false;
 		}
@@ -575,22 +654,22 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 
 	public IDictionaryEnumerator GetEcho_Enum()
 	{
-		return this.m_dicResourceInfo[15].GetEnumerator();
+		return this.m_dicResourceInfo[16].GetEnumerator();
 	}
 
 	public ICollection GetGateInfo_Col()
 	{
-		return this.m_dicResourceInfo[18].Values;
+		return this.m_dicResourceInfo[19].Values;
 	}
 
 	public ICollection GetMapInfo_Col()
 	{
-		return this.m_dicResourceInfo[16].Values;
+		return this.m_dicResourceInfo[17].Values;
 	}
 
 	public ICollection GetIndunInfo_Col()
 	{
-		return this.m_dicResourceInfo[28].Values;
+		return this.m_dicResourceInfo[29].Values;
 	}
 
 	public ICollection GetCharInfo_Col()
@@ -600,17 +679,27 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 
 	public ICollection GetSolGuide_Col()
 	{
-		return this.m_dicResourceInfo[35].Values;
+		return this.m_dicResourceInfo[36].Values;
+	}
+
+	public CHARKIND_LEGENDINFO GetLegendGuide_Col(int i32CharKind)
+	{
+		return this.GetResourceInfo(NrTableData.eResourceType.eRT_CHARKIND_LEGENDINFO, i32CharKind.ToString()) as CHARKIND_LEGENDINFO;
+	}
+
+	public CHARKIND_SOLDIERINFO GetGuide_Col(int i32CharKind)
+	{
+		return this.GetResourceInfo(NrTableData.eResourceType.eRT_CHARKIND_SOLDIERINFO, i32CharKind.ToString()) as CHARKIND_SOLDIERINFO;
 	}
 
 	public ICollection GetRecommend_Reward_Col()
 	{
-		return this.m_dicResourceInfo[37].Values;
+		return this.m_dicResourceInfo[38].Values;
 	}
 
 	public ICollection GetSupporter_Reward_Col()
 	{
-		return this.m_dicResourceInfo[38].Values;
+		return this.m_dicResourceInfo[39].Values;
 	}
 
 	public GMHELP_INFO GetGMHelpKindInfo(string kDataKey)
@@ -646,5 +735,30 @@ public class NrBaseTableManager : NrTSingleton<NrBaseTableManager>
 	public AgitMerchantData GetAgitMerchantData(string strDataKey)
 	{
 		return this.GetResourceInfo(NrTableData.eResourceType.eRT_AGIT_MERCHNAT, strDataKey) as AgitMerchantData;
+	}
+
+	public MYTHRAIDINFO_DATA GetMythRaidInfoData(string strDataKey)
+	{
+		return this.GetResourceInfo(NrTableData.eResourceType.eRT_MYTHRAIDINFO, strDataKey) as MYTHRAIDINFO_DATA;
+	}
+
+	public MYTHRAID_CLEAR_REWARD_INFO GetMythRaidClearRewardData(int mode, int clearRound)
+	{
+		return this.GetResourceInfo(NrTableData.eResourceType.eRT_MYTHRAIDCLEARREWARD, MYTHRAID_CLEAR_REWARD_INFO.setDataKey(mode, clearRound).ToString()) as MYTHRAID_CLEAR_REWARD_INFO;
+	}
+
+	public MYTHRAID_RANK_REWARD_INFO GetMythRaidRankRewardData(string strDataKey)
+	{
+		return this.GetResourceInfo(NrTableData.eResourceType.eRT_MYTHRAIDRANKREWARD, strDataKey) as MYTHRAID_RANK_REWARD_INFO;
+	}
+
+	public MYTHRAID_GUARDIANANGEL_INFO GetMythRaidGuardAngelInfo(int m_nSelectGuardAngelUnique)
+	{
+		return this.GetResourceInfo(NrTableData.eResourceType.eRT_MYTHRAIDGUARDIANANGEL, m_nSelectGuardAngelUnique.ToString()) as MYTHRAID_GUARDIANANGEL_INFO;
+	}
+
+	public ICollection GetAutoSell()
+	{
+		return this.m_dicResourceInfo[60].Values;
 	}
 }

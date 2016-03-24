@@ -11,6 +11,8 @@ public class ExplorationPlayDlg : Form
 {
 	private DrawTexture m_BG;
 
+	private long m_nMaxActivity;
+
 	private Button m_Continue;
 
 	private Button m_Close;
@@ -22,8 +24,6 @@ public class ExplorationPlayDlg : Form
 	private Label m_lbActivityTime;
 
 	private Label m_lb_WillNum;
-
-	private long m_nMaxActivity;
 
 	private long m_nCurrentActivity;
 
@@ -278,27 +278,30 @@ public class ExplorationPlayDlg : Form
 
 	public override void Update()
 	{
-		NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
-		if (kMyCharInfo == null)
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 		{
-			return;
-		}
-		if (this.m_nCurrentActivity != kMyCharInfo.m_nActivityPoint || this.m_nMaxActivity != kMyCharInfo.m_nMaxActivityPoint)
-		{
-			this.m_nBeforeActivity = this.m_nCurrentActivity;
-			this.m_nCurrentActivity = kMyCharInfo.m_nActivityPoint;
-			this.m_nMaxActivity = kMyCharInfo.m_nMaxActivityPoint;
-		}
-		if (this.m_fActivityUpdateTime < Time.realtimeSinceStartup)
-		{
-			MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
-			if (myCharInfoDlg == null)
+			NrMyCharInfo kMyCharInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo;
+			if (kMyCharInfo == null)
 			{
 				return;
 			}
-			this.m_lbActivityTime.SetText(myCharInfoDlg.StrActivityTime);
-			this.m_fActivityUpdateTime = Time.realtimeSinceStartup + 1f;
-			this.SetActivityPointUI();
+			if (this.m_nCurrentActivity != kMyCharInfo.m_nActivityPoint || this.m_nMaxActivity != kMyCharInfo.m_nMaxActivityPoint)
+			{
+				this.m_nBeforeActivity = this.m_nCurrentActivity;
+				this.m_nCurrentActivity = kMyCharInfo.m_nActivityPoint;
+				this.m_nMaxActivity = kMyCharInfo.m_nMaxActivityPoint;
+			}
+			if (this.m_fActivityUpdateTime < Time.realtimeSinceStartup)
+			{
+				MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+				if (myCharInfoDlg == null)
+				{
+					return;
+				}
+				this.m_lbActivityTime.SetText(myCharInfoDlg.StrActivityTime);
+				this.m_fActivityUpdateTime = Time.realtimeSinceStartup + 1f;
+				this.SetActivityPointUI();
+			}
 		}
 		if (!this.m_bSkip && !this.sendPacket && null != this.walkAniGameObject && !this.walkAniGameObject.animation.isPlaying && this.walkGameObject.activeInHierarchy)
 		{
@@ -457,16 +460,19 @@ public class ExplorationPlayDlg : Form
 			}
 		}
 		base.SetShowLayer(1, false);
-		if (0L < kMyCharInfo.m_nActivityPoint)
+		if (NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
 		{
-			base.SetShowLayer(2, true);
-			this.m_bContinue = true;
-			base.SetShowLayer(3, true);
-		}
-		else
-		{
-			base.SetShowLayer(2, true);
-			base.SetShowLayer(3, true);
+			if (0L < kMyCharInfo.m_nActivityPoint)
+			{
+				base.SetShowLayer(2, true);
+				this.m_bContinue = true;
+				base.SetShowLayer(3, true);
+			}
+			else
+			{
+				base.SetShowLayer(2, true);
+				base.SetShowLayer(3, true);
+			}
 		}
 	}
 

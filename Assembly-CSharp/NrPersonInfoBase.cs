@@ -1,6 +1,7 @@
 using GAME;
 using PROTOCOL;
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class NrPersonInfoBase
@@ -177,6 +178,11 @@ public class NrPersonInfoBase
 		return this.m_kSoldierList.GetSoldierInfo(solindex);
 	}
 
+	public NkSoldierInfo GetSoldierInfoBySolID(long solID)
+	{
+		return this.m_kSoldierList.GetSoldierInfoBySolID(solID);
+	}
+
 	public int GetUpgradeBattleSkillNum()
 	{
 		return this.m_kSoldierList.GetUpgradeBattleSkillNum();
@@ -192,6 +198,10 @@ public class NrPersonInfoBase
 		if (nkSoldierInfo == null)
 		{
 			nkSoldierInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetReadySolList().GetSolInfo(solid);
+			if (nkSoldierInfo == null)
+			{
+				nkSoldierInfo = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetSolWarehouse(solid);
+			}
 		}
 		return nkSoldierInfo;
 	}
@@ -294,5 +304,28 @@ public class NrPersonInfoBase
 			}
 		}
 		return num / num2;
+	}
+
+	public List<int> GetSolKindList()
+	{
+		if (this.m_kSoldierList == null)
+		{
+			return null;
+		}
+		List<int> list = new List<int>();
+		NkSoldierInfo[] kSolInfo = this.m_kSoldierList.m_kSolInfo;
+		for (int i = 0; i < kSolInfo.Length; i++)
+		{
+			NkSoldierInfo nkSoldierInfo = kSolInfo[i];
+			if (nkSoldierInfo == null)
+			{
+				Debug.LogError("ERROR, NrPersonInfoBase.cs. GetSolKindList(), soliderInfo is Null");
+			}
+			else if (!list.Contains(nkSoldierInfo.GetCharKind()))
+			{
+				list.Add(nkSoldierInfo.GetCharKind());
+			}
+		}
+		return list;
 	}
 }

@@ -11,5 +11,7 @@ namespace PROTOCOL.GAME
 		public int i32ItemUnique;
 
 		public int i32ItemNum;
+
+		public int i32BonusItemNum;
 	}
 }

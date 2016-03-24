@@ -23,11 +23,15 @@ public class Main_UI_LevelUpAlarmSoldier : Form
 
 	private int m_nGrade;
 
+	private int m_nCostumeUnique;
+
 	private int m_nEventType;
 
 	private int m_nEventTitleText;
 
 	private int m_nEventExplainText;
+
+	private string m_strEventExplainText = string.Empty;
 
 	private bool m_bSlideHide;
 
@@ -107,6 +111,7 @@ public class Main_UI_LevelUpAlarmSoldier : Form
 		this.m_nCharKind = 0;
 		this.m_iLevel = 0;
 		this.m_nGrade = 0;
+		this.m_nCostumeUnique = 0;
 		if (solInfo == null)
 		{
 			return;
@@ -114,13 +119,14 @@ public class Main_UI_LevelUpAlarmSoldier : Form
 		this.m_nCharKind = solInfo.GetCharKind();
 		this.m_iLevel = solInfo.GetLevel();
 		this.m_nGrade = (int)solInfo.GetGrade();
+		this.m_nCostumeUnique = (int)solInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
 		this.SetImage();
 		this.SetMessage();
 	}
 
 	private void SetImage()
 	{
-		this.m_DtSoldierImg.SetTexture(eCharImageType.LARGE, this.m_nCharKind, this.m_nGrade);
+		this.m_DtSoldierImg.SetTexture(eCharImageType.LARGE, this.m_nCharKind, this.m_nGrade, NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(this.m_nCostumeUnique));
 	}
 
 	private void SetMessage()
@@ -158,7 +164,16 @@ public class Main_UI_LevelUpAlarmSoldier : Form
 		this.m_nEventTitleText = nEventTitleText;
 		this.m_nEventExplainText = nEventExplainText;
 		this.SetEventImage();
-		this.SetEventMessage();
+		this.SetEventMessage(false);
+	}
+
+	public void SetEventInfo(int nEventType, int nEventTitleText, string strEventExplainText)
+	{
+		this.m_nEventType = nEventType;
+		this.m_nEventTitleText = nEventTitleText;
+		this.m_strEventExplainText = strEventExplainText;
+		this.SetEventImage();
+		this.SetEventMessage(true);
 	}
 
 	private void SetEventImage()
@@ -195,11 +210,18 @@ public class Main_UI_LevelUpAlarmSoldier : Form
 		}
 	}
 
-	private void SetEventMessage()
+	private void SetEventMessage(bool isStr = false)
 	{
 		this.m_LblSoldierName.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(this.m_nEventTitleText.ToString()));
 		int nEventExplainText = this.m_nEventExplainText;
-		this.m_ClbTalkMessage.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(nEventExplainText.ToString()));
+		if (isStr)
+		{
+			this.m_ClbTalkMessage.SetText(this.m_strEventExplainText);
+		}
+		else
+		{
+			this.m_ClbTalkMessage.SetText(NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface(nEventExplainText.ToString()));
+		}
 		base.SetLocation(-base.GetSize().x, (float)((int)(GUICamera.height - base.GetSize().y - 80f)));
 	}
 

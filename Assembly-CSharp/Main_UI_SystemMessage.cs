@@ -46,7 +46,7 @@ public class Main_UI_SystemMessage : Form
 		base.SetSize(GUICamera.width, GUICamera.height);
 		base.Draggable = false;
 		base.CheckMouseEvent = false;
-		base.DonotDepthChange(80f);
+		base.DonotDepthChange(4f);
 	}
 
 	public override void Update()
@@ -166,6 +166,9 @@ public class Main_UI_SystemMessage : Form
 			break;
 		case SYSTEM_MESSAGE_TYPE.NORMAL_MESSAGE_GREEN:
 			result = instance.GetTextColor("2002");
+			break;
+		case SYSTEM_MESSAGE_TYPE.BATTLE_RADIO_ALARM:
+			result = instance.GetTextColor("1002");
 			break;
 		default:
 			result = instance.GetTextColor("1106");

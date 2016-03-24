@@ -662,6 +662,8 @@ public abstract class TsAudio
 		1f,
 		1f,
 		1f,
+		1f,
+		1f,
 		1f
 	};
 
@@ -674,14 +676,16 @@ public abstract class TsAudio
 		1f,
 		1f,
 		1f,
+		1f,
+		1f,
 		1f
 	};
 
-	private static bool[] s_disableAudio = new bool[8];
+	private static bool[] s_disableAudio = new bool[10];
 
-	private static bool[] s_muteAudio = new bool[8];
+	private static bool[] s_muteAudio = new bool[10];
 
-	private static bool[] s_storedMuteAudio = new bool[8];
+	private static bool[] s_storedMuteAudio = new bool[10];
 
 	protected static bool s_useReservePlay = false;
 
@@ -693,6 +697,8 @@ public abstract class TsAudio
 	{
 		"#"
 	};
+
+	private static bool isStore = false;
 
 	protected TsAudio.EPlayable _ePlayable;
 
@@ -1028,23 +1034,32 @@ public abstract class TsAudio
 		}
 		EAudioType audioType = this.baseData.AudioType;
 		bool result;
-		if (audioType != EAudioType.BGM && audioType != EAudioType.AMBIENT && audioType != EAudioType.ENVIRONMENT)
+		switch (audioType)
 		{
-			if (this.baseData.IsDontDestroyOnLoad)
+		case EAudioType.ENVIRONMENT:
+		case EAudioType.BGM_STREAM:
+			goto IL_41;
+		case EAudioType.MOVIE:
+			IL_2E:
+			if (audioType != EAudioType.BGM && audioType != EAudioType.AMBIENT)
 			{
-				result = false;
+				if (this.baseData.IsDontDestroyOnLoad)
+				{
+					result = false;
+				}
+				else
+				{
+					this.IsReservedPlay = false;
+					result = true;
+				}
+				return result;
 			}
-			else
-			{
-				this.IsReservedPlay = false;
-				result = true;
-			}
+			goto IL_41;
 		}
-		else
-		{
-			this.IsReservedPlay = true;
-			result = true;
-		}
+		goto IL_2E;
+		IL_41:
+		this.IsReservedPlay = true;
+		result = true;
 		return result;
 	}
 
@@ -1139,6 +1154,11 @@ public abstract class TsAudio
 
 	protected virtual void _Play()
 	{
+		if (this.RefAudioSource == null)
+		{
+			UnityEngine.Debug.Log("RefAudioSource Is NULL :  " + this.baseData.DefaultBundleInfo.AudioClipName);
+			return;
+		}
 		if (!this.RefAudioSource.gameObject.activeInHierarchy)
 		{
 			return;
@@ -1366,6 +1386,13 @@ public abstract class TsAudio
 		{
 			TsImmortal.bundleService.RequestLoadAsync(new LoadAsyncCallback(this.OnEvent_DownloadedAsync), wItem, obj, this._baseData.CurrentBundleName, typeof(AudioClip));
 		}
+		else if (wItem.canAccessAudioClip)
+		{
+			this.RefAudioClip = wItem.safeAudioClip;
+			this._ePlayable = TsAudio.EPlayable.Success;
+			this._OnDownload_Success();
+			this.baseData.DownloadedIndexList.Add(requestData.requestIndex);
+		}
 		else
 		{
 			this.RefAudioClip = null;
@@ -1377,7 +1404,7 @@ public abstract class TsAudio
 	[DebuggerHidden]
 	private IEnumerator OnEvent_DownloadedAsync(IDownloadedItem wItem, object obj, string name, Type type)
 	{
-		TsAudio.<OnEvent_DownloadedAsync>c__Iterator63 <OnEvent_DownloadedAsync>c__Iterator = new TsAudio.<OnEvent_DownloadedAsync>c__Iterator63();
+		TsAudio.<OnEvent_DownloadedAsync>c__Iterator67 <OnEvent_DownloadedAsync>c__Iterator = new TsAudio.<OnEvent_DownloadedAsync>c__Iterator67();
 		<OnEvent_DownloadedAsync>c__Iterator.wItem = wItem;
 		<OnEvent_DownloadedAsync>c__Iterator.name = name;
 		<OnEvent_DownloadedAsync>c__Iterator.type = type;
@@ -1586,6 +1613,10 @@ public abstract class TsAudio
 
 	public static void StoreMuteAllAudio()
 	{
+		if (TsAudio.isStore)
+		{
+			return;
+		}
 		EAudioType[] array = Enum.GetValues(typeof(EAudioType)) as EAudioType[];
 		EAudioType[] array2 = array;
 		for (int i = 0; i < array2.Length; i++)
@@ -1596,6 +1627,7 @@ public abstract class TsAudio
 				TsAudio.s_storedMuteAudio[(int)eAudioType] = TsAudio.IsMuteAudioType(eAudioType);
 			}
 		}
+		TsAudio.isStore = true;
 	}
 
 	public static void RestoreMuteAllAudio()
@@ -1610,6 +1642,7 @@ public abstract class TsAudio
 				TsAudio.SetMuteAudioType(eAudioType, TsAudio.s_storedMuteAudio[(int)eAudioType]);
 			}
 		}
+		TsAudio.isStore = false;
 	}
 
 	public static void SetMuteAllAudio(bool mute)
@@ -1770,7 +1803,7 @@ public abstract class TsAudio
 
 	public static void ApplyVolumeScalings(float[] volumeScalings)
 	{
-		if (volumeScalings.Length != 8)
+		if (volumeScalings.Length != 10)
 		{
 			TsLog.Assert(false, "MissMatch~! check float[] Length", new object[0]);
 			return;

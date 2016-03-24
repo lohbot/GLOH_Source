@@ -8,6 +8,6 @@ public class TsTestDownloadConvertGameData : MonoBehaviour
 	[DebuggerHidden]
 	private IEnumerator Start()
 	{
-		return new TsTestDownloadConvertGameData.<Start>c__Iterator23();
+		return new TsTestDownloadConvertGameData.<Start>c__Iterator24();
 	}
 }

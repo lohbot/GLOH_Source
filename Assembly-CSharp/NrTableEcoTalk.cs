@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableEcoTalk : NrTableBase
 {
-	public NrTableEcoTalk(string strFilePath) : base(strFilePath, true)
+	public NrTableEcoTalk(string strFilePath) : base(strFilePath)
 	{
 	}
 

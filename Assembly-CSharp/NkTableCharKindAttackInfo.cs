@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NkTableCharKindAttackInfo : NrTableBase
 {
-	public NkTableCharKindAttackInfo() : base(CDefinePath.CHARKIND_ATTACKINFO_URL, true)
+	public NkTableCharKindAttackInfo() : base(CDefinePath.CHARKIND_ATTACKINFO_URL)
 	{
 	}
 

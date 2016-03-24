@@ -801,7 +801,14 @@ namespace NLibCs
 		{
 			NDataStr result = default(NDataStr);
 			keyName = keyName.ToLower();
-			this._curSection.FirstLine(1);
+			if (this._curSection.SectionName.Equals(string.Empty))
+			{
+				this._curSection.FirstLine(0);
+			}
+			else
+			{
+				this._curSection.FirstLine(1);
+			}
 			string text = string.Empty;
 			foreach (NDataReader.Row row in this)
 			{
@@ -834,7 +841,14 @@ namespace NLibCs
 		{
 			value = default_value;
 			keyName = keyName.ToLower();
-			this._curSection.FirstLine(1);
+			if (this._curSection.SectionName.Equals(string.Empty))
+			{
+				this._curSection.FirstLine(0);
+			}
+			else
+			{
+				this._curSection.FirstLine(1);
+			}
 			string text = string.Empty;
 			foreach (NDataReader.Row row in this)
 			{

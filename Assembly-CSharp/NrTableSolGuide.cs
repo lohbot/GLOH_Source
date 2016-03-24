@@ -3,7 +3,7 @@ using TsLibs;
 
 public class NrTableSolGuide : NrTableBase
 {
-	public NrTableSolGuide() : base(CDefinePath.CHARKIND_SOLGUIDE_URL, true)
+	public NrTableSolGuide() : base(CDefinePath.CHARKIND_SOLGUIDE_URL)
 	{
 	}
 

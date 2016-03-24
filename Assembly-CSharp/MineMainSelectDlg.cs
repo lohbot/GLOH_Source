@@ -49,15 +49,7 @@ public class MineMainSelectDlg : Form
 			return;
 		}
 		long charSubData = kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_MINE_TUTORIAL_STEP);
-		if (charSubData == 0L)
-		{
-			DirectionDLG directionDLG = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.DLG_DIRECTION) as DirectionDLG;
-			if (directionDLG != null)
-			{
-				directionDLG.ShowDirection(DirectionDLG.eDIRECTIONTYPE.eDIRECTION_MINETUTORIAL, 0);
-			}
-		}
-		else if (charSubData == 1L)
+		if (charSubData == 1L)
 		{
 			MineTutorialStepDlg mineTutorialStepDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MINE_TUTORIAL_STEP_DLG) as MineTutorialStepDlg;
 			if (mineTutorialStepDlg != null)
@@ -67,10 +59,7 @@ public class MineMainSelectDlg : Form
 		}
 		else
 		{
-			GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ = new GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ();
-			gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ.i64GuildID = NrTSingleton<NewGuildManager>.Instance.GetGuildID();
-			gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ.i32Page = 1;
-			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ, gS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ);
+			NrTSingleton<MineManager>.Instance.Send_GS_MINE_GUILD_CURRENTSTATUS_INFO_GET_REQ(1, 1, 0L);
 		}
 	}
 

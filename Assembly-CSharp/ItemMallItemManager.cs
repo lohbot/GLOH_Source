@@ -28,6 +28,8 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 
 	private List<ITEM_VOUCHER_DATA> m_ItemVoucherDataList = new List<ITEM_VOUCHER_DATA>();
 
+	private bool m_bTrading;
+
 	private int m_iVoucherRefillTime;
 
 	private ItemMallItemManager.eItemMall_SellType m_curSellType;
@@ -35,6 +37,18 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 	private ITEM_MALL_ITEM m_mallItem;
 
 	private MsgBoxUI m_checkMsgBox;
+
+	public bool Trading
+	{
+		get
+		{
+			return this.m_bTrading;
+		}
+		set
+		{
+			this.m_bTrading = value;
+		}
+	}
 
 	public MsgBoxUI CheckMsgBox
 	{
@@ -290,6 +304,11 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 		this.m_curSellType = eSellStyle;
 	}
 
+	public ITEM_MALL_ITEM GetTradeItem()
+	{
+		return this.m_mallItem;
+	}
+
 	public void TradeCheckFail(int iResult, string strGiftUserName)
 	{
 		if (this.m_checkMsgBox != null)
@@ -313,8 +332,9 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 		MsgBoxUI msgBoxUI = (MsgBoxUI)NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG);
 		if (msgBoxUI != null)
 		{
-			msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("168"), message, eMsgType.MB_OK);
+			msgBoxUI.SetMsg(null, null, NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("168"), message, eMsgType.MB_OK, 2);
 		}
+		NrTSingleton<ItemMallItemManager>.Instance.Trading = false;
 	}
 
 	public void TradeItem()
@@ -326,16 +346,35 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 		}
 		if (this.m_mallItem.m_nMoneyType == 1)
 		{
+			eSERVICE_AREA currentServiceArea = NrTSingleton<NrGlobalReference>.Instance.GetCurrentServiceArea();
+			if (currentServiceArea == eSERVICE_AREA.SERVICE_ANDROID_KORTSTORE)
+			{
+				ItemMallDlg itemMallDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.ITEMMALL_DLG) as ItemMallDlg;
+				if (itemMallDlg != null)
+				{
+					itemMallDlg.CloseEnable = false;
+				}
+			}
 			BillingManager.PurchaseItem(this.m_mallItem, this.m_curSellType == ItemMallItemManager.eItemMall_SellType.ITEMMALL);
+			NrTSingleton<ItemMallItemManager>.Instance.Trading = false;
+			this.m_mallItem = null;
 		}
-		else if (this.CanBuyItemByHeartsOrGold_Notify(this.m_mallItem))
+		else if (this.m_mallItem.m_nMoneyType != 4)
 		{
-			GS_ITEMMALL_TRADE_REQ gS_ITEMMALL_TRADE_REQ = new GS_ITEMMALL_TRADE_REQ();
-			gS_ITEMMALL_TRADE_REQ.MallIndex = this.m_mallItem.m_Idx;
-			gS_ITEMMALL_TRADE_REQ.SolID = 0L;
-			SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_ITEMMALL_TRADE_REQ, gS_ITEMMALL_TRADE_REQ);
+			if (this.CanBuyItemByHeartsOrGold_Notify(this.m_mallItem))
+			{
+				GS_ITEMMALL_TRADE_REQ gS_ITEMMALL_TRADE_REQ = new GS_ITEMMALL_TRADE_REQ();
+				gS_ITEMMALL_TRADE_REQ.MallIndex = this.m_mallItem.m_Idx;
+				gS_ITEMMALL_TRADE_REQ.SolID = 0L;
+				SendPacket.GetInstance().SendObject(eGAME_PACKET_ID.GS_ITEMMALL_TRADE_REQ, gS_ITEMMALL_TRADE_REQ);
+				this.m_mallItem = null;
+			}
+			else
+			{
+				NrTSingleton<ItemMallItemManager>.Instance.Trading = false;
+				this.m_mallItem = null;
+			}
 		}
-		this.m_mallItem = null;
 	}
 
 	public bool CanBuyItemByHeartsOrGold_Notify(ITEM_MALL_ITEM mallItem)
@@ -357,13 +396,43 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 				return false;
 			}
 		}
-		else if (mallItem.m_nMoneyType == 3 && NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money < mallItem.m_nPrice)
+		else if (mallItem.m_nMoneyType == 3)
 		{
+			if (NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_Money < mallItem.m_nPrice)
+			{
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("198"),
+					"targetname",
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("676")
+				});
+				Main_UI_SystemMessage.ADDMessage(empty);
+				return false;
+			}
+		}
+		else if (mallItem.m_nMoneyType == 5)
+		{
+			if ((long)NkUserInventory.GetInstance().Get_First_ItemCnt(70002) < mallItem.m_nPrice)
+			{
+				text = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(70002);
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				{
+					NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("198"),
+					"targetname",
+					text
+				});
+				Main_UI_SystemMessage.ADDMessage(empty);
+				return false;
+			}
+		}
+		else if (mallItem.m_nMoneyType == 6 && (long)NkUserInventory.GetInstance().Get_First_ItemCnt(50311) < mallItem.m_nPrice)
+		{
+			text = NrTSingleton<ItemManager>.Instance.GetItemNameByItemUnique(50311);
 			NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
 			{
 				NrTSingleton<NrTextMgr>.Instance.GetTextFromNotify("198"),
 				"targetname",
-				NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("676")
+				text
 			});
 			Main_UI_SystemMessage.ADDMessage(empty);
 			return false;
@@ -443,6 +512,19 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 
 	public bool IsBuyCountLimit(ITEM_MALL_ITEM ItemMallItem)
 	{
+		ITEM_VOUCHER_DATA itemVoucherDataFromItemID = this.GetItemVoucherDataFromItemID(ItemMallItem.m_Idx);
+		if (itemVoucherDataFromItemID != null)
+		{
+			long voucherRemainTime = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetVoucherRemainTime((eVOUCHER_TYPE)itemVoucherDataFromItemID.ui8VoucherType, itemVoucherDataFromItemID.i64ItemMallID);
+			TsLog.LogError("i64RemainTime ={0}", new object[]
+			{
+				voucherRemainTime
+			});
+			if (voucherRemainTime > 0L)
+			{
+				return true;
+			}
+		}
 		if (ItemMallItem.m_nSaleNum == 0)
 		{
 			return true;
@@ -508,14 +590,7 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 				iTEM_MALL_ITEM.m_nGift = this.m_ItemMallBaseData[i].i8Gift;
 				iTEM_MALL_ITEM.m_strItemTextKey = this.m_ItemMallBaseData[i].i32ItemTextKey.ToString();
 				iTEM_MALL_ITEM.m_strItemTooltip = this.m_ItemMallBaseData[i].i32ItemToolTipKey.ToString();
-				if (this.m_ItemMallBaseData[i].i8Event > 0)
-				{
-					iTEM_MALL_ITEM.m_isEvent = true;
-				}
-				else
-				{
-					iTEM_MALL_ITEM.m_isEvent = false;
-				}
+				iTEM_MALL_ITEM.m_isEvent = this.m_ItemMallBaseData[i].i8Event;
 				this.AddData(iTEM_MALL_ITEM, -1);
 			}
 		}
@@ -553,9 +628,14 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 			}
 			return "Win_I_Won";
 		case eITEMMALL_MONEY_TYPE.MONEY_TYPE_HEARTS:
+		case eITEMMALL_MONEY_TYPE.MONEY_TYPE_BOX_HEARTS:
 			return "Win_I_Hearts";
 		case eITEMMALL_MONEY_TYPE.MONEY_TYPE_GOLD:
 			return "Com_I_MoneyIcon";
+		case eITEMMALL_MONEY_TYPE.MONEY_TYPE_SOULGEM:
+			return "WIN_I_SoulGem";
+		case eITEMMALL_MONEY_TYPE.MONEY_TYPE_MYTHELXIR:
+			return "Win_I_MythElixir";
 		default:
 			return string.Empty;
 		}
@@ -563,7 +643,7 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 
 	public static string GetCashPrice(ITEM_MALL_ITEM item)
 	{
-		if (TsPlatform.IsIPhone || NrGlobalReference.strLangType.Equals("eng"))
+		if (item.m_nMoneyType == 1 && (TsPlatform.IsIPhone || NrGlobalReference.strLangType.Equals("eng")))
 		{
 			return Protocol_Item.Money_Format(item.m_fPrice);
 		}
@@ -627,6 +707,61 @@ public class ItemMallItemManager : NrTSingleton<ItemMallItemManager>
 			if (this.m_ItemVoucherDataList[i].i64ItemMallID == i64ItemID)
 			{
 				return this.m_ItemVoucherDataList[i];
+			}
+		}
+		return null;
+	}
+
+	public byte IsEventItem(int shopIdx)
+	{
+		ITEM_MALL_ITEM itemMall = this.GetItemMall(shopIdx);
+		if (itemMall == null)
+		{
+			return 0;
+		}
+		return itemMall.m_isEvent;
+	}
+
+	public eITEMMALL_MONEY_TYPE GetMoneyType(int shopIdx)
+	{
+		ITEM_MALL_ITEM itemMall = this.GetItemMall(shopIdx);
+		if (itemMall == null)
+		{
+			return eITEMMALL_MONEY_TYPE.END;
+		}
+		return (eITEMMALL_MONEY_TYPE)itemMall.m_nMoneyType;
+	}
+
+	public string GetCashPrice(int shopIdx)
+	{
+		ITEM_MALL_ITEM itemMall = this.GetItemMall(shopIdx);
+		if (itemMall == null)
+		{
+			return string.Empty;
+		}
+		return ItemMallItemManager.GetCashPrice(itemMall);
+	}
+
+	public ITEM_MALL_ITEM GetItemMall(int shopIdx)
+	{
+		if (this.m_OriginalCollection == null)
+		{
+			return null;
+		}
+		foreach (List<ITEM_MALL_ITEM> current in this.m_OriginalCollection.Values)
+		{
+			if (current != null)
+			{
+				foreach (ITEM_MALL_ITEM current2 in current)
+				{
+					if (current2 != null)
+					{
+						if (current2.m_Idx == (long)shopIdx)
+						{
+							return current2;
+						}
+					}
+				}
 			}
 		}
 		return null;

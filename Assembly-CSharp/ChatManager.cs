@@ -10,11 +10,15 @@ using UnityForms;
 
 public class ChatManager : NrTSingleton<ChatManager>
 {
+	private const int MAX_CHAT_MSG_QUEUE = 80;
+
 	private Queue<MainChatMsg> ChatMsgQueue = new Queue<MainChatMsg>();
+
+	private Queue<MainChatMsg> ChatMsgList = new Queue<MainChatMsg>();
 
 	private Queue<CharChat> CharChatQueue = new Queue<CharChat>();
 
-	private int[] m_RoomUnique = new int[6];
+	private int[] m_RoomUnique = new int[7];
 
 	public static float SLIDER_WIDTH
 	{
@@ -28,6 +32,11 @@ public class ChatManager : NrTSingleton<ChatManager>
 	{
 	}
 
+	public void InitChatMsg()
+	{
+		this.ChatMsgList.Clear();
+	}
+
 	public int GetChatMsgCount()
 	{
 		return this.ChatMsgQueue.Count;
@@ -36,6 +45,11 @@ public class ChatManager : NrTSingleton<ChatManager>
 	public int GetCharChatCount()
 	{
 		return this.CharChatQueue.Count;
+	}
+
+	public int GetChatMsgListCount()
+	{
+		return this.ChatMsgList.Count;
 	}
 
 	public MainChatMsg ChatMsgDequeue()
@@ -48,6 +62,16 @@ public class ChatManager : NrTSingleton<ChatManager>
 		return this.CharChatQueue.Dequeue();
 	}
 
+	public MainChatMsg GetChatMsgData(int i)
+	{
+		MainChatMsg[] array = this.ChatMsgList.ToArray();
+		if (i >= this.ChatMsgList.Count)
+		{
+			return null;
+		}
+		return array[i];
+	}
+
 	public void PushMsg(string name, string msg)
 	{
 		this.PushMsg(CHAT_TYPE.NORMAL, name, msg);
@@ -55,7 +79,13 @@ public class ChatManager : NrTSingleton<ChatManager>
 
 	public void PushMsg(CHAT_TYPE type, string name, string msg)
 	{
-		this.ChatMsgQueue.Enqueue(new MainChatMsg(type, name, msg, new ITEM(), string.Empty));
+		MainChatMsg item = new MainChatMsg(type, name, msg, new ITEM(), string.Empty);
+		this.ChatMsgQueue.Enqueue(item);
+		if (this.ChatMsgList.Count >= 80)
+		{
+			this.ChatMsgList.Dequeue();
+		}
+		this.ChatMsgList.Enqueue(item);
 	}
 
 	public void PushMsg(int unique, string name, string msg)
@@ -70,12 +100,27 @@ public class ChatManager : NrTSingleton<ChatManager>
 
 	public void PushSystemMsg(string name, string msg, string color)
 	{
-		this.ChatMsgQueue.Enqueue(new MainChatMsg(CHAT_TYPE.SYSTEM, name, msg, null, color));
+		MainChatMsg item = new MainChatMsg(CHAT_TYPE.SYSTEM, name, msg, null, color);
+		this.ChatMsgQueue.Enqueue(item);
+		if (this.ChatMsgList.Count >= 80)
+		{
+			this.ChatMsgList.Dequeue();
+		}
+		this.ChatMsgList.Enqueue(item);
 	}
 
 	public void PushCharChat(NrCharBase charBase, string msg, CHAT_TYPE _ChatType)
 	{
 		this.CharChatQueue.Enqueue(new CharChat(charBase, msg, _ChatType));
+		if (80 <= this.ChatMsgList.Count)
+		{
+			this.ChatMsgList.Dequeue();
+		}
+		if (charBase.GetCharName() == NrTSingleton<NkCharManager>.Instance.GetCharName())
+		{
+			MainChatMsg item = new MainChatMsg(_ChatType, charBase.GetCharName(), msg, new ITEM(), string.Empty);
+			this.ChatMsgList.Enqueue(item);
+		}
 	}
 
 	public void SendMessage(CHAT_TYPE type, string strText)
@@ -151,28 +196,34 @@ public class ChatManager : NrTSingleton<ChatManager>
 					return;
 				}
 			}
-			ChatLabel chatLable;
-			ChatLabel chatLable2;
+			ChatLabel chatLabel = null;
+			ChatLabel chatLabel2 = null;
 			if (TsPlatform.IsWeb)
 			{
 				MainChatDlg mainChatDlg = form as MainChatDlg;
-				chatLable = mainChatDlg.GetChatLable(type);
-				chatLable2 = mainChatDlg.GetChatLable(CHAT_TYPE.ALL);
+				if (mainChatDlg != null)
+				{
+					chatLabel = mainChatDlg.GetChatLable(type);
+					chatLabel2 = mainChatDlg.GetChatLable(CHAT_TYPE.ALL);
+				}
 			}
 			else
 			{
 				ChatMobile_Sub_Dlg chatMobile_Sub_Dlg = form as ChatMobile_Sub_Dlg;
-				chatLable = chatMobile_Sub_Dlg.GetChatLable(type);
-				chatLable2 = chatMobile_Sub_Dlg.GetChatLable(CHAT_TYPE.ALL);
+				if (chatMobile_Sub_Dlg != null)
+				{
+					chatLabel = chatMobile_Sub_Dlg.GetChatLable(type);
+					chatLabel2 = chatMobile_Sub_Dlg.GetChatLable(CHAT_TYPE.ALL);
+				}
 			}
 			string name = string.Empty;
-			if (chatLable2 != null)
+			if (chatLabel2 != null)
 			{
 				name = ChatManager.GetChatFrontString(nrCharUser.GetCharName(), colosseumGrade, type, false);
-				chatLable2.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
-				if (null != chatLable && type != CHAT_TYPE.NORMAL)
+				chatLabel2.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
+				if (null != chatLabel && type != CHAT_TYPE.NORMAL)
 				{
-					chatLable.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
+					chatLabel.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
 				}
 			}
 			if (TsPlatform.IsMobile)
@@ -180,19 +231,24 @@ public class ChatManager : NrTSingleton<ChatManager>
 				ChatMobileDlg chatMobileDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.CHAT_MAIN_DLG) as ChatMobileDlg;
 				if (chatMobileDlg != null)
 				{
-					chatLable2 = chatMobileDlg.GetChatLable(CHAT_TYPE.ALL);
-					if (chatLable2 != null)
+					chatLabel2 = chatMobileDlg.GetChatLable(CHAT_TYPE.ALL);
+					if (chatLabel2 != null)
 					{
-						chatLable2.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
+						chatLabel2.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
 					}
+					if (80 <= this.ChatMsgList.Count)
+					{
+						this.ChatMsgList.Dequeue();
+					}
+					this.ChatMsgList.Enqueue(new MainChatMsg(type, ChatManager.GetChatNameStr(nrCharUser.GetCharName(), colosseumGrade, false), strText, linkItem, ChatManager.GetChatColorKey(type)));
 				}
 				TournamentLobbyDlg tournamentLobbyDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.TOURNAMENT_LOBBY_DLG) as TournamentLobbyDlg;
 				if (tournamentLobbyDlg != null)
 				{
-					chatLable2 = tournamentLobbyDlg.GetChatLable(CHAT_TYPE.ALL);
-					if (chatLable2 != null)
+					chatLabel2 = tournamentLobbyDlg.GetChatLable(CHAT_TYPE.ALL);
+					if (chatLabel2 != null)
 					{
-						chatLable2.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
+						chatLabel2.PushText(name, strText, ChatManager.GetChatColorKey(type), linkItem);
 					}
 				}
 			}
@@ -362,7 +418,8 @@ public class ChatManager : NrTSingleton<ChatManager>
 		case CHAT_TYPE.BATTLE:
 			return "1303";
 		case CHAT_TYPE.BABELPARTY:
-			IL_20:
+		case CHAT_TYPE.MYTHRAID:
+			IL_24:
 			if (type != CHAT_TYPE.SYSTEM)
 			{
 				return string.Empty;
@@ -371,7 +428,7 @@ public class ChatManager : NrTSingleton<ChatManager>
 		case CHAT_TYPE.WATCH:
 			return "1304";
 		}
-		goto IL_20;
+		goto IL_24;
 	}
 
 	public static void SetHideControl(bool _bHide)

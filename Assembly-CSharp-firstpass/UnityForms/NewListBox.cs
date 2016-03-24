@@ -18,7 +18,8 @@ namespace UnityForms
 			CHECKBOX,
 			TOGGLE,
 			TEXTFIELD,
-			SLIDER
+			SLIDER,
+			SCROLLLABEL
 		}
 
 		private class ColumnData
@@ -58,6 +59,8 @@ namespace UnityForms
 
 		private DrawTexture _BG;
 
+		private bool useBackButton = true;
+
 		private string selectStyle = string.Empty;
 
 		private int currentColumnNum;
@@ -79,6 +82,10 @@ namespace UnityForms
 		private bool autoListBox;
 
 		private float checkTime;
+
+		private int m_nMaxNum = -1;
+
+		private bool callRepositionItems;
 
 		public override bool Visible
 		{
@@ -211,6 +218,19 @@ namespace UnityForms
 			}
 		}
 
+		public int MaxNum
+		{
+			get
+			{
+				this.CalculateMaxContainerNum();
+				return this.m_nMaxNum;
+			}
+			set
+			{
+				this.m_nMaxNum = value;
+			}
+		}
+
 		public new static NewListBox Create(string name, Vector3 pos)
 		{
 			return (NewListBox)new GameObject(name)
@@ -295,6 +315,10 @@ namespace UnityForms
 			{
 				columnData.type = NewListBox.TYPE.SLIDER;
 			}
+			else if ("ScrollLabel" == controlType)
+			{
+				columnData.type = NewListBox.TYPE.SCROLLLABEL;
+			}
 			if (string.Empty != styleName1)
 			{
 				columnData.styleName1 = styleName1;
@@ -370,8 +394,23 @@ namespace UnityForms
 			}
 		}
 
+		public void SetColumnCenter()
+		{
+			NewListBox.ColumnData columnData = this.coulmnDataList[0];
+			int num = ((int)this.viewableArea.x - columnData.width) / 2;
+			int num2 = ((int)this.lineHeight - columnData.height) / 2;
+			for (int i = 0; i < this.coulmnDataList.Count; i++)
+			{
+				this.coulmnDataList[i].x += num;
+				this.coulmnDataList[i].y += num2;
+			}
+		}
+
 		public virtual void Clear()
 		{
+			this.scrollPos = 0f;
+			this.scrollDelta = 0f;
+			this.callRepositionItems = false;
 			this.reserveItems.Clear();
 			base.ClearList(true);
 			if (this.autoListBox)
@@ -398,11 +437,20 @@ namespace UnityForms
 					uIListItemContainer.MakeChild(uIButton.gameObject);
 					uIListItemContainer.SetControlIsEnabled(false);
 					base.InsertItemDonotPosionUpdate(uIListItemContainer, i, null, true);
+					if (!this.useBackButton)
+					{
+						uIButton.gameObject.SetActive(false);
+					}
 				}
 				base.DonotCountRepositionItems();
 			}
 			this.clipWhenMoving = true;
 			this.startIndex = 0;
+		}
+
+		public void BackButtonAniEnable(bool enable)
+		{
+			this.useBackButton = enable;
 		}
 
 		private UIListItemContainer CreateContainer(NewListItem item)
@@ -447,6 +495,10 @@ namespace UnityForms
 			uIButton.allwaysPlayAnim = true;
 			uIListItemContainer.MakeChild(uIButton.gameObject);
 			uIButton.gameObject.transform.localPosition = Vector3.zero;
+			if (!this.useBackButton)
+			{
+				uIButton.gameObject.SetActive(false);
+			}
 			float num = 0f;
 			for (int i = 0; i < this.coulmnDataList.Count; i++)
 			{
@@ -466,14 +518,8 @@ namespace UnityForms
 								label.Data = data.data;
 								uIListItemContainer.MakeChild(label.gameObject);
 								label.gameObject.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), num);
-								if (!data.visible)
-								{
-									label.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									label.controlIsEnabled = data.enable;
-								}
+								label.Visible = data.visible;
+								label.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									label.SetAlpha(columnData.alpha);
@@ -502,14 +548,8 @@ namespace UnityForms
 									this.lineHeight += num2;
 									uIButton.SetSize(this.viewableArea.x, this.lineHeight);
 								}
-								if (!data.visible)
-								{
-									uIListItemContainer2.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									uIListItemContainer2.SetControlIsEnabled(data.enable);
-								}
+								uIListItemContainer2.Visible = data.visible;
+								uIListItemContainer2.SetControlIsEnabled(data.enable);
 								if (columnData.alpha != 1f)
 								{
 									uIListItemContainer2.SetAlpha(columnData.alpha);
@@ -549,14 +589,8 @@ namespace UnityForms
 								uIButton2.AddMouseDownDelegate(data.downDelegate);
 								uIListItemContainer.MakeChild(uIButton2.gameObject);
 								uIButton2.gameObject.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), num);
-								if (!data.visible)
-								{
-									uIButton2.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									uIButton2.controlIsEnabled = data.enable;
-								}
+								uIButton2.Visible = data.visible;
+								uIButton2.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									uIButton2.SetAlpha(columnData.alpha);
@@ -627,15 +661,15 @@ namespace UnityForms
 									}
 									else if (0 < num6)
 									{
-										drawTexture.SetTexture(eCharImageType.SMALL, num5, num6);
+										drawTexture.SetTexture(eCharImageType.SMALL, num5, num6, string.Empty);
 									}
 									else if (data.data is bool)
 									{
-										drawTexture.SetTexture(eCharImageType.MIDDLE, num5, -1);
+										drawTexture.SetTexture(eCharImageType.MIDDLE, num5, -1, string.Empty);
 									}
 									else
 									{
-										drawTexture.SetTexture(eCharImageType.SMALL, num5, -1);
+										drawTexture.SetTexture(eCharImageType.SMALL, num5, -1, string.Empty);
 									}
 								}
 								else if (data.realData is string)
@@ -668,23 +702,39 @@ namespace UnityForms
 								{
 									drawTexture.SetTexture2D((Texture2D)data.realData);
 								}
+								else if (data.realData is CostumeDrawTextureInfo)
+								{
+									CostumeDrawTextureInfo costumeDrawTextureInfo = data.realData as CostumeDrawTextureInfo;
+									drawTexture.SetTexture(costumeDrawTextureInfo.imageType, costumeDrawTextureInfo.charKind, costumeDrawTextureInfo.grade, costumeDrawTextureInfo.costumePortraitPath);
+								}
+								if (data.data2 is string)
+								{
+									string path = string.Format("{0}{1}", (string)data.data2, NrTSingleton<UIDataManager>.Instance.AddFilePath);
+									NrTSingleton<FormsManager>.Instance.RequestAttachUIEffect(path, drawTexture, new Vector2(drawTexture.width, drawTexture.height));
+								}
+								Vector3 vector = Vector3.zero;
+								Vector3 localScale = Vector3.one;
 								if (string.Empty != columnData.imageInverse)
 								{
-									drawTexture.Inverse(UIBaseFileManager.GetInverse(columnData.imageInverse));
+									drawTexture.gameObject.transform.localPosition = Vector3.zero;
+									vector = drawTexture.Inverse(UIBaseFileManager.GetInverse(columnData.imageInverse));
+									localScale = drawTexture.gameObject.transform.localScale;
 								}
 								drawTexture.Data = data.data;
 								drawTexture.AddValueChangedDelegate(data.eventDelegate);
 								drawTexture.AddMouseDownDelegate(data.downDelegate);
 								uIListItemContainer.MakeChild(drawTexture.gameObject);
-								drawTexture.gameObject.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), num);
-								if (!data.visible)
+								if (UIBaseFileManager.GetInverse(columnData.imageInverse) == INVERSE_MODE.LEFT_TO_RIGHT)
 								{
-									drawTexture.Visible = data.visible;
+									drawTexture.gameObject.transform.localScale = localScale;
+									drawTexture.gameObject.transform.localPosition = new Vector3((float)columnData.x + vector.x, (float)(-(float)columnData.y) + vector.y, num);
 								}
-								if (!data.enable)
+								else
 								{
-									drawTexture.controlIsEnabled = data.enable;
+									drawTexture.gameObject.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), num);
 								}
+								drawTexture.Visible = data.visible;
+								drawTexture.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									drawTexture.SetAlpha(columnData.alpha);
@@ -704,7 +754,21 @@ namespace UnityForms
 								else if (data.realData is ITEM)
 								{
 									ITEM iTEM2 = (ITEM)data.realData;
-									itemTexture.SetItemTexture(iTEM2);
+									if (data.data != null && data.data is string)
+									{
+										if ("Material" == (string)data.data)
+										{
+											itemTexture.SetItemTexture(iTEM2, false, false, 1f);
+										}
+										else
+										{
+											itemTexture.SetItemTexture(iTEM2);
+										}
+									}
+									else
+									{
+										itemTexture.SetItemTexture(iTEM2);
+									}
 									if (data.data2 != null)
 									{
 										ITEM c_cItemTooltip = (ITEM)data.data2;
@@ -786,14 +850,8 @@ namespace UnityForms
 								itemTexture.AddMouseDownDelegate(data.downDelegate);
 								uIListItemContainer.MakeChild(itemTexture.gameObject);
 								itemTexture.gameObject.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), num);
-								if (!data.visible)
-								{
-									itemTexture.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									itemTexture.controlIsEnabled = data.enable;
-								}
+								itemTexture.Visible = data.visible;
+								itemTexture.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									itemTexture.SetAlpha(columnData.alpha);
@@ -816,14 +874,8 @@ namespace UnityForms
 								checkBox.AddMouseDownDelegate(data.downDelegate);
 								uIListItemContainer.MakeChild(checkBox.gameObject);
 								checkBox.gameObject.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), num);
-								if (!data.visible)
-								{
-									checkBox.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									checkBox.controlIsEnabled = data.enable;
-								}
+								checkBox.Visible = data.visible;
+								checkBox.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									checkBox.SetAlpha(columnData.alpha);
@@ -849,14 +901,8 @@ namespace UnityForms
 								uIRadioBtn.AddMouseDownDelegate(data.downDelegate);
 								uIListItemContainer.MakeChild(uIRadioBtn.gameObject);
 								uIRadioBtn.gameObject.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), num);
-								if (!data.visible)
-								{
-									uIRadioBtn.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									uIRadioBtn.controlIsEnabled = data.enable;
-								}
+								uIRadioBtn.Visible = data.visible;
+								uIRadioBtn.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									uIRadioBtn.SetAlpha(columnData.alpha);
@@ -876,14 +922,8 @@ namespace UnityForms
 								{
 									textField.Inverse(UIBaseFileManager.GetInverse(columnData.imageInverse));
 								}
-								if (!data.visible)
-								{
-									textField.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									textField.controlIsEnabled = data.enable;
-								}
+								textField.Visible = data.visible;
+								textField.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									textField.SetAlpha(columnData.alpha);
@@ -914,17 +954,29 @@ namespace UnityForms
 									horizontalSlider.defaultValue = 0f;
 									horizontalSlider.Value = 0f;
 								}
-								if (!data.visible)
-								{
-									horizontalSlider.Visible = data.visible;
-								}
-								if (!data.enable)
-								{
-									horizontalSlider.controlIsEnabled = data.enable;
-								}
+								horizontalSlider.Visible = data.visible;
+								horizontalSlider.controlIsEnabled = data.enable;
 								if (columnData.alpha != 1f)
 								{
 									horizontalSlider.SetAlpha(columnData.alpha);
+								}
+							}
+						}
+						else if (columnData.type == NewListBox.TYPE.SCROLLLABEL)
+						{
+							string str4 = (string)data.realData;
+							ScrollLabel scrollLabel = UICreateControl.ScrollLabel(i.ToString() + "text", str4, columnData.multiLine, (float)columnData.width, (float)columnData.height, columnData.fontSize, columnData.fontEffect, columnData.anchor, columnData.fontColor);
+							if (null != scrollLabel)
+							{
+								scrollLabel.name = i.ToString() + "ScrollLabel";
+								scrollLabel.Data = data.data;
+								uIListItemContainer.MakeChild(scrollLabel.gameObject);
+								scrollLabel.SetLocation((float)columnData.x, (float)columnData.y, num);
+								scrollLabel.Visible = data.visible;
+								scrollLabel.controlIsEnabled = data.enable;
+								if (columnData.alpha != 1f)
+								{
+									scrollLabel.SetAlpha(columnData.alpha);
 								}
 							}
 						}
@@ -977,7 +1029,7 @@ namespace UnityForms
 			UIListItemContainer uIListItemContainer = this.CreateContainer(item);
 			if (null != uIListItemContainer)
 			{
-				if (base.GetItem(index) != null)
+				if (null != base.GetItem(index))
 				{
 					base.RemoveItemDonotPositionUpdate(index, true);
 					base.InsertItemDonotPosionUpdate(uIListItemContainer, index, null, false);
@@ -989,9 +1041,396 @@ namespace UnityForms
 			}
 		}
 
+		public virtual void RemoveAddNew(int index, NewListItem item)
+		{
+			int num = index % this.items.Count;
+			UIListItemContainer uIListItemContainer = this.CreateContainer(item);
+			if (null != uIListItemContainer)
+			{
+				if (null != base.GetItem(num))
+				{
+					base.RemoveItemDonotPositionUpdate(num, true);
+					base.InsertItemDonotPosionUpdate(uIListItemContainer, num, null, false);
+				}
+				else
+				{
+					base.InsertItemDonotPosionUpdate(uIListItemContainer, num, null, false);
+				}
+			}
+		}
+
+		public void UpdateContents(int index, NewListItem item)
+		{
+			int index2 = index % this.items.Count;
+			UIListItemContainer uIListItemContainer = this.items[index2];
+			if (null == uIListItemContainer)
+			{
+				return;
+			}
+			uIListItemContainer.Data = item.Data;
+			for (int i = 0; i < this.coulmnDataList.Count; i++)
+			{
+				NewListBox.ColumnData columnData = this.coulmnDataList[i];
+				if (columnData != null)
+				{
+					NewListItem.NewListItemData data = item.GetData(i);
+					if (data != null)
+					{
+						if (columnData.type == NewListBox.TYPE.LABEL)
+						{
+							Label label = (Label)uIListItemContainer.GetElement(i);
+							if (!(null == label))
+							{
+								string text = (string)data.realData;
+								label.Text = text;
+								label.Data = data.data;
+								label.Visible = data.visible;
+								label.controlIsEnabled = data.enable;
+							}
+						}
+						else if (columnData.type != NewListBox.TYPE.FLASHLABEL)
+						{
+							if (columnData.type == NewListBox.TYPE.BUTTON)
+							{
+								UIButton uIButton = (UIButton)uIListItemContainer.GetElement(i);
+								if (!(null == uIButton))
+								{
+									if (data.realData is string)
+									{
+										uIButton.Text = (string)data.realData;
+									}
+									else if (data.realData is UIBaseInfoLoader)
+									{
+										uIButton.SetButtonTextureKey((UIBaseInfoLoader)data.realData);
+										if (data.data2 is string)
+										{
+											uIButton.Text = (string)data.data2;
+										}
+									}
+									if (null != uIButton.spriteText)
+									{
+										uIButton.SetAnchor(SpriteText.Anchor_Pos.Middle_Center);
+										uIButton.SetAlignment(SpriteText.Alignment_Type.Center);
+										uIButton.SetFontEffect(columnData.fontEffect);
+										uIButton.SetCharacterSize(columnData.fontSize);
+									}
+									uIButton.Data = data.data;
+									uIButton.SetValueChangedDelegate(data.eventDelegate);
+									uIButton.SetMouseDownDelegate(data.downDelegate);
+									uIButton.Visible = data.visible;
+									uIButton.controlIsEnabled = data.enable;
+									uIButton.transform.localPosition = new Vector3((float)columnData.x, (float)(-(float)columnData.y), uIButton.transform.localPosition.z);
+								}
+							}
+							else if (columnData.type == NewListBox.TYPE.DRAWTEXTURE)
+							{
+								DrawTexture drawTexture = (DrawTexture)uIListItemContainer.GetElement(i);
+								if (!(null == drawTexture))
+								{
+									if (data.data is float)
+									{
+										float num = (float)data.data;
+										columnData.width = (int)num;
+										drawTexture.Setup((float)columnData.width, (float)columnData.height);
+									}
+									if (data.realData is UIBaseInfoLoader)
+									{
+										UIBaseInfoLoader texture = (UIBaseInfoLoader)data.realData;
+										drawTexture.SetTexture(texture);
+									}
+									else if (data.realData is ITEM)
+									{
+										ITEM iTEM = (ITEM)data.realData;
+										if (iTEM.m_nItemUnique == 70000)
+										{
+											NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_UI_HEARTS_STONE", drawTexture, new Vector2(drawTexture.width, drawTexture.height));
+										}
+										int num2 = iTEM.m_nOption[2];
+										if (string.Compare(MsgHandler.HandleReturn<string>("RankStateString", new object[]
+										{
+											num2
+										}), "best") == 0)
+										{
+											NrTSingleton<FormsManager>.Instance.AttachEffectKey("FX_WEAPON_GOOD", drawTexture, new Vector2(drawTexture.width, drawTexture.height));
+										}
+										drawTexture.SetTexture(MsgHandler.HandleReturn<UIBaseInfoLoader>("GetItemTexture", new object[]
+										{
+											iTEM.m_nItemUnique
+										}));
+									}
+									else if (data.realData is int)
+									{
+										int num3 = (int)data.realData;
+										int num4 = -1;
+										if (data.data is int)
+										{
+											num4 = (int)data.data;
+										}
+										if ("false" == MsgHandler.HandleReturn<string>("IsReincarnation", new object[0]) && "true" == MsgHandler.HandleReturn<string>("CharKindIsATB", new object[]
+										{
+											num3,
+											1L
+										}))
+										{
+											num4 = -1;
+										}
+										if (item.EventMark)
+										{
+											if (0 < num4)
+											{
+												drawTexture.SetTextureEvent(eCharImageType.SMALL, num3, num4);
+											}
+											else
+											{
+												drawTexture.SetTextureEvent(eCharImageType.SMALL, num3, -1);
+											}
+										}
+										else if (0 < num4)
+										{
+											drawTexture.SetTexture(eCharImageType.SMALL, num3, num4, string.Empty);
+										}
+										else if (data.data is bool)
+										{
+											drawTexture.SetTexture(eCharImageType.MIDDLE, num3, -1, string.Empty);
+										}
+										else
+										{
+											drawTexture.SetTexture(eCharImageType.SMALL, num3, -1, string.Empty);
+										}
+									}
+									else if (data.realData is string)
+									{
+										if (data.data != null)
+										{
+											if (data.data is bool)
+											{
+												bool flag = (bool)data.data;
+												if (flag)
+												{
+													drawTexture.SetTextureFromBundle((string)data.realData);
+												}
+												else
+												{
+													drawTexture.SetTexture((string)data.realData);
+												}
+											}
+											else
+											{
+												drawTexture.SetTexture((string)data.realData);
+											}
+										}
+										else
+										{
+											drawTexture.SetTexture((string)data.realData);
+										}
+									}
+									else if (data.realData is CostumeDrawTextureInfo)
+									{
+										CostumeDrawTextureInfo costumeDrawTextureInfo = data.realData as CostumeDrawTextureInfo;
+										drawTexture.SetTexture(costumeDrawTextureInfo.imageType, costumeDrawTextureInfo.charKind, costumeDrawTextureInfo.grade, costumeDrawTextureInfo.costumePortraitPath);
+									}
+									else if (data.realData is Texture2D)
+									{
+										drawTexture.SetTexture2D((Texture2D)data.realData);
+									}
+									if (data.data2 is string)
+									{
+										string path = (string)data.data2;
+										NrTSingleton<FormsManager>.Instance.RequestAttachUIEffect(path, drawTexture, new Vector2(drawTexture.width, drawTexture.height));
+									}
+									drawTexture.Data = data.data;
+									drawTexture.SetValueChangedDelegate(data.eventDelegate);
+									drawTexture.SetMouseDownDelegate(data.downDelegate);
+									drawTexture.Visible = data.visible;
+									drawTexture.controlIsEnabled = data.enable;
+								}
+							}
+							else if (columnData.type == NewListBox.TYPE.ITEMTEXTURE)
+							{
+								ItemTexture itemTexture = (ItemTexture)uIListItemContainer.GetElement(i);
+								if (!(null == itemTexture))
+								{
+									if (data.realData is UIBaseInfoLoader)
+									{
+										UIBaseInfoLoader texture2 = (UIBaseInfoLoader)data.realData;
+										itemTexture.SetTexture(texture2);
+									}
+									else if (data.realData is ITEM)
+									{
+										ITEM iTEM2 = (ITEM)data.realData;
+										if (data.data != null && data.data is string)
+										{
+											if ("Material" == (string)data.data)
+											{
+												itemTexture.SetItemTexture(iTEM2, false, false, 1f);
+											}
+											else
+											{
+												itemTexture.SetItemTexture(iTEM2);
+											}
+										}
+										else
+										{
+											itemTexture.SetItemTexture(iTEM2);
+										}
+										if (data.data2 != null)
+										{
+											ITEM c_cItemTooltip = (ITEM)data.data2;
+											itemTexture.c_cItemTooltip = c_cItemTooltip;
+											itemTexture.c_cItemSecondTooltip = iTEM2;
+										}
+										else
+										{
+											itemTexture.c_cItemTooltip = iTEM2;
+										}
+									}
+									else if (data.realData is int)
+									{
+										int charkind = (int)data.realData;
+										if (data.data is int)
+										{
+											int level = (int)data.data;
+											itemTexture.SetSolImageTexure(eCharImageType.SMALL, charkind, -1, level);
+										}
+										else
+										{
+											itemTexture.SetSolImageTexure(eCharImageType.SMALL, charkind, -1);
+										}
+									}
+									else if (data.realData is NkListSolInfo)
+									{
+										NkListSolInfo solInfo = (NkListSolInfo)data.realData;
+										bool flag2 = false;
+										if (data.data != null && data.data is bool)
+										{
+											flag2 = (bool)data.data;
+										}
+										itemTexture.SetSolImageTexure(eCharImageType.SMALL, solInfo, flag2);
+									}
+									else if (data.realData is string)
+									{
+										if (data.data != null)
+										{
+											if (data.data is bool)
+											{
+												bool flag3 = (bool)data.data;
+												if (flag3)
+												{
+													itemTexture.SetTextureFromBundle((string)data.realData);
+												}
+												else
+												{
+													itemTexture.SetTexture((string)data.realData);
+												}
+											}
+											else
+											{
+												itemTexture.SetTexture((string)data.realData);
+											}
+										}
+										else
+										{
+											itemTexture.SetTexture((string)data.realData);
+										}
+									}
+									else if (data.realData is Texture2D)
+									{
+										if (data.data2 != null)
+										{
+											short nLevel = (short)data.data2;
+											itemTexture.SetEventImageTexure((Texture2D)data.realData, nLevel, this.bShowEventMark);
+										}
+										else
+										{
+											itemTexture.SetEventImageTexure((Texture2D)data.realData, 0, this.bShowEventMark);
+										}
+									}
+									itemTexture.Data = data.data;
+									itemTexture.Visible = data.visible;
+									itemTexture.controlIsEnabled = data.enable;
+									itemTexture.SetValueChangedDelegate(data.eventDelegate);
+								}
+							}
+							else if (columnData.type == NewListBox.TYPE.CHECKBOX)
+							{
+								CheckBox checkBox = (CheckBox)uIListItemContainer.GetElement(i);
+								if (!(null == checkBox))
+								{
+									int num5 = (int)data.realData;
+									checkBox.SetCheckState((num5 != 1) ? 0 : 1);
+									checkBox.Data = data.data;
+									checkBox.SetValueChangedDelegate(data.eventDelegate);
+									checkBox.SetMouseDownDelegate(data.downDelegate);
+									checkBox.Visible = data.visible;
+									checkBox.controlIsEnabled = data.enable;
+								}
+							}
+							else if (columnData.type == NewListBox.TYPE.TOGGLE)
+							{
+								UIRadioBtn uIRadioBtn = (UIRadioBtn)uIListItemContainer.GetElement(i);
+								if (!(null == uIRadioBtn))
+								{
+									string text2 = (string)data.realData;
+									if (string.Empty != text2)
+									{
+										uIRadioBtn.Text = text2;
+									}
+									uIRadioBtn.Data = data.data;
+									uIRadioBtn.Visible = data.visible;
+									uIRadioBtn.controlIsEnabled = data.enable;
+								}
+							}
+							else if (columnData.type == NewListBox.TYPE.TEXTFIELD)
+							{
+								UIRadioBtn uIRadioBtn2 = (UIRadioBtn)uIListItemContainer.GetElement(i);
+								if (!(null == uIRadioBtn2))
+								{
+									string text3 = (string)data.realData;
+									uIRadioBtn2.Data = data.data;
+									uIRadioBtn2.Text = text3;
+									if (!data.visible)
+									{
+										uIRadioBtn2.Visible = data.visible;
+									}
+									if (!data.enable)
+									{
+										uIRadioBtn2.controlIsEnabled = data.enable;
+									}
+								}
+							}
+							else if (columnData.type == NewListBox.TYPE.SLIDER)
+							{
+								HorizontalSlider horizontalSlider = (HorizontalSlider)uIListItemContainer.GetElement(i);
+								if (!(null == horizontalSlider))
+								{
+									horizontalSlider.Data = data.data;
+									horizontalSlider.SetValueChangedDelegate(data.eventDelegate);
+									horizontalSlider.SetMouseDownDelegate(data.downDelegate);
+									horizontalSlider.Start();
+									if (data.realData is float)
+									{
+										horizontalSlider.defaultValue = (float)data.realData;
+										horizontalSlider.Value = (float)data.realData;
+									}
+									else
+									{
+										horizontalSlider.defaultValue = 0f;
+										horizontalSlider.Value = 0f;
+									}
+									horizontalSlider.Visible = data.visible;
+									horizontalSlider.controlIsEnabled = data.enable;
+								}
+							}
+						}
+					}
+				}
+			}
+			uIListItemContainer.SetControlIsEnabled(item.GetEnable());
+		}
+
 		public virtual void UpdateAdd(int index, NewListItem item)
 		{
-			if (base.GetItem(index) != null)
+			if (null != base.GetItem(index))
 			{
 				UIListItemContainer uIListItemContainer = this.CreateContainer(item);
 				if (null != uIListItemContainer)
@@ -1024,7 +1463,7 @@ namespace UnityForms
 					flashLabel.FontColor = string.Empty;
 					flashLabel.anchor = this.coulmnDataList[0].anchor;
 					flashLabel.width = this.viewableArea.x - 20f;
-					if (base.GetItem(this.startIndex) != null)
+					if (null != base.GetItem(this.startIndex))
 					{
 						base.RemoveItemDonotPositionUpdate(this.startIndex, true);
 						flashLabel.SetFlashLabel(array[i]);
@@ -1038,7 +1477,7 @@ namespace UnityForms
 					this.startIndex++;
 				}
 			}
-			else if (this.m_bReserve)
+			else if (this.m_bReserve || this.m_bReUse)
 			{
 				if (this.items.Count == 0)
 				{
@@ -1058,21 +1497,58 @@ namespace UnityForms
 
 		public override void Update()
 		{
-			if (0 < this.reserveItems.Count && this.m_bReserve && Time.realtimeSinceStartup - this.checkTime > 0.02f)
+			if (0 < this.reserveItems.Count)
 			{
-				for (int i = 0; i < 3; i++)
+				if (this.m_bReserve)
 				{
-					if (this.reserveItems.Count > 0)
+					if (Time.realtimeSinceStartup - this.checkTime > 0.02f)
 					{
-						NewListItem newListItem = this.reserveItems.Dequeue();
-						if (newListItem != null)
+						for (int i = 0; i < 3; i++)
 						{
-							this.MakeContainer(newListItem);
+							if (this.reserveItems.Count > 0)
+							{
+								NewListItem newListItem = this.reserveItems.Dequeue();
+								if (newListItem != null)
+								{
+									this.MakeContainer(newListItem);
+								}
+							}
 						}
+						this.RepositionItems();
+						this.checkTime = Time.realtimeSinceStartup;
+					}
+					if (this.reserveItems.Count == 0 && this.makeCompleteDelegate != null)
+					{
+						this.makeCompleteDelegate(this);
+						this.makeCompleteDelegate = null;
 					}
 				}
-				base.RepositionItems();
-				this.checkTime = Time.realtimeSinceStartup;
+				else if (this.m_bReUse)
+				{
+					this.CalculateMaxContainerNum();
+					if (this.startIndex < this.m_nMaxNum && 0 < this.reserveItems.Count)
+					{
+						if (Time.realtimeSinceStartup - this.checkTime > 0.005f)
+						{
+							NewListItem newListItem2 = this.reserveItems.Dequeue();
+							if (newListItem2 != null)
+							{
+								this.MakeContainer(newListItem2);
+							}
+							this.RepositionItems();
+							this.limitListNum = this.items.Count + this.reserveItems.Count;
+							this.checkTime = Time.realtimeSinceStartup;
+							if (this.reserveItems.Count == 0)
+							{
+								this.MakeCompleteList();
+							}
+						}
+					}
+					else
+					{
+						this.MakeCompleteList();
+					}
+				}
 			}
 			base.Update();
 		}
@@ -1081,12 +1557,58 @@ namespace UnityForms
 		{
 		}
 
+		private void MakeCompleteList()
+		{
+			if (!this.callRepositionItems)
+			{
+				this.RepositionItems();
+				this.callRepositionItems = true;
+			}
+			if (this.makeCompleteDelegate != null)
+			{
+				this.callSlidePosChangeDelegate = true;
+				this.makeCompleteDelegate(this);
+				this.makeCompleteDelegate = null;
+			}
+		}
+
+		public override void RepositionItems()
+		{
+			if (this.orientation == UIScrollList.ORIENTATION.HORIZONTAL)
+			{
+				base.PositionHorizontally(true);
+			}
+			else
+			{
+				base.PositionVertically(true);
+			}
+			if (this.m_bReUse && 0 < this.items.Count)
+			{
+				float num = this.items[0].TopLeftEdge().y - this.items[0].BottomRightEdge().y + this.itemSpacing;
+				float num2 = this.items[this.items.Count - 1].transform.localPosition.y;
+				for (int i = 0; i < this.reserveItems.Count; i++)
+				{
+					float num3 = num2 - num;
+					this.listPosY.Add(num3);
+					this.contentExtents += num;
+					num2 = num3;
+				}
+				this.contentExtents -= this.itemSpacing;
+			}
+			base.UpdateContentExtents(0f);
+			base.ClipItems();
+		}
+
 		private void MakeContainer(NewListItem item)
 		{
+			if (!item.m_szColumnData.Equals(string.Empty))
+			{
+				this.SetColumnData(item.m_szColumnData);
+			}
 			UIListItemContainer uIListItemContainer = this.CreateContainer(item);
 			if (null != uIListItemContainer)
 			{
-				if (base.GetItem(this.startIndex) != null)
+				if (null != base.GetItem(this.startIndex))
 				{
 					base.RemoveItemDonotPositionUpdate(this.startIndex, true);
 					base.InsertItemDonotPosionUpdate(uIListItemContainer, this.startIndex, null, this.m_bReserve);
@@ -1097,6 +1619,34 @@ namespace UnityForms
 				}
 				this.startIndex++;
 			}
+		}
+
+		private void CalculateMaxContainerNum()
+		{
+			if (0 < this.m_nMaxNum)
+			{
+				return;
+			}
+			this.m_nMaxNum = (int)(this.viewableArea.y / this.lineHeight) + 2;
+		}
+
+		public bool IsReUseListItemsExcced()
+		{
+			if (!this.m_bReUse)
+			{
+				return false;
+			}
+			int num = this.items.Count + this.reserveItems.Count;
+			return this.MaxNum < num;
+		}
+
+		public int GetReserverItemCount()
+		{
+			if (this.reserveItems == null)
+			{
+				return -1;
+			}
+			return this.reserveItems.Count;
 		}
 	}
 }

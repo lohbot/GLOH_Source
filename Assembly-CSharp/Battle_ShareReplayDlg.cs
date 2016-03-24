@@ -9,6 +9,8 @@ public class Battle_ShareReplayDlg : Form
 
 	private Button m_kShare;
 
+	private Button m_btClose;
+
 	private int m_nType;
 
 	private long m_nReplayUnique;
@@ -18,6 +20,8 @@ public class Battle_ShareReplayDlg : Form
 		UIBaseFileManager instance = NrTSingleton<UIBaseFileManager>.Instance;
 		Form form = this;
 		instance.LoadFileAll(ref form, "Battle/DLG_Battle_ShareReplay", G_ID.BATTLE_SHAREREPLAY_DLG, false);
+		base.ShowBlackBG(1f);
+		base.SetScreenCenter();
 	}
 
 	public override void SetComponent()
@@ -29,7 +33,8 @@ public class Battle_ShareReplayDlg : Form
 		this.m_kShare = (base.GetControl("BT_Upload") as Button);
 		this.m_kShare.AddValueChangedDelegate(new EZValueChangedDelegate(this.ClickShare));
 		this.m_kShare.controlIsEnabled = false;
-		base.SetScreenCenter();
+		this.m_btClose = (base.GetControl("Button_Exit") as Button);
+		this.m_btClose.AddValueChangedDelegate(new EZValueChangedDelegate(this.CloseForm));
 	}
 
 	public void SetReplayInfo(int type, long unique)
@@ -84,6 +89,10 @@ public class Battle_ShareReplayDlg : Form
 		else if (this.m_nType == 3)
 		{
 			text = NrLinkText.InfiBattleReplayName(this.m_nReplayUnique);
+		}
+		else if (this.m_nType == 4)
+		{
+			text = NrLinkText.MineReplayName(this.m_nReplayUnique);
 		}
 		if (string.Empty == text)
 		{

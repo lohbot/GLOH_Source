@@ -20,6 +20,8 @@ public class NrMyCharInfo
 
 	public long m_SN;
 
+	private int m_customerAnswerCount;
+
 	private GameObject m_pkMyCharObject;
 
 	public bool m_bBackupPerson;
@@ -40,17 +42,27 @@ public class NrMyCharInfo
 
 	private bool m_bTournament;
 
+	private byte[] m_byPushBlock = new byte[3];
+
+	private byte m_i8ConsecutivelyattendanceTotalNum;
+
+	private byte m_i8ConsecutivelyattendanceCurrentNum;
+
+	private byte m_i8ConsecutivelyattendanceRewardType;
+
+	private bool m_bConsecutivelyattendanceReward;
+
 	public NrCharMapInfo m_kCharMapInfo;
 
 	public long DepolyCombatPower;
 
-	private long[] m_nCharSubData = new long[39];
+	private long[] m_nCharSubData = new long[51];
 
-	private long[] m_nCharDetail = new long[26];
+	private long[] m_nCharDetail = new long[31];
 
 	private long[] m_nCharMonthData = new long[1];
 
-	private long[] m_nCharWeekData = new long[1];
+	private long[] m_nCharWeekData = new long[2];
 
 	private long[] m_nCharSolGuide = new long[9];
 
@@ -132,7 +144,11 @@ public class NrMyCharInfo
 
 	private int m_iInfiBattleCharLevel;
 
-	private int m_i32InfinityBattle_Count;
+	private byte m_bInfiBattleReward = 1;
+
+	private int m_i32InfinityBattle_TotalCount;
+
+	private int m_i32InfinityBattle_WinCount;
 
 	private long m_nPlunderMoney;
 
@@ -165,6 +181,8 @@ public class NrMyCharInfo
 	public int m_nColosseumBatchKindTotal;
 
 	private List<VOUCHER_DATA> m_VoucharData = new List<VOUCHER_DATA>();
+
+	private NrTimeShopInfo m_kTimeShopInfo;
 
 	public string m_szServerName
 	{
@@ -242,6 +260,66 @@ public class NrMyCharInfo
 		}
 	}
 
+	public byte[] PushBlock
+	{
+		get
+		{
+			return this.m_byPushBlock;
+		}
+		set
+		{
+			this.m_byPushBlock = value;
+		}
+	}
+
+	public byte ConsecutivelyattendanceTotalNum
+	{
+		get
+		{
+			return this.m_i8ConsecutivelyattendanceTotalNum;
+		}
+		set
+		{
+			this.m_i8ConsecutivelyattendanceTotalNum = value;
+		}
+	}
+
+	public byte ConsecutivelyattendanceCurrentNum
+	{
+		get
+		{
+			return this.m_i8ConsecutivelyattendanceCurrentNum;
+		}
+		set
+		{
+			this.m_i8ConsecutivelyattendanceCurrentNum = value;
+		}
+	}
+
+	public bool ConsecutivelyattendanceReward
+	{
+		get
+		{
+			return this.m_bConsecutivelyattendanceReward;
+		}
+		set
+		{
+			this.m_bConsecutivelyattendanceReward = value;
+		}
+	}
+
+	public byte ConsecutivelyattendanceRewardType
+	{
+		get
+		{
+			return this.m_i8ConsecutivelyattendanceRewardType;
+		}
+		set
+		{
+			this.m_i8ConsecutivelyattendanceRewardType = value;
+		}
+	}
+
 	public Texture2D UserPortraitTexture
 	{
 		get
@@ -251,6 +329,18 @@ public class NrMyCharInfo
 		set
 		{
 			this.m_UserPortrait = value;
+		}
+	}
+
+	public int CustomerAnswerCount
+	{
+		get
+		{
+			return this.m_customerAnswerCount;
+		}
+		set
+		{
+			this.m_customerAnswerCount = value;
 		}
 	}
 
@@ -267,6 +357,15 @@ public class NrMyCharInfo
 			{
 				Protocol_Item.s_deMoneyDelegate();
 			}
+		}
+	}
+
+	public byte VipLevel
+	{
+		get
+		{
+			long charSubData = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_VIP_EXP);
+			return NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((long)((int)charSubData));
 		}
 	}
 
@@ -458,6 +557,42 @@ public class NrMyCharInfo
 		}
 	}
 
+	public byte InfiBattleReward
+	{
+		get
+		{
+			return this.m_bInfiBattleReward;
+		}
+		set
+		{
+			this.m_bInfiBattleReward = value;
+		}
+	}
+
+	public int InifBattle_TotalCount
+	{
+		get
+		{
+			return this.m_i32InfinityBattle_TotalCount;
+		}
+		set
+		{
+			this.m_i32InfinityBattle_TotalCount = value;
+		}
+	}
+
+	public int InifBattle_WinCount
+	{
+		get
+		{
+			return this.m_i32InfinityBattle_WinCount;
+		}
+		set
+		{
+			this.m_i32InfinityBattle_WinCount = value;
+		}
+	}
+
 	public int InfiBattleCharLevel
 	{
 		get
@@ -467,18 +602,6 @@ public class NrMyCharInfo
 		set
 		{
 			this.m_iInfiBattleCharLevel = value;
-		}
-	}
-
-	public int InfiBattleCount
-	{
-		get
-		{
-			return this.m_i32InfinityBattle_Count;
-		}
-		set
-		{
-			this.m_i32InfinityBattle_Count = value;
 		}
 	}
 
@@ -530,6 +653,22 @@ public class NrMyCharInfo
 		}
 	}
 
+	public long NextRefreshTime
+	{
+		get
+		{
+			return this.m_kTimeShopInfo.RefreshTime;
+		}
+	}
+
+	public short RefreshCount
+	{
+		get
+		{
+			return this.m_kTimeShopInfo.RefreshCount;
+		}
+	}
+
 	public NrMyCharInfo()
 	{
 		this.m_kCoinInfo = new NkCoinInfo();
@@ -543,6 +682,7 @@ public class NrMyCharInfo
 		this.m_Colosseum_GradeUserList = new NrColosseum_MyGrade_UserIList();
 		this.m_GuildBoss_MyRoomInfo = new NrGuildBoss_MyRoomInfoList();
 		this.m_TreasureMap = new List<int>();
+		this.m_kTimeShopInfo = new NrTimeShopInfo();
 		this.Init();
 	}
 
@@ -600,7 +740,7 @@ public class NrMyCharInfo
 			{
 				return;
 			}
-			string imageKey = charKindInfo.GetPortraitFile1((int)leaderSoldierInfo.GetGrade()) + "_64";
+			string imageKey = charKindInfo.GetPortraitFile1((int)leaderSoldierInfo.GetGrade(), string.Empty) + "_64";
 			this.m_UserPortrait = NrTSingleton<UIImageBundleManager>.Instance.GetTexture(imageKey);
 		}
 		if (flag)
@@ -628,6 +768,16 @@ public class NrMyCharInfo
 		return 0;
 	}
 
+	public long GetExp()
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		if (charPersonInfo != null)
+		{
+			return (long)charPersonInfo.GetLevel(0L);
+		}
+		return 0L;
+	}
+
 	public Texture2D GetFriendTexture(long i64PersonID)
 	{
 		Texture2D result = null;
@@ -653,6 +803,8 @@ public class NrMyCharInfo
 		this.m_kUserChallengeInfo.Init();
 		this.m_kBabelClearInfo.Init();
 		this.m_ReadySolList.Init();
+		this.m_SolWarehouse.Clear();
+		this.m_kTimeShopInfo.Init();
 		this.m_Money = 0L;
 		this.m_nActivityPoint = 0L;
 		this.m_nVipActivityAddTime = 0;
@@ -682,7 +834,7 @@ public class NrMyCharInfo
 
 	public void InitCharSubData()
 	{
-		for (int i = 0; i < 39; i++)
+		for (int i = 0; i < 51; i++)
 		{
 			this.m_nCharSubData[i] = 0L;
 		}
@@ -731,7 +883,7 @@ public class NrMyCharInfo
 
 	public void SetCharSubData(int type, long value)
 	{
-		if (type < 0 || type >= 39)
+		if (type < 0 || type >= 51)
 		{
 			return;
 		}
@@ -743,7 +895,9 @@ public class NrMyCharInfo
 			{
 				int faceCharKind = this.GetFaceCharKind();
 				byte faceSolGrade = this.GetFaceSolGrade();
-				nrCharUser.ChangeCharModel(faceCharKind, faceSolGrade);
+				long faceSolID = this.GetFaceSolID();
+				int faceCostumeUnique = this.GetFaceCostumeUnique();
+				nrCharUser.ChangeCharModel(faceCharKind, faceSolGrade, faceSolID, faceCostumeUnique);
 			}
 		}
 		if (type == 6 && value > 0L)
@@ -761,7 +915,7 @@ public class NrMyCharInfo
 
 	public long GetCharSubData(int type)
 	{
-		if (type < 0 || type >= 39)
+		if (type < 0 || type >= 51)
 		{
 			return 0L;
 		}
@@ -782,7 +936,7 @@ public class NrMyCharInfo
 			SolMilitaryGroupDlg solMilitaryGroupDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLMILITARYGROUP_DLG) as SolMilitaryGroupDlg;
 			if (solMilitaryGroupDlg != null)
 			{
-				solMilitaryGroupDlg.ActionChangeFaceChar((int)datavalue);
+				solMilitaryGroupDlg.ActionChangeFaceChar(datavalue);
 				solMilitaryGroupDlg.RefreshSolList();
 			}
 		}
@@ -813,18 +967,6 @@ public class NrMyCharInfo
 				}
 			}
 		}
-		else if (datatype == 26)
-		{
-			if (NrTSingleton<FormsManager>.Instance.IsShow(G_ID.DAILYDUNGEON_MAIN))
-			{
-				DailyDungeon_Main_Dlg dailyDungeon_Main_Dlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.DAILYDUNGEON_MAIN) as DailyDungeon_Main_Dlg;
-				if (dailyDungeon_Main_Dlg != null && !dailyDungeon_Main_Dlg.RestoreReserve)
-				{
-					dailyDungeon_Main_Dlg.SetBG();
-					dailyDungeon_Main_Dlg.SetBasicData();
-				}
-			}
-		}
 		else if (datatype == 28)
 		{
 			this.SetSubData_Waring(datatype, datavalue);
@@ -832,9 +974,9 @@ public class NrMyCharInfo
 		else if (datatype == 37)
 		{
 			this.SetActivityTime(PublicMethod.GetCurTime());
-			byte levelExp = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((int)i64Befordatavalue);
-			byte levelExp2 = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((int)datavalue);
-			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.SOLRECRUITSUCCESS_DLG) && levelExp < levelExp2)
+			byte levelExp = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((long)((int)i64Befordatavalue));
+			byte levelExp2 = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((long)((int)datavalue));
+			if (NrTSingleton<FormsManager>.Instance.IsForm(G_ID.SOLRECRUITSUCCESS_DLG) && NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend() && levelExp < levelExp2)
 			{
 				SolRecruitSuccessDlg solRecruitSuccessDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.SOLRECRUITSUCCESS_DLG) as SolRecruitSuccessDlg;
 				if (solRecruitSuccessDlg != null)
@@ -849,7 +991,7 @@ public class NrMyCharInfo
 			{
 				if (levelExp < levelExp2)
 				{
-					itemMallDlg2.SetVipInfoShow(levelExp2);
+					itemMallDlg2.SetVipInfoShow(levelExp2, true);
 				}
 				else
 				{
@@ -858,60 +1000,74 @@ public class NrMyCharInfo
 			}
 			this.SetActivityMax();
 		}
+		else if (datatype == 50)
+		{
+			NewExplorationMainDlg newExplorationMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+			if (newExplorationMainDlg != null)
+			{
+				newExplorationMainDlg.SetFloorList();
+			}
+		}
 	}
 
 	public int GetFaceCharKind()
 	{
-		int num = (int)this.m_nCharSubData[0];
-		if (num == 0)
+		long solID = this.m_nCharSubData[0];
+		NkSoldierInfo leaderSolInfo = NrTSingleton<NkClientLogic>.Instance.GetLeaderSolInfo(solID);
+		if (leaderSolInfo == null || leaderSolInfo.IsLeader() || !leaderSolInfo.IsValid())
 		{
 			return 0;
 		}
-		NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
-		if (nrCharUser != null)
-		{
-			NkSoldierInfo soldierInfo = nrCharUser.GetPersonInfoUser().GetSoldierInfo(num);
-			if (soldierInfo != null && soldierInfo.IsValid())
-			{
-				return soldierInfo.GetCharKind();
-			}
-		}
-		return 0;
+		return leaderSolInfo.GetCharKind();
 	}
 
 	public byte GetFaceSolGrade()
 	{
-		int solindex = (int)this.m_nCharSubData[0];
-		NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
-		if (nrCharUser != null)
+		long solID = this.m_nCharSubData[0];
+		NkSoldierInfo leaderSolInfo = NrTSingleton<NkClientLogic>.Instance.GetLeaderSolInfo(solID);
+		if (leaderSolInfo == null || !leaderSolInfo.IsValid())
 		{
-			NkSoldierInfo soldierInfo = nrCharUser.GetPersonInfoUser().GetSoldierInfo(solindex);
-			if (soldierInfo != null && soldierInfo.IsValid())
-			{
-				return soldierInfo.GetGrade();
-			}
+			return 0;
 		}
-		return 0;
+		return leaderSolInfo.GetGrade();
+	}
+
+	public long GetFaceSolID()
+	{
+		long solID = this.m_nCharSubData[0];
+		NkSoldierInfo leaderSolInfo = NrTSingleton<NkClientLogic>.Instance.GetLeaderSolInfo(solID);
+		if (leaderSolInfo == null || !leaderSolInfo.IsValid())
+		{
+			return 0L;
+		}
+		return leaderSolInfo.GetSolID();
+	}
+
+	public int GetFaceCostumeUnique()
+	{
+		long solID = this.m_nCharSubData[0];
+		NkSoldierInfo leaderSolInfo = NrTSingleton<NkClientLogic>.Instance.GetLeaderSolInfo(solID);
+		if (leaderSolInfo == null || !leaderSolInfo.IsValid())
+		{
+			return 0;
+		}
+		return (int)leaderSolInfo.GetSolSubData(eSOL_SUBDATA.SOL_SUBDATA_COSTUME);
 	}
 
 	public int GetImgFaceCharKind()
 	{
-		int solindex = (int)this.m_nCharSubData[0];
-		NrCharUser nrCharUser = NrTSingleton<NkCharManager>.Instance.GetChar(1) as NrCharUser;
-		if (nrCharUser != null)
+		long solID = this.m_nCharSubData[0];
+		NkSoldierInfo leaderSolInfo = NrTSingleton<NkClientLogic>.Instance.GetLeaderSolInfo(solID);
+		if (leaderSolInfo == null || !leaderSolInfo.IsValid())
 		{
-			NkSoldierInfo soldierInfo = nrCharUser.GetPersonInfoUser().GetSoldierInfo(solindex);
-			if (soldierInfo != null && soldierInfo.IsValid())
-			{
-				return soldierInfo.GetCharKind();
-			}
+			return 0;
 		}
-		return 0;
+		return leaderSolInfo.GetCharKind();
 	}
 
 	public void InitCharDetail()
 	{
-		for (int i = 0; i < 26; i++)
+		for (int i = 0; i < 31; i++)
 		{
 			this.m_nCharDetail[i] = 0L;
 		}
@@ -919,7 +1075,7 @@ public class NrMyCharInfo
 
 	public void SetCharDetail(int type, long value)
 	{
-		if (type < 0 || type >= 26)
+		if (type < 0 || type >= 31)
 		{
 			return;
 		}
@@ -928,7 +1084,7 @@ public class NrMyCharInfo
 
 	public long GetCharDetail(int type)
 	{
-		if (type < 0 || type >= 26)
+		if (type < 0 || type >= 31)
 		{
 			return 0L;
 		}
@@ -1027,6 +1183,22 @@ public class NrMyCharInfo
 			{
 				return sUBDATA_UNION3.n8SubData_2;
 			}
+			if (type == eCHAR_DAY_COUNT.eCHAR_DAY_COUNT_ENJOY_MYTHRAID_COUNT)
+			{
+				return sUBDATA_UNION3.n8SubData_3;
+			}
+			if (type == eCHAR_DAY_COUNT.eCHAR_DAY_COUNT_TIMESHOP_REFRESH_COUNT)
+			{
+				return sUBDATA_UNION3.n8SubData_4;
+			}
+			if (type == eCHAR_DAY_COUNT.eCHAR_DAY_DAILYDUNGEON)
+			{
+				return sUBDATA_UNION3.n8SubData_5;
+			}
+			if (type == eCHAR_DAY_COUNT.eCHAR_DAY_NEWEXPLORATION)
+			{
+				return sUBDATA_UNION3.n8SubData_6;
+			}
 		}
 		return 0;
 	}
@@ -1056,49 +1228,79 @@ public class NrMyCharInfo
 
 	public void ResultCharDetail(int datatype, long datavalue)
 	{
-		if (datatype != 22)
+		switch (datatype)
 		{
-			if (datatype != 23)
-			{
-				if (datatype != 5)
-				{
-					if (datatype == 12)
-					{
-						NrTSingleton<ChallengeManager>.Instance.CalcDayRewardNoticeCount();
-						ChallengeDlg challengeDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.CHALLENGE_DLG) as ChallengeDlg;
-						if (challengeDlg != null)
-						{
-							challengeDlg.SetChallengeInfo();
-						}
-					}
-				}
-				else if (0L < datavalue)
-				{
-					BookmarkDlg bookmarkDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.BOOKMARK_DLG) as BookmarkDlg;
-					if (bookmarkDlg != null)
-					{
-						bookmarkDlg.UpdateBookmarkInfo(BookmarkDlg.TYPE.MAINEVENT);
-					}
-				}
-			}
-			else
-			{
-				NrTSingleton<NrDailyGiftManager>.Instance.SetDailyAttendNotify();
-			}
-		}
-		else
+		case 22:
 		{
 			PostDlg postDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.POST_DLG) as PostDlg;
 			if (postDlg != null)
 			{
 				postDlg.SetDailyMailCount();
 			}
+			return;
 		}
+		case 23:
+		{
+			MyCharInfoDlg myCharInfoDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+			if (myCharInfoDlg != null)
+			{
+				myCharInfoDlg.Attend_Notice_Show();
+			}
+			return;
+		}
+		case 24:
+		{
+			IL_1D:
+			if (datatype == 5)
+			{
+				if (0L < datavalue)
+				{
+					MyCharInfoDlg myCharInfoDlg2 = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.MYCHARINFO_DLG) as MyCharInfoDlg;
+					if (myCharInfoDlg2 != null)
+					{
+						myCharInfoDlg2.UpdateNoticeInfo();
+					}
+				}
+				return;
+			}
+			if (datatype == 12)
+			{
+				NrTSingleton<ChallengeManager>.Instance.CalcDayRewardNoticeCount();
+				ChallengeDlg challengeDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.CHALLENGE_DLG) as ChallengeDlg;
+				if (challengeDlg != null)
+				{
+					challengeDlg.SetChallengeInfo();
+				}
+				return;
+			}
+			if (datatype != 30)
+			{
+				return;
+			}
+			NewExplorationMainDlg newExplorationMainDlg = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.NEWEXPLORATION_MAIN_DLG) as NewExplorationMainDlg;
+			if (newExplorationMainDlg != null)
+			{
+				newExplorationMainDlg.SetInfo();
+			}
+			return;
+		}
+		case 25:
+		{
+			NrTSingleton<ChallengeManager>.Instance.CalcDayRewardNoticeCount();
+			TimeShop_DLG timeShop_DLG = NrTSingleton<FormsManager>.Instance.GetForm(G_ID.TIMESHOP_DLG) as TimeShop_DLG;
+			if (timeShop_DLG != null)
+			{
+				timeShop_DLG.Set_RewardButton();
+			}
+			return;
+		}
+		}
+		goto IL_1D;
 	}
 
 	public void InitCharWeekData()
 	{
-		for (int i = 0; i < 1; i++)
+		for (int i = 0; i < 2; i++)
 		{
 			this.m_nCharWeekData[i] = 0L;
 		}
@@ -1106,7 +1308,7 @@ public class NrMyCharInfo
 
 	public void SetCharWeekData(int type, long value)
 	{
-		if (type < 0 || type >= 1)
+		if (type < 0 || type >= 2)
 		{
 			return;
 		}
@@ -1115,7 +1317,7 @@ public class NrMyCharInfo
 
 	public long GetCharWeekData(int type)
 	{
-		if (type < 0 || type >= 1)
+		if (type < 0 || type >= 2)
 		{
 			return 0L;
 		}
@@ -1239,6 +1441,10 @@ public class NrMyCharInfo
 
 	public void AddActivityPoint(long AddPoint)
 	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return;
+		}
 		this.m_nActivityPoint += AddPoint;
 		if (this.m_nActivityPoint < 0L)
 		{
@@ -1268,6 +1474,10 @@ public class NrMyCharInfo
 
 	public void SetActivityPointMax(long ActivityPoint, long MaxActivityPoint)
 	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return;
+		}
 		if (this.m_nActivityPoint != 0L && this.m_nActivityPoint > ActivityPoint)
 		{
 			NrTSingleton<FiveRocksEventManager>.Instance.Placement("activity_spend");
@@ -1304,7 +1514,7 @@ public class NrMyCharInfo
 		{
 			this.m_fCurrentActivityTime = Time.realtimeSinceStartup + num;
 			long charSubData = NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetCharSubData(eCHAR_SUBDATA.CHAR_SUBDATA_VIP_EXP);
-			byte levelExp = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((int)charSubData);
+			byte levelExp = NrTSingleton<NrTableVipManager>.Instance.GetLevelExp((long)((int)charSubData));
 			if (levelExp <= 0 || NrTSingleton<ContentsLimitManager>.Instance.IsVipExp())
 			{
 				long minuteFromSec = PublicMethod.GetMinuteFromSec(ServerTime);
@@ -1321,6 +1531,10 @@ public class NrMyCharInfo
 
 	public void SetActivityMax()
 	{
+		if (!NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend())
+		{
+			return;
+		}
 		COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
 		if (instance != null)
 		{
@@ -1353,7 +1567,7 @@ public class NrMyCharInfo
 
 	public bool IsEnableBattleUseActivityPoint(short WillSpend = 1)
 	{
-		return this.m_nActivityPoint > 0L && this.m_nActivityPoint >= this.GetActivityPointUseBattle() * (long)WillSpend;
+		return !NrTSingleton<ContentsLimitManager>.Instance.IsWillSpend() || (this.m_nActivityPoint > 0L && this.m_nActivityPoint >= this.GetActivityPointUseBattle() * (long)WillSpend);
 	}
 
 	public long GetActivityPointUseBattle()
@@ -1374,6 +1588,15 @@ public class NrMyCharInfo
 	public NkSoldierInfo GetReadySoldierInfoBySolID(long i64SolID)
 	{
 		return this.m_ReadySolList.GetSolInfo(i64SolID);
+	}
+
+	public List<int> GetReadySolKindList()
+	{
+		if (this.m_ReadySolList == null)
+		{
+			return null;
+		}
+		return this.m_ReadySolList.GetReadySolKindList();
 	}
 
 	public void UpdateReadySoldierInfo()
@@ -1555,11 +1778,6 @@ public class NrMyCharInfo
 		this.m_SolWarehouse.Clear();
 	}
 
-	public void AddSolWarehouseInfo(SOL_WAREHOUSE_INFO SolWarehouseInfo)
-	{
-		this.m_SolWarehouse.AddSolWarehouseInfo(SolWarehouseInfo);
-	}
-
 	public void AddSolWarehouseInfo(GS_SOLDIER_WAREHOUSE_MOVE_ACK ACK)
 	{
 		this.m_SolWarehouse.AddSolWarehouseInfo(ACK);
@@ -1575,6 +1793,11 @@ public class NrMyCharInfo
 		this.m_SolWarehouse.AddSolWarehouseInfo(pkSolinfo);
 	}
 
+	public NrSolWarehouse GetWarehouseSolList()
+	{
+		return this.m_SolWarehouse;
+	}
+
 	public NkSoldierInfo GetSolWarehouse(long lSolID)
 	{
 		return this.m_SolWarehouse.GetSolWarehouse(lSolID);
@@ -1585,9 +1808,13 @@ public class NrMyCharInfo
 		return this.m_SolWarehouse.GetSolWarehouseList();
 	}
 
-	public bool CheckSolWarehouseLoadServerData(byte eSolWarehouseLoadServerData, long lSolID)
+	public List<int> GetWarehouseSolKindList()
 	{
-		return this.m_SolWarehouse.CheckSolWarehouseLoadServerData(eSolWarehouseLoadServerData, lSolID);
+		if (this.m_SolWarehouse == null)
+		{
+			return null;
+		}
+		return this.m_SolWarehouse.GetWarehouseSolKindList();
 	}
 
 	public void SetLoadServerData(bool bLoadServerData)
@@ -1655,6 +1882,11 @@ public class NrMyCharInfo
 		this.m_GuildBoss_MyRoomInfo.Init();
 	}
 
+	public void InitGuildBossRoomStateInfo()
+	{
+		this.m_GuildBoss_MyRoomInfo.InitData();
+	}
+
 	public int GetGuildBossRoomInfoCount()
 	{
 		return this.m_GuildBoss_MyRoomInfo.GetCount();
@@ -1690,6 +1922,31 @@ public class NrMyCharInfo
 		this.m_GuildBoss_MyRoomInfo.DelInfo(floor);
 	}
 
+	public void AddGuildBossRoomStateInfo(short GuildBossFloor)
+	{
+		this.m_GuildBoss_MyRoomInfo.AddGuildBossRoomStateInfo(GuildBossFloor);
+	}
+
+	public void RemoveGuildBossRoomStateInfo(short GuildBossFloor)
+	{
+		this.m_GuildBoss_MyRoomInfo.RemoveGuildBossRoomStateInfo(GuildBossFloor);
+	}
+
+	public bool GetGuildBossRoomStateInfo(short floor)
+	{
+		return this.m_GuildBoss_MyRoomInfo.GetGuildBossRoomStateInfo(floor);
+	}
+
+	public void AddGuildBossRewardInfo(bool bGuildBossRewardInfo)
+	{
+		this.m_GuildBoss_MyRoomInfo.AddGuildBossRewardInfo(bGuildBossRewardInfo);
+	}
+
+	public bool GetGuildBossRewardInfo()
+	{
+		return this.m_GuildBoss_MyRoomInfo.GetGuildBossRewardInfo();
+	}
+
 	public void SetSubData_Waring(int nSubDataType, long nSubDataValue)
 	{
 		this.SetCharSubData(nSubDataType, nSubDataValue);
@@ -1706,14 +1963,14 @@ public class NrMyCharInfo
 				string textFromInterface = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1968");
 				string textFromMessageBox = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("190");
 				MsgBoxUI msgBoxUI = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKSubDataWaringTypeA), charSubData, textFromInterface, textFromMessageBox, eMsgType.MB_OK);
+				msgBoxUI.SetMsg(new YesDelegate(this.MsgBoxOKSubDataWaringTypeA), charSubData, textFromInterface, textFromMessageBox, eMsgType.MB_OK, 2);
 			}
 			else if ((charSubData & 2L) != 0L)
 			{
 				string textFromInterface2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1969");
 				string textFromMessageBox2 = NrTSingleton<NrTextMgr>.Instance.GetTextFromMessageBox("191");
 				MsgBoxUI msgBoxUI2 = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.MSGBOX_DLG) as MsgBoxUI;
-				msgBoxUI2.SetMsg(new YesDelegate(this.MsgBoxOKSubDataWaringTypeB), charSubData, textFromInterface2, textFromMessageBox2, eMsgType.MB_OK);
+				msgBoxUI2.SetMsg(new YesDelegate(this.MsgBoxOKSubDataWaringTypeB), charSubData, textFromInterface2, textFromMessageBox2, eMsgType.MB_OK, 2);
 			}
 		}
 	}
@@ -1775,6 +2032,55 @@ public class NrMyCharInfo
 			}
 		}
 		return result;
+	}
+
+	public long GetMaxWillChargeGold(long iWillCount)
+	{
+		if (iWillCount <= 0L)
+		{
+			return 0L;
+		}
+		short num = this.GetCharDetailFromUnion(eCHAR_DETAIL_INFO.eCHAR_DETAIL_INFO_LIMIT_COUNT, 1);
+		long num2 = 0L;
+		charSpend charSpend = NrTSingleton<NrBaseTableManager>.Instance.GetCharSpend(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.GetLevel().ToString());
+		if (charSpend != null)
+		{
+			int num3 = 0;
+			while ((long)num3 < iWillCount)
+			{
+				if ((int)num < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT1))
+				{
+					num2 += charSpend.iCharWillChargeGold;
+				}
+				else if ((int)num >= COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT1) && (int)num < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT2))
+				{
+					num2 += charSpend.iCharWillChargeLimit1Gold;
+				}
+				else if ((int)num >= COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT2) && (int)num < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT3))
+				{
+					num2 += charSpend.iCharWillChargeLimit2Gold;
+				}
+				else if ((int)num >= COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT3) && (int)num < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT4))
+				{
+					num2 += charSpend.iCharWillChargeLimit3Gold;
+				}
+				else if ((int)num >= COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT4) && (int)num < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT5))
+				{
+					num2 += charSpend.iCharWillChargeLimit4Gold;
+				}
+				else if ((int)num >= COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT5) && (int)num < COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT6))
+				{
+					num2 += charSpend.iCharWillChargeLimit5Gold;
+				}
+				else if ((int)num >= COMMON_CONSTANT_Manager.GetInstance().GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_WILL_CHARGE_LIMIT6))
+				{
+					num2 += charSpend.iCharWillChargeLimit6Gold;
+				}
+				num += 1;
+				num3++;
+			}
+		}
+		return num2;
 	}
 
 	public void ClearTreasureMapData()
@@ -1892,7 +2198,7 @@ public class NrMyCharInfo
 			return false;
 		}
 		BountyInfoData bountyInfoDataFromUnique = NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoDataFromUnique(this.BountyHuntUnique);
-		return bountyInfoDataFromUnique != null && NrTSingleton<BountyHuntManager>.Instance.Week == bountyInfoDataFromUnique.i16Week;
+		return bountyInfoDataFromUnique != null && NrTSingleton<BountyHuntManager>.Instance.GetBountyInfoDataTime(bountyInfoDataFromUnique.i16Unique);
 	}
 
 	public void ClearColoseumSupportSoldier()
@@ -2011,25 +2317,9 @@ public class NrMyCharInfo
 		return this.m_ReadySolList.GetSameSolNumFromSolPosType(eSolPosType);
 	}
 
-	public bool IsGuildWarApply(byte iMilitaryUnique)
-	{
-		return this.m_ReadySolList.IsGuildWarApply(iMilitaryUnique);
-	}
-
 	public int GetReadySolCount()
 	{
 		return this.m_ReadySolList.ReadySoliderCount();
-	}
-
-	public bool IsGuildWarApplyUser()
-	{
-		NewGuildMember memberInfoFromPersonID = NrTSingleton<NewGuildManager>.Instance.GetMemberInfoFromPersonID(NrTSingleton<NkCharManager>.Instance.m_kMyCharInfo.m_PersonID);
-		return memberInfoFromPersonID != null && memberInfoFromPersonID.GetRank() > NewGuildDefine.eNEWGUILD_MEMBER_RANK.eNEWGUILD_MEMBER_RANK_INITIATE && this.m_ReadySolList.IsGuildWarApplyUser();
-	}
-
-	public int GetGuildWarApplyMilitaryCount()
-	{
-		return this.m_ReadySolList.GetGuildWarApplyMilitaryCount();
 	}
 
 	public void ClearVoucherData()
@@ -2098,7 +2388,10 @@ public class NrMyCharInfo
 		{
 			if (this.m_VoucharData[i].ui8VoucherType == itemVoucherDataFromItemID.ui8VoucherType)
 			{
-				return this.m_VoucharData[i].i64EndTime - PublicMethod.GetCurTime();
+				if (this.m_VoucharData[i].i64ItemMallID == itemVoucherDataFromItemID.i64ItemMallID)
+				{
+					return this.m_VoucharData[i].i64EndTime - PublicMethod.GetCurTime();
+				}
 			}
 		}
 		return 0L;
@@ -2201,5 +2494,200 @@ public class NrMyCharInfo
 	public void SetCoinInfo(long realHearts, long freeHearts)
 	{
 		this.m_kCoinInfo.SetCoinInfo(realHearts, freeHearts);
+	}
+
+	public bool IsMySolKindExist(int solKind)
+	{
+		List<int> ownAllSolKindList = this.GetOwnAllSolKindList();
+		return ownAllSolKindList != null && ownAllSolKindList.Count != 0 && ownAllSolKindList.Contains(solKind);
+	}
+
+	public List<int> GetOwnAllSolKindList()
+	{
+		List<int> list = new List<int>();
+		List<int> battleReadySolKindList = this.GetBattleReadySolKindList();
+		if (battleReadySolKindList != null)
+		{
+			list.AddRange(battleReadySolKindList);
+		}
+		List<int> readySolKindList = this.GetReadySolKindList();
+		if (readySolKindList != null)
+		{
+			list.AddRange(readySolKindList);
+		}
+		List<int> warehouseSolKindList = this.GetWarehouseSolKindList();
+		if (warehouseSolKindList != null)
+		{
+			list.AddRange(warehouseSolKindList);
+		}
+		return list;
+	}
+
+	public List<NkSoldierInfo> GetAllSolList()
+	{
+		List<NkSoldierInfo> list = new List<NkSoldierInfo>();
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		if (charPersonInfo != null)
+		{
+			NrSoldierList soldierList = charPersonInfo.GetSoldierList();
+			if (soldierList != null && soldierList.GetSoldierList() != null)
+			{
+				list.AddRange(soldierList.GetSoldierList());
+			}
+		}
+		if (this.m_ReadySolList != null && this.m_ReadySolList.GetReadyAllSolList() != null)
+		{
+			list.AddRange(this.m_ReadySolList.GetReadyAllSolList().Values);
+		}
+		if (this.m_SolWarehouse != null && this.m_SolWarehouse.GetSolWarehouseList() != null)
+		{
+			list.AddRange(this.m_SolWarehouse.GetSolWarehouseList());
+		}
+		return list;
+	}
+
+	public List<int> GetOwnBattleReadyAndReadySolKindList()
+	{
+		List<int> list = new List<int>();
+		List<int> battleReadySolKindList = this.GetBattleReadySolKindList();
+		if (battleReadySolKindList != null)
+		{
+			list.AddRange(battleReadySolKindList);
+		}
+		List<int> readySolKindList = this.GetReadySolKindList();
+		if (readySolKindList != null)
+		{
+			list.AddRange(readySolKindList);
+		}
+		return list;
+	}
+
+	public List<int> GetOwnBattleMinePossibleKindList()
+	{
+		if (this.m_ReadySolList == null)
+		{
+			return null;
+		}
+		return this.m_ReadySolList.GetMineBattlePossibleKindList();
+	}
+
+	public List<int> GetOwnReadySolKindList()
+	{
+		return this.GetReadySolKindList();
+	}
+
+	private List<int> GetBattleReadySolKindList()
+	{
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		if (charPersonInfo == null)
+		{
+			return null;
+		}
+		return charPersonInfo.GetSolKindList();
+	}
+
+	public long GetBestPowerSoldierID_InBattleReadyAndReadySol(int charKind)
+	{
+		NkSoldierInfo nkSoldierInfo = null;
+		NrPersonInfoUser charPersonInfo = NrTSingleton<NkCharManager>.Instance.GetCharPersonInfo(1);
+		if (charPersonInfo != null)
+		{
+			NrSoldierList soldierList = charPersonInfo.GetSoldierList();
+			NkSoldierInfo soldierInfoByKind = soldierList.GetSoldierInfoByKind(charKind);
+			nkSoldierInfo = soldierInfoByKind;
+		}
+		if (this.m_ReadySolList != null)
+		{
+			List<NkSoldierInfo> solInfoListByKind = this.m_ReadySolList.GetSolInfoListByKind(charKind);
+			foreach (NkSoldierInfo current in solInfoListByKind)
+			{
+				if (nkSoldierInfo == null)
+				{
+					nkSoldierInfo = current;
+				}
+				else if (current.GetFightPower() >= nkSoldierInfo.GetFightPower())
+				{
+					nkSoldierInfo = current;
+				}
+			}
+		}
+		if (nkSoldierInfo == null)
+		{
+			return 0L;
+		}
+		return nkSoldierInfo.GetSolID();
+	}
+
+	public long GetBestPowerSoldierID_InMineBattlePossibleSol(int charKind)
+	{
+		if (this.m_ReadySolList == null)
+		{
+			return 0L;
+		}
+		List<NkSoldierInfo> mineBattlePossibleSolInfoList = this.m_ReadySolList.GetMineBattlePossibleSolInfoList();
+		if (mineBattlePossibleSolInfoList == null || mineBattlePossibleSolInfoList.Count == 0)
+		{
+			return 0L;
+		}
+		NkSoldierInfo nkSoldierInfo = null;
+		foreach (NkSoldierInfo current in mineBattlePossibleSolInfoList)
+		{
+			if (current.GetCharKind() == charKind)
+			{
+				if (nkSoldierInfo == null)
+				{
+					nkSoldierInfo = current;
+				}
+				else if (current.GetFightPower() >= nkSoldierInfo.GetFightPower())
+				{
+					nkSoldierInfo = current;
+				}
+			}
+		}
+		if (nkSoldierInfo == null)
+		{
+			return 0L;
+		}
+		return nkSoldierInfo.GetSolID();
+	}
+
+	public void Add_UserTimeShopItemList(TIMESHOP_ITEMINFO _pItemInfo)
+	{
+		this.m_kTimeShopInfo.Add_UserTimeShopItemList(_pItemInfo);
+	}
+
+	public void Clear_UserTimeShopItemList()
+	{
+		this.m_kTimeShopInfo.Clear_UserTimeShopItemList();
+	}
+
+	public List<TIMESHOP_ITEMINFO> Get_UserTimeShopItemList()
+	{
+		return this.m_kTimeShopInfo.Get_UserTimeShopItemList();
+	}
+
+	public int Get_UserTimeShopItemListCount()
+	{
+		return this.m_kTimeShopInfo.Get_UserTimeShopItemListCount();
+	}
+
+	public void Set_UserTimeShopInfo(short _i16RefreshCount, long _i64RefreshTime)
+	{
+		this.m_kTimeShopInfo.Set_UserTimeShopInfo(_i16RefreshCount, _i64RefreshTime);
+	}
+
+	public bool IsBuy_TimeShopItemByIDX(long _i64IDX)
+	{
+		return this.m_kTimeShopInfo.Get_UserTimeShopItmeIsBuy(_i64IDX);
+	}
+
+	public int GetIndex_byTimeShopIDX(long _i64IDX)
+	{
+		return this.m_kTimeShopInfo.GetIndex_byTimeShopIDX(_i64IDX);
+	}
+
+	public void Set_UserTimeShopItemBuy(long _i64IDX, byte _i8IsBuy)
+	{
+		this.m_kTimeShopInfo.Set_UserTimeShopItemBuy(_i64IDX, _i8IsBuy);
 	}
 }

@@ -245,7 +245,7 @@ public class CommunityPopupMenuUI_DLG : Form
 						"Charname",
 						this.m_SelectFriendName
 					});
-					msgBoxUI.SetMsg(new YesDelegate(this.FriendDelYes), null, textFromInterface, empty, eMsgType.MB_OK_CANCEL);
+					msgBoxUI.SetMsg(new YesDelegate(this.FriendDelYes), null, textFromInterface, empty, eMsgType.MB_OK_CANCEL, 2);
 				}
 			}
 			break;

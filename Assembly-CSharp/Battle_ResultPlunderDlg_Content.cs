@@ -21,8 +21,6 @@ public class Battle_ResultPlunderDlg_Content : Form
 
 	private Button m_btClose;
 
-	private Button m_btFacebook;
-
 	private Label m_lbLoading;
 
 	private NewListBox m_lbSolList;
@@ -71,8 +69,6 @@ public class Battle_ResultPlunderDlg_Content : Form
 
 	private int m_nInjurySolCount;
 
-	private Battle_ResultPlunderDlg_Content.eMODE m_eMode;
-
 	private List<GS_BATTLE_RESULT_SOLDIER> m_SolInfoList = new List<GS_BATTLE_RESULT_SOLDIER>();
 
 	private GS_BATTLE_RESULT_PLUNDER_NFY m_BasicInfo = new GS_BATTLE_RESULT_PLUNDER_NFY();
@@ -111,13 +107,6 @@ public class Battle_ResultPlunderDlg_Content : Form
 		this.m_btClose = (base.GetControl("Button_ok") as Button);
 		Button expr_32 = this.m_btClose;
 		expr_32.Click = (EZValueChangedDelegate)Delegate.Combine(expr_32.Click, new EZValueChangedDelegate(this.OnClickClose));
-		this.m_btFacebook = (base.GetControl("Button_ok2") as Button);
-		Button expr_6F = this.m_btFacebook;
-		expr_6F.Click = (EZValueChangedDelegate)Delegate.Combine(expr_6F.Click, new EZValueChangedDelegate(this.OnClickFacebook));
-		if (NrTSingleton<ContentsLimitManager>.Instance.IsFacebookLimit())
-		{
-			this.m_btFacebook.Visible = false;
-		}
 		this.m_lbSolList = (base.GetControl("plunder_result_sollist") as NewListBox);
 		this.m_lbSolList.Clear();
 		this.m_lbWin = (base.GetControl("LB_Win") as Label);
@@ -140,7 +129,7 @@ public class Battle_ResultPlunderDlg_Content : Form
 		this.m_lbInfiBattleRank_1 = (base.GetControl("LB_rank1") as Label);
 		this.m_lbInfiBattleReward_2 = (base.GetControl("LB_reward2") as Label);
 		this.m_lbInfiBattleRank_2 = (base.GetControl("LB_rank2") as Label);
-		this.m_lbInfiBattleWin = (base.GetControl("LB_win") as Label);
+		this.m_lbInfiBattleWin = (base.GetControl("LB_winningpoint") as Label);
 		this.m_itInfiBattleRewardItem = (base.GetControl("ItemTexture_ItemTexture36") as ItemTexture);
 		this.m_itInfiBattleRewardItem.Hide(false);
 		this.m_btClose.Visible = false;
@@ -290,12 +279,7 @@ public class Battle_ResultPlunderDlg_Content : Form
 			PlunderMainDlg plunderMainDlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.PLUNDERMAIN_DLG) as PlunderMainDlg;
 			if (plunderMainDlg != null)
 			{
-				plunderMainDlg.Show();
-				if (this.m_eMode == Battle_ResultPlunderDlg_Content.eMODE.eMODE_INFIBATTLE)
-				{
-					plunderMainDlg.SetTgValue(global::eMODE.eMODE_INFIBATTLE);
-					plunderMainDlg.ShowInfiBattle();
-				}
+				plunderMainDlg.ShowInfiBattle();
 			}
 		}
 		NrTSingleton<FiveRocksEventManager>.Instance.BattleResult(eBATTLE_ROOMTYPE.eBATTLE_ROOMTYPE_PLUNDER, this.m_fBattleTime, this.m_nInjurySolCount);
@@ -477,7 +461,7 @@ public class Battle_ResultPlunderDlg_Content : Form
 		int num = 0;
 		foreach (GS_BATTLE_RESULT_SOLDIER current in this.m_SolInfoList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true, string.Empty);
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(current.CharKind);
 			if (charKindInfo != null)
 			{
@@ -487,6 +471,10 @@ public class Battle_ResultPlunderDlg_Content : Form
 				nkListSolInfo.SolInjuryStatus = current.bInjury;
 				nkListSolInfo.SolLevel = current.i16Level;
 				nkListSolInfo.ShowLevel = true;
+				if (NrTSingleton<NrCharCostumeTableManager>.Instance.IsCostumeUniqueEqualSolKind(current.i32CostumeUnique, current.CharKind))
+				{
+					nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(current.i32CostumeUnique);
+				}
 				EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(current.CharKind, (byte)current.SolGrade);
 				Texture2D portraitLeaderSol = this.GetPortraitLeaderSol(current.CharKind);
 				if (portraitLeaderSol != null)
@@ -540,7 +528,7 @@ public class Battle_ResultPlunderDlg_Content : Form
 					{
 						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1802"),
 						"exp",
-						current.i32AddExp.ToString()
+						ANNUALIZED.Convert(current.i32AddExp)
 					});
 				}
 				text2 += "\r\n";
@@ -553,23 +541,6 @@ public class Battle_ResultPlunderDlg_Content : Form
 				{
 					this.m_nInjurySolCount++;
 				}
-			}
-		}
-	}
-
-	private void OnClickFacebook(IUIObject obj)
-	{
-		Facebook_Feed_Dlg facebook_Feed_Dlg = NrTSingleton<FormsManager>.Instance.LoadForm(G_ID.FACEBOOK_FEED_DLG) as Facebook_Feed_Dlg;
-		if (facebook_Feed_Dlg != null)
-		{
-			if (this.m_BasicInfo != null)
-			{
-				facebook_Feed_Dlg.SetType(eFACEBOOK_FEED_TYPE.PLUNDER_WIN, this.m_BasicInfo.szDefencerName);
-				facebook_Feed_Dlg.SetLocation(facebook_Feed_Dlg.GetLocationX(), facebook_Feed_Dlg.GetLocationY(), base.GetLocation().z - 10f);
-			}
-			else
-			{
-				NrTSingleton<FormsManager>.Instance.CloseForm(G_ID.FACEBOOK_FEED_DLG);
 			}
 		}
 	}
@@ -635,9 +606,19 @@ public class Battle_ResultPlunderDlg_Content : Form
 		}
 		this.m_lbAttacker.SetText(NrTSingleton<NkCharManager>.Instance.GetCharName());
 		this.m_lbDefencer.SetText(TKString.NEWString(this.m_InfiBattleInfo.strDefencerName));
+		string text = string.Empty;
+		string empty = string.Empty;
+		text = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2937");
+		NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+		{
+			text,
+			"count1",
+			kMyCharInfo.InfiBattleStraightWin,
+			"count2",
+			kMyCharInfo.InfinityBattle_OldRank
+		});
 		this.m_lbWin.SetText(num4.ToString());
 		this.m_lbLose.SetText(num5.ToString());
-		string text = string.Empty;
 		string text2 = string.Empty;
 		COMMON_CONSTANT_Manager instance = COMMON_CONSTANT_Manager.GetInstance();
 		int num6 = -1;
@@ -704,26 +685,12 @@ public class Battle_ResultPlunderDlg_Content : Form
 				});
 			}
 			this.m_lbInfiBattleRank_2.SetText(text);
-			if (this.m_InfiBattleInfo.i32AttackWinCount > 0)
-			{
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text, new object[]
-				{
-					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("2221"),
-					"count",
-					this.m_InfiBattleInfo.i32AttackWinCount
-				});
-				this.m_lbInfiBattleWin.SetText(text);
-				myCharInfo.InfiBattleStraightWin = this.m_InfiBattleInfo.i32AttackWinCount;
-				string str = "Effect/Instant/fx_victory_ui" + NrTSingleton<UIDataManager>.Instance.AddFilePath;
-				WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
-				wWWItem.SetItemType(ItemType.USER_ASSETB);
-				wWWItem.SetCallback(new PostProcPerItem(this.BattleRankEffect), null);
-				TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
-			}
-			else
-			{
-				this.m_lbInfiBattleWin.SetText(string.Empty);
-			}
+			myCharInfo.InfiBattleStraightWin = this.m_InfiBattleInfo.i32AttackWinCount;
+			string str = "Effect/Instant/fx_victory_ui" + NrTSingleton<UIDataManager>.Instance.AddFilePath;
+			WWWItem wWWItem = Holder.TryGetOrCreateBundle(str + Option.extAsset, NkBundleCallBack.UIBundleStackName);
+			wWWItem.SetItemType(ItemType.USER_ASSETB);
+			wWWItem.SetCallback(new PostProcPerItem(this.BattleRankEffect), null);
+			TsImmortal.bundleService.RequestDownloadCoroutine(wWWItem, DownGroup.RUNTIME, true);
 		}
 		else
 		{
@@ -747,30 +714,23 @@ public class Battle_ResultPlunderDlg_Content : Form
 				});
 			}
 			this.m_lbInfiBattleRank_2.SetText(text);
-			this.m_lbInfiBattleWin.SetText(string.Empty);
 		}
-	}
-
-	public void SetMode(Battle_ResultPlunderDlg_Content.eMODE eMode)
-	{
-		this.m_eMode = eMode;
-		this.ShowMode();
-	}
-
-	public void ShowMode()
-	{
-		Battle_ResultPlunderDlg_Content.eMODE eMode = this.m_eMode;
-		if (eMode != Battle_ResultPlunderDlg_Content.eMODE.eMODE_PLUNDER)
+		if (instance != null)
 		{
-			if (eMode == Battle_ResultPlunderDlg_Content.eMODE.eMODE_INFIBATTLE)
+			if (kMyCharInfo.InfinityBattle_Rank < instance.GetValue(eCOMMON_CONSTANT.eCOMMON_CONSTANT_INFIBATTLE_RANK))
 			{
-				this.ShowInfiBattle();
+				this.m_lbInfiBattleWin.SetText("0");
+			}
+			else
+			{
+				this.m_lbInfiBattleWin.SetText(string.Empty);
 			}
 		}
-		else
-		{
-			this.ShowPlunder();
-		}
+	}
+
+	public void SetMode()
+	{
+		this.ShowInfiBattle();
 	}
 
 	public void ShowPlunder()
@@ -786,9 +746,10 @@ public class Battle_ResultPlunderDlg_Content : Form
 	public void _LinkSolDataInfiBattle()
 	{
 		int num = 0;
+		this.m_lbSolList.Clear();
 		foreach (GS_BATTLE_RESULT_SOLDIER current in this.m_SolInfoList)
 		{
-			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true);
+			NewListItem newListItem = new NewListItem(this.m_lbSolList.ColumnNum, true, string.Empty);
 			NrCharKindInfo charKindInfo = NrTSingleton<NrCharKindInfoManager>.Instance.GetCharKindInfo(current.CharKind);
 			if (charKindInfo != null)
 			{
@@ -798,6 +759,10 @@ public class Battle_ResultPlunderDlg_Content : Form
 				nkListSolInfo.SolInjuryStatus = current.bInjury;
 				nkListSolInfo.SolLevel = current.i16Level;
 				nkListSolInfo.ShowLevel = true;
+				if (NrTSingleton<NrCharCostumeTableManager>.Instance.IsCostumeUniqueEqualSolKind(current.i32CostumeUnique, current.CharKind))
+				{
+					nkListSolInfo.SolCostumePortraitPath = NrTSingleton<NrCharCostumeTableManager>.Instance.GetCostumePortraitPath(current.i32CostumeUnique);
+				}
 				EVENT_HERODATA eventHeroCharCode = NrTSingleton<NrTableEvnetHeroManager>.Instance.GetEventHeroCharCode(current.CharKind, (byte)current.SolGrade);
 				Texture2D portraitLeaderSol = this.GetPortraitLeaderSol(current.CharKind);
 				if (portraitLeaderSol != null)
@@ -830,8 +795,8 @@ public class Battle_ResultPlunderDlg_Content : Form
 				{
 					text = charKindInfo.GetName();
 				}
-				string empty = string.Empty;
-				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref empty, new object[]
+				string text2 = string.Empty;
+				NrTSingleton<CTextParser>.Instance.ReplaceParam(ref text2, new object[]
 				{
 					NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("471"),
 					"targetname",
@@ -839,7 +804,24 @@ public class Battle_ResultPlunderDlg_Content : Form
 					"count",
 					current.i16Level
 				});
-				newListItem.SetListItemData(2, empty, null, null, null);
+				short gradeMaxLevel = charKindInfo.GetGradeMaxLevel((short)((byte)current.SolGrade));
+				string str = string.Empty;
+				if (gradeMaxLevel <= current.i16Level)
+				{
+					str = NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("286");
+				}
+				else
+				{
+					NrTSingleton<CTextParser>.Instance.ReplaceParam(ref str, new object[]
+					{
+						NrTSingleton<NrTextMgr>.Instance.GetTextFromInterface("1802"),
+						"exp",
+						ANNUALIZED.Convert(current.i32AddExp)
+					});
+				}
+				text2 += "\r\n";
+				text2 += str;
+				newListItem.SetListItemData(2, text2, null, null, null);
 				this.m_lbSolList.Add(newListItem);
 				this.m_lbSolList.RepositionItems();
 				num++;

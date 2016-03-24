@@ -11,6 +11,7 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 		eATB_KIND_ITEMTYPE,
 		eATB_KIND_WEAPONTYPE,
 		eATB_KIND_ITEM,
+		eATB_KIND_TARGETWEAPONTYPE,
 		MAX_eATB_KIND
 	}
 
@@ -20,7 +21,7 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 
 	private NkATB_Manager()
 	{
-		int num = 7;
+		int num = 8;
 		this.m_kATB_Kind = new NkATBParse[num];
 		for (int i = 0; i < num; i++)
 		{
@@ -32,7 +33,7 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 	private void _InsertCurrentATB(string strATB, long nATBValue)
 	{
 		int eCurrentATBKind = (int)this.m_eCurrentATBKind;
-		if (7 <= eCurrentATBKind)
+		if (8 <= eCurrentATBKind)
 		{
 			return;
 		}
@@ -52,7 +53,6 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 		this._InsertCurrentATB("WIDECOLL", 32L);
 		this._InsertCurrentATB("COLLECT", 64L);
 		this._InsertCurrentATB("BOSS", 128L);
-		this._InsertCurrentATB("NOLOOTING", 256L);
 		this._InsertCurrentATB("BUYITEMNPC", 512L);
 		this._InsertCurrentATB("GOAL", 1024L);
 		this._InsertCurrentATB("FINDGOAL", 2048L);
@@ -69,7 +69,7 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 		this._InsertCurrentATB("MULTIANI", 4194304L);
 		this._InsertCurrentATB("CHARCHANGE", 8388608L);
 		this._InsertCurrentATB("NAMEUI", 16777216L);
-		this._InsertCurrentATB("TERRITORYITEMBUY", 33554432L);
+		this._InsertCurrentATB("EVENTEXCHANGE", 33554432L);
 		this._InsertCurrentATB("DIEANI", 67108864L);
 		this._InsertCurrentATB("LOOPANI", 134217728L);
 		this._InsertCurrentATB("ITEMUSECOLLECT", 268435456L);
@@ -95,6 +95,14 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 		this._InsertCurrentATB("JEWELRYEXCHANGE", 4503599627370496L);
 		this._InsertCurrentATB("AGIT", 18014398509481984L);
 		this._InsertCurrentATB("MYTHICEXCHANGE", 36028797018963968L);
+		this._InsertCurrentATB("MYTH_DAMAGEADD", 72057594037927936L);
+		this._InsertCurrentATB("BATTLE_IMMUNE_SKILL", 144115188075855872L);
+		this._InsertCurrentATB("ITEMREPAIR", 288230376151711744L);
+		this._InsertCurrentATB("GUILDWAREXCHANGE", 1152921504606846976L);
+		this._InsertCurrentATB("ANGELPOINT", 576460752303423488L);
+		this._InsertCurrentATB("IMMORTAL", 2305843009213693952L);
+		this._InsertCurrentATB("MAGIC_RESIST", 4611686018427387904L);
+		this._InsertCurrentATB("PHYSICAL_RESIST", 256L);
 		this.m_eCurrentATBKind = NkATB_Manager.eATB_KIND.eATB_KIND_ECO;
 		this._InsertCurrentATB("RANK", 1L);
 		this._InsertCurrentATB("MOVINGRANK", 2L);
@@ -142,6 +150,22 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 		this._InsertCurrentATB("LEGEND", 131072L);
 		this._InsertCurrentATB("RANDOMHEARTSRATE", 262144L);
 		this._InsertCurrentATB("ACCESSORY", 524288L);
+		this._InsertCurrentATB("UNTRADABLE", 1048576L);
+		this._InsertCurrentATB("ONLY_LEADER", 2097152L);
+		this._InsertCurrentATB("PREMIUMRATE", 4194304L);
+		this._InsertCurrentATB("LEGENDHIRE", 8388608L);
+		this._InsertCurrentATB("ITEMLOCK", 16777216L);
+		this._InsertCurrentATB("COSTUMEBOX", 33554432L);
+		this.m_eCurrentATBKind = NkATB_Manager.eATB_KIND.eATB_KIND_TARGETWEAPONTYPE;
+		this._InsertCurrentATB("ALL", 1L);
+		this._InsertCurrentATB("SWORD", 2L);
+		this._InsertCurrentATB("SPEAR", 4L);
+		this._InsertCurrentATB("AXE", 8L);
+		this._InsertCurrentATB("BOW", 16L);
+		this._InsertCurrentATB("GUN", 32L);
+		this._InsertCurrentATB("CANNON", 64L);
+		this._InsertCurrentATB("STAFF", 128L);
+		this._InsertCurrentATB("BIBLE", 256L);
 	}
 
 	public long GetMapATB(string strATBCode)
@@ -212,6 +236,11 @@ public class NkATB_Manager : NrTSingleton<NkATB_Manager>
 	public long ParseItemATB(string strATBContents)
 	{
 		return this.m_kATB_Kind[6].ParseCode(strATBContents);
+	}
+
+	public long ParseTargetWeaponTypeATB(string strATBContents)
+	{
+		return this.m_kATB_Kind[7].ParseCode(strATBContents);
 	}
 
 	public string[] GetEcoATBString()

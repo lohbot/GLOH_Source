@@ -1,6 +1,7 @@
 using PROTOCOL.GAME;
 using StageHelper;
 using System;
+using TsBundle;
 using UnityEngine;
 using UnityForms;
 
@@ -143,6 +144,26 @@ public class Battle_ResultDlg : Form
 		this.m_dtTotalBG.SetTexture(texture);
 	}
 
+	public void SetBG(WWWItem _item, object _param)
+	{
+		if (this == null)
+		{
+			return;
+		}
+		if (_item.isCanceled)
+		{
+			return;
+		}
+		if (_item.GetSafeBundle() != null && null != _item.GetSafeBundle().mainAsset)
+		{
+			Texture2D texture2D = _item.GetSafeBundle().mainAsset as Texture2D;
+			if (null != texture2D)
+			{
+				this.m_dtTotalBG.SetTexture(texture2D);
+			}
+		}
+	}
+
 	public void ResizeDlg()
 	{
 		base.SetLocation(0f, 0f);
@@ -195,7 +216,6 @@ public class Battle_ResultDlg : Form
 			if (!this.m_CloseDlg)
 			{
 				this.m_OpenTime = Time.realtimeSinceStartup;
-				this.m_CloseDlg = true;
 				this.m_dtWinLose.Visible = true;
 			}
 			this.m_ChildDlg._LinkBasicData();
@@ -218,6 +238,7 @@ public class Battle_ResultDlg : Form
 		}
 		else
 		{
+			this.m_CloseDlg = true;
 			this.m_ChildDlg._LinkBasicData();
 			this.m_ChildDlg.LinkData();
 			if (this.m_ChildDlg.m_bWin)
